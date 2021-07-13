@@ -14,7 +14,7 @@ remotes::install_github("tanaylab/MCView")
 
 ## Usage
 
-See the [vignette](https://tanaylab.github.io/MCview/articles/getting-started.html).
+See the [vignette](https://tanaylab.github.io/MCView/articles/getting-started.html).
 
 Tl;dr:
 
@@ -26,7 +26,7 @@ MCView::create_project("PBMC")
 
 1.  Edit `PBMC/config/config.yaml`.
 
-See the [config vignette](https://tanaylab.github.io/MCview/articles/config.html) for more details.
+See the [config vignette](https://tanaylab.github.io/MCView/articles/config.html) for more details.
 
 1.  Import the project:
 
