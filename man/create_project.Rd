@@ -15,3 +15,12 @@ create_project(project, project_dir = NULL)
 This would create a project directory with the default configuration files and directory structure.
 A text editor would be opened in order to edit the project \code{config.yaml} file.
 }
+\examples{
+\dontrun{
+dir.create("raw")
+download.file("http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz", "raw/#' PBMC_processed.tar.gz")
+untar("raw/PBMC_processed.tar.gz", exdir = "raw")
+create_project("PBMC")
+}
+
+}

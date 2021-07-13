@@ -47,3 +47,10 @@ for more information on bookmarking your app.}
 \description{
 Loads project data and runs the MCView application.
 }
+\examples{
+\dontrun{
+MCView::run_app("PBMC")
+MCView::run_app(project = "PBMC", port = 5555, host = "127.0.0.1")
+}
+
+}

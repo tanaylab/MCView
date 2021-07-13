@@ -6,6 +6,15 @@
 #'
 #'
 #' @param project path to the project
+#' 
+#' @examples
+#'\dontrun{
+#' dir.create("raw")
+#' download.file("http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz", "raw/#' PBMC_processed.tar.gz")
+#' untar("raw/PBMC_processed.tar.gz", exdir = "raw")
+#' create_project("PBMC")
+#' import("PBMC")
+#' }
 #'
 #' @export
 import <- function(project) {

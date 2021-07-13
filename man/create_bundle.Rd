@@ -20,3 +20,9 @@ This would create a minimal shiny app in \code{path}/\code{name} directory which
 The bundle can then be deployed in shiny-server, shinyapps.io or any other environment that supports serving shiny apps.
 Note: when deploying to these services - make sure you have the MCView package installed.
 }
+\examples{
+\dontrun{
+MCView::create_bundle(project = "PBMC", path = getwd(), name = "PBMC")
+}
+
+}

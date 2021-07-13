@@ -14,3 +14,13 @@ This would read the project \code{config.yaml} file and would import the metacel
 within it to MCView. The result would be a directory for each dataset under \code{project/data} which
 would contain objects used by MCView shiny app.
 }
+\examples{
+\dontrun{
+dir.create("raw")
+download.file("http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz", "raw/#' PBMC_processed.tar.gz")
+untar("raw/PBMC_processed.tar.gz", exdir = "raw")
+create_project("PBMC")
+import("PBMC")
+}
+
+}

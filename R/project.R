@@ -58,6 +58,13 @@ create_project_dirs <- function(project_dir, project) {
 #' @param project name of the project
 #' @param project_dir directory of the project. Would be created if not existing. If \code{NULL} - the project would be created under current directory.
 #'
+#' @examples
+#'\dontrun{
+#' dir.create("raw")
+#' download.file("http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz", "raw/#' PBMC_processed.tar.gz")
+#' untar("raw/PBMC_processed.tar.gz", exdir = "raw")
+#' create_project("PBMC")
+#' }
 #'
 #' @export
 create_project <- function(project, project_dir = NULL) {
@@ -108,6 +115,11 @@ set_default_project <- function(project) {
 #'
 #' @param project path to the project directory
 #' @param path path in which to create the bundle.
+#'
+#' @examples
+#'\dontrun{
+#' MCView::create_bundle(project = "PBMC", path = getwd(), name = "PBMC")
+#' }
 #'
 #' @export
 create_bundle <- function(project, path = getwd(), name = "MCView_bundle") {

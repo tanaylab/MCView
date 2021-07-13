@@ -9,7 +9,12 @@
 #' @param launch.browser launch web browser after app start
 #' @param ... A series of options to be used inside the app.
 #'
-#'
+#' @examples 
+#'\dontrun{
+#' MCView::run_app("PBMC")
+#' MCView::run_app(project = "PBMC", port = 5555, host = "127.0.0.1")
+#' }
+#' 
 #' @inheritDotParams shiny::shinyApp
 #'
 #' @export
