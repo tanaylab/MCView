@@ -39,7 +39,7 @@ MCView::import("PBMC")
 You can run the app from R using:
 
 ``` r
-MCView::run_app(project = "PBMC", port = 5555, host = "127.0.0.1")
+MCView::run_app("PBMC", launch.browser = TRUE)
 ```
 
 Or from shell:
