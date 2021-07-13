@@ -1,0 +1,109 @@
+---
+title: "Architecture"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{architecture}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+An __MCView__ app needs two components in order to run: 
+
+1. Configuration file (`config.yaml`).
+2. Cached data.
+
+The app can use additional files that are not essential:
+
+1. `help.yaml` - custom help messages. 
+2. `about.Rmd` - custom "About" page. 
+
+In order to bundle together the configuration and cached data, __MCView__ supports a concept of a 'project'.
+
+## Projects
+
+A project is a standard library structure that binds config and data, e.g.: 
+
+```md
+my_project
+├── config
+│   ├── about.Rmd
+│   ├── config.yaml
+│   └── help.yaml
+└── data
+    ├── ko
+    └── wt
+```
+
+The above example shows the directory structure of a project named `my_project` that contains two metacell datasets - wt and ko. Multiple functions in the __MCView__ package would accept the project path and would expect to find the configuration files and data in the standard relative path. 
+
+Creation of a project can be done by running: 
+
+```{r, eval=FALSE}
+MCView::create_project("my_project")
+```
+
+Which would open a text editor in order to edit the configuration file. 
+
+## Configuration file
+
+The configuration points to the source of the data which can be either output of metacell2 (python metacells package) or the old version of metacell (metacell1). This is done in the `metacells` section of the configuration file, e.g.: 
+
+```yaml
+metacells:
+  wt:
+    anndata: /rawdata/wt.h5ad
+    cell_type_field: cluster
+    cell_type_annot:
+      fn:  raw/wt_clusters.csv
+      cell_type: cluster
+      color: color    
+  ko:
+    anndata: /rawdata/ko.h5ad
+```
+
+The above example shows the configuration of two metacell datasets, wt and ko. The most important (and essential) parameter is `anndata` which holds the path for the `h5ad` file which is the output of metacell2. Note that the data should have either absolute path or relative path to the directory from which we run the `import` command. 
+
+In addition, the wt dataset contains also an cell type annotation file with a color for each cluster. For the ko dataset, the import stage would generated initial clusters and colors using the `tglkmeans` and `chameleon` R packages. 
+
+## Cached data
+
+In order to run, __MCView__ needs to pre-process the metacell matrix and cluster annotations. This can be done by the `MCView::import` function which accepts a project path, reads the configuration files and generates the cached data. 
+
+The cached files would be saved under the data section in the project folder, in a separate folder for each dataset. In the above example: 
+
+```md
+└── data
+    ├── ko
+    └── wt
+```
+
+## Running the app
+
+Running the app can be done by running: 
+
+```{r, eval=FALSE}
+MCView::run_app(project = "/path/to/my/project")
+```
+## Deployment
+
+__MCView__ can generate a 'deployment ready' version of the app by running: 
+
+```{r, eval=FALSE}
+MCView::create_bundle(project = "/path/to/my/project", path = "/path/to/the/bundle", name = "my_project")
+```
+
+This would create a minimal shiny app in "/path/to/the/bundle/my_project" directory which would contain:
+
+1. app.R file. 
+2. project config and data. 
+
+The bundle can then be deployed in shiny-server, shinyapps.io or any other environment that supports serving shiny apps. 
+
+Note that when deploying to these services make sure you have the __MCView__ package installed. 

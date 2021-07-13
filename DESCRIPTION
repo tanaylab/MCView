@@ -1,0 +1,68 @@
+Package: MCView
+Title: A Shiny App for Metacell Analysis
+Version: 0.1.9000
+Authors@R: 
+    c(person(given = "Aviezer",
+           family = "Lifshitz",
+           role = c("aut", "cre"),
+           email = "aviezer.lifshitz@weizmann.ac.il")
+    )    
+Description: A shiny app for metacell analysis
+License: MIT + file LICENSE
+Imports: 
+    config,
+    golem,
+    shiny (>= 1.6.0),
+    processx,
+    attempt,
+    cli,
+    DT,
+    glue,
+    htmltools,
+    dplyr,
+    ggplot2,
+    purrr,
+    tgutil (>= 0.1.6),
+    tgstat,
+    plotly (>= 4.9.3),    
+    shinydashboard,
+    shinydashboardPlus (>= 2.0.0),
+    shinycssloaders,
+    tibble,
+    tidyr,
+    rlang,
+    cowplot,
+    shinyWidgets,
+    fs,
+    promises,
+    future,
+    ggnewscale,
+    shinyEffects,
+    ggrepel,
+    yaml,
+    pkgload,
+    viridis,
+    qs,
+    forcats,
+    rintrojs,
+    markdown,
+    rmarkdown,
+    colourpicker,
+    anndata,
+    matrixStats,
+    tglkmeans,
+    chameleon,
+    furrr
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.1.1
+Suggests: 
+    testthat,
+    knitr,
+    R.utils
+Depends: 
+    R (>= 3.5)
+Remotes: 
+    tanaylab/tgutil,
+    tanaylab/tglkmeans
+VignetteBuilder: knitr

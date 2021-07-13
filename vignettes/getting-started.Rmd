@@ -1,0 +1,99 @@
+---
+title: "Getting started with MCView"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{getting-started}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Setup
+
+We would start by downloading a PBMC dataset that was pre-processed using Metacells python package. 
+
+```{r setup}
+library(MCView)
+```
+
+```{r download, eval=FALSE}
+dir.create("raw")
+download.file("http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz", "raw/PBMC_processed.tar.gz")
+untar("raw/PBMC_processed.tar.gz", exdir = "raw")
+```
+
+The above commands end result are two files named "raw/pbmc_metacells.h5ad" and "raw/cluster-colors.csv" which we would import to __MCView__ in the next steps. 
+
+## Create a project
+
+The first step in running __MCView__ is generating a project directory structure: 
+
+```{r, eval=FALSE}
+MCView::create_project("PBMC")
+```
+
+A text editor would be opened with `PBMC/config/config.yaml` file. 
+
+The most important field we need to fill is the `anndata` field which should point to the h5ad file we downloaded. 
+
+We also fill the `cell_type_annot` field with the cluster colors file, but this is optional. 
+
+Note that we also changed the name of the dataset to "PBMC", but this wasn't really necessary since we only have a single dataset in the project. 
+
+See the [config](https://tanaylab.github.io/MCview/articles/config.html) vignette for a full description of the config parameters. 
+
+```yaml
+title: MCView
+tabs: ["About", "Manifold", "Genes", "Metacells", "Annotate"] # which tabs to show
+help: false # set to true to show introjs help on start
+metacells: 
+  PBMC:
+    anndata: raw/metacells.h5ad # should be absolute path
+    cell_type_field: cluster # name of the field in the anndata object$obs which contains a cell type (optional)
+    # mc_annot: # uncomment if you have a cell type annotation for each metacell
+    #   fn: raw/metacell-cell-types.csv # file with with cell type assignment for each metacell
+    #   metacell: mc # name of the field which contains the metacell id
+    #   cell_type: cluster # name of the field which contains the cell type    
+    cell_type_annot: # uncomment if you have a color annotation for each cell type
+      fn:  raw/cluster-colors.csv # file with color for each cell type (optional)
+      cell_type: cluster # name of the field which contains the cell type
+      color: color # name of the field which contains the color
+# selected_gene1: Foxc1 # Default selected gene1
+# selected_gene2: Twist1 # Default selected gene2
+selected_mc1: 1 # Default selected metacell1 
+selected_mc2: 2 # Default selected metacell2
+```
+
+## Import 
+
+Next, we would import the project to __MCView__. This would pre-process the metacells dataset in order to view it in the shiny app: 
+
+```{r, eval=FALSE}
+MCView::import("PBMC")
+```
+
+Note that the import part might take a few minutes, depending (mostly) on the number of metacells. 
+
+## Run the app
+
+```{r, eval=FALSE}
+MCView::run_app(project = "PBMC", port = 5555)
+```
+
+You can now go to [https://localhost:5555](https://localhost:5555) to view the app. 
+
+## Deploy
+
+Create a deployment ready bundle by running: 
+
+```{r, eval=FALSE}
+MCView::create_bundle(project = "PBMC", path = getwd(), name = "PBMC")
+```
+
+You can then upload the bundle to shinyapps.io, shiny-server or any other hosting service. 

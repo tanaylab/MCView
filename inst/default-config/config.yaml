@@ -1,0 +1,19 @@
+title: MCView
+tabs: ["About", "Manifold", "Genes", "Metacells", "Annotate"] # which tabs to show
+help: false # # set to true to show introjs help on start
+metacells: 
+  Default:
+    anndata: raw/metacells.h5ad # should be absolute path
+    cell_type_field: cluster # name of the field in the anndata object$obs which contains a cell type (optional)
+    # mc_annot: # uncomment if you have a cell type annotation for each metacell
+    #   fn: raw/metacell-cell-types.csv # file with with cell type assignment for each metacell
+    #   metacell: mc # name of the field which contains the metacell id
+    #   cell_type: cluster # name of the field which contains the cell type    
+    # cell_type_annot: # uncomment if you have a color annotation for each cell type
+    #   fn:  raw/cluster-colors.csv # file with color for each cell type (optional)
+    #   cell_type: cluster # name of the field which contains the cell type
+    #   color: color # name of the field which contains the color
+# selected_gene1: Foxc1 # Default selected gene1
+# selected_gene2: Twist1 # Default selected gene2
+selected_mc1: 1 # Default selected metacell1 
+selected_mc2: 2 # Default selected metacell2

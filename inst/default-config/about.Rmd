@@ -1,0 +1,29 @@
+# MCView
+
+## <u>Features of MCView</u>
+
+### Manifold tab
+
+> Click on the **help** button for step by step explanation of interface features!
+
+- View gene expression manifold. 
+- Color manifold by gene expression. 
+
+### Genes tab
+
+-   Two genes can be compared over the manifold.
+
+Clicking on any metacell will select it for further examination in the
+Metacells tab.
+
+### Metacells tab
+
+-   Two metacells can be specifically examined, and compared.
+
+Choose a metacell by entering its number, or by selecting directly from
+the 2D-projection.
+
+### Annotate tab 
+
+- Assign cell types and colors to metacells
+

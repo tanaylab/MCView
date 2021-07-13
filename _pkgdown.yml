@@ -1,0 +1,23 @@
+template:
+  params:
+    bootswatch: flatly
+
+
+articles:
+- title: vignettes
+  desc: ~
+  contents:
+  - '`getting-started`'
+  - '`architecture`'
+  - '`config`'
+  
+reference:
+- title: All functions
+  contents:
+  - '`create_project`'
+  - '`import`'  
+  - '`run_app`'
+  - '`create_bundle`'
+  
+  
+  
