@@ -45,7 +45,7 @@ for more information on bookmarking your app.}
   }}
 }
 \description{
-Loads project data and runs the MCView application.
+Loads project cache and runs the MCView application.
 }
 \examples{
 \dontrun{

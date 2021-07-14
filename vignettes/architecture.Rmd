@@ -28,7 +28,7 @@ In order to bundle together the configuration and cached data, __MCView__ suppor
 
 ## Projects
 
-A project is a standard library structure that binds config and data, e.g.: 
+A project is a standard library structure that binds config and cache, e.g.: 
 
 ```md
 my_project
@@ -36,12 +36,12 @@ my_project
 │   ├── about.Rmd
 │   ├── config.yaml
 │   └── help.yaml
-└── data
+└── cache
     ├── ko
     └── wt
 ```
 
-The above example shows the directory structure of a project named `my_project` that contains two metacell datasets - wt and ko. Multiple functions in the __MCView__ package would accept the project path and would expect to find the configuration files and data in the standard relative path. 
+The above example shows the directory structure of a project named `my_project` that contains two metacell datasets - wt and ko. Multiple functions in the __MCView__ package would accept the project path and would expect to find the configuration files and cache in the standard relative path. 
 
 Creation of a project can be done by running: 
 
@@ -76,10 +76,10 @@ In addition, the wt dataset contains also an cell type annotation file with a co
 
 In order to run, __MCView__ needs to pre-process the metacell matrix and cluster annotations. This can be done by the `MCView::import` function which accepts a project path, reads the configuration files and generates the cached data. 
 
-The cached files would be saved under the data section in the project folder, in a separate folder for each dataset. In the above example: 
+The cached files would be saved under the cache section in the project folder, in a separate folder for each dataset. In the above example: 
 
 ```md
-└── data
+└── cache
     ├── ko
     └── wt
 ```
@@ -102,7 +102,7 @@ MCView::create_bundle(project = "/path/to/my/project", path = "/path/to/the/bund
 This would create a minimal shiny app in "/path/to/the/bundle/my_project" directory which would contain:
 
 1. app.R file. 
-2. project config and data. 
+2. project config and cache. 
 
 The bundle can then be deployed in shiny-server, shinyapps.io or any other environment that supports serving shiny apps. 
 

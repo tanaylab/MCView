@@ -1,7 +1,7 @@
 #' Import a project to MCView
 #'
 #' This would read the project \code{config.yaml} file and would import the metacell datasets listed
-#' within it to MCView. The result would be a directory for each dataset under \code{project/data} which
+#' within it to MCView. The result would be a directory for each dataset under \code{project/cache} which
 #' would contain objects used by MCView shiny app.
 #'
 #'
