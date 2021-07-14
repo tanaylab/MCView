@@ -1,19 +1,19 @@
-serialize_shiny_data <- function(object, name, dataset, data_dir, df2mat = FALSE, preset = "fast", verbose = getOption("MCView.verbose"), ...) {
+serialize_shiny_data <- function(object, name, dataset, cache_dir, df2mat = FALSE, preset = "fast", verbose = getOption("MCView.verbose"), ...) {
     if (df2mat) {
         object <- as.data.frame(object) %>% rownames_to_column("__rowname__")
     }
 
-    qs::qsave(object, fs::path(data_dir, dataset, glue("{name}.qs")), preset = preset, ...)
+    qs::qsave(object, fs::path(cache_dir, dataset, glue("{name}.qs")), preset = preset, ...)
 
     if (!is.null(verbose) && verbose) {
         cli_alert_info(name)
     }
 }
 
-load_shiny_data <- function(name, dataset, data_dir) {
-    data_dir <- fs::path(data_dir, dataset)
+load_shiny_data <- function(name, dataset, cache_dir) {
+    cache_dir <- fs::path(cache_dir, dataset)
 
-    object <- qs::qread(fs::path(data_dir, glue("{name}.qs")))
+    object <- qs::qread(fs::path(cache_dir, glue("{name}.qs")))
     if (is.data.frame(object) && rlang::has_name(object, "__rowname__")) {
         object <- object %>%
             remove_rownames() %>%
@@ -23,14 +23,14 @@ load_shiny_data <- function(name, dataset, data_dir) {
     return(object)
 }
 
-load_all_mc_data <- function(dataset, data_dir) {
-    files <- list.files(fs::path(data_dir, dataset), pattern = "*.qs")
+load_all_mc_data <- function(dataset, cache_dir) {
+    files <- list.files(fs::path(cache_dir, dataset), pattern = "*.qs")
 
     mc_data[[dataset]] <<- list()
 
     for (fn in files) {
         var_name <- basename(fn) %>% sub("\\.qs$", "", .)
-        obj <- load_shiny_data(var_name, dataset, data_dir)
+        obj <- load_shiny_data(var_name, dataset, cache_dir)
 
         mc_data[[dataset]][[var_name]] <<- obj
     }
@@ -39,19 +39,19 @@ load_all_mc_data <- function(dataset, data_dir) {
     mc_data[[dataset]]$top_cor_genes <- list()
 }
 
-load_all_data <- function(data_dir) {
-    metacells_data_dirs <- list.files(data_dir, full.names = FALSE)
+load_all_data <- function(cache_dir) {
+    metacells_cache_dirs <- list.files(cache_dir, full.names = FALSE)
     metacells <- names(config$metacells)
 
     for (mc in metacells) {
-        if (!(mc %in% metacells_data_dirs)) {
+        if (!(mc %in% metacells_cache_dirs)) {
             cli_abort("{mc} dataset doesn't have any data. Did you forget to import it?")
         }
     }
 
     mc_data <<- list()
 
-    purrr::walk(metacells, ~ load_all_mc_data(dataset = .x, data_dir = data_dir))
+    purrr::walk(metacells, ~ load_all_mc_data(dataset = .x, cache_dir = cache_dir))
 }
 
 get_cell_type_data <- function(dataset) {

@@ -24,7 +24,7 @@ run_app <- function(project,
                     launch.browser = FALSE,
                     ...) {
     init_config(project = project)
-    load_all_data(data_dir = project_data_dir(project))
+    load_all_data(cache_dir = project_cache_dir(project))
     init_defs()
 
     future::plan(future::multicore)

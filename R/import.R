@@ -28,8 +28,8 @@ import <- function(project) {
         cli_alert_info("Importing {dataset}")
         mc_config <- config$metacells[[dataset]]
 
-        data_dir <- project_data_dir(project)
-        init_metacell(mc_config, dataset, data_dir)
+        cache_dir <- project_cache_dir(project)
+        init_metacell(mc_config, dataset, cache_dir)
     }
 }
 
@@ -38,13 +38,13 @@ import <- function(project) {
 #'
 #' @param config list with config parameters
 #' @param dataset name of the dataset
-#' @param data_dir path of the data directory
+#' @param cache_dir path of the data directory
 #'
 #' @noRd
-init_metacell <- function(config, dataset, data_dir) {
-    fs::dir_create(data_dir, dataset, recurse = TRUE)
+init_metacell <- function(config, dataset, cache_dir) {
+    fs::dir_create(cache_dir, dataset, recurse = TRUE)
     if (!is.null(config$anndata)) {
-        return(init_metacell2(config, dataset, data_dir))
+        return(init_metacell2(config, dataset, cache_dir))
     }
 
     library(metacell)
@@ -59,10 +59,10 @@ init_metacell <- function(config, dataset, data_dir) {
     mat <- scdb_mat(config$matrix)
 
     mc_mat <- tgs_matrix_tapply(mat@mat[, names(mc@mc)], mc@mc, sum, na.rm = TRUE) %>% t()
-    serialize_shiny_data(mc_mat, "mc_mat", dataset = dataset, data_dir = data_dir)
+    serialize_shiny_data(mc_mat, "mc_mat", dataset = dataset, cache_dir = cache_dir)
 
     mc_sum <- colSums(mc_mat)
-    serialize_shiny_data(mc_sum, "mc_sum", dataset = dataset, data_dir = data_dir)
+    serialize_shiny_data(mc_sum, "mc_sum", dataset = dataset, cache_dir = cache_dir)
 
     mc2d <- scdb_mc2d(config$mc2d)
 
@@ -83,7 +83,7 @@ init_metacell <- function(config, dataset, data_dir) {
         mc_x = mc2d@mc_x,
         mc_y = mc2d@mc_y
     )
-    serialize_shiny_data(mc2d_list, "mc2d", dataset = dataset, data_dir = data_dir)
+    serialize_shiny_data(mc2d_list, "mc2d", dataset = dataset, cache_dir = cache_dir)
 
 
     mc_genes_top2 <- apply(mc@mc_fp, 2, function(fp) {
@@ -128,27 +128,27 @@ init_metacell <- function(config, dataset, data_dir) {
     cell_type_annot <- cell_type_annot %>%
         arrange(as.numeric(order)) %>%
         mutate(cell_type = factor(cell_type), cell_type = forcats::fct_inorder(cell_type))
-    serialize_shiny_data(cell_type_annot, "cell_type_annot", dataset = dataset, data_dir = data_dir)
+    serialize_shiny_data(cell_type_annot, "cell_type_annot", dataset = dataset, cache_dir = cache_dir)
 
     mc_annot$top1_lfp <- purrr::map2_dbl(mc_annot$metacell, mc_annot$top1_gene, ~ log2(mc_fp[.y, .x]))
     mc_annot$top2_lfp <- purrr::map2_dbl(mc_annot$metacell, mc_annot$top2_gene, ~ log2(mc_fp[.y, .x]))
-    serialize_shiny_data(mc_annot, "mc_annot", dataset = dataset, data_dir = data_dir)
+    serialize_shiny_data(mc_annot, "mc_annot", dataset = dataset, cache_dir = cache_dir)
 
     # Top 30 correlated and anti-correlated genes for each gene
     gg_mc_top_cor <- calc_gg_mc_top_cor(mc@e_gc, k = 30)
 
-    serialize_shiny_data(gg_mc_top_cor, "gg_mc_top_cor", dataset = dataset, data_dir = data_dir)
+    serialize_shiny_data(gg_mc_top_cor, "gg_mc_top_cor", dataset = dataset, cache_dir = cache_dir)
 
     if (!is.null(config$time_bin_field)) {
         mc_ag <- table(mc@mc, mat@cell_metadata[names(mc@mc), config$time_bin_field])
         mc_ag_n <- t(t(mc_ag) / colSums(mc_ag))
-        serialize_shiny_data(mc_ag, "mc_ag", dataset = dataset, data_dir = data_dir)
-        serialize_shiny_data(mc_ag_n, "mc_ag_n", dataset = dataset, data_dir = data_dir)
+        serialize_shiny_data(mc_ag, "mc_ag", dataset = dataset, cache_dir = cache_dir)
+        serialize_shiny_data(mc_ag_n, "mc_ag_n", dataset = dataset, cache_dir = cache_dir)
     }
 
     if (!is.null(config$time_annot) && !is.null(config$time_bin_field)) {
         time_annot <- fread(config$time_annot$fn) %>% as_tibble()
-        serialize_shiny_data(time_annot, "time_annot", dataset = dataset, data_dir = data_dir)
+        serialize_shiny_data(time_annot, "time_annot", dataset = dataset, cache_dir = cache_dir)
 
         cell_md <- mat@cell_metadata[names(mc@mc), ] %>%
             rownames_to_column("cell_id") %>%
@@ -184,7 +184,7 @@ init_metacell <- function(config, dataset, data_dir) {
             as.data.frame() %>%
             column_to_rownames("cell_type") %>%
             as.matrix()
-        serialize_shiny_data(type_ag, "type_ag", dataset = dataset, df2mat = TRUE, data_dir = data_dir)
+        serialize_shiny_data(type_ag, "type_ag", dataset = dataset, df2mat = TRUE, cache_dir = cache_dir)
 
         mc_ag <- cell_md %>%
             count(metacell, time_bin) %>%
@@ -193,12 +193,12 @@ init_metacell <- function(config, dataset, data_dir) {
             as.data.frame() %>%
             column_to_rownames("metacell") %>%
             as.matrix()
-        serialize_shiny_data(mc_ag, "mc_ag", dataset = dataset, df2mat = TRUE, data_dir = data_dir)
+        serialize_shiny_data(mc_ag, "mc_ag", dataset = dataset, df2mat = TRUE, cache_dir = cache_dir)
     }
 
     if (!is.null(config$network)) {
         mc_network <- scdb_mctnetwork(config$network)
-        serialize_shiny_data(mc_network@network, "mc_network", dataset = dataset, data_dir = data_dir)
+        serialize_shiny_data(mc_network@network, "mc_network", dataset = dataset, cache_dir = cache_dir)
 
         # calculate flows of every metacell
         metacells <- as.character(sort(as.numeric(unique(mc@mc))))
@@ -209,7 +209,7 @@ init_metacell <- function(config, dataset, data_dir) {
             mct_propagate_flow_through_metacell(mct = mc_network, m = .x)
         })
         names(mct_probs_trans) <- metacells
-        serialize_shiny_data(mct_probs_trans, "mct_probs_trans", dataset = dataset, data_dir = data_dir)
+        serialize_shiny_data(mct_probs_trans, "mct_probs_trans", dataset = dataset, cache_dir = cache_dir)
 
         # calculate order of metacells in the flow chart
         # this order is static and will always be the same
@@ -217,12 +217,12 @@ init_metacell <- function(config, dataset, data_dir) {
         mc_rank <- mctnetwork_mc_rank_from_color_ord(config$network, mc_annot$mc_col, cell_type_annot$color)
         mc_rank["-2"] <- 0
         mc_rank["-1"] <- length(mc_rank) / 2
-        serialize_shiny_data(mc_rank, "mc_rank", dataset = dataset, data_dir = data_dir)
+        serialize_shiny_data(mc_rank, "mc_rank", dataset = dataset, cache_dir = cache_dir)
 
 
 
         type_flow <- mctnetwork_get_type_flows(mc_network, 1, ncol(type_ag))
-        serialize_shiny_data(type_flow, "type_flow", dataset = dataset, data_dir = data_dir)
+        serialize_shiny_data(type_flow, "type_flow", dataset = dataset, cache_dir = cache_dir)
     }
 }
 
@@ -231,18 +231,18 @@ init_metacell <- function(config, dataset, data_dir) {
 #'
 #' @param config list with config parameters
 #' @param dataset name of the dataset
-#' @param data_dir path of the data directory
+#' @param cache_dir path of the data directory
 #'
 #' @noRd
-init_metacell2 <- function(config, dataset, data_dir) {
+init_metacell2 <- function(config, dataset, cache_dir) {
     library(anndata)
     adata <- anndata::read_h5ad(config$anndata)
 
     mc_mat <- t(adata$X)
-    serialize_shiny_data(mc_mat, "mc_mat", dataset = dataset, data_dir = data_dir)
+    serialize_shiny_data(mc_mat, "mc_mat", dataset = dataset, cache_dir = cache_dir)
 
     mc_sum <- colSums(mc_mat)
-    serialize_shiny_data(mc_sum, "mc_sum", dataset = dataset, data_dir = data_dir)
+    serialize_shiny_data(mc_sum, "mc_sum", dataset = dataset, cache_dir = cache_dir)
 
     mc_egc <- t(t(mc_mat) / mc_sum)
 
@@ -260,7 +260,7 @@ init_metacell2 <- function(config, dataset, data_dir) {
         mc_x = adata$obs %>% select(umap_x) %>% tibble::rownames_to_column("mc") %>% tibble::deframe(),
         mc_y = adata$obs %>% select(umap_y) %>% tibble::rownames_to_column("mc") %>% tibble::deframe()
     )
-    serialize_shiny_data(mc2d_list, "mc2d", dataset = dataset, data_dir = data_dir)
+    serialize_shiny_data(mc2d_list, "mc2d", dataset = dataset, cache_dir = cache_dir)
 
     mc_genes_top2 <- apply(mc_fp, 2, function(fp) {
         top_ind <- order(-fp)[1:2]
@@ -309,7 +309,7 @@ init_metacell2 <- function(config, dataset, data_dir) {
     cell_type_annot <- cell_type_annot %>%
         arrange(as.numeric(order)) %>%
         mutate(cell_type = factor(cell_type), cell_type = forcats::fct_inorder(cell_type))
-    serialize_shiny_data(cell_type_annot, "cell_type_annot", dataset = dataset, data_dir = data_dir)
+    serialize_shiny_data(cell_type_annot, "cell_type_annot", dataset = dataset, cache_dir = cache_dir)
 
     mc_annot <- mc_annot %>%
         arrange(as.numeric(metacell)) %>%
@@ -327,13 +327,13 @@ init_metacell2 <- function(config, dataset, data_dir) {
     mc_annot$top1_lfp <- purrr::map2_dbl(mc_annot$metacell, mc_annot$top1_gene, ~ log2(mc_fp[.y, .x]))
     mc_annot$top2_lfp <- purrr::map2_dbl(mc_annot$metacell, mc_annot$top2_gene, ~ log2(mc_fp[.y, .x]))
 
-    serialize_shiny_data(mc_annot, "mc_annot", dataset = dataset, data_dir = data_dir)
+    serialize_shiny_data(mc_annot, "mc_annot", dataset = dataset, cache_dir = cache_dir)
 
 
     cli_alert_info("Calculating top 30 correlated and anti-correlated genes for each gene")
     gg_mc_top_cor <- calc_gg_mc_top_cor(mc_egc, k = 30)
 
-    serialize_shiny_data(gg_mc_top_cor, "gg_mc_top_cor", dataset = dataset, data_dir = data_dir)
+    serialize_shiny_data(gg_mc_top_cor, "gg_mc_top_cor", dataset = dataset, cache_dir = cache_dir)
 }
 
 parse_cell_type_annot <- function(config) {

@@ -18,8 +18,8 @@ project_about_file <- function(path) {
     return(fn)
 }
 
-project_data_dir <- function(path) {
-    fs::path(path, "data")
+project_cache_dir <- function(path) {
+    fs::path(path, "cache")
 }
 
 verify_project_dir <- function(path) {
@@ -41,7 +41,7 @@ create_project_dirs <- function(project_dir, project) {
     fs::dir_create(project_dir)
     cli_alert_info("creating {project_dir}")
 
-    fs::dir_create(project_dir, "data")
+    fs::dir_create(project_cache_dir(project_dir))
 
     defaults_dir <- app_sys("default-config")
     fs::dir_copy(path = defaults_dir, new_path = fs::path(project_dir, "config"), overwrite = FALSE)
