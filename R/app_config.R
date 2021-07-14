@@ -4,7 +4,6 @@ verify_config_file <- function(config) {
         "title",
         "tabs",
         "help",
-        "metacells",
         "selected_mc1",
         "selected_mc2"
     )
@@ -12,18 +11,6 @@ verify_config_file <- function(config) {
     for (field in required_fields) {
         if (!(field %in% names(config))) {
             cli_abort("The field {field} does not exist in the config file.")
-        }
-    }
-
-    if (length(config$metacells) == 0) {
-        cli_abort("No datasets where found in 'metacells' field in the config file.")
-    }
-
-    for (dataset in names(config$metacells)) {
-        has_anndata <- "anndata" %in% names(config$metacells[[dataset]])
-        has_scdb <- "scdb" %in% names(config$metacells[[dataset]])
-        if (!has_anndata && !has_scdb) {
-            cli_abort("Dataset {dataset} needs to have 'anndata' field (for metacell2 data) or 'scdb' field (for metacell1 data).")
         }
     }
 
@@ -43,6 +30,8 @@ init_config <- function(project) {
 
     config <<- yaml::read_yaml(config_file)
     help_config <<- yaml::read_yaml(help_file)
+
+    cache_dir <<- project_cache_dir(project)
 }
 
 init_defs <- function() {

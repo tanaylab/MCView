@@ -6,11 +6,11 @@
 #'
 #'
 #' @noRd
-plot_gg_over_mc <- function(dataset, g1, g2, metacell_type= get_mc_data(dataset, "metacell_types"), cell_type_color= get_mc_data(dataset, "cell_type_colors"), plot_text = TRUE) {
+plot_gg_over_mc <- function(dataset, g1, g2, metacell_types = get_mc_data(dataset, "metacell_types"), cell_type_colors = get_mc_data(dataset, "cell_type_colors"), plot_text = TRUE) {
     egc_g1 <- get_gene_egc(g1, dataset) + egc_epsilon
     egc_g2 <- get_gene_egc(g2, dataset) + egc_epsilon
 
-    df <- metacell_type%>%
+    df <- metacell_types %>%
         mutate(
             !!g1 := egc_g1,
             !!g2 := egc_g2
@@ -74,10 +74,10 @@ plot_gg_over_mc <- function(dataset, g1, g2, metacell_type= get_mc_data(dataset,
 #' @param gene name of the gene
 #'
 #' @noRd
-plot_gene_time_over_mc <- function(dataset, gene, metacell_type= get_mc_data(dataset, "metacell_types"), cell_type_color= get_mc_data(dataset, "cell_type_colors")) {
+plot_gene_time_over_mc <- function(dataset, gene, metacell_types = get_mc_data(dataset, "metacell_types"), cell_type_colors = get_mc_data(dataset, "cell_type_colors")) {
     egc_gene <- get_gene_egc(gene, dataset) + egc_epsilon
 
-    df <- metacell_type%>%
+    df <- metacell_types %>%
         mutate(
             !!gene := egc_gene,
             `Top genes` = glue("{top1_gene} ({round(top1_lfp, digits=2)}), {top2_gene} ({round(top2_lfp, digits=2)})")

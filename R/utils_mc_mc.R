@@ -1,6 +1,6 @@
 metacell_from_coords_proj <- function(dataset, x, y) {
     mc2d <- get_mc_data(dataset, "mc2d")
-    metacell_type<- get_mc_data(dataset, "metacell_types")
+    metacell_types <- get_mc_data(dataset, "metacell_types")
 
     df <- mc2d_to_df(mc2d) %>% left_join(metacell_types, by = "metacell")
 

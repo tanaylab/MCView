@@ -3,7 +3,7 @@ plot_propagation_net_metacell <- function(dataset,
                                           edge_w_scale = 5e-4,
                                           fr_scale = 2,
                                           max_lwd = 10,
-                                          metacell_type= get_mc_data(dataset, "metacell_types")) {
+                                          metacell_types = get_mc_data(dataset, "metacell_types")) {
     metacell <- as.character(metacell)
 
     mct_probs_trans <- get_mc_data(dataset, "mct_probs_trans")
@@ -43,8 +43,8 @@ plot_propagation_net_metacell <- function(dataset,
         as_tibble()
 
     nn <- nn %>%
-        left_join(metacell_type%>% select(mc1 = metacell, col1 = mc_col, cell_type1 = cell_type), by = c("mc1")) %>%
-        left_join(metacell_type%>% select(mc2 = metacell, col2 = mc_col, cell_type2 = cell_type), by = c("mc2"))
+        left_join(metacell_types %>% select(mc1 = metacell, col1 = mc_col, cell_type1 = cell_type), by = c("mc1")) %>%
+        left_join(metacell_types %>% select(mc2 = metacell, col2 = mc_col, cell_type2 = cell_type), by = c("mc2"))
 
     nn <- nn %>%
         mutate(edge_lwd = pmin(flow / edge_w_scale, max_lwd)) %>%

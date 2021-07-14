@@ -1,4 +1,4 @@
-sanitize_metacell_type<- function(metacell_types, cell_type_colors, dataset) {
+sanitize_metacell_types <- function(metacell_types, cell_type_colors, dataset) {
     # Look for cell_type_ids that are missing
     if (!all(metacell_types$cell_type_id %in% cell_type_colors$cell_type_id)) {
         bad_inds <- !is.na(metacell_types$cell_type_id) & !(metacell_types$cell_type_id %in% cell_type_colors$cell_type_id)
@@ -11,9 +11,9 @@ sanitize_metacell_type<- function(metacell_types, cell_type_colors, dataset) {
     }
 
     # Look for cell_type_ids with the wrong name
-    colliding_cell_types <- cell_type_color%>%
+    colliding_cell_types <- cell_type_colors %>%
         distinct(cell_type_id, cell_type) %>%
-        left_join(metacell_type%>%
+        left_join(metacell_types %>%
             select(cell_type_id, new_cell_type = cell_type) %>%
             distinct(cell_type_id, new_cell_type),
         by = "cell_type_id"
@@ -25,9 +25,9 @@ sanitize_metacell_type<- function(metacell_types, cell_type_colors, dataset) {
         showNotification(glue("The names of the following cell type ids was changed to the one already loaded in cell type annotation: {cell_types_str}"), type = "warning", duration = 10)
     }
 
-    metacell_type<- metacell_type%>%
+    metacell_types <- metacell_types %>%
         select(-cell_type) %>%
-        left_join(cell_type_color%>%
+        left_join(cell_type_colors %>%
             distinct(cell_type_id, cell_type), by = "cell_type_id")
 
     return(metacell_types)

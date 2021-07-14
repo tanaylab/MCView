@@ -59,7 +59,7 @@ create_project_dirs <- function(project_dir, project) {
 #' @param project_dir directory of the project. Would be created if not existing. If \code{NULL} - the project would be created under current directory.
 #'
 #' @examples
-#'\dontrun{
+#' \dontrun{
 #' dir.create("raw")
 #' download.file("http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz", "raw/#' PBMC_processed.tar.gz")
 #' untar("raw/PBMC_processed.tar.gz", exdir = "raw")
@@ -71,8 +71,10 @@ create_project <- function(project, project_dir = NULL) {
     project_dir <- create_project_dirs(project_dir, project)
     project_dir <- fs::path(project_dir, "config")
 
-    utils::file.edit(fs::path(project_dir, "config.yaml"))
-    cli_alert_info("please edit {fs::path(project_dir, 'config.yaml')}")
+    if (rlang::is_interactive()) {
+        utils::file.edit(fs::path(project_dir, "config.yaml"))
+    }
+    cli_alert("please edit {.file {fs::path(project_dir, 'config.yaml')}}")
 }
 
 
@@ -117,7 +119,7 @@ set_default_project <- function(project) {
 #' @param path path in which to create the bundle.
 #'
 #' @examples
-#'\dontrun{
+#' \dontrun{
 #' MCView::create_bundle(project = "PBMC", path = getwd(), name = "PBMC")
 #' }
 #'

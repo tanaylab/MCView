@@ -1,7 +1,7 @@
-check_metacell_type<- function(metacell_types) {
+check_metacell_types <- function(metacell_types) {
     return(TRUE)
 }
 
-check_cell_type_color<- function(cell_type_colors) {
+check_cell_type_colors <- function(cell_type_colors) {
     return(TRUE)
 }

@@ -153,7 +153,7 @@ mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, 
         req(values$gene1)
         req(values$gene2)
 
-        p_gg <- plotly::ggplotly(plot_gg_over_mc(dataset(), values$gene1, values$gene2, metacell_type= metacell_types(), cell_type_color= cell_type_colors(), plot_text = FALSE), tooltip = "tooltip_text", source = "gene_gene_plot") %>%
+        p_gg <- plotly::ggplotly(plot_gg_over_mc(dataset(), values$gene1, values$gene2, metacell_types = metacell_types(), cell_type_colors = cell_type_colors(), plot_text = FALSE), tooltip = "tooltip_text", source = "gene_gene_plot") %>%
             sanitize_for_WebGL() %>%
             plotly::toWebGL() %>%
             sanitize_plotly_buttons() %>%
@@ -188,7 +188,7 @@ mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, 
         req(values$gene1)
         req(has_time(dataset()))
 
-        plotly::ggplotly(plot_gene_time_over_mc(dataset(), values$gene1, metacell_type= metacell_types(), cell_type_color= cell_type_colors()), source = "gene_time_mc_plot1", tooltip = "tooltip_text") %>%
+        plotly::ggplotly(plot_gene_time_over_mc(dataset(), values$gene1, metacell_types = metacell_types(), cell_type_colors = cell_type_colors()), source = "gene_time_mc_plot1", tooltip = "tooltip_text") %>%
             plotly::hide_legend() %>%
             sanitize_plotly_buttons()
     })
@@ -197,7 +197,7 @@ mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, 
         req(values$gene2)
         req(has_time(dataset()))
 
-        plotly::ggplotly(plot_gene_time_over_mc(dataset(), values$gene2, metacell_type= metacell_types(), cell_type_color= cell_type_colors()), source = "gene_time_mc_plot2", tooltip = "tooltip_text") %>%
+        plotly::ggplotly(plot_gene_time_over_mc(dataset(), values$gene2, metacell_types = metacell_types(), cell_type_colors = cell_type_colors()), source = "gene_time_mc_plot2", tooltip = "tooltip_text") %>%
             plotly::hide_legend() %>%
             sanitize_plotly_buttons()
     })
@@ -260,14 +260,14 @@ mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, 
             gene <- NULL
         }
 
-        cell_type_color<- get_mc_data(dataset(), "cell_type_colors")
+        cell_type_colors <- get_mc_data(dataset(), "cell_type_colors")
 
         color_order <- cell_type_colors$color
         if (input$vein_gene_foc_type == "All") {
             foc_type <- NULL
             vein_rm_cell_types <- get_mc_config(dataset(), "vein_rm_cell_types")
             if (!is.null(vein_rm_cell_types)) {
-                color_order <- cell_type_color%>%
+                color_order <- cell_type_colors %>%
                     filter(!(cell_type %in% vein_rm_cell_types)) %>%
                     pull(color)
             }
@@ -275,7 +275,7 @@ mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, 
             foc_type <- input$vein_gene_foc_type
         }
 
-        plot_vein(dataset(), gene = gene, foc_type = foc_type, color_order = color_order, metacell_type= metacell_types())
+        plot_vein(dataset(), gene = gene, foc_type = foc_type, color_order = color_order, metacell_types = metacell_types())
     })
 
     # Output priorities

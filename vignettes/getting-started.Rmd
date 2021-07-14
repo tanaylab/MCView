@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 
 ## Setup
 
-We would start by downloading a PBMC dataset that was pre-processed using Metacells python package. 
+We would start by downloading a PBMC dataset that was pre-processed using the `metacells` python package. 
 
 ```{r setup}
 library(MCView)
@@ -38,45 +38,38 @@ The first step in running __MCView__ is generating a project directory structure
 MCView::create_project("PBMC")
 ```
 
-A text editor would be opened with `PBMC/config/config.yaml` file. 
-
-The most important field we need to fill is the `anndata` field which should point to the h5ad file we downloaded. 
-
-We also fill the `cell_type_colors` field with the cluster colors file, but this is optional. 
-
-Note that we also changed the name of the dataset to "PBMC", but this wasn't really necessary since we only have a single dataset in the project. 
-
-See the [config](https://tanaylab.github.io/MCview/articles/config.html) vignette for a full description of the config parameters. 
+A text editor would be opened with `PBMC/config/config.yaml` file:
 
 ```yaml
 title: MCView
 tabs: ["About", "Manifold", "Genes", "Metacells", "Annotate"] # which tabs to show
 help: false # set to true to show introjs help on start
-metacells: 
-  PBMC:
-    anndata: raw/metacells.h5ad # should be absolute path
-    cell_type_field: cluster # name of the field in the anndata object$obs which contains a cell type (optional)
-    # metacell_types: # uncomment if you have a cell type annotation for each metacell
-    #   fn: raw/metacell-cell-types.csv # file with with cell type assignment for each metacell
-    #   metacell: mc # name of the field which contains the metacell id
-    #   cell_type: cluster # name of the field which contains the cell type    
-    cell_type_colors: # uncomment if you have a color annotation for each cell type
-      fn:  raw/cluster-colors.csv # file with color for each cell type (optional)
-      cell_type: cluster # name of the field which contains the cell type
-      color: color # name of the field which contains the color
 # selected_gene1: Foxc1 # Default selected gene1
 # selected_gene2: Twist1 # Default selected gene2
 selected_mc1: 1 # Default selected metacell1 
 selected_mc2: 2 # Default selected metacell2
 ```
 
+We can edit some of the parameters if we want, see the [config](https://tanaylab.github.io/MCview/articles/config.html) vignette for a full description of the config parameters. 
+
+
 ## Import 
 
-Next, we would import the project to __MCView__. This would pre-process the metacells dataset in order to view it in the shiny app: 
+Next, we would import the PBMC dataset to the project we created. A project can contain multiple dataset, and switching between them can be done from the right sidebar. 
+
+This would pre-process the metacell dataset in order to view it in the shiny app: 
 
 ```{r, eval=FALSE}
-MCView::import("PBMC")
+MCView::import_dataset(project = "PBMC", 
+               dataset = "PBMC160k", 
+               anndata_file = "raw/metacells.h5ad", 
+               cell_type_field =  "cluster",
+               cell_type_colors_file = "raw/cluster-colors.csv")
 ```
+
+The most important field is the `anndata` field which points to the h5ad file we downloaded. 
+
+You can see that we also specified a field in the `h5ad` object that has pre-computed cluster assignments per metacell, and the path of a file which contains color assignment per cluster, but these where optional, as __MCView__ can generate initial clustering and coloring automatically. 
 
 Note that the import part might take a few minutes, depending (mostly) on the number of metacells. 
 
@@ -88,6 +81,26 @@ MCView::run_app(project = "PBMC", port = 5555)
 
 You can now go to [https://localhost:5555](https://localhost:5555) to view the app. 
 
+## Update annotations
+
+After working a bit on the initial metacell model, we would usually want to update the default dataset annotations with the ones we created using __MCView__. This can be done by:
+
+1. Pressing the "export" button in the upper left of "Annotate" screen and saving the file. 
+2. Running: 
+
+```{r, eval=FALSE}
+MCView::update_metacell_types("PBMC", "PBMC160k", "/path/to/metacell_types_file")
+```
+
+Where "/path/to/metacell_types_file" is the path of the exported file. 
+
+The same can be done for cell type colors, which has a different export button: 
+
+```{r, eval=FALSE}
+MCView::update_cell_type_colors("PBMC", "PBMC160k", "/path/to/cell_type_colors_file")
+```
+
+You can now rerun the app and the types/colors would be updated. 
 ## Deploy
 
 Create a deployment ready bundle by running: 
@@ -97,3 +110,4 @@ MCView::create_bundle(project = "PBMC", path = getwd(), name = "PBMC")
 ```
 
 You can then upload the bundle to shinyapps.io, shiny-server or any other hosting service. 
+

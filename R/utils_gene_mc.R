@@ -1,9 +1,9 @@
-get_cell_type_colors <- function(dataset, cell_type_color= NULL, na_color = "gray") {
+get_cell_type_colors <- function(dataset, cell_type_colors = NULL, na_color = "gray") {
     if (is.null(cell_type_colors)) {
-        cell_type_color<- get_mc_data(dataset, "cell_type_colors")
+        cell_type_colors <- get_mc_data(dataset, "cell_type_colors")
     }
 
-    res <- cell_type_color%>%
+    res <- cell_type_colors %>%
         distinct(cell_type, color) %>%
         bind_rows(tibble(cell_type = "(Missing)", color = na_color)) %>%
         deframe()

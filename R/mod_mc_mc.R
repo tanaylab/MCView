@@ -156,7 +156,7 @@ mod_mc_mc_server <- function(input, output, session, dataset, metacell_types, ce
         req(input$point_size)
         req(input$min_edge_size)
 
-        p_proj <- mc2d_plot_ggp(dataset(), metacell_type= metacell_types(), cell_type_color= cell_type_colors(), point_size = input$point_size, min_d = input$min_edge_size)
+        p_proj <- mc2d_plot_ggp(dataset(), metacell_types = metacell_types(), cell_type_colors = cell_type_colors(), point_size = input$point_size, min_d = input$min_edge_size)
 
         if (has_time(dataset())) {
             subfig <- plotly::subplot(
@@ -256,7 +256,7 @@ mod_mc_mc_server <- function(input, output, session, dataset, metacell_types, ce
         }
 
         mc_data <- metacell_types() %>% filter(metacell == mc_to_plot)
-        plot_propagation_net_metacell(dataset(), mc_to_plot, metacell_type= metacell_types()) +
+        plot_propagation_net_metacell(dataset(), mc_to_plot, metacell_types = metacell_types()) +
             ggtitle(glue("metacell #{mc_to_plot} ({mc_data$cell_type[1]})")) +
             theme(plot.title = element_text(colour = color))
     })

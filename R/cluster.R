@@ -16,7 +16,8 @@ cluster_egc <- function(egc, k = NULL, filter_genes = FALSE, min_max_thresh = 3,
         k <- round(min(64, ncol(legc) / 30))
     }
 
-    cli_alert_info("clustering: k = {k}")
+    cli_alert_info("clustering k = {.val {k}}")
+    cli_alert_info("number of features = {.val {nrow(egc)}}")
 
     km <- tglkmeans::TGL_kmeans(t(m), k = k, id_column = FALSE, verbose = verbose)
 

@@ -2,7 +2,7 @@
 
 export(create_bundle)
 export(create_project)
-export(import)
+export(import_dataset)
 export(run_app)
 export(set_default_project)
 import(cli)

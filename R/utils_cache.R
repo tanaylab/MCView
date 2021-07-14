@@ -1,19 +1,33 @@
-serialize_shiny_data <- function(object, name, dataset, cache_dir, df2mat = FALSE, preset = "fast", verbose = getOption("MCView.verbose"), ...) {
+serialize_shiny_data <- function(object, name, dataset, cache_dir, df2mat = FALSE, preset = "fast", flat = FALSE, ...) {
+    dataset_dir <- fs::path(cache_dir, dataset)
+
+    if (!fs::dir_exists(dataset_dir)) {
+        fs::dir_create(dataset_dir)
+    }
+
     if (df2mat) {
         object <- as.data.frame(object) %>% rownames_to_column("__rowname__")
     }
 
-    qs::qsave(object, fs::path(cache_dir, dataset, glue("{name}.qs")), preset = preset, ...)
-
-    if (!is.null(verbose) && verbose) {
-        cli_alert_info(name)
+    if (flat) {
+        fwrite(object, fs::path(dataset_dir, glue("{name}.tsv")), sep = "\t")
+    } else {
+        qs::qsave(object, fs::path(dataset_dir, glue("{name}.qs")), preset = preset, ...)
     }
+
+    cli_alert_success_verbose("saved {.field {name}}")
 }
 
 load_shiny_data <- function(name, dataset, cache_dir) {
     cache_dir <- fs::path(cache_dir, dataset)
 
-    object <- qs::qread(fs::path(cache_dir, glue("{name}.qs")))
+    flat_file <- fs::path(cache_dir, glue("{name}.tsv"))
+    if (fs::file_exists(flat_file)) {
+        object <- fread(flat_file) %>% as_tibble()
+    } else {
+        object <- qs::qread(fs::path(cache_dir, glue("{name}.qs")))
+    }
+
     if (is.data.frame(object) && rlang::has_name(object, "__rowname__")) {
         object <- object %>%
             remove_rownames() %>%
@@ -24,12 +38,14 @@ load_shiny_data <- function(name, dataset, cache_dir) {
 }
 
 load_all_mc_data <- function(dataset, cache_dir) {
-    files <- list.files(fs::path(cache_dir, dataset), pattern = "*.qs")
+    files <- list.files(fs::path(cache_dir, dataset), pattern = "*\\.(qs|tsv)")
 
     mc_data[[dataset]] <<- list()
 
     for (fn in files) {
-        var_name <- basename(fn) %>% sub("\\.qs$", "", .)
+        var_name <- basename(fn) %>%
+            sub("\\.qs$", "", .) %>%
+            sub("\\.tsv$", "", .)
         obj <- load_shiny_data(var_name, dataset, cache_dir)
 
         mc_data[[dataset]][[var_name]] <<- obj
@@ -40,32 +56,29 @@ load_all_mc_data <- function(dataset, cache_dir) {
 }
 
 load_all_data <- function(cache_dir) {
-    metacells_cache_dirs <- list.files(cache_dir, full.names = FALSE)
-    metacells <- names(config$metacells)
-
-    for (mc in metacells) {
-        if (!(mc %in% metacells_cache_dirs)) {
-            cli_abort("{mc} dataset doesn't have any data. Did you forget to import it?")
-        }
-    }
+    datasets <- dataset_ls()
 
     mc_data <<- list()
 
-    purrr::walk(metacells, ~ load_all_mc_data(dataset = .x, cache_dir = cache_dir))
+    purrr::walk(datasets, ~ load_all_mc_data(dataset = .x, cache_dir = cache_dir))
 }
 
 get_cell_type_data <- function(dataset) {
-    cell_type_color<- mc_data[[dataset]][["cell_type_colors"]]
-    cell_type_color<- cell_type_color%>% mutate(cell_type_id = as.character(1:n()))
+    cell_type_colors <- mc_data[[dataset]][["cell_type_colors"]]
+    cell_type_colors <- cell_type_colors %>%
+        mutate(cell_type = as.character(cell_type)) %>%
+        mutate(cell_type_id = as.character(1:n()))
     return(cell_type_colors)
 }
 
 get_metacell_types_data <- function(dataset) {
-    metacell_type<- mc_data[[dataset]][["metacell_types"]]
+    metacell_types <- mc_data[[dataset]][["metacell_types"]]
     if (!is.factor(metacell_types$cell_type)) {
         metacell_types$cell_type <- factor(metacell_types$cell_type)
     }
-    metacell_type<- metacell_type%>% mutate(cell_type = as.character(forcats::fct_explicit_na(cell_type)))
+    metacell_types <- metacell_types %>%
+        mutate(cell_type = as.character(forcats::fct_explicit_na(cell_type))) %>%
+        mutate(metacell = as.character(metacell))
     return(metacell_types)
 }
 
@@ -87,11 +100,17 @@ get_mc_data <- function(dataset, var_name) {
 }
 
 get_mc_config <- function(dataset, var_name) {
+    if (is.null(config$metacells)) {
+        return(NULL)
+    }
+    if (is.null(config$metacells[[dataset]])) {
+        return(NULL)
+    }
     config$metacells[[dataset]][[var_name]]
 }
 
 dataset_ls <- function() {
-    names(config$metacells)
+    basename(fs::dir_ls(cache_dir, type = c("directory", "symlink")))
 }
 
 has_network <- function(dataset) {
