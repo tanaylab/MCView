@@ -32,23 +32,23 @@ See the [vignette](https://tanaylab.github.io/MCView/articles/getting-started.ht
 
 Tl;dr:
 
-1. initialize a new project: 
+#### Initialize a new project: 
 
 ```r
 MCView::create_project("PBMC")
 ```
 
-2. Edit `PBMC/config/config.yaml`. 
+#### Edit `PBMC/config/config.yaml`. 
 
 See the [config vignette](https://tanaylab.github.io/MCView/articles/config.html) for more details. 
 
-3. Import the project:
+#### Import the project:
 
 ```r
 MCView::import("PBMC")
 ```
 
-4. Run the app:
+#### Run the app:
 
 You can run the app from R using: 
 
