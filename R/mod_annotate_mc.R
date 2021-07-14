@@ -191,15 +191,15 @@ mod_annotate_mc_server <- function(input, output, session, dataset, mc_annot, ce
     server_gene_selectors(input, output, session, values, dataset, ns)
 
     observe({
-        initial_cell_type_annot <- get_mc_data(dataset(), "cell_type_annot")
-        initial_mc_annot <- get_mc_data(dataset(), "mc_annot")
+        initial_cell_type_color<- get_mc_data(dataset(), "cell_type_annot")
+        initial_metacell_type<- get_mc_data(dataset(), "mc_annot")
 
         # remove metacell color column if exists
         initial_mc_annot$mc_col <- NULL
 
         # add cell_type_id and cell type color from initial cell type annotation
-        initial_mc_annot <- initial_mc_annot %>%
-            left_join(initial_cell_type_annot %>% select(cell_type, cell_type_id, mc_col = color), by = "cell_type")
+        initial_metacell_type<- initial_metacell_type%>%
+            left_join(initial_cell_type_color%>% select(cell_type, cell_type_id, mc_col = color), by = "cell_type")
 
         mc_annot(initial_mc_annot)
         cell_type_annot(initial_cell_type_annot)
@@ -207,35 +207,35 @@ mod_annotate_mc_server <- function(input, output, session, dataset, mc_annot, ce
 
     observe({
         req(input$mc_annot_fn)
-        new_mc_annot <- tgutil::fread(input$mc_annot_fn$datapath, colClasses = c("cell_type_id" = "character", "cell_type" = "character", "metacell" = "character")) %>% as_tibble()
+        new_metacell_type<- tgutil::fread(input$mc_annot_fn$datapath, colClasses = c("cell_type_id" = "character", "cell_type" = "character", "metacell" = "character")) %>% as_tibble()
 
-        cur_mc_annot <- mc_annot()
-        new_mc_annot <- cur_mc_annot %>%
+        cur_metacell_type<- mc_annot()
+        new_metacell_type<- cur_metacell_type%>%
             select(-any_of(c("cell_type", "cell_type_id"))) %>%
-            left_join(new_mc_annot %>% select(metacell, cell_type, cell_type_id), by = "metacell") %>%
+            left_join(new_metacell_type%>% select(metacell, cell_type, cell_type_id), by = "metacell") %>%
             mutate(cell_type = as.character(forcats::fct_explicit_na(factor(cell_type))))
 
-        new_mc_annot <- sanitize_mc_annot(new_mc_annot, cell_type_annot(), dataset())
+        new_metacell_type<- sanitize_mc_annot(new_mc_annot, cell_type_annot(), dataset())
 
         mc_annot(new_mc_annot)
     })
 
     observe({
         req(input$cell_type_annot_fn)
-        new_cell_type_annot <- tgutil::fread(input$cell_type_annot_fn$datapath, colClasses = c("cell_type_id" = "character", "cell_type" = "character", "color" = "character")) %>% as_tibble()
+        new_cell_type_color<- tgutil::fread(input$cell_type_annot_fn$datapath, colClasses = c("cell_type_id" = "character", "cell_type" = "character", "color" = "character")) %>% as_tibble()
         if ("order" %in% colnames(new_cell_type_annot)) {
-            new_cell_type_annot <- new_cell_type_annot %>% arrange(order)
+            new_cell_type_color<- new_cell_type_color%>% arrange(order)
         }
         if (!rlang::has_name(new_cell_type_annot, "cell_type_id")) {
-            new_cell_type_annot <- new_cell_type_annot %>% mutate(cell_type_id = as.character(1:n()))
+            new_cell_type_color<- new_cell_type_color%>% mutate(cell_type_id = as.character(1:n()))
         }
 
         # MC annotations that are now invalid would get cell_type of NA.
-        cur_mc_annot <- mc_annot()
-        new_mc_annot <- cur_mc_annot %>%
+        cur_metacell_type<- mc_annot()
+        new_metacell_type<- cur_metacell_type%>%
             select(-cell_type, -mc_col) %>%
             left_join(
-                new_cell_type_annot %>% select(cell_type_id, cell_type, mc_col = color),
+                new_cell_type_color%>% select(cell_type_id, cell_type, mc_col = color),
                 by = "cell_type_id"
             )
 
@@ -270,7 +270,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, mc_annot, ce
         }
     )
 
-    selected_mc_annot <- reactiveVal(tibble(metacell = character(), cell_type_id = character(), cell_type = character()))
+    selected_metacell_type<- reactiveVal(tibble(metacell = character(), cell_type_id = character(), cell_type = character()))
     to_show <- reactiveVal()
 
     observeEvent(input$reset_mc_annot, {
@@ -323,13 +323,13 @@ mod_annotate_mc_server <- function(input, output, session, dataset, mc_annot, ce
     })
 
     observeEvent(input$update_annotation, {
-        new_mc_annot <- mc_annot()
+        new_metacell_type<- mc_annot()
         changed <- FALSE
 
         if (!input$show_all_annotation && !is.null(input$update_option) && input$update_option == "Change all") {
             req(input$selected_cell_type_update_all)
             metacells <- selected_mc_annot() %>% pull(metacell)
-            new_mc_annot <- new_mc_annot %>% mutate(
+            new_metacell_type<- new_metacell_type%>% mutate(
                 cell_type = ifelse(metacell %in% metacells, input$selected_cell_type_update_all, cell_type),
                 cell_type_id = ifelse(metacell %in% metacells, cell_type_to_cell_type_id(input$selected_cell_type_update_all, cell_type_annot()), cell_type_id)
             )
@@ -440,11 +440,11 @@ mod_annotate_mc_server <- function(input, output, session, dataset, mc_annot, ce
         #     distinct(cell_type, .keep_all=TRUE) %>%
         #     mutate(order = 1:n())
 
-        # change corresponding mc_annot entries
+        # change corresponding metacell_typeentries
         if (new_input$col == 1) {
             old_cell_type <- as.character(cell_type_annot()$cell_type[new_input$row])
             new_cell_type <- as.character(edited_data$cell_type[new_input$row])
-            new_mc_annot <- mc_annot() %>% mutate(cell_type = ifelse(cell_type == old_cell_type, new_cell_type, cell_type))
+            new_metacell_type<- mc_annot() %>% mutate(cell_type = ifelse(cell_type == old_cell_type, new_cell_type, cell_type))
             mc_annot(new_mc_annot)
         }
 
@@ -564,7 +564,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, mc_annot, ce
         req(mc_annot())
         req(dataset())
 
-        p_gg <- plotly::ggplotly(plot_gg_over_mc(dataset(), values$gene1, values$gene2, mc_annot = mc_annot(), cell_type_annot = cell_type_annot(), plot_text = FALSE), tooltip = "tooltip_text", source = "gene_gene_plot_annot") %>%
+        p_gg <- plotly::ggplotly(plot_gg_over_mc(dataset(), values$gene1, values$gene2, metacell_type= mc_annot(), cell_type_color= cell_type_annot(), plot_text = FALSE), tooltip = "tooltip_text", source = "gene_gene_plot_annot") %>%
             sanitize_for_WebGL() %>%
             plotly::toWebGL() %>%
             sanitize_plotly_buttons(buttons = c("hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines")) %>%
@@ -628,7 +628,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, mc_annot, ce
     output$plot_gene_age_mc1 <- plotly::renderPlotly({
         req(values$gene1)
 
-        plotly::ggplotly(plot_gene_time_over_mc(dataset(), values$gene1, mc_annot = mc_annot(), cell_type_annot = cell_type_annot()), source = "gene_time_mc_plot1_annot", tooltip = "tooltip_text") %>%
+        plotly::ggplotly(plot_gene_time_over_mc(dataset(), values$gene1, metacell_type= mc_annot(), cell_type_color= cell_type_annot()), source = "gene_time_mc_plot1_annot", tooltip = "tooltip_text") %>%
             plotly::hide_legend() %>%
             sanitize_plotly_buttons(buttons = c("hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines")) %>%
             plotly::layout(dragmode = "select")
@@ -637,7 +637,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, mc_annot, ce
     output$plot_gene_age_mc2 <- plotly::renderPlotly({
         req(values$gene2)
 
-        plotly::ggplotly(plot_gene_time_over_mc(dataset(), values$gene2, mc_annot = mc_annot(), cell_type_annot = cell_type_annot()), source = "gene_time_mc_plot2_annot", tooltip = "tooltip_text") %>%
+        plotly::ggplotly(plot_gene_time_over_mc(dataset(), values$gene2, metacell_type= mc_annot(), cell_type_color= cell_type_annot()), source = "gene_time_mc_plot2_annot", tooltip = "tooltip_text") %>%
             plotly::hide_legend() %>%
             sanitize_plotly_buttons(buttons = c("hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines")) %>%
             plotly::layout(dragmode = "select")
@@ -689,7 +689,7 @@ observe_mc_click_event <- function(source, input, cell_type_annot, mc_annot) {
         selected_metacell <- el$customdata
 
         if (input$show_all_annotation && input$selected_cell_type %in% cell_type_annot()$cell_type) {
-            new_mc_annot <- mc_annot() %>% mutate(cell_type = ifelse(metacell == selected_metacell, input$selected_cell_type, cell_type))
+            new_metacell_type<- mc_annot() %>% mutate(cell_type = ifelse(metacell == selected_metacell, input$selected_cell_type, cell_type))
             mc_annot(new_mc_annot)
             showNotification(glue("Added metacell #{selected_metacell} to {input$selected_cell_type}"))
         }

@@ -1,4 +1,4 @@
-sanitize_mc_annot <- function(mc_annot, cell_type_annot, dataset) {
+sanitize_metacell_type<- function(mc_annot, cell_type_annot, dataset) {
     # Look for cell_type_ids that are missing
     if (!all(mc_annot$cell_type_id %in% cell_type_annot$cell_type_id)) {
         bad_inds <- !is.na(mc_annot$cell_type_id) & !(mc_annot$cell_type_id %in% cell_type_annot$cell_type_id)
@@ -11,9 +11,9 @@ sanitize_mc_annot <- function(mc_annot, cell_type_annot, dataset) {
     }
 
     # Look for cell_type_ids with the wrong name
-    colliding_cell_types <- cell_type_annot %>%
+    colliding_cell_types <- cell_type_color%>%
         distinct(cell_type_id, cell_type) %>%
-        left_join(mc_annot %>%
+        left_join(metacell_type%>%
             select(cell_type_id, new_cell_type = cell_type) %>%
             distinct(cell_type_id, new_cell_type),
         by = "cell_type_id"
@@ -25,9 +25,9 @@ sanitize_mc_annot <- function(mc_annot, cell_type_annot, dataset) {
         showNotification(glue("The names of the following cell type ids was changed to the one already loaded in cell type annotation: {cell_types_str}"), type = "warning", duration = 10)
     }
 
-    mc_annot <- mc_annot %>%
+    metacell_type<- metacell_type%>%
         select(-cell_type) %>%
-        left_join(cell_type_annot %>%
+        left_join(cell_type_color%>%
             distinct(cell_type_id, cell_type), by = "cell_type_id")
 
     return(mc_annot)

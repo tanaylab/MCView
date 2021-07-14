@@ -1,6 +1,6 @@
 metacell_from_coords_proj <- function(dataset, x, y) {
     mc2d <- get_mc_data(dataset, "mc2d")
-    mc_annot <- get_mc_data(dataset, "mc_annot")
+    metacell_type<- get_mc_data(dataset, "mc_annot")
 
     df <- mc2d_to_df(mc2d) %>% left_join(mc_annot, by = "metacell")
 

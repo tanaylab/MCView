@@ -123,7 +123,7 @@ plot_vein <- function(dataset,
                       vein_lwd = 1,
                       color_order = NULL,
                       T_minflow_for_type = 0.005,
-                      mc_annot = get_mc_data(dataset, mc_annot),
+                      metacell_type= get_mc_data(dataset, mc_annot),
                       mc_color_key = get_mc_color_key(dataset)) {
     type_ag <- get_mc_data(dataset, "type_ag")
     type_flow <- get_mc_data(dataset, "type_flow")

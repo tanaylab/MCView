@@ -14,13 +14,13 @@ app_server <- function(input, output, session) {
     }
 
     # annotation reactives
-    mc_annot <- reactiveVal()
-    cell_type_annot <- reactiveVal()
+    metacell_type<- reactiveVal()
+    cell_type_color<- reactiveVal()
 
-    callModule(mod_manifold_server, "manifold_ui_1", dataset = dataset, mc_annot = mc_annot, cell_type_annot = cell_type_annot)
-    callModule(mod_gene_mc_server, "gene_mc_ui_1", dataset = dataset, mc_annot = mc_annot, cell_type_annot = cell_type_annot)
-    callModule(mod_mc_mc_server, "mc_mc_ui_1", dataset = dataset, mc_annot = mc_annot, cell_type_annot = cell_type_annot)
-    callModule(mod_annotate_mc_server, "annotate_ui_1", dataset = dataset, mc_annot = mc_annot, cell_type_annot = cell_type_annot)
+    callModule(mod_manifold_server, "manifold_ui_1", dataset = dataset, metacell_type= mc_annot, cell_type_color= cell_type_annot)
+    callModule(mod_gene_mc_server, "gene_mc_ui_1", dataset = dataset, metacell_type= mc_annot, cell_type_color= cell_type_annot)
+    callModule(mod_mc_mc_server, "mc_mc_ui_1", dataset = dataset, metacell_type= mc_annot, cell_type_color= cell_type_annot)
+    callModule(mod_annotate_mc_server, "annotate_ui_1", dataset = dataset, metacell_type= mc_annot, cell_type_color= cell_type_annot)
 
     show_help <- function(input, output, session) {
         if (input$tab_sidebar == "about") {

@@ -100,32 +100,32 @@ init_metacell <- function(config, dataset, cache_dir) {
         distinct(metacell, .keep_all = TRUE) %>%
         mutate(metacell = as.character(metacell))
 
-    mc_annot <- parse_mc_annot(config$mc_annot)
+    metacell_type<- parse_mc_annot(config$mc_annot)
 
-    mc_annot <- mc_annot %>%
+    metacell_type<- metacell_type%>%
         arrange(as.numeric(metacell)) %>%
         left_join(mc_genes_top2, by = "metacell")
 
-    # filter mc_annot to contain only metacells that are within mc_egc
-    mc_annot <- mc_annot %>%
+    # filter metacell_typeto contain only metacells that are within mc_egc
+    metacell_type<- metacell_type%>%
         as.data.frame() %>%
         column_to_rownames("metacell")
-    mc_annot <- mc_annot[colnames(mc_egc), ]
-    mc_annot <- mc_annot %>%
+    metacell_type<- mc_annot[colnames(mc_egc), ]
+    metacell_type<- metacell_type%>%
         rownames_to_column("metacell") %>%
         as_tibble()
 
     if (!is.null(config$cell_type_annot)) {
-        cell_type_annot <- parse_cell_type_annot(config$cell_type_annot)
+        cell_type_color<- parse_cell_type_annot(config$cell_type_annot)
     } else {
-        cell_type_annot <- mc_annot %>%
+        cell_type_color<- metacell_type%>%
             distinct(cell_type, mc_col) %>%
             rename(color = mc_col) %>%
             arrange(cell_type) %>%
             mutate(order = 1:n())
     }
 
-    cell_type_annot <- cell_type_annot %>%
+    cell_type_color<- cell_type_color%>%
         arrange(as.numeric(order)) %>%
         mutate(cell_type = factor(cell_type), cell_type = forcats::fct_inorder(cell_type))
     serialize_shiny_data(cell_type_annot, "cell_type_annot", dataset = dataset, cache_dir = cache_dir)
@@ -278,10 +278,10 @@ init_metacell2 <- function(config, dataset, cache_dir) {
 
 
     if (!is.null(config$mc_annot)) {
-        mc_annot <- parse_mc_annot(config$mc_annot)
+        metacell_type<- parse_mc_annot(config$mc_annot)
     } else {
         if (!is.null(config$cell_type_field)) {
-            mc_annot <- adata$obs %>%
+            metacell_type<- adata$obs %>%
                 select(cell_type = !!config$cell_type_field) %>%
                 rownames_to_column("metacell") %>%
                 as_tibble()
@@ -289,38 +289,38 @@ init_metacell2 <- function(config, dataset, cache_dir) {
             # we generate clustering as initial annotation
             feat_mat <- mc_egc[adata$var$top_feature_gene, ]
             km <- cluster_egc(feat_mat, k = config$cluster_k)
-            mc_annot <- km$clusters %>% 
+            metacell_type<- km$clusters %>% 
                 rename(cell_type = cluster) %>% 
                 mutate(cell_type = as.character(cell_type))
         }
     }
 
     if (!is.null(config$cell_type_annot)) {
-        cell_type_annot <- parse_cell_type_annot(config$cell_type_annot)
+        cell_type_color<- parse_cell_type_annot(config$cell_type_annot)
     } else {
         color_of_clusters <- chameleon::data_colors(t(mc_egc[adata$var$top_feature_gene, ]), groups = mc_annot$cell_type)
 
-        cell_type_annot <- enframe(color_of_clusters, name = "cell_type", value = "color") %>%
+        cell_type_color<- enframe(color_of_clusters, name = "cell_type", value = "color") %>%
             mutate(order = 1:n())
     }
 
-    mc_annot <- mc_annot %>% left_join(cell_type_annot %>% select(cell_type, mc_col = color), by = "cell_type")
+    metacell_type<- metacell_type%>% left_join(cell_type_color%>% select(cell_type, mc_col = color), by = "cell_type")
 
-    cell_type_annot <- cell_type_annot %>%
+    cell_type_color<- cell_type_color%>%
         arrange(as.numeric(order)) %>%
         mutate(cell_type = factor(cell_type), cell_type = forcats::fct_inorder(cell_type))
     serialize_shiny_data(cell_type_annot, "cell_type_annot", dataset = dataset, cache_dir = cache_dir)
 
-    mc_annot <- mc_annot %>%
+    metacell_type<- metacell_type%>%
         arrange(as.numeric(metacell)) %>%
         left_join(mc_genes_top2, by = "metacell")
 
-    # filter mc_annot to contain only metacells that are within mc_egc
-    mc_annot <- mc_annot %>%
+    # filter metacell_typeto contain only metacells that are within mc_egc
+    metacell_type<- metacell_type%>%
         as.data.frame() %>%
         column_to_rownames("metacell")
-    mc_annot <- mc_annot[colnames(mc_egc), ]
-    mc_annot <- mc_annot %>%
+    metacell_type<- mc_annot[colnames(mc_egc), ]
+    metacell_type<- metacell_type%>%
         rownames_to_column("metacell") %>%
         as_tibble()
 
@@ -336,36 +336,36 @@ init_metacell2 <- function(config, dataset, cache_dir) {
     serialize_shiny_data(gg_mc_top_cor, "gg_mc_top_cor", dataset = dataset, cache_dir = cache_dir)
 }
 
-parse_cell_type_annot <- function(config) {
+parse_cell_type_color<- function(config) {
     cell_type_annot_raw <- fread(config$fn) %>% as_tibble()
-    cell_type_annot <- tibble(
+    cell_type_color<- tibble(
         cell_type = as.character(cell_type_annot_raw[[config$cell_type]]),
         color = cell_type_annot_raw[[config$color]]
     )
     if (!is.null(config$order)) {
-        cell_type_annot <- cell_type_annot %>% mutate(order = cell_type_annot_raw[[config$order]])
+        cell_type_color<- cell_type_color%>% mutate(order = cell_type_annot_raw[[config$order]])
     } else {
-        cell_type_annot <- cell_type_annot %>% mutate(order = 1:n())
+        cell_type_color<- cell_type_color%>% mutate(order = 1:n())
     }
     return(cell_type_annot)
 }
 
 
-parse_mc_annot <- function(config) {
+parse_metacell_type<- function(config) {
     mc_annot_raw <- fread(config$fn) %>% as_tibble()
-    mc_annot <- tibble(
+    metacell_type<- tibble(
         metacell = as.character(mc_annot_raw[[config$metacell]]),
         cell_type = as.character(mc_annot_raw[[config$cell_type]])
     )
 
     if (!is.null(config$cell_type_color)) {
-        mc_annot <- mc_annot %>%
+        metacell_type<- metacell_type%>%
             mutate(mc_col = mc_annot_raw[[config$cell_type_color]])
     }
 
 
     if (!is.null(config$mc_age)) {
-        mc_annot <- mc_annot %>% mutate(mc_age = mc_annot_raw[[config$mc_age]])
+        metacell_type<- metacell_type%>% mutate(mc_age = mc_annot_raw[[config$mc_age]])
     }
 
     return(mc_annot)

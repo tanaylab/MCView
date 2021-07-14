@@ -83,7 +83,7 @@ Name of the field in the anndata object$obs which contains a cell type (or a clu
 
 If this parameter and `mc_annot` are missing, __MCView__ would cluster the metacell matrix using kmeans++ algorithm (from the `tglkmeans` package). Note if `mc_annot` parameter is set this field is ignored. 
 
-### mc_annot (optional)
+### metacell_type(optional)
 
 If you already have a cell type assignment (or a cluster assignment) for each metacell, you can use this set of parameters to point __MCView__ to a file which holds this information. 
 
@@ -95,7 +95,7 @@ Parameters are:
 
 If this set of parameters and `cell_type_field` are missing, __MCView__ would cluster the metacell matrix using kmeans++ algorithm (from the `tglkmeans` package).
 
-#### cell_type_annot (optional)
+#### cell_type_color(optional)
 
 Link to a file that holds color assignment for each cell type (or cluster). If this is missing, __MCView__ would use the `chameleon` package to assign cell type colors. 
 

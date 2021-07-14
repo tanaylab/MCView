@@ -1,11 +1,11 @@
 plot_mc_time_dist <- function(dataset, metacell, ylab = "# of cells") {
-    mc_annot <- get_mc_data(dataset, "mc_annot")
+    metacell_type<- get_mc_data(dataset, "mc_annot")
     mc_ag <- get_mc_data(dataset, "mc_ag")
     time_annot <- get_mc_data(dataset, "time_annot")
 
     metacell <- as.character(metacell)
 
-    cell_type <- mc_annot %>%
+    cell_type <- metacell_type%>%
         filter(metacell == !!metacell) %>%
         pull(cell_type)
 
@@ -35,7 +35,7 @@ plot_mc_time_dist <- function(dataset, metacell, ylab = "# of cells") {
 
     p <- df %>%
         ggplot(aes(x = time, y = n_cells, tooltip_text = `Metacell age (E[t])`)) +
-        # geom_col(fill = mc_annot %>% filter(metacell == !!metacell) %>% pull(mc_col)) +
+        # geom_col(fill = metacell_type%>% filter(metacell == !!metacell) %>% pull(mc_col)) +
         geom_col(fill = "black") +
         xlab("Metacell age (E[t])") +
         ylab(ylab) +

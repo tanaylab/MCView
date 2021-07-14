@@ -55,17 +55,17 @@ load_all_data <- function(cache_dir) {
 }
 
 get_cell_type_data <- function(dataset) {
-    cell_type_annot <- mc_data[[dataset]][["cell_type_annot"]]
-    cell_type_annot <- cell_type_annot %>% mutate(cell_type_id = as.character(1:n()))
+    cell_type_color<- mc_data[[dataset]][["cell_type_annot"]]
+    cell_type_color<- cell_type_color%>% mutate(cell_type_id = as.character(1:n()))
     return(cell_type_annot)
 }
 
 get_mc_annot_data <- function(dataset) {
-    mc_annot <- mc_data[[dataset]][["mc_annot"]]
+    metacell_type<- mc_data[[dataset]][["mc_annot"]]
     if (!is.factor(mc_annot$cell_type)) {
         mc_annot$cell_type <- factor(mc_annot$cell_type)
     }
-    mc_annot <- mc_annot %>% mutate(cell_type = as.character(forcats::fct_explicit_na(cell_type)))
+    metacell_type<- metacell_type%>% mutate(cell_type = as.character(forcats::fct_explicit_na(cell_type)))
     return(mc_annot)
 }
 

@@ -1,9 +1,9 @@
-get_cell_type_colors <- function(dataset, cell_type_annot = NULL, na_color = "gray") {
+get_cell_type_colors <- function(dataset, cell_type_color= NULL, na_color = "gray") {
     if (is.null(cell_type_annot)) {
-        cell_type_annot <- get_mc_data(dataset, "cell_type_annot")
+        cell_type_color<- get_mc_data(dataset, "cell_type_annot")
     }
 
-    res <- cell_type_annot %>%
+    res <- cell_type_color%>%
         distinct(cell_type, color) %>%
         bind_rows(tibble(cell_type = "(Missing)", color = na_color)) %>%
         deframe()
