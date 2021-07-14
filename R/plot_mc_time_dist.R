@@ -1,5 +1,5 @@
 plot_mc_time_dist <- function(dataset, metacell, ylab = "# of cells") {
-    metacell_type<- get_mc_data(dataset, "mc_annot")
+    metacell_type<- get_mc_data(dataset, "metacell_types")
     mc_ag <- get_mc_data(dataset, "mc_ag")
     time_annot <- get_mc_data(dataset, "time_annot")
 

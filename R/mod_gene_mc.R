@@ -93,7 +93,7 @@ mod_gene_mc_sidebar_ui <- function(id) {
 #' gene_mc Server Function
 #'
 #' @noRd
-mod_gene_mc_server <- function(input, output, session, dataset, mc_annot, cell_type_annot) {
+mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, cell_type_colors) {
     ns <- session$ns
 
     # gene selectors
@@ -147,13 +147,13 @@ mod_gene_mc_server <- function(input, output, session, dataset, mc_annot, cell_t
     })
 
     # Projection plots
-    output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, values, mc_annot, cell_type_annot, source = "proj_mc_plot_gene_tab")
+    output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, values, metacell_types, cell_type_colors, source = "proj_mc_plot_gene_tab")
 
     output$plot_gene_gene_mc <- plotly::renderPlotly({
         req(values$gene1)
         req(values$gene2)
 
-        p_gg <- plotly::ggplotly(plot_gg_over_mc(dataset(), values$gene1, values$gene2, metacell_type= mc_annot(), cell_type_color= cell_type_annot(), plot_text = FALSE), tooltip = "tooltip_text", source = "gene_gene_plot") %>%
+        p_gg <- plotly::ggplotly(plot_gg_over_mc(dataset(), values$gene1, values$gene2, metacell_type= metacell_types(), cell_type_color= cell_type_colors(), plot_text = FALSE), tooltip = "tooltip_text", source = "gene_gene_plot") %>%
             sanitize_for_WebGL() %>%
             plotly::toWebGL() %>%
             sanitize_plotly_buttons() %>%
@@ -188,7 +188,7 @@ mod_gene_mc_server <- function(input, output, session, dataset, mc_annot, cell_t
         req(values$gene1)
         req(has_time(dataset()))
 
-        plotly::ggplotly(plot_gene_time_over_mc(dataset(), values$gene1, metacell_type= mc_annot(), cell_type_color= cell_type_annot()), source = "gene_time_mc_plot1", tooltip = "tooltip_text") %>%
+        plotly::ggplotly(plot_gene_time_over_mc(dataset(), values$gene1, metacell_type= metacell_types(), cell_type_color= cell_type_colors()), source = "gene_time_mc_plot1", tooltip = "tooltip_text") %>%
             plotly::hide_legend() %>%
             sanitize_plotly_buttons()
     })
@@ -197,7 +197,7 @@ mod_gene_mc_server <- function(input, output, session, dataset, mc_annot, cell_t
         req(values$gene2)
         req(has_time(dataset()))
 
-        plotly::ggplotly(plot_gene_time_over_mc(dataset(), values$gene2, metacell_type= mc_annot(), cell_type_color= cell_type_annot()), source = "gene_time_mc_plot2", tooltip = "tooltip_text") %>%
+        plotly::ggplotly(plot_gene_time_over_mc(dataset(), values$gene2, metacell_type= metacell_types(), cell_type_color= cell_type_colors()), source = "gene_time_mc_plot2", tooltip = "tooltip_text") %>%
             plotly::hide_legend() %>%
             sanitize_plotly_buttons()
     })
@@ -209,7 +209,7 @@ mod_gene_mc_server <- function(input, output, session, dataset, mc_annot, cell_t
         selectInput(
             ns("vein_gene_foc_type"),
             "Focus on type:",
-            choices = c("All", sort(levels(get_mc_data(dataset(), "cell_type_annot")$cell_type))),
+            choices = c("All", sort(levels(get_mc_data(dataset(), "cell_type_colors")$cell_type))),
             selected = "All"
         )
     })
@@ -260,9 +260,9 @@ mod_gene_mc_server <- function(input, output, session, dataset, mc_annot, cell_t
             gene <- NULL
         }
 
-        cell_type_color<- get_mc_data(dataset(), "cell_type_annot")
+        cell_type_color<- get_mc_data(dataset(), "cell_type_colors")
 
-        color_order <- cell_type_annot$color
+        color_order <- cell_type_colors$color
         if (input$vein_gene_foc_type == "All") {
             foc_type <- NULL
             vein_rm_cell_types <- get_mc_config(dataset(), "vein_rm_cell_types")
@@ -275,7 +275,7 @@ mod_gene_mc_server <- function(input, output, session, dataset, mc_annot, cell_t
             foc_type <- input$vein_gene_foc_type
         }
 
-        plot_vein(dataset(), gene = gene, foc_type = foc_type, color_order = color_order, metacell_type= mc_annot())
+        plot_vein(dataset(), gene = gene, foc_type = foc_type, color_order = color_order, metacell_type= metacell_types())
     })
 
     # Output priorities

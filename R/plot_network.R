@@ -3,7 +3,7 @@ plot_propagation_net_metacell <- function(dataset,
                                           edge_w_scale = 5e-4,
                                           fr_scale = 2,
                                           max_lwd = 10,
-                                          metacell_type= get_mc_data(dataset, "mc_annot")) {
+                                          metacell_type= get_mc_data(dataset, "metacell_types")) {
     metacell <- as.character(metacell)
 
     mct_probs_trans <- get_mc_data(dataset, "mct_probs_trans")

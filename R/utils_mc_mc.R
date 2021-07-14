@@ -1,8 +1,8 @@
 metacell_from_coords_proj <- function(dataset, x, y) {
     mc2d <- get_mc_data(dataset, "mc2d")
-    metacell_type<- get_mc_data(dataset, "mc_annot")
+    metacell_type<- get_mc_data(dataset, "metacell_types")
 
-    df <- mc2d_to_df(mc2d) %>% left_join(mc_annot, by = "metacell")
+    df <- mc2d_to_df(mc2d) %>% left_join(metacell_types, by = "metacell")
 
     metacell <- df %>%
         mutate(diff1 = x - !!x, diff2 = y - !!y) %>%

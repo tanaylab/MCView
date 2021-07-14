@@ -5,12 +5,12 @@
 #' @param highlight data.frame with 'metacell','label' and 'color'
 #'
 #' @noRd
-mc2d_plot_ggp <- function(dataset, highlight = NULL, point_size = initial_proj_point_size(dataset), min_d = min_edge_length(dataset), stroke = NULL, graph_color = "black", graph_width = 0.1, scale_edges = FALSE, id = NULL, metacell_type= get_mc_data(dataset, "mc_annot"), cell_type_color= get_mc_data(dataset, "cell_type_annot")) {
+mc2d_plot_ggp <- function(dataset, highlight = NULL, point_size = initial_proj_point_size(dataset), min_d = min_edge_length(dataset), stroke = NULL, graph_color = "black", graph_width = 0.1, scale_edges = FALSE, id = NULL, metacell_type= get_mc_data(dataset, "metacell_types"), cell_type_color= get_mc_data(dataset, "cell_type_colors")) {
     mc2d <- get_mc_data(dataset, "mc2d")
 
     mc2d_df <- mc2d_to_df(mc2d) %>%
-        left_join(mc_annot, by = "metacell") %>%
-        mutate(cell_type = factor(cell_type, levels = sort(as.character(cell_type_annot$cell_type)))) %>%
+        left_join(metacell_types, by = "metacell") %>%
+        mutate(cell_type = factor(cell_type, levels = sort(as.character(cell_type_colors$cell_type)))) %>%
         mutate(cell_type = forcats::fct_explicit_na(cell_type)) %>%
         mutate(
             `Top genes` = glue("{top1_gene} ({round(top1_lfp, digits=2)}), {top2_gene} ({round(top2_lfp, digits=2)})")
@@ -58,7 +58,7 @@ mc2d_plot_ggp <- function(dataset, highlight = NULL, point_size = initial_proj_p
     } else {
         p <- mc2d_df %>%
             ggplot(aes(x = x, y = y, label = metacell, fill = `Cell type`, tooltip_text = Metacell, customdata = id)) +
-            scale_fill_manual(name = "", values = get_cell_type_colors(dataset, cell_type_annot))
+            scale_fill_manual(name = "", values = get_cell_type_colors(dataset, cell_type_colors))
     }
 
 
@@ -91,7 +91,7 @@ mc2d_plot_ggp <- function(dataset, highlight = NULL, point_size = initial_proj_p
 #' @noRd
 mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_size(dataset), min_d = min_edge_length(dataset), stroke = NULL, graph_color = "black", graph_width = 0.1, max_lfp = NULL, min_lfp = NULL, max_expr = NULL, min_expr = NULL, scale_edges = FALSE, stat = "expression") {
     mc2d <- get_mc_data(dataset, "mc2d")
-    metacell_type<- get_mc_data(dataset, "mc_annot")
+    metacell_type<- get_mc_data(dataset, "metacell_types")
     min_lfp <- min_lfp %||% -3
     max_lfp <- max_lfp %||% 3
 
@@ -102,7 +102,7 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
     metacell_names <- mc2d_to_df(mc2d)$metacell
 
     mc2d_df <- mc2d_to_df(mc2d) %>%
-        left_join(mc_annot, by = "metacell") %>%
+        left_join(metacell_types, by = "metacell") %>%
         mutate(
             !!gene := lfp[metacell_names],
             expression = log2(lfp[metacell_names]),
@@ -189,7 +189,7 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
 }
 
 
-render_2d_plotly <- function(input, output, session, dataset, values, mc_annot, cell_type_annot, source, buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL) {
+render_2d_plotly <- function(input, output, session, dataset, values, metacell_types, cell_type_colors, source, buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL) {
     plotly::renderPlotly({
         req(input$color_proj)
         req(input$point_size)
@@ -220,7 +220,7 @@ render_2d_plotly <- function(input, output, session, dataset, values, mc_annot, 
         }
 
         if (input$color_proj == "Cell type") {
-            fig <- plotly::ggplotly(mc2d_plot_ggp(dataset(), metacell_type= mc_annot(), cell_type_color= cell_type_annot(), point_size = input$point_size, min_d = input$min_edge_size), tooltip = "tooltip_text", source = source)
+            fig <- plotly::ggplotly(mc2d_plot_ggp(dataset(), metacell_type= metacell_types(), cell_type_color= cell_type_colors(), point_size = input$point_size, min_d = input$min_edge_size), tooltip = "tooltip_text", source = source)
         } else if (input$color_proj == "Gene A") {
             req(values$gene1)
             fig <- plot_2d_gene(values$gene1)

@@ -36,11 +36,11 @@ metacells:
   PBMC:
     anndata: raw/metacells.h5ad # should be absolute path
     cell_type_field: cluster # name of the field in the anndata object$obs which contains a cell type (optional)
-    mc_annot: # cell type annotation for each metacell
+    metacell_types: # cell type annotation for each metacell
       fn: raw/metacell-cell-types.csv # file with with cell type assignment for each metacell
       metacell: mc # name of the field which contains the metacell id
       cell_type: cluster # name of the field which contains the cell type      
-    cell_type_annot: # color annotation for each cell type
+    cell_type_colors: # color annotation for each cell type
       fn:  raw/cluster-colors.csv # file with color for each cell type (optional)
       cell_type: cluster # name of the field which contains the cell type
       color: color # name of the field which contains the color
@@ -81,7 +81,7 @@ Path for for the `h5ad` file which is the output of metacell2. Note that the dat
 
 Name of the field in the anndata object$obs which contains a cell type (or a cluster). 
 
-If this parameter and `mc_annot` are missing, __MCView__ would cluster the metacell matrix using kmeans++ algorithm (from the `tglkmeans` package). Note if `mc_annot` parameter is set this field is ignored. 
+If this parameter and `metacell_types` are missing, __MCView__ would cluster the metacell matrix using kmeans++ algorithm (from the `tglkmeans` package). Note if `metacell_types` parameter is set this field is ignored. 
 
 ### metacell_type(optional)
 
@@ -136,13 +136,13 @@ metacells:
     mc: exe_f # name of the metacell object to use
     mc2d: exe_f # name of the 2d projection object to use
     network: exe_f # name of the network object to use (optional)
-    mc_annot:  # cell type annotation for each metacell 
-      fn: mc_annot.tsv # file with with cell type assignment for each metacell
+    metacell_types:  # cell type annotation for each metacell 
+      fn: metacell_types.tsv # file with with cell type assignment for each metacell
       cell_type: cell_type # name of the field which contains the cell type  
       cell_type_color: cell_type_color # name of the field which contains the cell type color
       mc_age: mc_age # age parameter for each metacell (optional)
       metacell: metacell # name of the field which contains the metacell id
-    cell_type_annot:   # color annotation for each cell type
+    cell_type_colors:   # color annotation for each cell type
       fn: ell_type_annot.tsv # file with color for each cell type (optional)
       cell_type: cell_type # name of the field which contains the cell type
       color: color # name of the field which contains the color

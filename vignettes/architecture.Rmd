@@ -60,7 +60,7 @@ metacells:
   wt:
     anndata: /rawdata/wt.h5ad
     cell_type_field: cluster
-    cell_type_annot:
+    cell_type_colors:
       fn:  raw/wt_clusters.csv
       cell_type: cluster
       color: color    

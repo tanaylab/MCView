@@ -100,7 +100,7 @@ init_metacell <- function(config, dataset, cache_dir) {
         distinct(metacell, .keep_all = TRUE) %>%
         mutate(metacell = as.character(metacell))
 
-    metacell_type<- parse_mc_annot(config$mc_annot)
+    metacell_type<- parse_metacell_types(config$metacell_types)
 
     metacell_type<- metacell_type%>%
         arrange(as.numeric(metacell)) %>%
@@ -110,13 +110,13 @@ init_metacell <- function(config, dataset, cache_dir) {
     metacell_type<- metacell_type%>%
         as.data.frame() %>%
         column_to_rownames("metacell")
-    metacell_type<- mc_annot[colnames(mc_egc), ]
+    metacell_type<- metacell_types[colnames(mc_egc), ]
     metacell_type<- metacell_type%>%
         rownames_to_column("metacell") %>%
         as_tibble()
 
-    if (!is.null(config$cell_type_annot)) {
-        cell_type_color<- parse_cell_type_annot(config$cell_type_annot)
+    if (!is.null(config$cell_type_colors)) {
+        cell_type_color<- parse_cell_type_colors(config$cell_type_colors)
     } else {
         cell_type_color<- metacell_type%>%
             distinct(cell_type, mc_col) %>%
@@ -128,11 +128,11 @@ init_metacell <- function(config, dataset, cache_dir) {
     cell_type_color<- cell_type_color%>%
         arrange(as.numeric(order)) %>%
         mutate(cell_type = factor(cell_type), cell_type = forcats::fct_inorder(cell_type))
-    serialize_shiny_data(cell_type_annot, "cell_type_annot", dataset = dataset, cache_dir = cache_dir)
+    serialize_shiny_data(cell_type_colors, "cell_type_colors", dataset = dataset, cache_dir = cache_dir)
 
-    mc_annot$top1_lfp <- purrr::map2_dbl(mc_annot$metacell, mc_annot$top1_gene, ~ log2(mc_fp[.y, .x]))
-    mc_annot$top2_lfp <- purrr::map2_dbl(mc_annot$metacell, mc_annot$top2_gene, ~ log2(mc_fp[.y, .x]))
-    serialize_shiny_data(mc_annot, "mc_annot", dataset = dataset, cache_dir = cache_dir)
+    metacell_types$top1_lfp <- purrr::map2_dbl(metacell_types$metacell, metacell_types$top1_gene, ~ log2(mc_fp[.y, .x]))
+    metacell_types$top2_lfp <- purrr::map2_dbl(metacell_types$metacell, metacell_types$top2_gene, ~ log2(mc_fp[.y, .x]))
+    serialize_shiny_data(metacell_types, "metacell_types", dataset = dataset, cache_dir = cache_dir)
 
     # Top 30 correlated and anti-correlated genes for each gene
     gg_mc_top_cor <- calc_gg_mc_top_cor(mc@e_gc, k = 30)
@@ -153,7 +153,7 @@ init_metacell <- function(config, dataset, cache_dir) {
         cell_md <- mat@cell_metadata[names(mc@mc), ] %>%
             rownames_to_column("cell_id") %>%
             mutate(metacell = as.character(mc@mc)) %>%
-            left_join(mc_annot)
+            left_join(metacell_types)
 
         if (config$time_bin_field != "time_bin") {
             if (rlang::has_name(cell_md, "time_bin")) {
@@ -214,7 +214,7 @@ init_metacell <- function(config, dataset, cache_dir) {
         # calculate order of metacells in the flow chart
         # this order is static and will always be the same
         # mc_rank <- mctnetwork_mc_rank_from_color_ord(config$network, mc@color_key$color)
-        mc_rank <- mctnetwork_mc_rank_from_color_ord(config$network, mc_annot$mc_col, cell_type_annot$color)
+        mc_rank <- mctnetwork_mc_rank_from_color_ord(config$network, metacell_types$mc_col, cell_type_colors$color)
         mc_rank["-2"] <- 0
         mc_rank["-1"] <- length(mc_rank) / 2
         serialize_shiny_data(mc_rank, "mc_rank", dataset = dataset, cache_dir = cache_dir)
@@ -277,8 +277,8 @@ init_metacell2 <- function(config, dataset, cache_dir) {
         mutate(metacell = as.character(metacell))
 
 
-    if (!is.null(config$mc_annot)) {
-        metacell_type<- parse_mc_annot(config$mc_annot)
+    if (!is.null(config$metacell_types)) {
+        metacell_type<- parse_metacell_types(config$metacell_types)
     } else {
         if (!is.null(config$cell_type_field)) {
             metacell_type<- adata$obs %>%
@@ -295,10 +295,10 @@ init_metacell2 <- function(config, dataset, cache_dir) {
         }
     }
 
-    if (!is.null(config$cell_type_annot)) {
-        cell_type_color<- parse_cell_type_annot(config$cell_type_annot)
+    if (!is.null(config$cell_type_colors)) {
+        cell_type_color<- parse_cell_type_colors(config$cell_type_colors)
     } else {
-        color_of_clusters <- chameleon::data_colors(t(mc_egc[adata$var$top_feature_gene, ]), groups = mc_annot$cell_type)
+        color_of_clusters <- chameleon::data_colors(t(mc_egc[adata$var$top_feature_gene, ]), groups = metacell_types$cell_type)
 
         cell_type_color<- enframe(color_of_clusters, name = "cell_type", value = "color") %>%
             mutate(order = 1:n())
@@ -309,7 +309,7 @@ init_metacell2 <- function(config, dataset, cache_dir) {
     cell_type_color<- cell_type_color%>%
         arrange(as.numeric(order)) %>%
         mutate(cell_type = factor(cell_type), cell_type = forcats::fct_inorder(cell_type))
-    serialize_shiny_data(cell_type_annot, "cell_type_annot", dataset = dataset, cache_dir = cache_dir)
+    serialize_shiny_data(cell_type_colors, "cell_type_colors", dataset = dataset, cache_dir = cache_dir)
 
     metacell_type<- metacell_type%>%
         arrange(as.numeric(metacell)) %>%
@@ -319,15 +319,15 @@ init_metacell2 <- function(config, dataset, cache_dir) {
     metacell_type<- metacell_type%>%
         as.data.frame() %>%
         column_to_rownames("metacell")
-    metacell_type<- mc_annot[colnames(mc_egc), ]
+    metacell_type<- metacell_types[colnames(mc_egc), ]
     metacell_type<- metacell_type%>%
         rownames_to_column("metacell") %>%
         as_tibble()
 
-    mc_annot$top1_lfp <- purrr::map2_dbl(mc_annot$metacell, mc_annot$top1_gene, ~ log2(mc_fp[.y, .x]))
-    mc_annot$top2_lfp <- purrr::map2_dbl(mc_annot$metacell, mc_annot$top2_gene, ~ log2(mc_fp[.y, .x]))
+    metacell_types$top1_lfp <- purrr::map2_dbl(metacell_types$metacell, metacell_types$top1_gene, ~ log2(mc_fp[.y, .x]))
+    metacell_types$top2_lfp <- purrr::map2_dbl(metacell_types$metacell, metacell_types$top2_gene, ~ log2(mc_fp[.y, .x]))
 
-    serialize_shiny_data(mc_annot, "mc_annot", dataset = dataset, cache_dir = cache_dir)
+    serialize_shiny_data(metacell_types, "metacell_types", dataset = dataset, cache_dir = cache_dir)
 
 
     cli_alert_info("Calculating top 30 correlated and anti-correlated genes for each gene")
@@ -337,38 +337,38 @@ init_metacell2 <- function(config, dataset, cache_dir) {
 }
 
 parse_cell_type_color<- function(config) {
-    cell_type_annot_raw <- fread(config$fn) %>% as_tibble()
+    cell_type_colors_raw <- fread(config$fn) %>% as_tibble()
     cell_type_color<- tibble(
-        cell_type = as.character(cell_type_annot_raw[[config$cell_type]]),
-        color = cell_type_annot_raw[[config$color]]
+        cell_type = as.character(cell_type_colors_raw[[config$cell_type]]),
+        color = cell_type_colors_raw[[config$color]]
     )
     if (!is.null(config$order)) {
-        cell_type_color<- cell_type_color%>% mutate(order = cell_type_annot_raw[[config$order]])
+        cell_type_color<- cell_type_color%>% mutate(order = cell_type_colors_raw[[config$order]])
     } else {
         cell_type_color<- cell_type_color%>% mutate(order = 1:n())
     }
-    return(cell_type_annot)
+    return(cell_type_colors)
 }
 
 
 parse_metacell_type<- function(config) {
-    mc_annot_raw <- fread(config$fn) %>% as_tibble()
+    metacell_types_raw <- fread(config$fn) %>% as_tibble()
     metacell_type<- tibble(
-        metacell = as.character(mc_annot_raw[[config$metacell]]),
-        cell_type = as.character(mc_annot_raw[[config$cell_type]])
+        metacell = as.character(metacell_types_raw[[config$metacell]]),
+        cell_type = as.character(metacell_types_raw[[config$cell_type]])
     )
 
     if (!is.null(config$cell_type_color)) {
         metacell_type<- metacell_type%>%
-            mutate(mc_col = mc_annot_raw[[config$cell_type_color]])
+            mutate(mc_col = metacell_types_raw[[config$cell_type_color]])
     }
 
 
     if (!is.null(config$mc_age)) {
-        metacell_type<- metacell_type%>% mutate(mc_age = mc_annot_raw[[config$mc_age]])
+        metacell_type<- metacell_type%>% mutate(mc_age = metacell_types_raw[[config$mc_age]])
     }
 
-    return(mc_annot)
+    return(metacell_types)
 }
 
 #' calculate the k top correlated and anti correlated genes for each gene

@@ -1,6 +1,6 @@
 get_cell_type_colors <- function(dataset, cell_type_color= NULL, na_color = "gray") {
-    if (is.null(cell_type_annot)) {
-        cell_type_color<- get_mc_data(dataset, "cell_type_annot")
+    if (is.null(cell_type_colors)) {
+        cell_type_color<- get_mc_data(dataset, "cell_type_colors")
     }
 
     res <- cell_type_color%>%

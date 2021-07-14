@@ -6,7 +6,7 @@
 #'
 #'
 #' @noRd
-plot_gg_over_mc <- function(dataset, g1, g2, metacell_type= get_mc_data(dataset, "mc_annot"), cell_type_color= get_mc_data(dataset, "cell_type_annot"), plot_text = TRUE) {
+plot_gg_over_mc <- function(dataset, g1, g2, metacell_type= get_mc_data(dataset, "metacell_types"), cell_type_color= get_mc_data(dataset, "cell_type_colors"), plot_text = TRUE) {
     egc_g1 <- get_gene_egc(g1, dataset) + egc_epsilon
     egc_g2 <- get_gene_egc(g2, dataset) + egc_epsilon
 
@@ -18,7 +18,7 @@ plot_gg_over_mc <- function(dataset, g1, g2, metacell_type= get_mc_data(dataset,
         mutate(
             `Top genes` = glue("{top1_gene} ({round(top1_lfp, digits=2)}), {top2_gene} ({round(top2_lfp, digits=2)})")
         ) %>%
-        mutate(cell_type = factor(cell_type, levels = sort(as.character(cell_type_annot$cell_type)))) %>%
+        mutate(cell_type = factor(cell_type, levels = sort(as.character(cell_type_colors$cell_type)))) %>%
         mutate(cell_type = forcats::fct_explicit_na(cell_type)) %>%
         rename(
             `Cell type` = cell_type
@@ -35,7 +35,7 @@ plot_gg_over_mc <- function(dataset, g1, g2, metacell_type= get_mc_data(dataset,
     ymax <- min(c(1:length(xylims))[xylims >= max(egc_g2)])
     ymin <- max(c(1:length(xylims))[xylims <= min(egc_g2)])
 
-    col_to_ct <- get_cell_type_colors(dataset, cell_type_annot)
+    col_to_ct <- get_cell_type_colors(dataset, cell_type_colors)
 
     df <- df %>%
         mutate(
@@ -74,7 +74,7 @@ plot_gg_over_mc <- function(dataset, g1, g2, metacell_type= get_mc_data(dataset,
 #' @param gene name of the gene
 #'
 #' @noRd
-plot_gene_time_over_mc <- function(dataset, gene, metacell_type= get_mc_data(dataset, "mc_annot"), cell_type_color= get_mc_data(dataset, "cell_type_annot")) {
+plot_gene_time_over_mc <- function(dataset, gene, metacell_type= get_mc_data(dataset, "metacell_types"), cell_type_color= get_mc_data(dataset, "cell_type_colors")) {
     egc_gene <- get_gene_egc(gene, dataset) + egc_epsilon
 
     df <- metacell_type%>%
@@ -82,7 +82,7 @@ plot_gene_time_over_mc <- function(dataset, gene, metacell_type= get_mc_data(dat
             !!gene := egc_gene,
             `Top genes` = glue("{top1_gene} ({round(top1_lfp, digits=2)}), {top2_gene} ({round(top2_lfp, digits=2)})")
         ) %>%
-        mutate(cell_type = factor(cell_type, levels = sort(as.character(cell_type_annot$cell_type)))) %>%
+        mutate(cell_type = factor(cell_type, levels = sort(as.character(cell_type_colors$cell_type)))) %>%
         mutate(cell_type = forcats::fct_explicit_na(cell_type)) %>%
         rename(
             `Cell type` = cell_type,
@@ -93,10 +93,10 @@ plot_gene_time_over_mc <- function(dataset, gene, metacell_type= get_mc_data(dat
     ymax <- min(c(1:length(ylims))[ylims >= max(egc_gene)])
     ymin <- max(c(1:length(ylims))[ylims <= min(egc_gene)])
 
-    xmin <- min(mc_annot$mc_age)
-    xmax <- max(mc_annot$mc_age)
+    xmin <- min(metacell_types$mc_age)
+    xmax <- max(metacell_types$mc_age)
 
-    col_to_ct <- get_cell_type_colors(dataset, cell_type_annot)
+    col_to_ct <- get_cell_type_colors(dataset, cell_type_colors)
 
 
     # We call the text field "Metacell" in order for plotly to show "Metacell:" in the tooltip

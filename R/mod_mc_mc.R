@@ -89,7 +89,7 @@ mod_mc_mc_sidebar_ui <- function(id) {
 #' mc_mc Server Function
 #'
 #' @noRd
-mod_mc_mc_server <- function(input, output, session, dataset, mc_annot, cell_type_annot) {
+mod_mc_mc_server <- function(input, output, session, dataset, metacell_types, cell_type_colors) {
     ns <- session$ns
 
     metacell_names <- reactive({
@@ -156,7 +156,7 @@ mod_mc_mc_server <- function(input, output, session, dataset, mc_annot, cell_typ
         req(input$point_size)
         req(input$min_edge_size)
 
-        p_proj <- mc2d_plot_ggp(dataset(), metacell_type= mc_annot(), cell_type_color= cell_type_annot(), point_size = input$point_size, min_d = input$min_edge_size)
+        p_proj <- mc2d_plot_ggp(dataset(), metacell_type= metacell_types(), cell_type_color= cell_type_colors(), point_size = input$point_size, min_d = input$min_edge_size)
 
         if (has_time(dataset())) {
             subfig <- plotly::subplot(
@@ -255,8 +255,8 @@ mod_mc_mc_server <- function(input, output, session, dataset, mc_annot, cell_typ
             color <- "darkblue"
         }
 
-        mc_data <- mc_annot() %>% filter(metacell == mc_to_plot)
-        plot_propagation_net_metacell(dataset(), mc_to_plot, metacell_type= mc_annot()) +
+        mc_data <- metacell_types() %>% filter(metacell == mc_to_plot)
+        plot_propagation_net_metacell(dataset(), mc_to_plot, metacell_type= metacell_types()) +
             ggtitle(glue("metacell #{mc_to_plot} ({mc_data$cell_type[1]})")) +
             theme(plot.title = element_text(colour = color))
     })

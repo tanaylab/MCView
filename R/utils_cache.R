@@ -55,31 +55,31 @@ load_all_data <- function(cache_dir) {
 }
 
 get_cell_type_data <- function(dataset) {
-    cell_type_color<- mc_data[[dataset]][["cell_type_annot"]]
+    cell_type_color<- mc_data[[dataset]][["cell_type_colors"]]
     cell_type_color<- cell_type_color%>% mutate(cell_type_id = as.character(1:n()))
-    return(cell_type_annot)
+    return(cell_type_colors)
 }
 
-get_mc_annot_data <- function(dataset) {
-    metacell_type<- mc_data[[dataset]][["mc_annot"]]
-    if (!is.factor(mc_annot$cell_type)) {
-        mc_annot$cell_type <- factor(mc_annot$cell_type)
+get_metacell_types_data <- function(dataset) {
+    metacell_type<- mc_data[[dataset]][["metacell_types"]]
+    if (!is.factor(metacell_types$cell_type)) {
+        metacell_types$cell_type <- factor(metacell_types$cell_type)
     }
     metacell_type<- metacell_type%>% mutate(cell_type = as.character(forcats::fct_explicit_na(cell_type)))
-    return(mc_annot)
+    return(metacell_types)
 }
 
 get_mc_color_key <- function(dataset) {
-    get_mc_annot_data(dataset) %>%
+    get_metacell_types_data(dataset) %>%
         distinct(cell_type, mc_col) %>%
         rename(group = cell_type, color = mc_col) %>%
         as.data.frame()
 }
 
 get_mc_data <- function(dataset, var_name) {
-    if (var_name == "mc_annot") {
-        return(get_mc_annot_data(dataset))
-    } else if (var_name == "cell_type_annot") {
+    if (var_name == "metacell_types") {
+        return(get_metacell_types_data(dataset))
+    } else if (var_name == "cell_type_colors") {
         return(get_cell_type_data(dataset))
     }
 
@@ -99,5 +99,5 @@ has_network <- function(dataset) {
 }
 
 has_time <- function(dataset) {
-    !is.null(get_mc_config(dataset, "time_bin_field")) && has_name(get_mc_config(dataset, "mc_annot"), "mc_age")
+    !is.null(get_mc_config(dataset, "time_bin_field")) && has_name(get_mc_config(dataset, "metacell_types"), "mc_age")
 }

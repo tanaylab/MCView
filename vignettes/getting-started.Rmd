@@ -42,7 +42,7 @@ A text editor would be opened with `PBMC/config/config.yaml` file.
 
 The most important field we need to fill is the `anndata` field which should point to the h5ad file we downloaded. 
 
-We also fill the `cell_type_annot` field with the cluster colors file, but this is optional. 
+We also fill the `cell_type_colors` field with the cluster colors file, but this is optional. 
 
 Note that we also changed the name of the dataset to "PBMC", but this wasn't really necessary since we only have a single dataset in the project. 
 
@@ -56,11 +56,11 @@ metacells:
   PBMC:
     anndata: raw/metacells.h5ad # should be absolute path
     cell_type_field: cluster # name of the field in the anndata object$obs which contains a cell type (optional)
-    # mc_annot: # uncomment if you have a cell type annotation for each metacell
+    # metacell_types: # uncomment if you have a cell type annotation for each metacell
     #   fn: raw/metacell-cell-types.csv # file with with cell type assignment for each metacell
     #   metacell: mc # name of the field which contains the metacell id
     #   cell_type: cluster # name of the field which contains the cell type    
-    cell_type_annot: # uncomment if you have a color annotation for each cell type
+    cell_type_colors: # uncomment if you have a color annotation for each cell type
       fn:  raw/cluster-colors.csv # file with color for each cell type (optional)
       cell_type: cluster # name of the field which contains the cell type
       color: color # name of the field which contains the color

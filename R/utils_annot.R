@@ -1,12 +1,12 @@
-sanitize_metacell_type<- function(mc_annot, cell_type_annot, dataset) {
+sanitize_metacell_type<- function(metacell_types, cell_type_colors, dataset) {
     # Look for cell_type_ids that are missing
-    if (!all(mc_annot$cell_type_id %in% cell_type_annot$cell_type_id)) {
-        bad_inds <- !is.na(mc_annot$cell_type_id) & !(mc_annot$cell_type_id %in% cell_type_annot$cell_type_id)
+    if (!all(metacell_types$cell_type_id %in% cell_type_colors$cell_type_id)) {
+        bad_inds <- !is.na(metacell_types$cell_type_id) & !(metacell_types$cell_type_id %in% cell_type_colors$cell_type_id)
         if (length(bad_inds) > 0) {
-            bad_cell_types <- unique(mc_annot$cell_type_id[bad_inds]) %>% paste(collapse = ", ")
+            bad_cell_types <- unique(metacell_types$cell_type_id[bad_inds]) %>% paste(collapse = ", ")
             showNotification(glue("The following cell types ids are invalid: {bad_cell_types}"), type = "warning", duration = 10)
-            mc_annot$cell_type_id[bad_inds] <- NA
-            mc_annot$cell_type[bad_inds] <- NA
+            metacell_types$cell_type_id[bad_inds] <- NA
+            metacell_types$cell_type[bad_inds] <- NA
         }
     }
 
@@ -30,9 +30,9 @@ sanitize_metacell_type<- function(mc_annot, cell_type_annot, dataset) {
         left_join(cell_type_color%>%
             distinct(cell_type_id, cell_type), by = "cell_type_id")
 
-    return(mc_annot)
+    return(metacell_types)
 }
 
-cell_type_to_cell_type_id <- function(cell_type, cell_type_annot) {
-    cell_type_annot$cell_type_id[cell_type_annot$cell_type == cell_type]
+cell_type_to_cell_type_id <- function(cell_type, cell_type_colors) {
+    cell_type_colors$cell_type_id[cell_type_colors$cell_type == cell_type]
 }
