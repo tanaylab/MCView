@@ -2,7 +2,7 @@
 title: "Architecture"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{architecture}
+  %\VignetteIndexEntry{Architecture}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

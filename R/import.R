@@ -40,6 +40,7 @@
 #'
 #' @export
 import_dataset <- function(project, dataset, anndata_file, cell_type_field = NULL, metacell_types_file = NULL, cell_type_colors_file = NULL) {
+    verbose <- !is.null(getOption("MCView.verbose")) && getOption("MCView.verbose")
     verify_project_dir(project)
 
     cli_alert_info("Importing {.field {dataset}}")
@@ -113,7 +114,7 @@ import_dataset <- function(project, dataset, anndata_file, cell_type_field = NUL
             cli_alert_info("Clustering in order to get initial annotation.")
             # we generate clustering as initial annotation
             feat_mat <- mc_egc[adata$var$top_feature_gene, ]
-            km <- cluster_egc(feat_mat, verbose = getOption("MCView.verbose"))
+            km <- cluster_egc(feat_mat, verbose = verbose)
             metacell_types <- km$clusters %>%
                 rename(cell_type = cluster) %>%
                 mutate(cell_type = as.character(cell_type))
@@ -202,6 +203,8 @@ dataset_ls <- function(project) {
 #' export a valid \code{metacell_types_file}.
 #' The file should have a column named "metacell" with the metacell ids and another
 #' column named "cell_type" or "cluster" with the cell type assignment.
+#' Note that the exported file from the __MCView__ app contains additional fields which will be
+#' ignored in this function.
 #' Under the hood - MCView updates a file named "metacell_types.tsv" under \code{project/cache/dataset}, which can also be edited manually.
 #'
 #' @param project path to the project directory
@@ -224,12 +227,14 @@ update_metacell_types <- function(project, dataset, metacell_types_file) {
     verify_app_cache(project)
 
     prev_metacell_types <- load_shiny_data("metacell_types", dataset, project_cache_dir(project))
+    prev_metacell_types <- prev_metacell_types %>%
+        mutate(metacell = as.character(metacell))
 
     metacell_types <- parse_metacell_types(metacell_types_file)
 
-    metacell_types <- metacell_types %>%
-        select(metacell, cell_type) %>%
-        left_join(prev_metacell_types %>% select(-cell_type), by = "metacell")
+    metacell_types <- prev_metacell_types %>%
+        select(-cell_type) %>%
+        left_join(metacell_types %>% select(metacell, cell_type), by = "metacell")
 
     serialize_shiny_data(metacell_types, "metacell_types", dataset = dataset, cache_dir = project_cache_dir(project), flat = TRUE)
 
@@ -243,6 +248,8 @@ update_metacell_types <- function(project, dataset, metacell_types_file) {
 #' This is usually done after a first iteration of annotation using the "Annotate" tab in the MCView annotation, which can
 #' export a valid \code{cell_type_colors_file}.
 #' The file should have a column named "cell_type" or "cluster" with the cell types and another column named "color" with the color assignment.
+#' Note that the exported file from the __MCView__ app contains additional fields which will be
+#' ignored in this function.
 #' Under the hood - MCView updates a file named "cell_type_colors.tsv" under \code{project/cache/dataset}, which can also be edited manually.
 #'
 #'
@@ -315,6 +322,9 @@ parse_metacell_types <- function(file) {
 
     metacell_types <- metacell_types %>%
         select(any_of(c("metacell", "cell_type", "age")))
+
+    metacell_types <- metacell_types %>%
+        mutate(metacell = as.character(metacell))
 
     return(metacell_types)
 }

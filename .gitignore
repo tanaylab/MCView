@@ -17,3 +17,5 @@ PBMC/
 data-raw/default
 MCView_bundle
 docs
+tests/testthat/raw/*
+tests/testthat/PBMC/*

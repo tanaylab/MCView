@@ -2,14 +2,7 @@ template:
   params:
     bootswatch: flatly
 
-
-articles:
-- title: vignettes
-  desc: ~
-  contents:
-  - '`getting-started`'
-  - '`architecture`'
-  
+ 
 reference:
 - title: All functions
   contents:

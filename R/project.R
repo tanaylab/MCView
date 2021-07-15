@@ -42,9 +42,15 @@ create_project_dirs <- function(project_dir, project) {
     cli_alert_info("creating {project_dir}")
 
     fs::dir_create(project_cache_dir(project_dir))
+    fs::dir_create(fs::path(project_dir, "config"))
 
     defaults_dir <- app_sys("default-config")
-    fs::dir_copy(path = defaults_dir, new_path = fs::path(project_dir, "config"), overwrite = FALSE)
+    files <- c("config.yaml", "help.yaml", "about.Rmd")
+    for (file in files) {
+        if (!fs::file_exists(fs::path(project_dir, "config", file))) {
+            fs::file_copy(fs::path(defaults_dir, file), fs::path(project_dir, "config", file))
+        }
+    }
 
     return(project_dir)
 }
