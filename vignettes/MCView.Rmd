@@ -1,0 +1,115 @@
+---
+title: "Getting started with MCView"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{MCView}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Setup
+
+We would start by downloading a PBMC dataset that was pre-processed using the `metacells` python package. 
+
+```{r setup}
+library(MCView)
+```
+
+```{r download, eval=FALSE}
+dir.create("raw")
+download.file("http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz", "raw/PBMC_processed.tar.gz")
+untar("raw/PBMC_processed.tar.gz", exdir = "raw")
+```
+
+The above commands end result are two files named "raw/pbmc_metacells.h5ad" and "raw/cluster-colors.csv" which we would import to __MCView__ in the next steps. 
+
+## Create a project
+
+The first step in running __MCView__ is generating a project directory structure: 
+
+```{r, eval=FALSE}
+MCView::create_project("PBMC")
+```
+
+A text editor would be opened with `PBMC/config/config.yaml` file:
+
+```yaml
+title: MCView
+tabs: ["Manifold", "Genes", "Metacells", "Annotate", "About"] # which tabs to show
+help: false # set to true to show introjs help on start
+# selected_gene1: Foxc1 # Default selected gene1
+# selected_gene2: Twist1 # Default selected gene2
+selected_mc1: 1 # Default selected metacell1 
+selected_mc2: 2 # Default selected metacell2
+```
+
+We can edit some of the parameters if we want, or add parameters per dataset, see the [architecture](https://tanaylab.github.io/MCview/articles/architecture.html) vignette for a full description of the config parameters. 
+
+
+## Import 
+
+Next, we would import the PBMC dataset to the project we created. A project can contain multiple dataset, and switching between them can be done from the right sidebar. 
+
+This would pre-process the metacell dataset in order to view it in the shiny app: 
+
+```{r, eval=FALSE}
+MCView::import_dataset(project = "PBMC", 
+               dataset = "PBMC163k", 
+               anndata_file = "raw/metacells.h5ad", 
+               cell_type_field =  "cluster",
+               cell_type_colors_file = "raw/cluster-colors.csv")
+```
+
+The most important field is the `anndata` field which points to the h5ad file we downloaded. 
+
+You can see that we also specified a field in the `h5ad` object that has pre-computed cluster assignments per metacell, and the path of a file which contains color assignment per cluster, but these where optional, as __MCView__ can generate initial clustering and coloring automatically. 
+
+Note that the import part might take a few minutes, depending (mostly) on the number of metacells. 
+
+## Run the app
+
+```{r, eval=FALSE}
+MCView::run_app(project = "PBMC", port = 5555)
+```
+
+You can now go to [https://localhost:5555](https://localhost:5555) to view the app. 
+
+## Update annotations
+
+After working a bit on the initial metacell model, we would usually want to update the default dataset annotations with the ones we created using __MCView__. This can be done by:
+
+1. Pressing the "export" button in the upper left of "Annotate" screen and saving the file. 
+2. Running: 
+
+```{r, eval=FALSE}
+MCView::update_metacell_types("PBMC", "PBMC163k", "/path/to/metacell_types_file")
+```
+
+Where "/path/to/metacell_types_file" is the path of the exported file. 
+
+The same can be done for cell type colors, which has a different export button: 
+
+```{r, eval=FALSE}
+MCView::update_cell_type_colors("PBMC", "PBMC163k", "/path/to/cell_type_colors_file")
+```
+
+You can now rerun the app and the types/colors would be updated. 
+
+Note that if you changed cell type __names__ you should update both `cell_type_colors` and `metacell_types`, as otherwise metacells with the old name would appear with a "(Missing)" cell type tag. 
+## Deploy
+
+Create a deployment ready bundle by running: 
+
+```{r, eval=FALSE}
+MCView::create_bundle(project = "PBMC", path = getwd(), name = "PBMC")
+```
+
+You can then upload the bundle to [shinyapps.io](https://docs.rstudio.com/shinyapps.io/getting-started.html#deploying-applications), shiny-server or any other hosting service. 
+

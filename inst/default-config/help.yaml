@@ -1,0 +1,111 @@
+introduction: >
+  Welcome to the <b>MCView</b> app.
+  <br>
+  This is an online tool to view and interact with metacell data. 
+  <br>  
+  Click on the 'next' button or choose 'skip' to go to the app. 
+
+about:
+  tab_sidebar_help: > 
+    <ul>
+    <li>
+    <i class="fa fa-info fa-2x" role="presentation" aria-label="info fa-2x icon"></i> 
+    <b>About</b> tab (current).
+    </li>    
+    <li>
+    <i class="fa fa-wind fa-2x" role="presentation" aria-label="wind fa-2x icon"></i> 
+    <b>Manifold</b> tab lets you view the gene expression manifold. 
+    </li>
+    <li>
+    <i class="fa fa-wind fa-2x" role="presentation" aria-label="wind fa-2x icon"></i> 
+    <b>Genes</b> tab lets you compare genes over the manifold.
+    </li>
+    <li>
+    <i class="fa fa-bar-chart fa-2x" role="presentation" aria-label="bar-chart fa-2x icon"></i> 
+    <b>Metacells</b> tab lets you examine and compare metacells.
+    </li>
+    <li>
+    <i class="fa fa-bar-chart fa-2x" role="presentation" aria-label="bar-chart fa-2x icon"></i> 
+    <b>Annotate</b> tab lets you assign cell types and colors to metacells. 
+    </li>
+    </ul>
+  help: >
+    In each tab - click on the help button to start a guided tour.
+    <br>
+  NA:
+    You can now go to the <b>Genes</b> or <b>Metacells</b> tab and explore them. 
+genes:  
+  sidebar_select: >
+    Select genes to visualize and compare
+  gene_projection: >
+    Manifold model. 
+    <br>
+    Hover over a metacell to see its top genes and mean inferred age. 
+    <br> 
+    Click on a metacell to load it to the metacell tab. 
+    <br> 
+    Double click on a cell type to isolate it, click to add or remove cell types to sub-selection.
+  color_proj: >
+    You can color the manifold by cell type or by gene expression. 
+  gene_gene_box: >
+    Gene expression of the two selected genes in metacells. 
+    <br> 
+    Note that axes represent normalized absolute expression levels (log2 scale). 
+  # gene_time_box: >
+  #   Compare gene expression in metacells over inferred time.
+  # vein_box: >
+  #   Vein plots describe the continuous transition of cell types to
+  #   their direct descendants (represented by diagonal flows spanning
+  #   time points), and the dynamic relative frequencies of these cell
+  #   types over time (represented by vein width on the Y
+  #   axis). 
+  # color_gene_vein: >
+  #   Select a cell type to view its differentiation dynamics, or
+  #   display the expression of either selected gene.
+  # vein_gene_foc_type_help: >
+  #   Focus on a specific cell type to view its immediate progeny (or progenitor in the case of terminal cell types).
+  top_correlated_select_gene1: >
+    A list with the top correlated (and anti-correlated) genes (across metacells) to gene A.
+    <br>
+    You can select any of them as gene A or gene B. 
+  top_correlated_select_gene2: >
+    Same for the second gene. 
+metacells:  
+  sidebar_select: >
+    Select metacells to visualize and compare
+  metacell_projection: >
+    Manifold model. 
+    <br>
+    Click on a metacell to select it for comparison.
+    <br> 
+    Histograms describe the time distribution of the single cells
+    comprising each metacell.
+  proj_select_main: > 
+    Choose which metacell would be selected on click.
+  color_proj_by_selected_mc: > 
+    Show selected metacells on the manifold. 
+    <br>
+    Metacell A would be marked in red and Metacell B would be marked in blue.
+  plot_mc_mc_gene_scatter: > 
+    Gene expression comparison of the 2 metacells. 
+    <br> 
+    Colored with red and blue are points with difference > 1.5 (log scale) and p.value < 0.01 (chi^2).
+    <br> 
+    Clicking on a gene would add it to the temporal dynamic over the metacell’s trajectory plot below.
+    <br> 
+    Note that axes are in log2 scale. 
+  show_diff_expr_table: 
+    Toggle for a table of the marked genes. 
+  diff_expr_table: 
+    Click on a gene to add it to the trajectory plots below, and mark it in green in the scatter plot above. 
+  # plot_mc_traj:
+  #   Temporal dynamics of genes over the metacell trajectory in inferred time. 
+  # traj_genes_help: 
+  #   Add genes to be plotted below. 
+  # traj_metacell: 
+  #   Toggle between plotting the trajectory of metacell A and metacell B.     
+  # flow_plot: >
+  #   Predicted flow leading up to the selected metacell. In this representation, metacells are depicted as nodes
+  #   distributed horizontally over time, and edges denote their predicted transition to the next time point.
+  # flow_metacell: >
+  #   Choose which metacell to plot. 
