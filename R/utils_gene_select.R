@@ -35,38 +35,32 @@ server_gene_selectors <- function(input, output, session, values, dataset, ns) {
     output$top_correlated_select_gene1 <- renderUI({
         req(values$gene1)
         req(input$gene1)
-        promises::future_promise(
-            tagList(
-                selectInput(
-                    ns("selected_top_gene1"),
-                    glue("Top correlated to {values$gene1}:"),
-                    choices = c(get_top_cor_gene(dataset(), values$gene1, type = "pos"), rev(get_top_cor_gene(dataset(), values$gene1, type = "neg"))),
-                    selected = NULL,
-                    size = 10,
-                    selectize = FALSE
-                ),
-                shinyWidgets::actionGroupButtons(c(ns("select_top_cor1_gene1"), ns("select_top_cor1_gene2")), labels = c("Select as Gene A", "Select as Gene B"), size = "sm")
+        tagList(
+            selectInput(
+                ns("selected_top_gene1"),
+                glue("Top correlated to {values$gene1}:"),
+                choices = c(get_top_cor_gene(dataset(), values$gene1, type = "pos"), rev(get_top_cor_gene(dataset(), values$gene1, type = "neg"))),
+                selected = NULL,
+                size = 10,
+                selectize = FALSE
             ),
-            seed = TRUE
+            shinyWidgets::actionGroupButtons(c(ns("select_top_cor1_gene1"), ns("select_top_cor1_gene2")), labels = c("Select as Gene A", "Select as Gene B"), size = "sm")
         )
     })
 
     output$top_correlated_select_gene2 <- renderUI({
         req(values$gene2)
         req(input$gene2)
-        promises::future_promise(
-            tagList(
-                selectInput(
-                    ns("selected_top_gene2"),
-                    glue("Top correlated to {values$gene2}:"),
-                    choices = c(get_top_cor_gene(dataset(), values$gene2, type = "pos"), rev(get_top_cor_gene(dataset(), values$gene2, type = "neg"))),
-                    selected = NULL,
-                    size = 10,
-                    selectize = FALSE
-                ),
-                shinyWidgets::actionGroupButtons(c(ns("select_top_cor2_gene1"), ns("select_top_cor2_gene2")), labels = c("Select as Gene A", "Select as Gene B"), size = "sm")
+        tagList(
+            selectInput(
+                ns("selected_top_gene2"),
+                glue("Top correlated to {values$gene2}:"),
+                choices = c(get_top_cor_gene(dataset(), values$gene2, type = "pos"), rev(get_top_cor_gene(dataset(), values$gene2, type = "neg"))),
+                selected = NULL,
+                size = 10,
+                selectize = FALSE
             ),
-            seed = TRUE
+            shinyWidgets::actionGroupButtons(c(ns("select_top_cor2_gene1"), ns("select_top_cor2_gene2")), labels = c("Select as Gene A", "Select as Gene B"), size = "sm")
         )
     })
 
