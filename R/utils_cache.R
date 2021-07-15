@@ -49,17 +49,17 @@ load_all_mc_data <- function(dataset, cache_dir) {
         obj <- load_shiny_data(var_name, dataset, cache_dir)
 
         mc_data[[dataset]][[var_name]] <<- obj
-    }    
+    }
 }
 
-verify_app_cache <- function(project, required_files = c("mc_mat.qs", "mc_sum.qs", "mc2d.qs", "gg_mc_top_cor.qs", "metacell_types.tsv", "cell_type_colors.tsv") ){
+verify_app_cache <- function(project, required_files = c("mc_mat.qs", "mc_sum.qs", "mc2d.qs", "gg_mc_top_cor.qs", "metacell_types.tsv", "cell_type_colors.tsv")) {
     cache_dir <- project_cache_dir(project)
-    datasets <- dataset_ls(project)     
-    
-    for (dataset in datasets){
+    datasets <- dataset_ls(project)
+
+    for (dataset in datasets) {
         dataset_dir <- fs::path(cache_dir, dataset)
-        for (file in required_files){
-            if (!fs::file_exists(fs::path(dataset_dir, file))){
+        for (file in required_files) {
+            if (!fs::file_exists(fs::path(dataset_dir, file))) {
                 cli_abort("The file {.file {file}} is missing in {.file {dataset_dir}}. Did you forget to import?")
             }
         }
@@ -93,7 +93,7 @@ get_metacell_types_data <- function(dataset) {
 
     cell_type_colors <- get_cell_type_data(dataset)
 
-    metacell_types <- metacell_types %>% 
+    metacell_types <- metacell_types %>%
         left_join(cell_type_colors %>% select(cell_type, mc_col = color), by = "cell_type")
 
     return(metacell_types)
@@ -127,9 +127,9 @@ get_mc_config <- function(dataset, var_name) {
 }
 
 has_network <- function(dataset) {
-    !is.null(get_mc_data(dataset, "mc_network"))    
+    !is.null(get_mc_data(dataset, "mc_network"))
 }
 
 has_time <- function(dataset) {
-    !is.null(get_mc_data(dataset, "time_annot"))     
+    !is.null(get_mc_data(dataset, "time_annot"))
 }

@@ -6,6 +6,9 @@
 \usage{
 dataset_ls(project)
 }
+\arguments{
+\item{project}{path to the project directory}
+}
 \value{
 names of the existing datasets in the project
 }

@@ -129,7 +129,7 @@ import_dataset <- function(project, dataset, anndata_file, cell_type_field = NUL
 
         cell_type_colors <- enframe(color_of_clusters, name = "cell_type", value = "color") %>%
             mutate(order = 1:n())
-    }    
+    }
 
     cell_type_colors <- cell_type_colors %>%
         arrange(as.numeric(order)) %>%
@@ -165,64 +165,61 @@ import_dataset <- function(project, dataset, anndata_file, cell_type_field = NUL
 }
 
 #' Remove a dataset from a project
-#' 
+#'
 #' @param project path to the project directory
 #' @param dataset name of the dataset to remove
-#' 
-#' @examples 
-#' 
+#'
+#' @examples
 #' \dontrun{
 #' dataset_rm("PBMC", "PBMC163k")
-#' } 
-#' 
+#' }
+#'
 #' @export
-dataset_rm <- function(project, dataset){
+dataset_rm <- function(project, dataset) {
     fs::dir_delete(fs::path(project_cache_dir(project), dataset))
 }
 
 #' List datasets in a project
-#' 
-#' @project path to the project directory
-#' 
+#'
+#' @param project path to the project directory
+#'
 #' @return names of the existing datasets in the project
-#' 
-#' @examples 
-#' 
+#'
+#' @examples
 #' \dontrun{
 #' dataset_ls("PBMC")
-#' } 
-#' 
+#' }
+#'
 #' @export
 dataset_ls <- function(project) {
     basename(fs::dir_ls(project_cache_dir(project), type = c("directory", "symlink")))
 }
 
 #' Update cell type assignment for each metacell
-#' 
-#' This would change the cell type assignments for each metacell to the ones listed at \code{metacell_types_file}. 
-#' This is usually done after a first iteration of annotation using the "Annotate" tab in the MCView annotation, which can 
-#' export a valid \code{metacell_types_file}. 
+#'
+#' This would change the cell type assignments for each metacell to the ones listed at \code{metacell_types_file}.
+#' This is usually done after a first iteration of annotation using the "Annotate" tab in the MCView annotation, which can
+#' export a valid \code{metacell_types_file}.
 #' The file should have a column named "metacell" with the metacell ids and another
 #' column named "cell_type" or "cluster" with the cell type assignment.
 #' Under the hood - MCView updates a file named "metacell_types.tsv" under \code{project/cache/dataset}, which can also be edited manually.
-#' 
+#'
 #' @param project path to the project directory
 #' @param dataset name for the dataset, e.g. "PBMC"
 #' @param metacell_types_file path to a tabular file (csv,tsv) with cell type assignement for
 #' each metacell. The file should have a column named "metacell" with the metacell ids and another
 #' column named "cell_type" or "cluster" with the cell type assignment. Metacell ids that do
 #' not exists in the data would be ignored.
-#' 
+#'
 #' @export
-#' 
+#'
 #' @examples
-#' 
 #' \dontrun{
-#'  update_metacell_types("PBMC", "PBMC163k", "raw/metacell-clusters.csv")
+#' update_metacell_types("PBMC", "PBMC163k", "raw/metacell-clusters.csv")
 #' }
-#' 
+#'
 #' @export
-update_metacell_types <- function(project, dataset, metacell_types_file){
+update_metacell_types <- function(project, dataset, metacell_types_file) {
     verify_project_dir(project)
     verify_app_cache(project)
 
@@ -230,49 +227,47 @@ update_metacell_types <- function(project, dataset, metacell_types_file){
 
     metacell_types <- parse_metacell_types(metacell_types_file)
 
-    metacell_types <- metacell_types %>% 
-        select(metacell, cell_type) %>% 
+    metacell_types <- metacell_types %>%
+        select(metacell, cell_type) %>%
         left_join(prev_metacell_types %>% select(-cell_type), by = "metacell")
 
     serialize_shiny_data(metacell_types, "metacell_types", dataset = dataset, cache_dir = project_cache_dir(project), flat = TRUE)
-    
+
     cli_alert_success("Succesfully changed metacell cell type assignments")
 }
 
 
 #' Update color assignment for each cell type
-#' 
-#' This would change the color assignments for each cell type to the ones listed at \code{cell_type_colors_file}. 
-#' This is usually done after a first iteration of annotation using the "Annotate" tab in the MCView annotation, which can 
-#' export a valid \code{cell_type_colors_file}. 
-#' The file should have a column named "cell_type" or "cluster" with the cell types and another column named "color" with the color assignment. 
+#'
+#' This would change the color assignments for each cell type to the ones listed at \code{cell_type_colors_file}.
+#' This is usually done after a first iteration of annotation using the "Annotate" tab in the MCView annotation, which can
+#' export a valid \code{cell_type_colors_file}.
+#' The file should have a column named "cell_type" or "cluster" with the cell types and another column named "color" with the color assignment.
 #' Under the hood - MCView updates a file named "cell_type_colors.tsv" under \code{project/cache/dataset}, which can also be edited manually.
-#' 
-#' 
+#'
+#'
 #' @param cell_type_colors_file path to a tabular file (csv,tsv) with color assignement for
 #' each cell type. The file should have a column named "cell_type" or "cluster" with the
 #' cell types and another column named "color" with the color assignment. Cell types that do not
-#' exist in the metacell types would be ignored, so if you changed the names of cell types you would have to also 
+#' exist in the metacell types would be ignored, so if you changed the names of cell types you would have to also
 #' update the metacell types (using \code{update_metacell_types})
 #' If this parameter is missing, MCView would use the \code{chameleon} package to assign a color for each cell type.
-#' 
-#' 
+#'
+#'
 #' @examples
-#' 
 #' \dontrun{
-#'  update_metacell_types("PBMC", "PBMC163k", "raw/cluster-colors.csv")
+#' update_metacell_types("PBMC", "PBMC163k", "raw/cluster-colors.csv")
 #' }
-#' 
 #'
 #' @export
-update_cell_type_colors <- function(project, dataset, cell_type_colors_file){
+update_cell_type_colors <- function(project, dataset, cell_type_colors_file) {
     verify_project_dir(project)
-    verify_app_cache(project)    
-    
-    cell_type_colors <- parse_cell_type_colors(cell_type_colors_file)        
-    
+    verify_app_cache(project)
+
+    cell_type_colors <- parse_cell_type_colors(cell_type_colors_file)
+
     serialize_shiny_data(cell_type_colors, "cell_type_colors", dataset = dataset, cache_dir = project_cache_dir(project), flat = TRUE)
-    
+
     cli_alert_success("Succesfully changed cell type color assignments")
 }
 

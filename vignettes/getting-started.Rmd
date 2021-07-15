@@ -111,5 +111,5 @@ Create a deployment ready bundle by running:
 MCView::create_bundle(project = "PBMC", path = getwd(), name = "PBMC")
 ```
 
-You can then upload the bundle to shinyapps.io, shiny-server or any other hosting service. 
+You can then upload the bundle to [shinyapps.io](https://docs.rstudio.com/shinyapps.io/getting-started.html#deploying-applications), shiny-server or any other hosting service. 
 

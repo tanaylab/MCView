@@ -34,10 +34,10 @@ init_config <- function(project) {
 
     config <<- yaml::read_yaml(config_file)
     verify_config_file(config)
-    
+
     verify_app_cache(project)
 
-    help_config <<- yaml::read_yaml(help_file)    
+    help_config <<- yaml::read_yaml(help_file)
 }
 
 init_defs <- function() {

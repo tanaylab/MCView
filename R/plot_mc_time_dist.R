@@ -34,7 +34,7 @@ plot_mc_time_dist <- function(dataset, metacell, ylab = "# of cells") {
         )
 
     p <- df %>%
-        ggplot(aes(x = time, y = n_cells, tooltip_text = `Metacell age (E[t])`)) +        
+        ggplot(aes(x = time, y = n_cells, tooltip_text = `Metacell age (E[t])`)) +
         geom_col(fill = "black") +
         xlab("Metacell age (E[t])") +
         ylab(ylab) +
