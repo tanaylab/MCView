@@ -17,7 +17,7 @@ knitr::opts_chunk$set(
 An __MCView__ app needs two components in order to run: 
 
 1. Configuration file (`config.yaml`).
-2. Cached data.
+2. Cached data of one or more datasets. 
 
 The app can use additional files that are not essential:
 
@@ -51,30 +51,65 @@ MCView::create_project("my_project")
 
 Which would open a text editor in order to edit the configuration file. 
 
-## Configuration file
+## Configuration files
 
-The configuration points to the source of the data which can be either output of metacell2 (python metacells package) or the old version of metacell (metacell1). This is done in the `metacells` section of the configuration file, e.g.: 
+An __MCView__ project can have 3 configuration files: 
+
+1. config.yaml - main configuration file (required)
+2. help.yaml - help text messages (optional)
+3. about.Rmd - text for the about tab (optional)
+
+The main configuration file (`config/config.yaml`) contains the parameters:
 
 ```yaml
-metacells:
-  wt:
-    anndata: /rawdata/wt.h5ad
-    cell_type_field: cluster
-    cell_type_colors:
-      fn:  raw/wt_clusters.csv
-      cell_type: cluster
-      color: color    
-  ko:
-    anndata: /rawdata/ko.h5ad
+title: MCView
+tabs: ["Manifold", "Genes", "Metacells", "Annotate", "About"] # which tabs to show
+help: false # set to true to show introjs help on start
+selected_gene1: Foxc1 # Default selected gene1 (optional)
+selected_gene2: Twist1 # Default selected gene2 (optional)
+selected_mc1: 1 # Default selected metacell1 
+selected_mc2: 2 # Default selected metacell2
 ```
 
-The above example shows the configuration of two metacell datasets, wt and ko. The most important (and essential) parameter is `anndata` which holds the path for the `h5ad` file which is the output of metacell2. Note that the data should have either absolute path or relative path to the directory from which we run the `import` command. 
+### title
 
-In addition, the wt dataset contains also an cell type annotation file with a color for each cluster. For the ko dataset, the import stage would generated initial clusters and colors using the `tglkmeans` and `chameleon` R packages. 
+The title of the app. This would be shown on the top left of the screen. 
+
+### tabs
+
+Controls which tabs to show in the left sidebar and their order. Options are: 
+
+```yaml
+["Manifold", "Genes", "Metacells", "Annotate", "About"]
+```
+
+Why would you want to remove tabs? 
+
+Many times we would want to separate between a the 'development' version of an __MCView__ app which allows users to re-annotate the data and a 'production' version which only contains data analysis tabs. This can be done by removing "Annotate" from the `tabs` field. In addition, you might want to always start the app from the "Genes" tab instead of the "Manifold", which can be done by changing the order in the `tabs` field. 
+
+### help
+
+Controls wether to start the app with a help modal (from introjs). Help messages can be edited in `help.yaml` file (see below).
+
+### selected_gene1/selected_gene2 (optional)
+
+The default genes that would be selected (in any screen with gene selection). If this parameter is missing, the 2 genes with highest max(expr)-min(expr) in the first dataset would be chosen. 
+
+### selected_mc1/selected_mc2
+
+The default metacells that would be selected in the Metacells tab. 
+
+### help.yaml
+
+This file contains the help messages used by introjs. It shouldn't be changed in general, except maybe the introduction message. Note that the messages refer to shiny elements, so you would have to look at the code itself in order to identify the element of each message. 
+
+### about.Rmd
+
+This Rmarkdown file contains the contents of the about page. Edit it as you wish, and remember that you can remove the "About" tab altogether using the `tabs` parameter in `config.yaml`. 
 
 ## Cached data
 
-In order to run, __MCView__ needs to pre-process the metacell matrix and cluster annotations. This can be done by the `MCView::import` function which accepts a project path, reads the configuration files and generates the cached data. 
+In order to run, __MCView__ needs to pre-process the metacell matrix and cluster annotations. This can be done by the `MCView::import_dataset` function which accepts a project path, dataset name and path to the `h5ad` file that was generated from metacell1. 
 
 The cached files would be saved under the cache section in the project folder, in a separate folder for each dataset. In the above example: 
 
@@ -82,6 +117,18 @@ The cached files would be saved under the cache section in the project folder, i
 └── cache
     ├── ko
     └── wt
+```
+
+You can list the datasets in the project using: 
+
+```r
+MCView::dataset_ls("my_project")
+```
+
+And removal of a dataset can be done by: 
+
+```r
+MCView::dataset_rm("my_project", "dataset")
 ```
 
 ## Running the app

@@ -24,14 +24,13 @@ Tl;dr:
 MCView::create_project("PBMC")
 ```
 
-#### Edit `PBMC/config/config.yaml`.
-
-See the [config vignette](https://tanaylab.github.io/MCView/articles/config.html) for more details.
-
-#### Import the project:
+#### Import a dataset:
 
 ``` r
-MCView::import("PBMC")
+MCView::import_dataset(project = "PBMC", 
+               dataset = "PBMC163k", 
+               anndata_file = "raw/metacells.h5ad")
+)
 ```
 
 #### Run the app:

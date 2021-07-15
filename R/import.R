@@ -104,7 +104,7 @@ import_dataset <- function(project, dataset, anndata_file, cell_type_field = NUL
         metacell_types <- parse_metacell_types(metacell_types_file)
     } else {
         if (!is.null(cell_type_field)) {
-            cli_alert_info("Taking cell type annotations from {.field {cell_type_field} } field in the anndata object")
+            cli_alert_info("Taking cell type annotations from {.field {cell_type_field}} field in the anndata object")
             metacell_types <- adata$obs %>%
                 select(cell_type = !!cell_type_field) %>%
                 rownames_to_column("metacell") %>%
@@ -248,11 +248,13 @@ update_metacell_types <- function(project, dataset, metacell_types_file){
 #' The file should have a column named "cell_type" or "cluster" with the cell types and another column named "color" with the color assignment. 
 #' Under the hood - MCView updates a file named "cell_type_colors.tsv" under \code{project/cache/dataset}, which can also be edited manually.
 #' 
+#' 
 #' @param cell_type_colors_file path to a tabular file (csv,tsv) with color assignement for
 #' each cell type. The file should have a column named "cell_type" or "cluster" with the
 #' cell types and another column named "color" with the color assignment. Cell types that do not
-#' exist in the metacell types would be ignored.
-#' If this is missing, MCView would use the \code{chameleon} package to assign a color for each cell type.
+#' exist in the metacell types would be ignored, so if you changed the names of cell types you would have to also 
+#' update the metacell types (using \code{update_metacell_types})
+#' If this parameter is missing, MCView would use the \code{chameleon} package to assign a color for each cell type.
 #' 
 #' 
 #' @examples

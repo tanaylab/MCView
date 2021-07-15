@@ -42,7 +42,7 @@ A text editor would be opened with `PBMC/config/config.yaml` file:
 
 ```yaml
 title: MCView
-tabs: ["About", "Manifold", "Genes", "Metacells", "Annotate"] # which tabs to show
+tabs: ["Manifold", "Genes", "Metacells", "Annotate", "About"] # which tabs to show
 help: false # set to true to show introjs help on start
 # selected_gene1: Foxc1 # Default selected gene1
 # selected_gene2: Twist1 # Default selected gene2
@@ -50,7 +50,7 @@ selected_mc1: 1 # Default selected metacell1
 selected_mc2: 2 # Default selected metacell2
 ```
 
-We can edit some of the parameters if we want, or add parameters per dataset, see the [config](https://tanaylab.github.io/MCview/articles/config.html) vignette for a full description of the config parameters. 
+We can edit some of the parameters if we want, or add parameters per dataset, see the [architecture](https://tanaylab.github.io/MCview/articles/architecture.html) vignette for a full description of the config parameters. 
 
 
 ## Import 
@@ -101,6 +101,8 @@ MCView::update_cell_type_colors("PBMC", "PBMC163k", "/path/to/cell_type_colors_f
 ```
 
 You can now rerun the app and the types/colors would be updated. 
+
+Note that if you changed cell type __names__ you should update both `cell_type_colors` and `metacell_types`, as otherwise metacells with the old name would appear with a "(Missing)" cell type tag. 
 ## Deploy
 
 Create a deployment ready bundle by running: 
