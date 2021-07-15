@@ -3,7 +3,6 @@ pkgdown: 1.6.1
 pkgdown_sha: ~
 articles:
   architecture: architecture.html
-  config: config.html
   getting-started: getting-started.html
-last_built: 2021-07-13T20:27Z
+last_built: 2021-07-15T13:33Z
 

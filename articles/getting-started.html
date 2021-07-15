@@ -76,7 +76,7 @@
 <div id="setup" class="section level2">
 <h2 class="hasAnchor">
 <a href="#setup" class="anchor"></a>Setup</h2>
-<p>We would start by downloading a PBMC dataset that was pre-processed using Metacells python package.</p>
+<p>We would start by downloading a PBMC dataset that was pre-processed using the <code>metacells</code> python package.</p>
 <div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va">MCView</span><span class="op">)</span></code></pre></div>
 <div class="sourceCode"><pre class="downlit sourceCode r">
@@ -91,37 +91,29 @@
 <p>The first step in running <strong>MCView</strong> is generating a project directory structure:</p>
 <div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu">MCView</span><span class="fu">::</span><span class="fu"><a href="../reference/create_project.html">create_project</a></span><span class="op">(</span><span class="st">"PBMC"</span><span class="op">)</span></code></pre></div>
-<p>A text editor would be opened with <code>PBMC/config/config.yaml</code> file.</p>
-<p>The most important field we need to fill is the <code>anndata</code> field which should point to the h5ad file we downloaded.</p>
-<p>We also fill the <code>cell_type_annot</code> field with the cluster colors file, but this is optional.</p>
-<p>Note that we also changed the name of the dataset to "PBMC", but this wasn't really necessary since we only have a single dataset in the project.</p>
-<p>See the <a href="https://tanaylab.github.io/MCview/articles/config.html">config</a> vignette for a full description of the config parameters.</p>
+<p>A text editor would be opened with <code>PBMC/config/config.yaml</code> file:</p>
 <div class="sourceCode"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">title:</span><span class="at"> MCView</span>
-<span class="fu">tabs:</span><span class="at"> </span><span class="kw">[</span><span class="st">"About"</span><span class="kw">,</span> <span class="st">"Manifold"</span><span class="kw">,</span> <span class="st">"Genes"</span><span class="kw">,</span> <span class="st">"Metacells"</span><span class="kw">,</span> <span class="st">"Annotate"</span><span class="kw">]</span><span class="at"> </span><span class="co"># which tabs to show</span>
+<span class="fu">tabs:</span><span class="at"> </span><span class="kw">[</span><span class="st">"Manifold"</span><span class="kw">,</span> <span class="st">"Genes"</span><span class="kw">,</span> <span class="st">"Metacells"</span><span class="kw">,</span> <span class="st">"Annotate"</span><span class="kw">,</span> <span class="st">"About"</span><span class="kw">]</span><span class="at"> </span><span class="co"># which tabs to show</span>
 <span class="fu">help:</span><span class="at"> false </span><span class="co"># set to true to show introjs help on start</span>
-<span class="fu">metacells:</span><span class="at"> </span>
-  <span class="fu">PBMC:</span>
-    <span class="fu">anndata:</span><span class="at"> raw/metacells.h5ad </span><span class="co"># should be absolute path</span>
-    <span class="fu">cell_type_field:</span><span class="at"> cluster </span><span class="co"># name of the field in the anndata object$obs which contains a cell type (optional)</span>
-    <span class="co"># mc_annot: # uncomment if you have a cell type annotation for each metacell</span>
-    <span class="co">#   fn: raw/metacell-cell-types.csv # file with with cell type assignment for each metacell</span>
-    <span class="co">#   metacell: mc # name of the field which contains the metacell id</span>
-    <span class="co">#   cell_type: cluster # name of the field which contains the cell type    </span>
-    <span class="fu">cell_type_annot:</span><span class="at"> </span><span class="co"># uncomment if you have a color annotation for each cell type</span>
-      <span class="fu">fn:</span><span class="at">  raw/cluster-colors.csv </span><span class="co"># file with color for each cell type (optional)</span>
-      <span class="fu">cell_type:</span><span class="at"> cluster </span><span class="co"># name of the field which contains the cell type</span>
-      <span class="fu">color:</span><span class="at"> color </span><span class="co"># name of the field which contains the color</span>
 <span class="co"># selected_gene1: Foxc1 # Default selected gene1</span>
 <span class="co"># selected_gene2: Twist1 # Default selected gene2</span>
 <span class="fu">selected_mc1:</span><span class="at"> 1 </span><span class="co"># Default selected metacell1 </span>
 <span class="fu">selected_mc2:</span><span class="at"> 2 </span><span class="co"># Default selected metacell2</span></code></pre></div>
+<p>We can edit some of the parameters if we want, or add parameters per dataset, see the <a href="https://tanaylab.github.io/MCview/articles/architecture.html">architecture</a> vignette for a full description of the config parameters.</p>
 </div>
 <div id="import" class="section level2">
 <h2 class="hasAnchor">
 <a href="#import" class="anchor"></a>Import</h2>
-<p>Next, we would import the project to <strong>MCView</strong>. This would pre-process the metacells dataset in order to view it in the shiny app:</p>
+<p>Next, we would import the PBMC dataset to the project we created. A project can contain multiple dataset, and switching between them can be done from the right sidebar.</p>
+<p>This would pre-process the metacell dataset in order to view it in the shiny app:</p>
 <div class="sourceCode"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu">MCView</span><span class="fu">::</span><span class="fu"><a href="../reference/import.html">import</a></span><span class="op">(</span><span class="st">"PBMC"</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span class="fu">MCView</span><span class="fu">::</span><span class="fu"><a href="../reference/import_dataset.html">import_dataset</a></span><span class="op">(</span>project <span class="op">=</span> <span class="st">"PBMC"</span>, 
+               dataset <span class="op">=</span> <span class="st">"PBMC163k"</span>, 
+               anndata_file <span class="op">=</span> <span class="st">"raw/metacells.h5ad"</span>, 
+               cell_type_field <span class="op">=</span>  <span class="st">"cluster"</span>,
+               cell_type_colors_file <span class="op">=</span> <span class="st">"raw/cluster-colors.csv"</span><span class="op">)</span></code></pre></div>
+<p>The most important field is the <code>anndata</code> field which points to the h5ad file we downloaded.</p>
+<p>You can see that we also specified a field in the <code>h5ad</code> object that has pre-computed cluster assignments per metacell, and the path of a file which contains color assignment per cluster, but these where optional, as <strong>MCView</strong> can generate initial clustering and coloring automatically.</p>
 <p>Note that the import part might take a few minutes, depending (mostly) on the number of metacells.</p>
 </div>
 <div id="run-the-app" class="section level2">
@@ -131,13 +123,26 @@
 <code class="sourceCode R"><span class="fu">MCView</span><span class="fu">::</span><span class="fu"><a href="../reference/run_app.html">run_app</a></span><span class="op">(</span>project <span class="op">=</span> <span class="st">"PBMC"</span>, port <span class="op">=</span> <span class="fl">5555</span><span class="op">)</span></code></pre></div>
 <p>You can now go to <a href="https://localhost:5555" class="uri">https://localhost:5555</a> to view the app.</p>
 </div>
-<div id="deploy" class="section level2">
+<div id="update-annotations" class="section level2">
 <h2 class="hasAnchor">
-<a href="#deploy" class="anchor"></a>Deploy</h2>
+<a href="#update-annotations" class="anchor"></a>Update annotations</h2>
+<p>After working a bit on the initial metacell model, we would usually want to update the default dataset annotations with the ones we created using <strong>MCView</strong>. This can be done by:</p>
+<ol style="list-style-type: decimal">
+<li>Pressing the "export" button in the upper left of "Annotate" screen and saving the file.</li>
+<li>Running:</li>
+</ol>
+<div class="sourceCode"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu">MCView</span><span class="fu">::</span><span class="fu"><a href="../reference/update_metacell_types.html">update_metacell_types</a></span><span class="op">(</span><span class="st">"PBMC"</span>, <span class="st">"PBMC163k"</span>, <span class="st">"/path/to/metacell_types_file"</span><span class="op">)</span></code></pre></div>
+<p>Where "/path/to/metacell_types_file" is the path of the exported file.</p>
+<p>The same can be done for cell type colors, which has a different export button:</p>
+<div class="sourceCode"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu">MCView</span><span class="fu">::</span><span class="fu"><a href="../reference/update_cell_type_colors.html">update_cell_type_colors</a></span><span class="op">(</span><span class="st">"PBMC"</span>, <span class="st">"PBMC163k"</span>, <span class="st">"/path/to/cell_type_colors_file"</span><span class="op">)</span></code></pre></div>
+<p>You can now rerun the app and the types/colors would be updated.</p>
+<p>Note that if you changed cell type <strong>names</strong> you should update both <code>cell_type_colors</code> and <code>metacell_types</code>, as otherwise metacells with the old name would appear with a "(Missing)" cell type tag. ## Deploy</p>
 <p>Create a deployment ready bundle by running:</p>
 <div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu">MCView</span><span class="fu">::</span><span class="fu"><a href="../reference/create_bundle.html">create_bundle</a></span><span class="op">(</span>project <span class="op">=</span> <span class="st">"PBMC"</span>, path <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/getwd.html">getwd</a></span><span class="op">(</span><span class="op">)</span>, name <span class="op">=</span> <span class="st">"PBMC"</span><span class="op">)</span></code></pre></div>
-<p>You can then upload the bundle to shinyapps.io, shiny-server or any other hosting service.</p>
+<p>You can then upload the bundle to <a href="https://docs.rstudio.com/shinyapps.io/getting-started.html#deploying-applications">shinyapps.io</a>, shiny-server or any other hosting service.</p>
 </div>
   </div>
 

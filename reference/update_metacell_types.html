@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Articles • MCView</title>
+<title>Update cell type assignment for each metacell — update_metacell_types • MCView</title>
 
 
 <!-- jquery -->
@@ -39,7 +39,13 @@
 
 
 
-<meta property="og:title" content="Articles" />
+<meta property="og:title" content="Update cell type assignment for each metacell — update_metacell_types" />
+<meta property="og:description" content="This would change the cell type assignments for each metacell to the ones listed at metacell_types_file. 
+This is usually done after a first iteration of annotation using the &quot;Annotate&quot; tab in the MCView annotation, which can 
+export a valid metacell_types_file. 
+The file should have a column named &quot;metacell&quot; with the metacell ids and another
+column named &quot;cell_type&quot; or &quot;cluster&quot; with the cell type assignment.
+Under the hood - MCView updates a file named &quot;metacell_types.tsv&quot; under project/cache/dataset, which can also be edited manually." />
 
 
 
@@ -58,7 +64,7 @@
   </head>
 
   <body data-spy="scroll" data-target="#toc">
-    <div class="container template-article-index">
+    <div class="container template-reference-topic">
       <header>
       <div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -105,20 +111,55 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-      <h1>Articles</h1>
+    <h1>Update cell type assignment for each metacell</h1>
+    
+    <div class="hidden name"><code>update_metacell_types.Rd</code></div>
     </div>
 
-    <div class="section ">
-      <h3>vignettes</h3>
-      <p class="section-desc"></p>
-
-      <dl>
-        <dt><a href="getting-started.html">Getting started with MCView</a></dt>
-        <dd></dt>
-        <dt><a href="architecture.html">Architecture</a></dt>
-        <dd></dt>
-      </dl>
+    <div class="ref-description">
+    <p>This would change the cell type assignments for each metacell to the ones listed at <code>metacell_types_file</code>. 
+This is usually done after a first iteration of annotation using the "Annotate" tab in the MCView annotation, which can 
+export a valid <code>metacell_types_file</code>. 
+The file should have a column named "metacell" with the metacell ids and another
+column named "cell_type" or "cluster" with the cell type assignment.
+Under the hood - MCView updates a file named "metacell_types.tsv" under <code>project/cache/dataset</code>, which can also be edited manually.</p>
     </div>
+
+    <pre class="usage"><span class='fu'>update_metacell_types</span><span class='op'>(</span><span class='va'>project</span>, <span class='va'>dataset</span>, <span class='va'>metacell_types_file</span><span class='op'>)</span></pre>
+
+    <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
+    <table class="ref-arguments">
+    <colgroup><col class="name" /><col class="desc" /></colgroup>
+    <tr>
+      <th>project</th>
+      <td><p>path to the project directory</p></td>
+    </tr>
+    <tr>
+      <th>dataset</th>
+      <td><p>name for the dataset, e.g. "PBMC"</p></td>
+    </tr>
+    <tr>
+      <th>metacell_types_file</th>
+      <td><p>path to a tabular file (csv,tsv) with cell type assignement for
+each metacell. The file should have a column named "metacell" with the metacell ids and another
+column named "cell_type" or "cluster" with the cell type assignment. Metacell ids that do
+not exists in the data would be ignored.</p></td>
+    </tr>
+    </table>
+
+
+    <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
+    <pre class="examples"><div class='input'>
+<span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
+ <span class='fu'>update_metacell_types</span><span class='op'>(</span><span class='st'>"PBMC"</span>, <span class='st'>"PBMC163k"</span>, <span class='st'>"raw/metacell-clusters.csv"</span><span class='op'>)</span>
+<span class='op'>}</span>
+
+</div></pre>
+  </div>
+  <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
+    <nav id="toc" data-toggle="toc" class="sticky-top">
+      <h2 data-toc-skip>Contents</h2>
+    </nav>
   </div>
 </div>
 

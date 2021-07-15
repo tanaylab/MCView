@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Generate a 'deployment ready' bundle of the a project app — create_bundle • MCView</title>
+<title>Import a dataset to an MCView project — import_dataset • MCView</title>
 
 
 <!-- jquery -->
@@ -39,12 +39,14 @@
 
 
 
-<meta property="og:title" content="Generate a 'deployment ready' bundle of the a project app — create_bundle" />
-<meta property="og:description" content="This would create a minimal shiny app in path/name directory which would contain:
-app.R file.
-project config and cache.
-The bundle can then be deployed in shiny-server, shinyapps.io or any other environment that supports serving shiny apps.
-Note: when deploying to these services - make sure you have the MCView package installed." />
+<meta property="og:title" content="Import a dataset to an MCView project — import_dataset" />
+<meta property="og:description" content="This would read would read an anndata file which is the output of
+python metacells package, and import the metacell dataset to MCView.
+The result would be a directory under project/cache/dataset which
+would contain objects used by MCView shiny app (such as the metacell matrix).
+In addition, you can supply file with type assignment for each metacell
+(metacell_types_file) and a file with color assignment for each metacell type
+(cell_type_colors_file)." />
 
 
 
@@ -110,38 +112,79 @@ Note: when deploying to these services - make sure you have the MCView package i
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Generate a 'deployment ready' bundle of the a project app</h1>
+    <h1>Import a dataset to an MCView project</h1>
     
-    <div class="hidden name"><code>create_bundle.Rd</code></div>
+    <div class="hidden name"><code>import_dataset.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>This would create a minimal shiny app in <code>path</code>/<code>name</code> directory which would contain:</p><ul>
-<li><p>app.R file.</p></li>
-<li><p>project config and cache.</p></li>
-</ul><p>The bundle can then be deployed in shiny-server, shinyapps.io or any other environment that supports serving shiny apps.
-Note: when deploying to these services - make sure you have the MCView package installed.</p>
+    <p>This would read would read an <code>anndata</code> file which is the output of
+python <code>metacells</code> package, and import the metacell dataset to MCView.
+The result would be a directory under <code>project/cache/dataset</code> which
+would contain objects used by MCView shiny app (such as the metacell matrix).
+In addition, you can supply file with type assignment for each metacell
+(<code>metacell_types_file</code>) and a file with color assignment for each metacell type
+(<code>cell_type_colors_file</code>).</p>
     </div>
 
-    <pre class="usage"><span class='fu'>create_bundle</span><span class='op'>(</span><span class='va'>project</span>, path <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/getwd.html'>getwd</a></span><span class='op'>(</span><span class='op'>)</span>, name <span class='op'>=</span> <span class='st'>"MCView_bundle"</span><span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>import_dataset</span><span class='op'>(</span>
+  <span class='va'>project</span>,
+  <span class='va'>dataset</span>,
+  <span class='va'>anndata_file</span>,
+  cell_type_field <span class='op'>=</span> <span class='cn'>NULL</span>,
+  metacell_types_file <span class='op'>=</span> <span class='cn'>NULL</span>,
+  cell_type_colors_file <span class='op'>=</span> <span class='cn'>NULL</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>project</th>
-      <td><p>path to the project directory</p></td>
+      <td><p>path to the project</p></td>
     </tr>
     <tr>
-      <th>path</th>
-      <td><p>path in which to create the bundle.</p></td>
+      <th>dataset</th>
+      <td><p>name for the dataset, e.g. "PBMC"</p></td>
+    </tr>
+    <tr>
+      <th>anndata_file</th>
+      <td><p>path to <code>h5ad</code> file which contains the output of metacell2 pipeline (metacells python package).</p></td>
+    </tr>
+    <tr>
+      <th>cell_type_field</th>
+      <td><p>name of a field in the anndata object$obs which contains a cell type (optional).
+If this parameter and <code>metacell_types_file</code> are missing, MCView would cluster the
+metacell matrix using kmeans++ algorithm (from the <code>tglkmeans</code> package).
+If <code>metacell_types</code> parameter is set this field is ignored.</p></td>
+    </tr>
+    <tr>
+      <th>metacell_types_file</th>
+      <td><p>path to a tabular file (csv,tsv) with cell type assignement for
+each metacell. The file should have a column named "metacell" with the metacell ids and another
+column named "cell_type" or "cluster" with the cell type assignment. Metacell ids that do
+not exists in the data would be ignored.
+If this parameter and <code>cell_type_field</code> are missing, MCView would cluster the
+metacell matrix using kmeans++ algorithm (from the <code>tglkmeans</code> package).</p></td>
+    </tr>
+    <tr>
+      <th>cell_type_colors_file</th>
+      <td><p>path to a tabular file (csv,tsv) with color assignement for
+each cell type. The file should have a column named "cell_type" or "cluster" with the
+cell types and another column named "color" with the color assignment. Cell types that do not
+exist in the metacell types would be ignored.
+If this is missing, MCView would use the <code>chameleon</code> package to assign a color for each cell type.</p></td>
     </tr>
     </table>
 
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
-<span class='fu'>MCView</span><span class='fu'>::</span><span class='fu'>create_bundle</span><span class='op'>(</span>project <span class='op'>=</span> <span class='st'>"PBMC"</span>, path <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/getwd.html'>getwd</a></span><span class='op'>(</span><span class='op'>)</span>, name <span class='op'>=</span> <span class='st'>"PBMC"</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/files2.html'>dir.create</a></span><span class='op'>(</span><span class='st'>"raw"</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/utils/download.file.html'>download.file</a></span><span class='op'>(</span><span class='st'>"http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz"</span>, <span class='st'>"raw/#' PBMC_processed.tar.gz"</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/utils/untar.html'>untar</a></span><span class='op'>(</span><span class='st'>"raw/PBMC_processed.tar.gz"</span>, exdir <span class='op'>=</span> <span class='st'>"raw"</span><span class='op'>)</span>
+<span class='fu'><a href='create_project.html'>create_project</a></span><span class='op'>(</span><span class='st'>"PBMC"</span><span class='op'>)</span>
+<span class='fu'>import_dataset</span><span class='op'>(</span><span class='st'>"PBMC"</span>, <span class='st'>"PBMC163k"</span>, <span class='st'>"raw/metacells.h5ad"</span><span class='op'>)</span>
 <span class='op'>}</span>
 
 </div></pre>
