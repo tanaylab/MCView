@@ -40,9 +40,9 @@ app_ui <- function(request) {
         )
     )
 
-    if (length(dataset_ls()) > 1) {
+    if (length(dataset_ls(project)) > 1) {
         right_sidebar <- shinydashboardPlus::dashboardControlbar(
-            selectInput("dataset", label = "Dataset", choices = dataset_ls(), selected = dataset_ls()[1], multiple = FALSE, selectize = FALSE)
+            selectInput("dataset", label = "Dataset", choices = dataset_ls(project), selected = dataset_ls(project)[1], multiple = FALSE, selectize = FALSE)
         )
     } else {
         right_sidebar <- NULL

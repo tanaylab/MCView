@@ -24,11 +24,11 @@ project_cache_dir <- function(path) {
 
 verify_project_dir <- function(path) {
     if (!dir.exists(path)) {
-        cli_abort("{path} does not exist. Maybe there is a typo? You can start a new project by running MCView::create_project.")
+        cli_abort("{.path path} does not exist. Maybe there is a typo? You can start a new project by running {.code MCView::create_project}.")
     }
     config_file <- project_config_file(path)
     if (!file.exists(config_file)) {
-        cli_abort("No config file found in {config_file}. Are you sure this is an MCView project dir? You can start a new project by running MCView::create_project.")
+        cli_abort("No config file found in {.file {config_file}}. Are you sure this is an MCView project dir? You can start a new project by running {.code MCView::create_project}.")
     }
 }
 

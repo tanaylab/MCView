@@ -87,7 +87,7 @@ mod_annotate_mc_ui <- function(id) {
                 width = 4,
                 shinydashboardPlus::box(
                     id = ns("metacell_typesation"),
-                    title = "MC annotation",
+                    title = "Metacell annotation",
                     status = "primary",
                     solidHeader = TRUE,
                     collapsible = TRUE,
@@ -230,7 +230,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
             new_cell_type_colors <- new_cell_type_colors %>% mutate(cell_type_id = as.character(1:n()))
         }
 
-        # MC annotations that are now invalid would get cell_type of NA.
+        # Metacell annotations that are now invalid would get cell_type of NA.
         cur_metacell_types <- metacell_types()
         new_metacell_types <- cur_metacell_types %>%
             select(-cell_type, -mc_col) %>%
@@ -259,7 +259,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
 
     output$cell_type_colors_download <- downloadHandler(
         filename = function() {
-            paste("cell_type-", Sys.Date(), ".csv", sep = "")
+            paste("cell_type_colors-", Sys.Date(), ".csv", sep = "")
         },
         content = function(file) {
             fwrite(

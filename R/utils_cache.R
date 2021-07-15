@@ -38,7 +38,7 @@ load_shiny_data <- function(name, dataset, cache_dir) {
 }
 
 load_all_mc_data <- function(dataset, cache_dir) {
-    files <- list.files(fs::path(cache_dir, dataset), pattern = "*\\.(qs|tsv)")
+    files <- list.files(fs::path(cache_dir, dataset), pattern = "*\\.(qs|tsv|csv)")
 
     mc_data[[dataset]] <<- list()
 
@@ -49,14 +49,25 @@ load_all_mc_data <- function(dataset, cache_dir) {
         obj <- load_shiny_data(var_name, dataset, cache_dir)
 
         mc_data[[dataset]][[var_name]] <<- obj
-    }
+    }    
+}
 
-    # initialize top correlated genes for each dataset
-    mc_data[[dataset]]$top_cor_genes <- list()
+verify_app_cache <- function(project, required_files = c("mc_mat.qs", "mc_sum.qs", "mc2d.qs", "gg_mc_top_cor.qs", "metacell_types.tsv", "cell_type_colors.tsv") ){
+    cache_dir <- project_cache_dir(project)
+    datasets <- dataset_ls(project)     
+    
+    for (dataset in datasets){
+        dataset_dir <- fs::path(cache_dir, dataset)
+        for (file in required_files){
+            if (!fs::file_exists(fs::path(dataset_dir, file))){
+                cli_abort("The file {.file {file}} is missing in {.file {dataset_dir}}. Did you forget to import?")
+            }
+        }
+    }
 }
 
 load_all_data <- function(cache_dir) {
-    datasets <- dataset_ls()
+    datasets <- dataset_ls(project)
 
     mc_data <<- list()
 
@@ -79,6 +90,12 @@ get_metacell_types_data <- function(dataset) {
     metacell_types <- metacell_types %>%
         mutate(cell_type = as.character(forcats::fct_explicit_na(cell_type))) %>%
         mutate(metacell = as.character(metacell))
+
+    cell_type_colors <- get_cell_type_data(dataset)
+
+    metacell_types <- metacell_types %>% 
+        left_join(cell_type_colors %>% select(cell_type, mc_col = color), by = "cell_type")
+
     return(metacell_types)
 }
 
@@ -100,17 +117,13 @@ get_mc_data <- function(dataset, var_name) {
 }
 
 get_mc_config <- function(dataset, var_name) {
-    if (is.null(config$metacells)) {
+    if (is.null(config$datasets)) {
         return(NULL)
     }
-    if (is.null(config$metacells[[dataset]])) {
+    if (is.null(config$datasets[[dataset]])) {
         return(NULL)
     }
-    config$metacells[[dataset]][[var_name]]
-}
-
-dataset_ls <- function() {
-    basename(fs::dir_ls(cache_dir, type = c("directory", "symlink")))
+    config$datasets[[dataset]][[var_name]]
 }
 
 has_network <- function(dataset) {

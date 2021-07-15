@@ -10,9 +10,11 @@ verify_config_file <- function(config) {
 
     for (field in required_fields) {
         if (!(field %in% names(config))) {
-            cli_abort("The field {field} does not exist in the config file.")
+            cli_abort("The field {.field {field}} does not exist in the config file.")
         }
     }
+
+    # TODO: verify datasets config
 
     invisible(TRUE)
 }
@@ -26,12 +28,16 @@ verify_config_file <- function(config) {
 init_config <- function(project) {
     config_file <- project_config_file(project)
     help_file <- project_help_file(project)
+    project <<- project
     about_file <<- fs::path_abs(project_about_file(project))
+    cache_dir <<- project_cache_dir(project)
 
     config <<- yaml::read_yaml(config_file)
-    help_config <<- yaml::read_yaml(help_file)
+    verify_config_file(config)
+    
+    verify_app_cache(project)
 
-    cache_dir <<- project_cache_dir(project)
+    help_config <<- yaml::read_yaml(help_file)    
 }
 
 init_defs <- function() {
@@ -49,7 +55,7 @@ init_defs <- function() {
 init_selected_genes <- function() {
     # if selected genes are not set - choose them from the first dataset
     if (is.null(config$selected_gene1) || is.null(config$selected_gene2)) {
-        mc_egc <- get_mc_egc(dataset_ls()[1])
+        mc_egc <- get_mc_egc(dataset_ls(project)[1])
         minmax <- matrixStats::rowMaxs(mc_egc, na.rm = TRUE) - matrixStats::rowMins(mc_egc, na.rm = TRUE)
         names(minmax) <- rownames(mc_egc)
         genes <- names(head(sort(minmax, decreasing = TRUE), n = 2))
@@ -104,7 +110,7 @@ init_tab_defs <- function() {
 }
 
 get_gene_names <- function() {
-    gene_names <- rownames(get_mc_data(dataset_ls()[1], "mc_mat"))
+    gene_names <- rownames(get_mc_data(dataset_ls(project)[1], "mc_mat"))
     # We remove gene names that are too long in order to reduce pickerInput search bar width
     gene_names <- gene_names[stringr::str_length(gene_names) <= 30]
     return(gene_names)

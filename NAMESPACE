@@ -2,9 +2,13 @@
 
 export(create_bundle)
 export(create_project)
+export(dataset_ls)
+export(dataset_rm)
 export(import_dataset)
 export(run_app)
 export(set_default_project)
+export(update_cell_type_colors)
+export(update_metacell_types)
 import(cli)
 import(dplyr)
 import(ggplot2)

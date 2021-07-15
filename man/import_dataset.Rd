@@ -27,14 +27,14 @@ If \code{metacell_types} parameter is set this field is ignored.}
 
 \item{metacell_types_file}{path to a tabular file (csv,tsv) with cell type assignement for
 each metacell. The file should have a column named "metacell" with the metacell ids and another
-column named "cell_type" or "cluster" with the cell type assignment. Metacell ids that do 
-not exists in the data would be ignored. 
+column named "cell_type" or "cluster" with the cell type assignment. Metacell ids that do
+not exists in the data would be ignored.
 If this parameter and \code{cell_type_field} are missing, MCView would cluster the
 metacell matrix using kmeans++ algorithm (from the \code{tglkmeans} package).}
 
 \item{cell_type_colors_file}{path to a tabular file (csv,tsv) with color assignement for
-each cell type. The file should have a column named "cell_type" or "cluster" with the 
-cell_types and another column named "color" with the color assignment. Cell types that do not 
+each cell type. The file should have a column named "cell_type" or "cluster" with the
+cell types and another column named "color" with the color assignment. Cell types that do not
 exist in the metacell types would be ignored.
 If this is missing, MCView would use the \code{chameleon} package to assign a color for each cell type.}
 }
@@ -53,7 +53,7 @@ dir.create("raw")
 download.file("http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz", "raw/#' PBMC_processed.tar.gz")
 untar("raw/PBMC_processed.tar.gz", exdir = "raw")
 create_project("PBMC")
-import_dataset("PBMC", "PBMC160k", "raw/pbmc_metacells.h5ad")
+import_dataset("PBMC", "PBMC163k", "raw/metacells.h5ad")
 }
 
 }

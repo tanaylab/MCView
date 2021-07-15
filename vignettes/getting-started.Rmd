@@ -50,7 +50,7 @@ selected_mc1: 1 # Default selected metacell1
 selected_mc2: 2 # Default selected metacell2
 ```
 
-We can edit some of the parameters if we want, see the [config](https://tanaylab.github.io/MCview/articles/config.html) vignette for a full description of the config parameters. 
+We can edit some of the parameters if we want, or add parameters per dataset, see the [config](https://tanaylab.github.io/MCview/articles/config.html) vignette for a full description of the config parameters. 
 
 
 ## Import 
@@ -61,7 +61,7 @@ This would pre-process the metacell dataset in order to view it in the shiny app
 
 ```{r, eval=FALSE}
 MCView::import_dataset(project = "PBMC", 
-               dataset = "PBMC160k", 
+               dataset = "PBMC163k", 
                anndata_file = "raw/metacells.h5ad", 
                cell_type_field =  "cluster",
                cell_type_colors_file = "raw/cluster-colors.csv")
@@ -89,7 +89,7 @@ After working a bit on the initial metacell model, we would usually want to upda
 2. Running: 
 
 ```{r, eval=FALSE}
-MCView::update_metacell_types("PBMC", "PBMC160k", "/path/to/metacell_types_file")
+MCView::update_metacell_types("PBMC", "PBMC163k", "/path/to/metacell_types_file")
 ```
 
 Where "/path/to/metacell_types_file" is the path of the exported file. 
@@ -97,7 +97,7 @@ Where "/path/to/metacell_types_file" is the path of the exported file.
 The same can be done for cell type colors, which has a different export button: 
 
 ```{r, eval=FALSE}
-MCView::update_cell_type_colors("PBMC", "PBMC160k", "/path/to/cell_type_colors_file")
+MCView::update_cell_type_colors("PBMC", "PBMC163k", "/path/to/cell_type_colors_file")
 ```
 
 You can now rerun the app and the types/colors would be updated. 

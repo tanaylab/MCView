@@ -5,11 +5,11 @@
 #' @import shiny
 #' @noRd
 app_server <- function(input, output, session) {
-    if (length(dataset_ls()) > 1) {
+    if (length(dataset_ls(project)) > 1) {
         dataset <- reactive(input$dataset)
     } else {
         dataset <- function() {
-            dataset_ls()[1]
+            dataset_ls(project)[1]
         }
     }
 

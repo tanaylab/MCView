@@ -129,7 +129,7 @@ The only section that changes when importing from metacell1 is in the dataset pa
 title: MCView
 tabs: ["About", "Manifold", "Genes", "Metacells", "Annotate"] # which tabs to show
 help: false # set to true to show introjs help on start
-metacells: 
+datasets: 
   PBMC:
     scdb: scrna_db/ # path to R metacell scrna databse
     matrix: exe_f # name of the umi matrix to use

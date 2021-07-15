@@ -255,5 +255,5 @@ initial_proj_point_size <- function(dataset) {
 }
 
 min_edge_length <- function(dataset) {
-    config$metacells[[dataset]]$min_d %||% 0.05
+    config$datasets[[dataset]]$min_d %||% 0.05
 }
