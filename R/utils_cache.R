@@ -127,9 +127,9 @@ get_mc_config <- function(dataset, var_name) {
 }
 
 has_network <- function(dataset) {
-    !is.null(get_mc_config(dataset, "network"))
+    !is.null(get_mc_data(dataset, "mc_network"))    
 }
 
 has_time <- function(dataset) {
-    !is.null(get_mc_config(dataset, "time_bin_field")) && has_name(get_mc_config(dataset, "metacell_types"), "mc_age")
+    !is.null(get_mc_data(dataset, "time_annot"))     
 }
