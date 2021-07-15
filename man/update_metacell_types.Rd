@@ -17,17 +17,16 @@ column named "cell_type" or "cluster" with the cell type assignment. Metacell id
 not exists in the data would be ignored.}
 }
 \description{
-This would change the cell type assignments for each metacell to the ones listed at \code{metacell_types_file}. 
-This is usually done after a first iteration of annotation using the "Annotate" tab in the MCView annotation, which can 
-export a valid \code{metacell_types_file}. 
+This would change the cell type assignments for each metacell to the ones listed at \code{metacell_types_file}.
+This is usually done after a first iteration of annotation using the "Annotate" tab in the MCView annotation, which can
+export a valid \code{metacell_types_file}.
 The file should have a column named "metacell" with the metacell ids and another
 column named "cell_type" or "cluster" with the cell type assignment.
 Under the hood - MCView updates a file named "metacell_types.tsv" under \code{project/cache/dataset}, which can also be edited manually.
 }
 \examples{
-
 \dontrun{
- update_metacell_types("PBMC", "PBMC163k", "raw/metacell-clusters.csv")
+update_metacell_types("PBMC", "PBMC163k", "raw/metacell-clusters.csv")
 }
 
 }

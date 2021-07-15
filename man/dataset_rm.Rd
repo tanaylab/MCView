@@ -15,9 +15,8 @@ dataset_rm(project, dataset)
 Remove a dataset from a project
 }
 \examples{
-
 \dontrun{
 dataset_rm("PBMC", "PBMC163k")
-} 
+}
 
 }

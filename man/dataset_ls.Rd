@@ -16,9 +16,8 @@ names of the existing datasets in the project
 List datasets in a project
 }
 \examples{
-
 \dontrun{
 dataset_ls("PBMC")
-} 
+}
 
 }

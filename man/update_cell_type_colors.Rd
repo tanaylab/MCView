@@ -10,22 +10,20 @@ update_cell_type_colors(project, dataset, cell_type_colors_file)
 \item{cell_type_colors_file}{path to a tabular file (csv,tsv) with color assignement for
 each cell type. The file should have a column named "cell_type" or "cluster" with the
 cell types and another column named "color" with the color assignment. Cell types that do not
-exist in the metacell types would be ignored, so if you changed the names of cell types you would have to also 
+exist in the metacell types would be ignored, so if you changed the names of cell types you would have to also
 update the metacell types (using \code{update_metacell_types})
 If this parameter is missing, MCView would use the \code{chameleon} package to assign a color for each cell type.}
 }
 \description{
-This would change the color assignments for each cell type to the ones listed at \code{cell_type_colors_file}. 
-This is usually done after a first iteration of annotation using the "Annotate" tab in the MCView annotation, which can 
-export a valid \code{cell_type_colors_file}. 
-The file should have a column named "cell_type" or "cluster" with the cell types and another column named "color" with the color assignment. 
+This would change the color assignments for each cell type to the ones listed at \code{cell_type_colors_file}.
+This is usually done after a first iteration of annotation using the "Annotate" tab in the MCView annotation, which can
+export a valid \code{cell_type_colors_file}.
+The file should have a column named "cell_type" or "cluster" with the cell types and another column named "color" with the color assignment.
 Under the hood - MCView updates a file named "cell_type_colors.tsv" under \code{project/cache/dataset}, which can also be edited manually.
 }
 \examples{
-
 \dontrun{
- update_metacell_types("PBMC", "PBMC163k", "raw/cluster-colors.csv")
+update_metacell_types("PBMC", "PBMC163k", "raw/cluster-colors.csv")
 }
-
 
 }
