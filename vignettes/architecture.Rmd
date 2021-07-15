@@ -105,6 +105,7 @@ The default metacells that would be selected in the Metacells tab.
 ### datasets (optional)
 
 Additional per-dataset parameters. This is currently a bit degenerated but would include more parameters in the future. 
+
 ### help.yaml
 
 This file contains the help messages used by introjs. It shouldn't be changed in general, except maybe the introduction message. Note that the messages refer to shiny elements, so you would have to look at the code itself in order to identify the element of each message. 
