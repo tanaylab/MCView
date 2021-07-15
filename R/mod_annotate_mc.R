@@ -205,6 +205,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         cell_type_colors(initial_cell_type_colors)
     })
 
+    # load metacell types file
     observe({
         req(input$metacell_types_fn)
         new_metacell_types <- tgutil::fread(input$metacell_types_fn$datapath, colClasses = c("cell_type_id" = "character", "cell_type" = "character", "metacell" = "character")) %>% as_tibble()
@@ -220,9 +221,11 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         metacell_types(new_metacell_types)
     })
 
+    # load metacell colors
     observe({
         req(input$cell_type_colors_fn)
         new_cell_type_colors <- tgutil::fread(input$cell_type_colors_fn$datapath, colClasses = c("cell_type_id" = "character", "cell_type" = "character", "color" = "character")) %>% as_tibble()
+
         if ("order" %in% colnames(new_cell_type_colors)) {
             new_cell_type_colors <- new_cell_type_colors %>% arrange(order)
         }
@@ -230,18 +233,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
             new_cell_type_colors <- new_cell_type_colors %>% mutate(cell_type_id = as.character(1:n()))
         }
 
-        # Metacell annotations that are now invalid would get cell_type of NA.
-        cur_metacell_types <- metacell_types()
-        new_metacell_types <- cur_metacell_types %>%
-            select(-cell_type, -mc_col) %>%
-            left_join(
-                new_cell_type_colors %>% select(cell_type_id, cell_type, mc_col = color),
-                by = "cell_type_id"
-            )
-
-
         cell_type_colors(new_cell_type_colors)
-        metacell_types(new_metacell_types)
     })
 
     output$metacell_types_download <- downloadHandler(
