@@ -10,6 +10,8 @@ create_bundle(project, path = getwd(), name = "MCView_bundle")
 \item{project}{path to the project directory}
 
 \item{path}{path in which to create the bundle.}
+
+\item{name}{name of the folder in which to create the bundle. The bundle would be created at \code{path}/\code{name}}
 }
 \description{
 This would create a minimal shiny app in \code{path}/\code{name} directory which would contain:
