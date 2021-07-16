@@ -14,7 +14,7 @@ remotes::install_github("tanaylab/MCView")
 
 ## Usage
 
-See the [vignette](https://tanaylab.github.io/MCView/articles/getting-started.html).
+See the [vignette](https://tanaylab.github.io/MCView/articles/MCView.html).
 
 Tl;dr:
 
