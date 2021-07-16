@@ -30,7 +30,6 @@ MCView::create_project("PBMC")
 MCView::import_dataset(project = "PBMC", 
                dataset = "PBMC163k", 
                anndata_file = "raw/metacells.h5ad")
-)
 ```
 
 #### Run the app:
