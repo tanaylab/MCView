@@ -128,13 +128,13 @@ The cached files would be saved under the cache section in the project folder, i
 
 You can list the datasets in the project using: 
 
-```r
+```{r, eval=FALSE}
 MCView::dataset_ls("my_project")
 ```
 
 And removal of a dataset can be done by: 
 
-```r
+```{r, eval=FALSE}
 MCView::dataset_rm("my_project", "dataset")
 ```
 
