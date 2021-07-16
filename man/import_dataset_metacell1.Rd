@@ -34,7 +34,7 @@ import_dataset_metacell1(
 \item{metacell_types_file}{path to a tabular file (csv,tsv) with cell type assignement for
 each metacell. The file should have a column named "metacell" with the metacell ids and another
 column named "cell_type" or "cluster" with the cell type assignment. Metacell ids that do
-not exists in the data would be ignored. In addition, the file can have a column named 
+not exists in the data would be ignored. In addition, the file can have a column named
 "age" or "mc_age" with age metadata per metacell}
 
 \item{cell_type_colors_file}{path to a tabular file (csv,tsv) with color assignement for
@@ -49,14 +49,14 @@ exist in the metacell types would be ignored.}
 \item{time_bin_field}{name of a field in \code{cell_metadata} which contains time bin per cell (optional)}
 }
 \description{
-This would read would read objects from \code{metacell} R package and import a 
+This would read would read objects from \code{metacell} R package and import a
 metacell dataset to MCView.
 The result would be a directory under \code{project/cache/dataset} which
 would contain objects used by MCView shiny app (such as the metacell matrix).
 In addition, you can supply file with type assignment for each metacell
 (\code{metacell_types_file}) and a file with color assignment for each metacell type
 (\code{cell_type_colors_file}).
-Make sure that you have the R \code{metacell} package installed in order to use 
+Make sure that you have the R \code{metacell} package installed in order to use
 this function.
 \code{network}, \code{time_annotation_file} and \code{time_bin_field} are only relevant
 if you computed flows/networks for your dataset and therefore are optional.
@@ -64,18 +64,18 @@ if you computed flows/networks for your dataset and therefore are optional.
 \examples{
 \dontrun{
 import_dataset_metacell1(
-    "embflow", 
-    "153embs", 
+    "embflow",
+    "153embs",
     scdb = "raw/scrna_db",
     matrix = "embs",
-    mc = "embs", 
-    mc2d = "embs", 
-    metacell_types_file = "raw/metacell-types.csv", 
+    mc = "embs",
+    mc2d = "embs",
+    metacell_types_file = "raw/metacell-types.csv",
     cell_type_colors_file = "raw/cell-type-colors.csv",
-    network = "embs",         
+    network = "embs",
     time_annotation_file = "raw/time-annot.tsv",
     time_bin_field = "age_group"
-    )
+)
 }
 
 }
