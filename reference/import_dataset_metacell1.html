@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Generate a 'deployment ready' bundle of the a project app — create_bundle • MCView</title>
+<title>Import a dataset to an MCView project from metacell R package — import_dataset_metacell1 • MCView</title>
 
 
 <!-- jquery -->
@@ -39,12 +39,18 @@
 
 
 
-<meta property="og:title" content="Generate a 'deployment ready' bundle of the a project app — create_bundle" />
-<meta property="og:description" content="This would create a minimal shiny app in path/name directory which would contain:
-app.R file.
-project config and cache.
-The bundle can then be deployed in shiny-server, shinyapps.io or any other environment that supports serving shiny apps.
-Note: when deploying to these services - make sure you have the MCView package installed." />
+<meta property="og:title" content="Import a dataset to an MCView project from metacell R package — import_dataset_metacell1" />
+<meta property="og:description" content="This would read would read objects from metacell R package and import a
+metacell dataset to MCView.
+The result would be a directory under project/cache/dataset which
+would contain objects used by MCView shiny app (such as the metacell matrix).
+In addition, you can supply file with type assignment for each metacell
+(metacell_types_file) and a file with color assignment for each metacell type
+(cell_type_colors_file).
+Make sure that you have the R metacell package installed in order to use
+this function.
+network, time_annotation_file and time_bin_field are only relevant
+if you computed flows/networks for your dataset and therefore are optional." />
 
 
 
@@ -122,42 +128,111 @@ Note: when deploying to these services - make sure you have the MCView package i
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Generate a 'deployment ready' bundle of the a project app</h1>
+    <h1>Import a dataset to an MCView project from metacell R package</h1>
     
-    <div class="hidden name"><code>create_bundle.Rd</code></div>
+    <div class="hidden name"><code>import_dataset_metacell1.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>This would create a minimal shiny app in <code>path</code>/<code>name</code> directory which would contain:</p><ul>
-<li><p>app.R file.</p></li>
-<li><p>project config and cache.</p></li>
-</ul><p>The bundle can then be deployed in shiny-server, shinyapps.io or any other environment that supports serving shiny apps.
-Note: when deploying to these services - make sure you have the MCView package installed.</p>
+    <p>This would read would read objects from <code>metacell</code> R package and import a
+metacell dataset to MCView.
+The result would be a directory under <code>project/cache/dataset</code> which
+would contain objects used by MCView shiny app (such as the metacell matrix).
+In addition, you can supply file with type assignment for each metacell
+(<code>metacell_types_file</code>) and a file with color assignment for each metacell type
+(<code>cell_type_colors_file</code>).
+Make sure that you have the R <code>metacell</code> package installed in order to use
+this function.
+<code>network</code>, <code>time_annotation_file</code> and <code>time_bin_field</code> are only relevant
+if you computed flows/networks for your dataset and therefore are optional.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>create_bundle</span><span class='op'>(</span><span class='va'>project</span>, path <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/getwd.html'>getwd</a></span><span class='op'>(</span><span class='op'>)</span>, name <span class='op'>=</span> <span class='st'>"MCView_bundle"</span><span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>import_dataset_metacell1</span><span class='op'>(</span>
+  <span class='va'>project</span>,
+  <span class='va'>dataset</span>,
+  <span class='va'>scdb</span>,
+  <span class='va'>matrix</span>,
+  <span class='va'>mc</span>,
+  <span class='va'>mc2d</span>,
+  <span class='va'>metacell_types_file</span>,
+  <span class='va'>cell_type_colors_file</span>,
+  network <span class='op'>=</span> <span class='cn'>NULL</span>,
+  time_annotation_file <span class='op'>=</span> <span class='cn'>NULL</span>,
+  time_bin_field <span class='op'>=</span> <span class='cn'>NULL</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>project</th>
-      <td><p>path to the project directory</p></td>
+      <td><p>path to the project</p></td>
     </tr>
     <tr>
-      <th>path</th>
-      <td><p>path in which to create the bundle.</p></td>
+      <th>dataset</th>
+      <td><p>name for the dataset, e.g. "PBMC"</p></td>
     </tr>
     <tr>
-      <th>name</th>
-      <td><p>name of the folder in which to create the bundle. The bundle would be created at <code>path</code>/<code>name</code></p></td>
+      <th>scdb</th>
+      <td><p>path to R metacell single cell RNA database</p></td>
+    </tr>
+    <tr>
+      <th>matrix</th>
+      <td><p>name of the umi matrix to use</p></td>
+    </tr>
+    <tr>
+      <th>mc</th>
+      <td><p>name of the metacell object to use</p></td>
+    </tr>
+    <tr>
+      <th>mc2d</th>
+      <td><p>name of the 2d projection object to use</p></td>
+    </tr>
+    <tr>
+      <th>metacell_types_file</th>
+      <td><p>path to a tabular file (csv,tsv) with cell type assignement for
+each metacell. The file should have a column named "metacell" with the metacell ids and another
+column named "cell_type" or "cluster" with the cell type assignment. Metacell ids that do
+not exists in the data would be ignored. In addition, the file can have a column named
+"age" or "mc_age" with age metadata per metacell</p></td>
+    </tr>
+    <tr>
+      <th>cell_type_colors_file</th>
+      <td><p>path to a tabular file (csv,tsv) with color assignement for
+each cell type. The file should have a column named "cell_type" or "cluster" with the
+cell types and another column named "color" with the color assignment. Cell types that do not
+exist in the metacell types would be ignored.</p></td>
+    </tr>
+    <tr>
+      <th>network</th>
+      <td><p>name of the network object to use (optional)</p></td>
+    </tr>
+    <tr>
+      <th>time_annotation_file</th>
+      <td><p>file with names for time bins (optional, only relevant with networks/flows). Should have a field named "time_bin" with the time bin id and another field named "time_desc" which contains the description of the time bin</p></td>
+    </tr>
+    <tr>
+      <th>time_bin_field</th>
+      <td><p>name of a field in <code>cell_metadata</code> which contains time bin per cell (optional)</p></td>
     </tr>
     </table>
 
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
-<span class='fu'>MCView</span><span class='fu'>::</span><span class='fu'>create_bundle</span><span class='op'>(</span>project <span class='op'>=</span> <span class='st'>"PBMC"</span>, path <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/getwd.html'>getwd</a></span><span class='op'>(</span><span class='op'>)</span>, name <span class='op'>=</span> <span class='st'>"PBMC"</span><span class='op'>)</span>
+<span class='fu'>import_dataset_metacell1</span><span class='op'>(</span>
+    <span class='st'>"embflow"</span>,
+    <span class='st'>"153embs"</span>,
+    scdb <span class='op'>=</span> <span class='st'>"raw/scrna_db"</span>,
+    matrix <span class='op'>=</span> <span class='st'>"embs"</span>,
+    mc <span class='op'>=</span> <span class='st'>"embs"</span>,
+    mc2d <span class='op'>=</span> <span class='st'>"embs"</span>,
+    metacell_types_file <span class='op'>=</span> <span class='st'>"raw/metacell-types.csv"</span>,
+    cell_type_colors_file <span class='op'>=</span> <span class='st'>"raw/cell-type-colors.csv"</span>,
+    network <span class='op'>=</span> <span class='st'>"embs"</span>,
+    time_annotation_file <span class='op'>=</span> <span class='st'>"raw/time-annot.tsv"</span>,
+    time_bin_field <span class='op'>=</span> <span class='st'>"age_group"</span>
+<span class='op'>)</span>
 <span class='op'>}</span>
 
 </div></pre>

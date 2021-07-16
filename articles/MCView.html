@@ -127,10 +127,7 @@
 <p>The most important field is the <code>anndata</code> field which points to the h5ad file we downloaded.</p>
 <p>You can see that we also specified a field in the <code>h5ad</code> object that has pre-computed cluster assignments per metacell, and the path of a file which contains color assignment per cluster, but these where optional, as <strong>MCView</strong> can generate initial clustering and coloring automatically.</p>
 <p>Note that the import part might take a few minutes, depending (mostly) on the number of metacells.</p>
-</div>
-<div id="run-the-app" class="section level2">
-<h2 class="hasAnchor">
-<a href="#run-the-app" class="anchor"></a>Run the app</h2>
+<p><strong>MCView</strong> supports also importing datasets from the old R <code>metacell</code> package, see <code><a href="../reference/import_dataset_metacell1.html">MCView::import_dataset_metacell1</a></code> for details. ## Run the app</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu">MCView</span><span class="fu">::</span><span class="fu"><a href="../reference/run_app.html">run_app</a></span><span class="op">(</span>project <span class="op">=</span> <span class="st">"PBMC"</span>, port <span class="op">=</span> <span class="fl">5555</span><span class="op">)</span></code></pre></div>
 <p>You can now go to <a href="https://localhost:5555">https://localhost:5555</a> to view the app.</p>
