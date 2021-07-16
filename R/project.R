@@ -123,6 +123,7 @@ set_default_project <- function(project) {
 #'
 #' @param project path to the project directory
 #' @param path path in which to create the bundle.
+#' @param name name of the folder in which to create the bundle. The bundle would be created at \code{path}/\code{name}
 #'
 #' @examples
 #' \dontrun{
