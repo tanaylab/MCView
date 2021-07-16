@@ -1,8 +1,8 @@
-pandoc: 2.7.3
+pandoc: 1.19.2.1
 pkgdown: 1.6.1
 pkgdown_sha: ~
 articles:
   Architecture: Architecture.html
   MCView: MCView.html
-last_built: 2021-07-16T10:46Z
+last_built: 2021-07-16T15:23Z
 
