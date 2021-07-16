@@ -27,6 +27,7 @@ test_that("import_dataset works with cell type field", {
     )
     test_dataset(project_dir, "PBMC163k_ctf")
     withr::defer(unlink(fs::path(project_dir, "cache", "PBMC163k_ctf")))
+    withr::defer(gc())
 })
 
 test_that("import_dataset works with cell type field and cell_type_colors file", {
@@ -39,6 +40,7 @@ test_that("import_dataset works with cell type field and cell_type_colors file",
     )
     test_dataset(project_dir, "PBMC163k_ctf_ctcf")
     withr::defer(unlink(fs::path(project_dir, "cache", "PBMC163k_ctf_ctcf")))
+    withr::defer(gc())
 })
 
 test_that("import_dataset works with metacell_types file", {
@@ -50,6 +52,7 @@ test_that("import_dataset works with metacell_types file", {
     )
     test_dataset(project_dir, "PBMC163k_mct")
     withr::defer(unlink(fs::path(project_dir, "cache", "PBMC163k_mct")))
+    withr::defer(gc())
 })
 
 test_that("import_dataset works with metacell_types file and cell_type_colors file", {
@@ -62,4 +65,5 @@ test_that("import_dataset works with metacell_types file and cell_type_colors fi
     )
     test_dataset(project_dir, "PBMC163k_mct_ctcf")
     withr::defer(unlink(fs::path(project_dir, "cache", "PBMC163k_mct_ctcf")))
+    withr::defer(gc())
 })

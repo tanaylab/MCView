@@ -20,3 +20,7 @@ $run_dev.*
 ^pkgdown$
 ^vignettes/PBMC/*
 ^vignettes/raw/*
+^\.github$
+^tests/testthat/raw/*
+^tests/testthat/PBMC/*
+^start_app.R$

@@ -50,7 +50,10 @@ In addition, you can supply file with type assignment for each metacell
 \examples{
 \dontrun{
 dir.create("raw")
-download.file("http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz", "raw/#' PBMC_processed.tar.gz")
+download.file(
+     "http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz", 
+     "raw/PBMC_processed.tar.gz"
+)
 untar("raw/PBMC_processed.tar.gz", exdir = "raw")
 create_project("PBMC")
 import_dataset("PBMC", "PBMC163k", "raw/metacells.h5ad")

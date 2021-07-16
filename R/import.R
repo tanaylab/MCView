@@ -32,7 +32,10 @@
 #' @examples
 #' \dontrun{
 #' dir.create("raw")
-#' download.file("http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz", "raw/#' PBMC_processed.tar.gz")
+#' download.file(
+#'      "http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz", 
+#'      "raw/PBMC_processed.tar.gz"
+#' )
 #' untar("raw/PBMC_processed.tar.gz", exdir = "raw")
 #' create_project("PBMC")
 #' import_dataset("PBMC", "PBMC163k", "raw/metacells.h5ad")
@@ -252,7 +255,8 @@ update_metacell_types <- function(project, dataset, metacell_types_file) {
 #' ignored in this function.
 #' Under the hood - MCView updates a file named "cell_type_colors.tsv" under \code{project/cache/dataset}, which can also be edited manually.
 #'
-#'
+#' @param project path to the project directory
+#' @param dataset name for the dataset, e.g. "PBMC"
 #' @param cell_type_colors_file path to a tabular file (csv,tsv) with color assignement for
 #' each cell type. The file should have a column named "cell_type" or "cluster" with the
 #' cell types and another column named "color" with the color assignment. Cell types that do not

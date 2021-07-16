@@ -19,3 +19,4 @@ MCView_bundle
 docs
 tests/testthat/raw/*
 tests/testthat/PBMC/*
+check/

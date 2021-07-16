@@ -7,6 +7,10 @@
 update_cell_type_colors(project, dataset, cell_type_colors_file)
 }
 \arguments{
+\item{project}{path to the project directory}
+
+\item{dataset}{name for the dataset, e.g. "PBMC"}
+
 \item{cell_type_colors_file}{path to a tabular file (csv,tsv) with color assignement for
 each cell type. The file should have a column named "cell_type" or "cluster" with the
 cell types and another column named "color" with the color assignment. Cell types that do not
