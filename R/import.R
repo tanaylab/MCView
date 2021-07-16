@@ -122,7 +122,7 @@ import_dataset <- function(project, dataset, anndata_file, cell_type_field = NUL
     }
 
     if (!is.null(cell_type_colors_file)) {
-        cli_alert_info("Loading metacell type annotations from {.file {cell_type_colors_file}}")
+        cli_alert_info("Loading cell type color annotations from {.file {cell_type_colors_file}}")
         cell_type_colors <- parse_cell_type_colors(cell_type_colors_file)
     } else {
         cli_alert_info("Generating cell type colors using {.pkg chameleon} package.")
@@ -321,7 +321,13 @@ parse_metacell_types <- function(file) {
     }
 
     metacell_types <- metacell_types %>%
-        select(any_of(c("metacell", "cell_type", "age")))
+        select(any_of(c("metacell", "cell_type", "age", "mc_age")))    
+
+
+    if ("age" %in% colnames(metacell_types)){
+        metacell_types <- metacell_types %>% 
+            rename(mc_age = age)
+    }
 
     metacell_types <- metacell_types %>%
         mutate(metacell = as.character(metacell))
@@ -370,194 +376,3 @@ cli_alert_success_verbose <- function(...) {
 }
 
 
-# #' Initialize from metacell R package
-# #'
-# #' @param config list with config parameters
-# #' @param dataset name of the dataset
-# #' @param cache_dir path of the data directory
-# #'
-# #' @noRd
-# init_metacell <- function(config, dataset, cache_dir) {
-#     fs::dir_create(cache_dir, dataset, recurse = TRUE)
-#     if (!is.null(config$anndata)) {
-#         return(init_metacell2(config, dataset, cache_dir))
-#     }
-
-#     library(metacell)
-
-#     init_temp_scdb(config, dataset)
-#     mc <- scdb_mc(config$mc)
-
-#     mc_egc <- mc@e_gc
-
-#     mc_fp <- mc@mc_fp
-
-#     mat <- scdb_mat(config$matrix)
-
-#     mc_mat <- tgs_matrix_tapply(mat@mat[, names(mc@mc)], mc@mc, sum, na.rm = TRUE) %>% t()
-#     serialize_shiny_data(mc_mat, "mc_mat", dataset = dataset, cache_dir = cache_dir)
-
-#     mc_sum <- colSums(mc_mat)
-#     serialize_shiny_data(mc_sum, "mc_sum", dataset = dataset, cache_dir = cache_dir)
-
-#     mc2d <- scdb_mc2d(config$mc2d)
-
-#     if (is.null(names(mc2d@mc_x))) {
-#         names(mc2d@mc_x) <- 1:length(mc2d@mc_x)
-#         warning(glue("mc2d@mc_x doesn't have names. Setting to 1:{length(mc2d@mc_x)})"))
-#     }
-
-#     if (is.null(names(mc2d@mc_y))) {
-#         names(mc2d@mc_y) <- 1:length(mc2d@mc_y)
-#         warning(glue("mc2d@mc_y doesn't have names. Setting to 1:{length(mc2d@mc_y)})"))
-#     }
-
-
-#     mc2d_list <- list(
-#         graph = mc2d@graph,
-#         mc_id = mc2d@mc_id,
-#         mc_x = mc2d@mc_x,
-#         mc_y = mc2d@mc_y
-#     )
-#     serialize_shiny_data(mc2d_list, "mc2d", dataset = dataset, cache_dir = cache_dir)
-
-
-#     mc_genes_top2 <- apply(mc@mc_fp, 2, function(fp) {
-#         top_ind <- order(-fp)[1:2]
-#         return(rownames(mc@mc_fp)[top_ind])
-#     })
-
-#     mc_genes_top2 <- mc_genes_top2 %>%
-#         t() %>%
-#         as.data.frame() %>%
-#         rownames_to_column("metacell") %>%
-#         rlang::set_names(c("metacell", "top1_gene", "top2_gene")) %>%
-#         tibble::remove_rownames() %>%
-#         distinct(metacell, .keep_all = TRUE) %>%
-#         mutate(metacell = as.character(metacell))
-
-#     metacell_types<- parse_metacell_types(metacell_types_file)
-
-#     metacell_types<- metacell_types%>%
-#         arrange(as.numeric(metacell)) %>%
-#         left_join(mc_genes_top2, by = "metacell")
-
-#     # filter metacell_typeto contain only metacells that are within mc_egc
-#     metacell_types<- metacell_types%>%
-#         as.data.frame() %>%
-#         column_to_rownames("metacell")
-#     metacell_types<- metacell_types[colnames(mc_egc), ]
-#     metacell_types<- metacell_types%>%
-#         rownames_to_column("metacell") %>%
-#         as_tibble()
-
-#     if (!is.null(cell_type_colors_file)) {
-#         cell_type_colors<- parse_cell_type_colors(cell_type_colors_file)
-#     } else {
-#         cell_type_colors<- metacell_types%>%
-#             distinct(cell_type, mc_col) %>%
-#             rename(color = mc_col) %>%
-#             arrange(cell_type) %>%
-#             mutate(order = 1:n())
-#     }
-
-#     cell_type_colors<- cell_type_colors%>%
-#         arrange(as.numeric(order)) %>%
-#         mutate(cell_type = factor(cell_type), cell_type = forcats::fct_inorder(cell_type))
-#     serialize_shiny_data(cell_type_colors, "cell_type_colors", dataset = dataset, cache_dir = cache_dir)
-
-#     metacell_types$top1_lfp <- purrr::map2_dbl(metacell_types$metacell, metacell_types$top1_gene, ~ log2(mc_fp[.y, .x]))
-#     metacell_types$top2_lfp <- purrr::map2_dbl(metacell_types$metacell, metacell_types$top2_gene, ~ log2(mc_fp[.y, .x]))
-#     serialize_shiny_data(metacell_types, "metacell_types", dataset = dataset, cache_dir = cache_dir)
-
-#     # Top 30 correlated and anti-correlated genes for each gene
-#     gg_mc_top_cor <- calc_gg_mc_top_cor(mc@e_gc, k = 30)
-
-#     serialize_shiny_data(gg_mc_top_cor, "gg_mc_top_cor", dataset = dataset, cache_dir = cache_dir)
-
-#     if (!is.null(config$time_bin_field)) {
-#         mc_ag <- table(mc@mc, mat@cell_metadata[names(mc@mc), config$time_bin_field])
-#         mc_ag_n <- t(t(mc_ag) / colSums(mc_ag))
-#         serialize_shiny_data(mc_ag, "mc_ag", dataset = dataset, cache_dir = cache_dir)
-#         serialize_shiny_data(mc_ag_n, "mc_ag_n", dataset = dataset, cache_dir = cache_dir)
-#     }
-
-#     if (!is.null(config$time_annot) && !is.null(config$time_bin_field)) {
-#         time_annot <- fread(config$time_annot$fn) %>% as_tibble()
-#         serialize_shiny_data(time_annot, "time_annot", dataset = dataset, cache_dir = cache_dir)
-
-#         cell_md <- mat@cell_metadata[names(mc@mc), ] %>%
-#             rownames_to_column("cell_id") %>%
-#             mutate(metacell = as.character(mc@mc)) %>%
-#             left_join(metacell_types)
-
-#         if (config$time_bin_field != "time_bin") {
-#             if (rlang::has_name(cell_md, "time_bin")) {
-#                 cell_md <- cell_md %>%
-#                     select(-time_bin)
-#             }
-#             cell_md <- cell_md %>%
-#                 rename(time_bin = !!config$time_bin_field) %>%
-#                 as_tibble()
-#         }
-
-#         min_time_bin <- min(cell_md$time_bin, na.rm = TRUE)
-#         max_time_bin <- max(cell_md$time_bin, na.rm = TRUE)
-#         obs_time_bins <- sort(unique(as.numeric(cell_md$time_bin)))
-
-#         # in case time bins are not from 1:max_t
-#         if (min_time_bin != 1 || length(obs_time_bins) != length(1:max_time_bin) || !all(1:max_time_bin == obs_time_bins)) {
-#             cell_md <- cell_md %>% mutate(time_bin = as.numeric(factor(time_bin, levels = obs_time_bins)))
-#         }
-
-#         cell_md <- cell_md %>%
-#             left_join(time_annot, by = "time_bin")
-
-#         type_ag <- cell_md %>%
-#             count(cell_type, time_bin) %>%
-#             filter(!is.na(time_bin)) %>%
-#             spread(time_bin, n, fill = 0) %>%
-#             as.data.frame() %>%
-#             column_to_rownames("cell_type") %>%
-#             as.matrix()
-#         serialize_shiny_data(type_ag, "type_ag", dataset = dataset, df2mat = TRUE, cache_dir = cache_dir)
-
-#         mc_ag <- cell_md %>%
-#             count(metacell, time_bin) %>%
-#             filter(!is.na(time_bin)) %>%
-#             spread(time_bin, n, fill = 0) %>%
-#             as.data.frame() %>%
-#             column_to_rownames("metacell") %>%
-#             as.matrix()
-#         serialize_shiny_data(mc_ag, "mc_ag", dataset = dataset, df2mat = TRUE, cache_dir = cache_dir)
-#     }
-
-#     if (!is.null(config$network)) {
-#         mc_network <- scdb_mctnetwork(config$network)
-#         serialize_shiny_data(mc_network@network, "mc_network", dataset = dataset, cache_dir = cache_dir)
-
-#         # calculate flows of every metacell
-#         metacells <- as.character(sort(as.numeric(unique(mc@mc))))
-#         future::plan(future::multicore, workers = min(20, future::availableCores(constraints = "multicore")))
-#         options(future.globals.maxSize = 1e11)
-#         mct_probs_trans <- furrr::future_map(1:length(metacells), ~ {
-#             cli_alert_info("prop_flow: ({.x}/{length(metacells)}")
-#             mct_propagate_flow_through_metacell(mct = mc_network, m = .x)
-#         })
-#         names(mct_probs_trans) <- metacells
-#         serialize_shiny_data(mct_probs_trans, "mct_probs_trans", dataset = dataset, cache_dir = cache_dir)
-
-#         # calculate order of metacells in the flow chart
-#         # this order is static and will always be the same
-#         # mc_rank <- mctnetwork_mc_rank_from_color_ord(config$network, mc@color_key$color)
-#         mc_rank <- mctnetwork_mc_rank_from_color_ord(config$network, metacell_types$mc_col, cell_type_colors$color)
-#         mc_rank["-2"] <- 0
-#         mc_rank["-1"] <- length(mc_rank) / 2
-#         serialize_shiny_data(mc_rank, "mc_rank", dataset = dataset, cache_dir = cache_dir)
-
-
-
-#         type_flow <- mctnetwork_get_type_flows(mc_network, 1, ncol(type_ag))
-#         serialize_shiny_data(type_flow, "type_flow", dataset = dataset, cache_dir = cache_dir)
-#     }
-# }
