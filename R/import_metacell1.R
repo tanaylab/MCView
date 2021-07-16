@@ -1,17 +1,17 @@
 
 #' Import a dataset to an MCView project from metacell R package
 #'
-#' This would read would read objects from \code{metacell} R package and import a 
+#' This would read would read objects from \code{metacell} R package and import a
 #' metacell dataset to MCView.
 #' The result would be a directory under \code{project/cache/dataset} which
 #' would contain objects used by MCView shiny app (such as the metacell matrix).
 #' In addition, you can supply file with type assignment for each metacell
 #' (\code{metacell_types_file}) and a file with color assignment for each metacell type
 #' (\code{cell_type_colors_file}).
-#' Make sure that you have the R \code{metacell} package installed in order to use 
+#' Make sure that you have the R \code{metacell} package installed in order to use
 #' this function.
 #' \code{network}, \code{time_annotation_file} and \code{time_bin_field} are only relevant
-#' if you computed flows/networks for your dataset and therefore are optional. 
+#' if you computed flows/networks for your dataset and therefore are optional.
 #'
 #' @param scdb path to R metacell single cell RNA database
 #' @param matrix  name of the umi matrix to use
@@ -20,7 +20,7 @@
 #' @param metacell_types_file path to a tabular file (csv,tsv) with cell type assignement for
 #' each metacell. The file should have a column named "metacell" with the metacell ids and another
 #' column named "cell_type" or "cluster" with the cell type assignment. Metacell ids that do
-#' not exists in the data would be ignored. In addition, the file can have a column named 
+#' not exists in the data would be ignored. In addition, the file can have a column named
 #' "age" or "mc_age" with age metadata per metacell
 #' @param cell_type_colors_file path to a tabular file (csv,tsv) with color assignement for
 #' each cell type. The file should have a column named "cell_type" or "cluster" with the
@@ -29,46 +29,44 @@
 #' @param network  name of the network object to use (optional)
 #' @param time_annotation_file file with names for time bins (optional, only relevant with networks/flows). Should have a field named "time_bin" with the time bin id and another field named "time_desc" which contains the description of the time bin
 #' @param time_bin_field name of a field in \code{cell_metadata} which contains time bin per cell (optional)
-#' 
+#'
 #' @examples
 #' \dontrun{
 #' import_dataset_metacell1(
-#'     "embflow", 
-#'     "153embs", 
+#'     "embflow",
+#'     "153embs",
 #'     scdb = "raw/scrna_db",
 #'     matrix = "embs",
-#'     mc = "embs", 
-#'     mc2d = "embs", 
-#'     metacell_types_file = "raw/metacell-types.csv", 
+#'     mc = "embs",
+#'     mc2d = "embs",
+#'     metacell_types_file = "raw/metacell-types.csv",
 #'     cell_type_colors_file = "raw/cell-type-colors.csv",
-#'     network = "embs",         
+#'     network = "embs",
 #'     time_annotation_file = "raw/time-annot.tsv",
 #'     time_bin_field = "age_group"
-#'     )
+#' )
 #' }
-#' 
+#'
 #' @inheritParams import_dataset
 #'
 #' @export
-import_dataset_metacell1 <- function(
-    project, 
-    dataset, 
-    scdb,
-    matrix,
-    mc, 
-    mc2d, 
-    metacell_types_file, 
-    cell_type_colors_file,
-    network = NULL,         
-    time_annotation_file = NULL,
-    time_bin_field = NULL
-    ) {
+import_dataset_metacell1 <- function(project,
+                                     dataset,
+                                     scdb,
+                                     matrix,
+                                     mc,
+                                     mc2d,
+                                     metacell_types_file,
+                                     cell_type_colors_file,
+                                     network = NULL,
+                                     time_annotation_file = NULL,
+                                     time_bin_field = NULL) {
     verbose <- !is.null(getOption("MCView.verbose")) && getOption("MCView.verbose")
     verify_project_dir(project)
 
     cli_alert_info("Importing {.field {dataset}}")
 
-    cache_dir <- project_cache_dir(project)   
+    cache_dir <- project_cache_dir(project)
 
     library(metacell)
 
@@ -124,11 +122,11 @@ import_dataset_metacell1 <- function(
         mutate(metacell = as.character(metacell))
 
     cli_alert_info("Loading metacell type annotations from {.file {metacell_types_file}}")
-    metacell_types <- parse_metacell_types(metacell_types_file)   
+    metacell_types <- parse_metacell_types(metacell_types_file)
 
-    
+
     cli_alert_info("Loading cell type color annotations from {.file {cell_type_colors_file}}")
-    cell_type_colors <- parse_cell_type_colors(cell_type_colors_file)  
+    cell_type_colors <- parse_cell_type_colors(cell_type_colors_file)
 
     cell_type_colors <- cell_type_colors %>%
         arrange(as.numeric(order)) %>%
@@ -232,11 +230,12 @@ import_dataset_metacell1 <- function(
         serialize_shiny_data(mct_probs_trans, "mct_probs_trans", dataset = dataset, cache_dir = cache_dir)
 
         # calculate order of metacells in the flow chart
-        # this order is static and will always be the same                
+        # this order is static and will always be the same
         mc_rank <- mctnetwork_mc_rank_from_color_ord(
-            network, 
-            metacell_types %>% left_join(cell_type_colors, by = "cell_type") %>% pull(color), 
-            cell_type_colors$color)
+            network,
+            metacell_types %>% left_join(cell_type_colors, by = "cell_type") %>% pull(color),
+            cell_type_colors$color
+        )
         mc_rank["-2"] <- 0
         mc_rank["-1"] <- length(mc_rank) / 2
         serialize_shiny_data(mc_rank, "mc_rank", dataset = dataset, cache_dir = cache_dir)

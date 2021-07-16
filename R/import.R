@@ -321,11 +321,11 @@ parse_metacell_types <- function(file) {
     }
 
     metacell_types <- metacell_types %>%
-        select(any_of(c("metacell", "cell_type", "age", "mc_age")))    
+        select(any_of(c("metacell", "cell_type", "age", "mc_age")))
 
 
-    if ("age" %in% colnames(metacell_types)){
-        metacell_types <- metacell_types %>% 
+    if ("age" %in% colnames(metacell_types)) {
+        metacell_types <- metacell_types %>%
             rename(mc_age = age)
     }
 
@@ -374,5 +374,3 @@ cli_alert_success_verbose <- function(...) {
         cli_alert_success(...)
     }
 }
-
-

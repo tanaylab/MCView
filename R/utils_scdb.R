@@ -1,4 +1,4 @@
-init_temp_scdb <- function(scdb, matrix, mc, mc2d, network=NULL, dataset, scdb_dir = fs::path(tempdir(), dataset, "scdb"), force_copy = TRUE) {
+init_temp_scdb <- function(scdb, matrix, mc, mc2d, network = NULL, dataset, scdb_dir = fs::path(tempdir(), dataset, "scdb"), force_copy = TRUE) {
     scdb_dir <<- scdb_dir
     fs::dir_create(scdb_dir)
     scdb_init(base_dir = scdb_dir, force_reinit = TRUE)
