@@ -147,7 +147,11 @@
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu">MCView</span><span class="fu">::</span><span class="fu"><a href="../reference/update_cell_type_colors.html">update_cell_type_colors</a></span><span class="op">(</span><span class="st">"PBMC"</span>, <span class="st">"PBMC163k"</span>, <span class="st">"/path/to/cell_type_colors_file"</span><span class="op">)</span></code></pre></div>
 <p>You can now rerun the app and the types/colors would be updated.</p>
-<p>Note that if you changed cell type <strong>names</strong> you should update both <code>cell_type_colors</code> and <code>metacell_types</code>, as otherwise metacells with the old name would appear with a “(Missing)” cell type tag. ## Deploy</p>
+<p>Note that if you changed cell type <strong>names</strong> you should update both <code>cell_type_colors</code> and <code>metacell_types</code>, as otherwise metacells with the old name would appear with a “(Missing)” cell type tag.</p>
+</div>
+<div id="deploy" class="section level2">
+<h2 class="hasAnchor">
+<a href="#deploy" class="anchor"></a>Deploy</h2>
 <p>Create a deployment ready bundle by running:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu">MCView</span><span class="fu">::</span><span class="fu"><a href="../reference/create_bundle.html">create_bundle</a></span><span class="op">(</span>project <span class="op">=</span> <span class="st">"PBMC"</span>, path <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/getwd.html">getwd</a></span><span class="op">(</span><span class="op">)</span>, name <span class="op">=</span> <span class="st">"PBMC"</span><span class="op">)</span></code></pre></div>
