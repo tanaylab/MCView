@@ -4,7 +4,7 @@
 
 <!-- badges: start -->
 <!-- badges: end -->
-The goal of MCView is to provide an interactive API of metacell objects analysis.
+The goal of MCView is to provide an interactive API for metacell analysis.
 
 ## Installation
 

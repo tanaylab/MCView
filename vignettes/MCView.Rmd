@@ -104,6 +104,7 @@ MCView::update_cell_type_colors("PBMC", "PBMC163k", "/path/to/cell_type_colors_f
 You can now rerun the app and the types/colors would be updated. 
 
 Note that if you changed cell type __names__ you should update both `cell_type_colors` and `metacell_types`, as otherwise metacells with the old name would appear with a "(Missing)" cell type tag. 
+
 ## Deploy
 
 Create a deployment ready bundle by running: 
