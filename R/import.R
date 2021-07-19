@@ -13,7 +13,7 @@
 #' @param dataset name for the dataset, e.g. "PBMC"
 #' @param anndata_file path to \code{h5ad} file which contains the output of metacell2 pipeline (metacells python package).
 #' @param cell_type_field name of a field in the anndata object$obs which contains a cell type (optional).
-#' If this parameter and \code{metacell_types_file} are missing, MCView would cluster the
+#' If the field doesn't exist and \code{metacell_types_file} are missing, MCView would cluster the
 #' metacell matrix using kmeans++ algorithm (from the \code{tglkmeans} package).
 #' If \code{metacell_types} parameter is set this field is ignored.
 #' @param metacell_types_file path to a tabular file (csv,tsv) with cell type assignement for
@@ -42,7 +42,7 @@
 #' }
 #'
 #' @export
-import_dataset <- function(project, dataset, anndata_file, cell_type_field = NULL, metacell_types_file = NULL, cell_type_colors_file = NULL) {
+import_dataset <- function(project, dataset, anndata_file, cell_type_field = "cluster", metacell_types_file = NULL, cell_type_colors_file = NULL) {
     verbose <- !is.null(getOption("MCView.verbose")) && getOption("MCView.verbose")
     verify_project_dir(project)
 
@@ -107,7 +107,7 @@ import_dataset <- function(project, dataset, anndata_file, cell_type_field = NUL
         cli_alert_info("Loading metacell type annotations from {.file {metacell_types_file}}")
         metacell_types <- parse_metacell_types(metacell_types_file)
     } else {
-        if (!is.null(cell_type_field)) {
+        if (!is.null(cell_type_field) && !is.null(adata$obs[[cell_type_field]])) {
             cli_alert_info("Taking cell type annotations from {.field {cell_type_field}} field in the anndata object")
             metacell_types <- adata$obs %>%
                 select(cell_type = !!cell_type_field) %>%
