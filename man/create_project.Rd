@@ -12,7 +12,7 @@ create_project(project, project_dir = NULL)
 \item{project_dir}{directory of the project. Would be created if not existing. If \code{NULL} - the project would be created under current directory.}
 }
 \description{
-This would create a project directory with the default configuration files and directory structure.
+Create a project directory with the default configuration files and directory structure.
 A text editor would be opened in order to edit the project \code{config.yaml} file.
 }
 \examples{

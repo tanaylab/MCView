@@ -1,6 +1,6 @@
 #' Run the MCView Application
 #'
-#' Loads project cache and runs the MCView application.
+#' Load project cache and run the MCView application.
 #'
 #'
 #' @param project path of the project to run.

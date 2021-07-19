@@ -19,12 +19,16 @@ update the metacell types (using \code{update_metacell_types})
 If this parameter is missing, MCView would use the \code{chameleon} package to assign a color for each cell type.}
 }
 \description{
-This would change the color assignments for each cell type to the ones listed at \code{cell_type_colors_file}.
+Change the color assignments for each cell type to the ones listed at \code{cell_type_colors_file}.
+}
+\details{
 This is usually done after a first iteration of annotation using the "Annotate" tab in the MCView annotation, which can
 export a valid \code{cell_type_colors_file}.
+
 The file should have a column named "cell_type" or "cluster" with the cell types and another column named "color" with the color assignment.
 Note that the exported file from the __MCView__ app contains additional fields which will be
 ignored in this function.
+
 Under the hood - MCView updates a file named "cell_type_colors.tsv" under \code{project/cache/dataset}, which can also be edited manually.
 }
 \examples{

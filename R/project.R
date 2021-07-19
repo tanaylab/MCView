@@ -58,7 +58,7 @@ create_project_dirs <- function(project_dir, project) {
 
 #' Create a configuration folder for a project
 #'
-#' This would create a project directory with the default configuration files and directory structure.
+#' Create a project directory with the default configuration files and directory structure.
 #' A text editor would be opened in order to edit the project \code{config.yaml} file.
 #'
 #' @param project name of the project
@@ -92,8 +92,10 @@ get_default_project <- function() {
 
 #' Set default project
 #'
-#' This creates a symbolic link to the \code{project} in order to run MCView without
-#' specifying a project directory. Note that in order for this to work you must have
+#' Create a symbolic link to the \code{project} in order to run MCView without
+#' specifying a project directory. 
+#' 
+#' Note that in order for this to work you must have
 #' write permissions in the installation directory of MCView. Used mainly for debugging purposes.
 #'
 #' @param project path to the project directory
@@ -112,13 +114,17 @@ set_default_project <- function(project) {
 
 
 #' Generate a 'deployment ready' bundle of the a project app
+#' 
+#' Generate a 'deployment ready' bundle of the a project app
 #'
-#' This would create a minimal shiny app in \code{path}/\code{name} directory which would contain:
+#' Create a minimal shiny app in \code{path}/\code{name} directory which would contain:
 #' \itemize{
 #' \item{}{app.R file. }
 #' \item{}{project config and cache. }
 #' }
+#' 
 #' The bundle can then be deployed in shiny-server, shinyapps.io or any other environment that supports serving shiny apps.
+#' 
 #' Note: when deploying to these services - make sure you have the MCView package installed.
 #'
 #' @param project path to the project directory

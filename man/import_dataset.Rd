@@ -8,7 +8,7 @@ import_dataset(
   project,
   dataset,
   anndata_file,
-  cell_type_field = NULL,
+  cell_type_field = "cluster",
   metacell_types_file = NULL,
   cell_type_colors_file = NULL
 )
@@ -21,7 +21,7 @@ import_dataset(
 \item{anndata_file}{path to \code{h5ad} file which contains the output of metacell2 pipeline (metacells python package).}
 
 \item{cell_type_field}{name of a field in the anndata object$obs which contains a cell type (optional).
-If this parameter and \code{metacell_types_file} are missing, MCView would cluster the
+If the field doesn't exist and \code{metacell_types_file} are missing, MCView would cluster the
 metacell matrix using kmeans++ algorithm (from the \code{tglkmeans} package).
 If \code{metacell_types} parameter is set this field is ignored.}
 
@@ -39,10 +39,14 @@ exist in the metacell types would be ignored.
 If this is missing, MCView would use the \code{chameleon} package to assign a color for each cell type.}
 }
 \description{
-This would read would read an \code{anndata} file which is the output of
-python \code{metacells} package, and import the metacell dataset to MCView.
-The result would be a directory under \code{project/cache/dataset} which
+Read an \code{anndata} file which is the output of python \code{metacells} package, 
+and import the metacell dataset to MCView. Each project can have multiple datasets
+which can be in the app using the right sidebar.
+}
+\details{
+The function would create a directory under \code{project/cache/dataset} which
 would contain objects used by MCView shiny app (such as the metacell matrix).
+
 In addition, you can supply file with type assignment for each metacell
 (\code{metacell_types_file}) and a file with color assignment for each metacell type
 (\code{cell_type_colors_file}).

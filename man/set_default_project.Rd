@@ -10,7 +10,10 @@ set_default_project(project)
 \item{project}{path to the project directory}
 }
 \description{
-This creates a symbolic link to the \code{project} in order to run MCView without
-specifying a project directory. Note that in order for this to work you must have
+Create a symbolic link to the \code{project} in order to run MCView without
+specifying a project directory.
+}
+\details{
+Note that in order for this to work you must have
 write permissions in the installation directory of MCView. Used mainly for debugging purposes.
 }

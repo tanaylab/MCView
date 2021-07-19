@@ -14,12 +14,17 @@ create_bundle(project, path = getwd(), name = "MCView_bundle")
 \item{name}{name of the folder in which to create the bundle. The bundle would be created at \code{path}/\code{name}}
 }
 \description{
-This would create a minimal shiny app in \code{path}/\code{name} directory which would contain:
+Generate a 'deployment ready' bundle of the a project app
+}
+\details{
+Create a minimal shiny app in \code{path}/\code{name} directory which would contain:
 \itemize{
 \item{}{app.R file. }
 \item{}{project config and cache. }
 }
+
 The bundle can then be deployed in shiny-server, shinyapps.io or any other environment that supports serving shiny apps.
+
 Note: when deploying to these services - make sure you have the MCView package installed.
 }
 \examples{
