@@ -31,6 +31,7 @@ jobs:
       - name: Install packages
         run: |
           R -e 'install.packages("renv")'
+          R -e 'install.packages("rmarkdown")'
           R -e 'renv::restore()'
 
       - name: Render Rmarkdown files
