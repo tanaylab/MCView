@@ -40,11 +40,7 @@
 
 
 <meta property="og:title" content="Generate a 'deployment ready' bundle of the a project app — create_bundle" />
-<meta property="og:description" content="This would create a minimal shiny app in path/name directory which would contain:
-app.R file.
-project config and cache.
-The bundle can then be deployed in shiny-server, shinyapps.io or any other environment that supports serving shiny apps.
-Note: when deploying to these services - make sure you have the MCView package installed." />
+<meta property="og:description" content="Generate a 'deployment ready' bundle of the a project app" />
 
 
 
@@ -128,11 +124,7 @@ Note: when deploying to these services - make sure you have the MCView package i
     </div>
 
     <div class="ref-description">
-    <p>This would create a minimal shiny app in <code>path</code>/<code>name</code> directory which would contain:</p><ul>
-<li><p>app.R file.</p></li>
-<li><p>project config and cache.</p></li>
-</ul><p>The bundle can then be deployed in shiny-server, shinyapps.io or any other environment that supports serving shiny apps.
-Note: when deploying to these services - make sure you have the MCView package installed.</p>
+    <p>Generate a 'deployment ready' bundle of the a project app</p>
     </div>
 
     <pre class="usage"><span class='fu'>create_bundle</span><span class='op'>(</span><span class='va'>project</span>, path <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/getwd.html'>getwd</a></span><span class='op'>(</span><span class='op'>)</span>, name <span class='op'>=</span> <span class='st'>"MCView_bundle"</span><span class='op'>)</span></pre>
@@ -154,6 +146,15 @@ Note: when deploying to these services - make sure you have the MCView package i
     </tr>
     </table>
 
+    <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
+
+    <p>Create a minimal shiny app in <code>path</code>/<code>name</code> directory which would contain:</p><ul>
+<li><p>app.R file.</p></li>
+<li><p>project config and cache.</p></li>
+</ul>
+
+<p>The bundle can then be deployed in shiny-server, shinyapps.io or any other environment that supports serving shiny apps.</p>
+<p>Note: when deploying to these services - make sure you have the MCView package installed.</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>

@@ -40,17 +40,8 @@
 
 
 <meta property="og:title" content="Import a dataset to an MCView project from metacell R package — import_dataset_metacell1" />
-<meta property="og:description" content="This would read would read objects from metacell R package and import a
-metacell dataset to MCView.
-The result would be a directory under project/cache/dataset which
-would contain objects used by MCView shiny app (such as the metacell matrix).
-In addition, you can supply file with type assignment for each metacell
-(metacell_types_file) and a file with color assignment for each metacell type
-(cell_type_colors_file).
-Make sure that you have the R metacell package installed in order to use
-this function.
-network, time_annotation_file and time_bin_field are only relevant
-if you computed flows/networks for your dataset and therefore are optional." />
+<meta property="og:description" content="Read objects from metacell R package and import a
+metacell dataset to MCView." />
 
 
 
@@ -134,17 +125,8 @@ if you computed flows/networks for your dataset and therefore are optional." />
     </div>
 
     <div class="ref-description">
-    <p>This would read would read objects from <code>metacell</code> R package and import a
-metacell dataset to MCView.
-The result would be a directory under <code>project/cache/dataset</code> which
-would contain objects used by MCView shiny app (such as the metacell matrix).
-In addition, you can supply file with type assignment for each metacell
-(<code>metacell_types_file</code>) and a file with color assignment for each metacell type
-(<code>cell_type_colors_file</code>).
-Make sure that you have the R <code>metacell</code> package installed in order to use
-this function.
-<code>network</code>, <code>time_annotation_file</code> and <code>time_bin_field</code> are only relevant
-if you computed flows/networks for your dataset and therefore are optional.</p>
+    <p>Read objects from <code>metacell</code> R package and import a
+metacell dataset to MCView.</p>
     </div>
 
     <pre class="usage"><span class='fu'>import_dataset_metacell1</span><span class='op'>(</span>
@@ -217,6 +199,17 @@ exist in the metacell types would be ignored.</p></td>
     </tr>
     </table>
 
+    <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
+
+    <p>The result would be a directory under <code>project/cache/dataset</code> which
+would contain objects used by MCView shiny app (such as the metacell matrix).</p>
+<p>In addition, you can supply file with type assignment for each metacell
+(<code>metacell_types_file</code>) and a file with color assignment for each metacell type
+(<code>cell_type_colors_file</code>).</p>
+<p>Make sure that you have the R <code>metacell</code> package installed in order to use
+this function.</p>
+<p><code>network</code>, <code>time_annotation_file</code> and <code>time_bin_field</code> are only relevant
+if you computed flows/networks for your dataset and therefore are optional.</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
