@@ -3,6 +3,7 @@ pkgdown: 1.6.1
 pkgdown_sha: ~
 articles:
   Architecture: Architecture.html
+  Docker: Docker.html
   MCView: MCView.html
-last_built: 2021-07-20T08:39Z
+last_built: 2021-07-20T11:33Z
 

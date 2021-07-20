@@ -40,7 +40,7 @@
 
 
 <meta property="og:title" content="Import a dataset to an MCView project — import_dataset" />
-<meta property="og:description" content="Read an anndata file which is the output of python metacells package, 
+<meta property="og:description" content="Read an anndata file which is the output of python metacells package,
 and import the metacell dataset to MCView. Each project can have multiple datasets
 which can be in the app using the right sidebar." />
 
@@ -102,6 +102,9 @@ which can be in the app using the right sidebar." />
     <li>
       <a href="../articles/Architecture.html">Architecture</a>
     </li>
+    <li>
+      <a href="../articles/Docker.html">Docker</a>
+    </li>
   </ul>
 </li>
       </ul>
@@ -126,7 +129,7 @@ which can be in the app using the right sidebar." />
     </div>
 
     <div class="ref-description">
-    <p>Read an <code>anndata</code> file which is the output of python <code>metacells</code> package, 
+    <p>Read an <code>anndata</code> file which is the output of python <code>metacells</code> package,
 and import the metacell dataset to MCView. Each project can have multiple datasets
 which can be in the app using the right sidebar.</p>
     </div>
@@ -193,8 +196,8 @@ would contain objects used by MCView shiny app (such as the metacell matrix).</p
     <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
 <span class='fu'><a href='https://rdrr.io/r/base/files2.html'>dir.create</a></span><span class='op'>(</span><span class='st'>"raw"</span><span class='op'>)</span>
 <span class='fu'><a href='https://rdrr.io/r/utils/download.file.html'>download.file</a></span><span class='op'>(</span>
-     <span class='st'>"http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz"</span>, 
-     <span class='st'>"raw/PBMC_processed.tar.gz"</span>
+    <span class='st'>"http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz"</span>,
+    <span class='st'>"raw/PBMC_processed.tar.gz"</span>
 <span class='op'>)</span>
 <span class='fu'><a href='https://rdrr.io/r/utils/untar.html'>untar</a></span><span class='op'>(</span><span class='st'>"raw/PBMC_processed.tar.gz"</span>, exdir <span class='op'>=</span> <span class='st'>"raw"</span><span class='op'>)</span>
 <span class='fu'><a href='create_project.html'>create_project</a></span><span class='op'>(</span><span class='st'>"PBMC"</span><span class='op'>)</span>

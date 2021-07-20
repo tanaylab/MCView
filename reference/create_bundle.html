@@ -100,6 +100,9 @@
     <li>
       <a href="../articles/Architecture.html">Architecture</a>
     </li>
+    <li>
+      <a href="../articles/Docker.html">Docker</a>
+    </li>
   </ul>
 </li>
       </ul>
@@ -127,7 +130,12 @@
     <p>Generate a 'deployment ready' bundle of the a project app</p>
     </div>
 
-    <pre class="usage"><span class='fu'>create_bundle</span><span class='op'>(</span><span class='va'>project</span>, path <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/getwd.html'>getwd</a></span><span class='op'>(</span><span class='op'>)</span>, name <span class='op'>=</span> <span class='st'>"MCView_bundle"</span><span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>create_bundle</span><span class='op'>(</span>
+  <span class='va'>project</span>,
+  path <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/getwd.html'>getwd</a></span><span class='op'>(</span><span class='op'>)</span>,
+  name <span class='op'>=</span> <span class='st'>"MCView_bundle"</span>,
+  overwrite <span class='op'>=</span> <span class='cn'>FALSE</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -143,6 +151,10 @@
     <tr>
       <th>name</th>
       <td><p>name of the folder in which to create the bundle. The bundle would be created at <code>path</code>/<code>name</code></p></td>
+    </tr>
+    <tr>
+      <th>overwrite</th>
+      <td><p>overwrite bundle if already exists</p></td>
     </tr>
     </table>
 
