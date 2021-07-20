@@ -18,7 +18,7 @@ get_plotly_subplot_title <- function(.x) {
 # Remove unnecessary atributes from plots that were created with ggplotly before converting to WebGL.
 # See: see: https://stackoverflow.com/questions/62911241/ggplot2-to-plotly-webgl-warning-suppression-in-r-shiny
 sanitize_for_WebGL <- function(p) {
-    for (i in seq_len(p$x$data)) {
+    for (i in 1:length(p$x$data)) {
         if ("hoveron" %in% names(p$x$data[[i]])) {
             p$x$data[[i]]$hoveron <- NULL
         }
