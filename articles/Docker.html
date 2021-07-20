@@ -99,7 +99,7 @@
 <h2 class="hasAnchor">
 <a href="#create-a-project" class="anchor"></a>Create a project</h2>
 <div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="fu">mkdir</span> PBMC
-<span class="ex">docker</span> run -v <span class="va">$(</span><span class="bu">pwd</span><span class="va">)</span>/PBMC:/project mcview R -e <span class="st">'MCView::create_project("PBMC", project_dir = "/project")'</span></code></pre></div>
+<span class="ex">docker</span> run -v <span class="va">$(</span><span class="bu">pwd</span><span class="va">)</span>/PBMC:/project tanaylab/mcview R -e <span class="st">'MCView::create_project("PBMC", project_dir = "/project")'</span></code></pre></div>
 </div>
 <div id="import-a-dataset" class="section level2">
 <h2 class="hasAnchor">
@@ -108,12 +108,12 @@
 <div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="fu">wget</span> http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz
 <span class="fu">tar</span> xvzf PBMC_processed.tar.gz</code></pre></div>
 <p>Import the dataset:</p>
-<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">docker</span> run -v <span class="va">$(</span><span class="bu">pwd</span><span class="va">)</span>:/workdir mcview R -e <span class="st">'MCView::import_dataset("/workdir/PBMC", dataset = "PBMC163k", anndata_file = "/workdir/metacells.h5ad", cell_type_colors_file = "/workdir/cluster-colors.csv")'</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">docker</span> run -v <span class="va">$(</span><span class="bu">pwd</span><span class="va">)</span>:/workdir tanaylab/mcview R -e <span class="st">'MCView::import_dataset("/workdir/PBMC", dataset = "PBMC163k", anndata_file = "/workdir/metacells.h5ad", cell_type_colors_file = "/workdir/cluster-colors.csv")'</span></code></pre></div>
 </div>
 <div id="run-the-app" class="section level2">
 <h2 class="hasAnchor">
 <a href="#run-the-app" class="anchor"></a>Run the app</h2>
-<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">docker</span> run -v <span class="va">$(</span><span class="bu">pwd</span><span class="va">)</span>/PBMC:/project -p 3838:3838 mcview</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">docker</span> run -v <span class="va">$(</span><span class="bu">pwd</span><span class="va">)</span>/PBMC:/project -p 3838:3838 tanaylab/mcview</code></pre></div>
 <p>We can now go to port 3838 on our machine to view the running app.</p>
 </div>
   </div>
