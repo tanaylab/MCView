@@ -130,6 +130,7 @@ set_default_project <- function(project) {
 #' @param project path to the project directory
 #' @param path path in which to create the bundle.
 #' @param name name of the folder in which to create the bundle. The bundle would be created at \code{path}/\code{name}
+#' @param overwrite overwrite bundle if already exists
 #'
 #' @examples
 #' \dontrun{
@@ -137,15 +138,26 @@ set_default_project <- function(project) {
 #' }
 #'
 #' @export
-create_bundle <- function(project, path = getwd(), name = "MCView_bundle") {
+create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overwrite = FALSE) {
     bundle_dir <- fs::path(path, name)
-    if (!fs::dir_exists(bundle_dir)) {
+    if (fs::dir_exists(bundle_dir)){
+        if (overwrite){
+            fs::dir_delete(bundle_dir)
+            fs::dir_create(bundle_dir)
+        } else {
+            cli::cli_abort("{.path {bundle_dir}} already exists. Run with {.code overwrite=TRUE} to force overwriting it.")
+        }     
+    } else {
         fs::dir_create(bundle_dir)
     }
 
     fs::file_copy(app_sys("app.R"), fs::path(bundle_dir, "app.R"))
     fs::dir_copy(project, fs::path(bundle_dir, "project"))
 
+    cli::cat_line("Bundle files:")
     fs::dir_tree(bundle_dir)
-    cli::cli_alert_success("created a bundle at {bundle_dir}")
+    cli::cat_line("")
+    cli::cli_alert_success("created a bundle at {bundle_dir}")        
+    cli::cli_bullets("To deploy to shinyapps.io, run: {.code rsconnect::deployApp(appDir = '{bundle_dir}')}\n")        
+    cli::cli_bullets("To deploy to another shiny-server service, upload {.path {bundle_dir}} to the service.")    
 }
