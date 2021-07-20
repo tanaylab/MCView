@@ -93,8 +93,8 @@ get_default_project <- function() {
 #' Set default project
 #'
 #' Create a symbolic link to the \code{project} in order to run MCView without
-#' specifying a project directory. 
-#' 
+#' specifying a project directory.
+#'
 #' Note that in order for this to work you must have
 #' write permissions in the installation directory of MCView. Used mainly for debugging purposes.
 #'
@@ -114,7 +114,7 @@ set_default_project <- function(project) {
 
 
 #' Generate a 'deployment ready' bundle of the a project app
-#' 
+#'
 #' Generate a 'deployment ready' bundle of the a project app
 #'
 #' Create a minimal shiny app in \code{path}/\code{name} directory which would contain:
@@ -122,9 +122,9 @@ set_default_project <- function(project) {
 #' \item{}{app.R file. }
 #' \item{}{project config and cache. }
 #' }
-#' 
+#'
 #' The bundle can then be deployed in shiny-server, shinyapps.io or any other environment that supports serving shiny apps.
-#' 
+#'
 #' Note: when deploying to these services - make sure you have the MCView package installed.
 #'
 #' @param project path to the project directory
@@ -140,13 +140,13 @@ set_default_project <- function(project) {
 #' @export
 create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overwrite = FALSE) {
     bundle_dir <- fs::path(path, name)
-    if (fs::dir_exists(bundle_dir)){
-        if (overwrite){
+    if (fs::dir_exists(bundle_dir)) {
+        if (overwrite) {
             fs::dir_delete(bundle_dir)
             fs::dir_create(bundle_dir)
         } else {
             cli::cli_abort("{.path {bundle_dir}} already exists. Run with {.code overwrite=TRUE} to force overwriting it.")
-        }     
+        }
     } else {
         fs::dir_create(bundle_dir)
     }
@@ -157,7 +157,7 @@ create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overw
     cli::cat_line("Bundle files:")
     fs::dir_tree(bundle_dir)
     cli::cat_line("")
-    cli::cli_alert_success("created a bundle at {bundle_dir}")        
-    cli::cli_bullets("To deploy to shinyapps.io, run: {.code rsconnect::deployApp(appDir = '{bundle_dir}')}\n")        
-    cli::cli_bullets("To deploy to another shiny-server service, upload {.path {bundle_dir}} to the service.")    
+    cli::cli_alert_success("created a bundle at {bundle_dir}")
+    cli::cli_bullets("To deploy to shinyapps.io, run: {.code rsconnect::deployApp(appDir = '{bundle_dir}')}\n")
+    cli::cli_bullets("To deploy to another shiny-server service, upload {.path {bundle_dir}} to the service.")
 }

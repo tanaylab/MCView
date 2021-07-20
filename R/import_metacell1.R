@@ -3,17 +3,17 @@
 #'
 #' Read objects from \code{metacell} R package and import a
 #' metacell dataset to MCView.
-#' 
+#'
 #' The result would be a directory under \code{project/cache/dataset} which
 #' would contain objects used by MCView shiny app (such as the metacell matrix).
-#' 
+#'
 #' In addition, you can supply file with type assignment for each metacell
 #' (\code{metacell_types_file}) and a file with color assignment for each metacell type
 #' (\code{cell_type_colors_file}).
-#' 
+#'
 #' Make sure that you have the R \code{metacell} package installed in order to use
 #' this function.
-#' 
+#'
 #' \code{network}, \code{time_annotation_file} and \code{time_bin_field} are only relevant
 #' if you computed flows/networks for your dataset and therefore are optional.
 #'

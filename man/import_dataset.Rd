@@ -39,7 +39,7 @@ exist in the metacell types would be ignored.
 If this is missing, MCView would use the \code{chameleon} package to assign a color for each cell type.}
 }
 \description{
-Read an \code{anndata} file which is the output of python \code{metacells} package, 
+Read an \code{anndata} file which is the output of python \code{metacells} package,
 and import the metacell dataset to MCView. Each project can have multiple datasets
 which can be in the app using the right sidebar.
 }
@@ -55,8 +55,8 @@ In addition, you can supply file with type assignment for each metacell
 \dontrun{
 dir.create("raw")
 download.file(
-     "http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz", 
-     "raw/PBMC_processed.tar.gz"
+    "http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz",
+    "raw/PBMC_processed.tar.gz"
 )
 untar("raw/PBMC_processed.tar.gz", exdir = "raw")
 create_project("PBMC")

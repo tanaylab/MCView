@@ -1,16 +1,16 @@
 #' Import a dataset to an MCView project
 #'
-#' Read an \code{anndata} file which is the output of python \code{metacells} package, 
+#' Read an \code{anndata} file which is the output of python \code{metacells} package,
 #' and import the metacell dataset to MCView. Each project can have multiple datasets
-#' which can be in the app using the right sidebar. 
-#' 
+#' which can be in the app using the right sidebar.
+#'
 #' The function would create a directory under \code{project/cache/dataset} which
 #' would contain objects used by MCView shiny app (such as the metacell matrix).
-#' 
+#'
 #' In addition, you can supply file with type assignment for each metacell
 #' (\code{metacell_types_file}) and a file with color assignment for each metacell type
 #' (\code{cell_type_colors_file}).
-#' 
+#'
 #'
 #'
 #' @param project path to the project
@@ -37,8 +37,8 @@
 #' \dontrun{
 #' dir.create("raw")
 #' download.file(
-#'      "http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz", 
-#'      "raw/PBMC_processed.tar.gz"
+#'     "http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz",
+#'     "raw/PBMC_processed.tar.gz"
 #' )
 #' untar("raw/PBMC_processed.tar.gz", exdir = "raw")
 #' create_project("PBMC")
@@ -206,14 +206,14 @@ dataset_ls <- function(project) {
 #' Update cell type assignment for each metacell
 #'
 #' Change the cell type assignments for each metacell to the ones listed at \code{metacell_types_file}.
-#' 
+#'
 #' This is usually done after a first iteration of annotation using the "Annotate" tab in the MCView annotation, which can export a valid \code{metacell_types_file}.
 #' The file should have a column named "metacell" with the metacell ids and another
 #' column named "cell_type" or "cluster" with the cell type assignment.
-#' 
-#' Note that the exported file from the __MCView__ app contains additional fields 
+#'
+#' Note that the exported file from the __MCView__ app contains additional fields
 #' which will be ignored in this function.
-#' 
+#'
 #' Under the hood - MCView updates a file named "metacell_types.tsv" under \code{project/cache/dataset}, which can also be edited manually.
 #'
 #' @param project path to the project directory
@@ -254,14 +254,14 @@ update_metacell_types <- function(project, dataset, metacell_types_file) {
 #' Update color assignment for each cell type
 #'
 #' Change the color assignments for each cell type to the ones listed at \code{cell_type_colors_file}.
-#' 
+#'
 #' This is usually done after a first iteration of annotation using the "Annotate" tab in the MCView annotation, which can
 #' export a valid \code{cell_type_colors_file}.
-#' 
+#'
 #' The file should have a column named "cell_type" or "cluster" with the cell types and another column named "color" with the color assignment.
 #' Note that the exported file from the __MCView__ app contains additional fields which will be
 #' ignored in this function.
-#' 
+#'
 #' Under the hood - MCView updates a file named "cell_type_colors.tsv" under \code{project/cache/dataset}, which can also be edited manually.
 #'
 #' @param project path to the project directory
