@@ -28,7 +28,7 @@ docker pull tanaylab/mcview:latest
 
 ```bash
 mkdir PBMC
-docker run -v $(pwd)/PBMC:/project mcview R -e 'MCView::create_project("PBMC", project_dir = "/project")'
+docker run -v $(pwd)/PBMC:/project tanaylab/mcview R -e 'MCView::create_project("PBMC", project_dir = "/project")'
 ```
 
 ## Import a dataset
@@ -43,13 +43,13 @@ tar xvzf PBMC_processed.tar.gz
 Import the dataset:
 
 ```bash
-docker run -v $(pwd):/workdir mcview R -e 'MCView::import_dataset("/workdir/PBMC", dataset = "PBMC163k", anndata_file = "/workdir/metacells.h5ad", cell_type_colors_file = "/workdir/cluster-colors.csv")'
+docker run -v $(pwd):/workdir tanaylab/mcview R -e 'MCView::import_dataset("/workdir/PBMC", dataset = "PBMC163k", anndata_file = "/workdir/metacells.h5ad", cell_type_colors_file = "/workdir/cluster-colors.csv")'
 ```
 
 ## Run the app
 
 ```bash
-docker run -v $(pwd)/PBMC:/project -p 3838:3838 mcview
+docker run -v $(pwd)/PBMC:/project -p 3838:3838 tanaylab/mcview
 ```
 
 We can now go to port 3838 on our machine to view the running app. 
