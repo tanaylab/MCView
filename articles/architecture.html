@@ -213,7 +213,10 @@
 <li>app.R file.</li>
 <li>project config and cache.</li>
 </ol>
-<p>The bundle can then be deployed in shiny-server, <a href="https://docs.rstudio.com/shinyapps.io/getting-started.html#deploying-applications">shinyapps.io</a> or any other environment that supports serving shiny apps.</p>
+<p>The bundle can then be deployed in shiny-server by running:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu">rsconnect</span><span class="fu">::</span><span class="fu">deployApp</span><span class="op">(</span>appDir <span class="op">=</span> <span class="st">"/path/to/the/bundle/my_project"</span><span class="op">)</span></code></pre></div>
+<p>or any other environment that supports serving shiny apps.</p>
 <p>Note that when deploying to these services make sure you have the <strong>MCView</strong> package installed.</p>
 </div>
   </div>
