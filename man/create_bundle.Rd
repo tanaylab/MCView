@@ -4,7 +4,12 @@
 \alias{create_bundle}
 \title{Generate a 'deployment ready' bundle of the a project app}
 \usage{
-create_bundle(project, path = getwd(), name = "MCView_bundle")
+create_bundle(
+  project,
+  path = getwd(),
+  name = "MCView_bundle",
+  overwrite = FALSE
+)
 }
 \arguments{
 \item{project}{path to the project directory}
@@ -12,6 +17,8 @@ create_bundle(project, path = getwd(), name = "MCView_bundle")
 \item{path}{path in which to create the bundle.}
 
 \item{name}{name of the folder in which to create the bundle. The bundle would be created at \code{path}/\code{name}}
+
+\item{overwrite}{overwrite bundle if already exists}
 }
 \description{
 Generate a 'deployment ready' bundle of the a project app

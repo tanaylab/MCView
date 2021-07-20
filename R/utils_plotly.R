@@ -36,8 +36,8 @@ arrange_2d_proj_tooltip <- function(fig) {
 }
 
 
-sanitize_plotly_buttons <- function(p, 
-    buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), 
-    ...) {
+sanitize_plotly_buttons <- function(p,
+                                    buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"),
+                                    ...) {
     p %>% plotly::config(displaylogo = FALSE, modeBarButtonsToRemove = buttons, ...)
 }

@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 
 We would start by downloading a PBMC dataset that was pre-processed using the `metacells` python package. 
 
-```{r setup}
+```{r setup, eval = FALSE}
 library(MCView)
 ```
 
@@ -50,7 +50,7 @@ selected_mc1: 1 # Default selected metacell1
 selected_mc2: 2 # Default selected metacell2
 ```
 
-We can edit some of the parameters if we want, or add parameters per dataset, see the [architecture](https://tanaylab.github.io/MCview/articles/architecture.html) vignette for a full description of the config parameters. 
+We can edit some of the parameters if we want, or add parameters per dataset, see the [architecture](https://tanaylab.github.io/MCView/articles/Architecture.html) vignette for a full description of the config parameters. 
 
 
 ## Import 
@@ -127,3 +127,6 @@ rsconnect::deployApp(appDir = file.path(getwd(), "PBMC_bundle"))
 
 Or to any shiny-server hosting service by uploading the "PBMC_bundle" directory to the service. 
 
+## Docker 
+
+See the [docker](https://tanaylab.github.io/MCView/articles/Docker.html vignette for instructions of using the docker image. 

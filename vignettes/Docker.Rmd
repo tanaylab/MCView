@@ -1,0 +1,55 @@
+---
+title: "Docker"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Docker}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+__MCView__ maintains a docker image with all the R and python dependencies. By default, the image starts an app with the project mounted at `/project` in the docker fs, but you can also use it to create projects or import datasets. 
+
+## Pull the image
+
+Pull the __MCView__ docker image using: 
+
+```bash
+docker pull tanaylab/mcview:latest
+```
+
+## Create a project
+
+```bash
+mkdir PBMC
+docker run -v $(pwd)/PBMC:/project mcview R -e 'MCView::create_project("PBMC", project_dir = "/project")'
+```
+
+## Import a dataset
+
+Download the PBMC example dataset:
+
+```bash
+wget http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz
+tar xvzf PBMC_processed.tar.gz
+```
+
+Import the dataset:
+
+```bash
+docker run -v $(pwd):/workdir mcview R -e 'MCView::import_dataset("/workdir/PBMC", dataset = "PBMC163k", anndata_file = "/workdir/metacells.h5ad", cell_type_colors_file = "/workdir/cluster-colors.csv")'
+```
+
+## Run the app
+
+```bash
+docker run -v $(pwd)/PBMC:/project -p 3838:3838 mcview
+```
+
+We can now go to port 3838 on our machine to view the running app. 
