@@ -75,7 +75,7 @@
 
       
 
-      </header><script src="Docker_files/accessible-code-block-0.0.1/empty-anchor.js"></script><div class="row">
+      </header><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>Docker</h1>
@@ -93,27 +93,27 @@
 <h2 class="hasAnchor">
 <a href="#pull-the-image" class="anchor"></a>Pull the image</h2>
 <p>Pull the <strong>MCView</strong> docker image using:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1"></a><span class="ex">docker</span> pull tanaylab/mcview:latest</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">docker</span> pull tanaylab/mcview:latest</code></pre></div>
 </div>
 <div id="create-a-project" class="section level2">
 <h2 class="hasAnchor">
 <a href="#create-a-project" class="anchor"></a>Create a project</h2>
-<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1"></a><span class="fu">mkdir</span> PBMC</span>
-<span id="cb2-2"><a href="#cb2-2"></a><span class="ex">docker</span> run -v <span class="va">$(</span><span class="bu">pwd</span><span class="va">)</span>/PBMC:/project mcview R -e <span class="st">'MCView::create_project("PBMC", project_dir = "/project")'</span></span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="fu">mkdir</span> PBMC
+<span class="ex">docker</span> run -v <span class="va">$(</span><span class="bu">pwd</span><span class="va">)</span>/PBMC:/project mcview R -e <span class="st">'MCView::create_project("PBMC", project_dir = "/project")'</span></code></pre></div>
 </div>
 <div id="import-a-dataset" class="section level2">
 <h2 class="hasAnchor">
 <a href="#import-a-dataset" class="anchor"></a>Import a dataset</h2>
 <p>Download the PBMC example dataset:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1"></a><span class="fu">wget</span> http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz</span>
-<span id="cb3-2"><a href="#cb3-2"></a><span class="fu">tar</span> xvzf PBMC_processed.tar.gz</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="fu">wget</span> http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz
+<span class="fu">tar</span> xvzf PBMC_processed.tar.gz</code></pre></div>
 <p>Import the dataset:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1"></a><span class="ex">docker</span> run -v <span class="va">$(</span><span class="bu">pwd</span><span class="va">)</span>:/workdir mcview R -e <span class="st">'MCView::import_dataset("/workdir/PBMC", dataset = "PBMC163k", anndata_file = "/workdir/metacells.h5ad", cell_type_colors_file = "/workdir/cluster-colors.csv")'</span></span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">docker</span> run -v <span class="va">$(</span><span class="bu">pwd</span><span class="va">)</span>:/workdir mcview R -e <span class="st">'MCView::import_dataset("/workdir/PBMC", dataset = "PBMC163k", anndata_file = "/workdir/metacells.h5ad", cell_type_colors_file = "/workdir/cluster-colors.csv")'</span></code></pre></div>
 </div>
 <div id="run-the-app" class="section level2">
 <h2 class="hasAnchor">
 <a href="#run-the-app" class="anchor"></a>Run the app</h2>
-<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1"></a><span class="ex">docker</span> run -v <span class="va">$(</span><span class="bu">pwd</span><span class="va">)</span>/PBMC:/project -p 3838:3838 mcview</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">docker</span> run -v <span class="va">$(</span><span class="bu">pwd</span><span class="va">)</span>/PBMC:/project -p 3838:3838 mcview</code></pre></div>
 <p>We can now go to port 3838 on our machine to view the running app.</p>
 </div>
   </div>
