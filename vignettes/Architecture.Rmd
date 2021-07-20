@@ -158,6 +158,12 @@ This would create a minimal shiny app in "/path/to/the/bundle/my_project" direct
 1. app.R file. 
 2. project config and cache. 
 
-The bundle can then be deployed in shiny-server, [shinyapps.io](https://docs.rstudio.com/shinyapps.io/getting-started.html#deploying-applications) or any other environment that supports serving shiny apps. 
+The bundle can then be deployed in shiny-server by running: 
+
+```{r, eval=FALSE}
+rsconnect::deployApp(appDir = "/path/to/the/bundle/my_project")
+```
+
+or any other environment that supports serving shiny apps. 
 
 Note that when deploying to these services make sure you have the __MCView__ package installed. 

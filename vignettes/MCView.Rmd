@@ -35,7 +35,7 @@ The above commands end result are two files named "raw/pbmc_metacells.h5ad" and 
 The first step in running __MCView__ is generating a project directory structure: 
 
 ```{r, eval=FALSE}
-MCView::create_project("PBMC")
+create_project("PBMC")
 ```
 
 A text editor would be opened with `PBMC/config/config.yaml` file:
@@ -60,7 +60,7 @@ Next, we would import the PBMC dataset to the project we created. A project can 
 This would pre-process the metacell dataset in order to view it in the shiny app: 
 
 ```{r, eval=FALSE}
-MCView::import_dataset(project = "PBMC", 
+import_dataset(project = "PBMC", 
                dataset = "PBMC163k", 
                anndata_file = "raw/metacells.h5ad", 
                cell_type_field =  "cluster",
@@ -73,14 +73,20 @@ You can see that we also specified a field in the `h5ad` object that has pre-com
 
 Note that the import part might take a few minutes, depending (mostly) on the number of metacells. 
 
-__MCView__ supports also importing datasets from the old R `metacell` package, see `MCView::import_dataset_metacell1` for details.
+__MCView__ supports also importing datasets from the old R `metacell` package, see `import_dataset_metacell1` for details.
 ## Run the app
 
 ```{r, eval=FALSE}
-MCView::run_app(project = "PBMC", port = 5555)
+run_app(project = "PBMC", launch.browser = TRUE)
 ```
 
-You can now go to [https://localhost:5555](https://localhost:5555) to view the app. 
+A browser window would be opened with the app. 
+
+You can also specify the port or host, or do not launch the browser window, e.g.: 
+
+```{r, eval=FALSE}
+run_app(project = "PBMC", port = 5555, host = "127.0.0.1", launch.browser = FALSE)
+```
 
 ## Update annotations
 
@@ -90,7 +96,7 @@ After working a bit on the initial metacell model, we would usually want to upda
 2. Running: 
 
 ```{r, eval=FALSE}
-MCView::update_metacell_types("PBMC", "PBMC163k", "/path/to/metacell_types_file")
+update_metacell_types("PBMC", "PBMC163k", "/path/to/metacell_types_file")
 ```
 
 Where "/path/to/metacell_types_file" is the path of the exported file. 
@@ -98,7 +104,7 @@ Where "/path/to/metacell_types_file" is the path of the exported file.
 The same can be done for cell type colors, which has a different export button: 
 
 ```{r, eval=FALSE}
-MCView::update_cell_type_colors("PBMC", "PBMC163k", "/path/to/cell_type_colors_file")
+update_cell_type_colors("PBMC", "PBMC163k", "/path/to/cell_type_colors_file")
 ```
 
 You can now rerun the app and the types/colors would be updated. 
@@ -110,8 +116,14 @@ Note that if you changed cell type __names__ you should update both `cell_type_c
 Create a deployment ready bundle by running: 
 
 ```{r, eval=FALSE}
-MCView::create_bundle(project = "PBMC", path = getwd(), name = "PBMC")
+create_bundle(project = "PBMC", path = getwd(), name = "PBMC_bundle")
 ```
 
-You can then upload the bundle to [shinyapps.io](https://docs.rstudio.com/shinyapps.io/getting-started.html#deploying-applications), shiny-server or any other hosting service. 
+You can then upload the bundle to [shinyapps.io](https://docs.rstudio.com/shinyapps.io/getting-started.html#deploying-applications) by running: 
+
+```{r, eval=FALSE}
+rsconnect::deployApp(appDir = file.path(getwd(), "PBMC_bundle"))
+```
+
+Or to any shiny-server hosting service by uploading the "PBMC_bundle" directory to the service. 
 
