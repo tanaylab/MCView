@@ -83,36 +83,6 @@ create_project <- function(project, project_dir = NULL) {
     cli_alert("please edit {.file {fs::path(project_dir, 'config.yaml')}}")
 }
 
-
-get_default_project <- function() {
-    default_dir <- fs::path(app_sys("data-raw"), "default")
-    verify_project_dir(default_dir)
-    return(default_dir)
-}
-
-#' Set default project
-#'
-#' Create a symbolic link to the \code{project} in order to run MCView without
-#' specifying a project directory.
-#'
-#' Note that in order for this to work you must have
-#' write permissions in the installation directory of MCView. Used mainly for debugging purposes.
-#'
-#' @param project path to the project directory
-#'
-#'
-#' @export
-set_default_project <- function(project) {
-    default_dir <- fs::path(app_sys("data-raw"), "default")
-    if (fs::link_exists(default_dir)) {
-        fs::link_delete(default_dir)
-    }
-    fs::link_create(fs::path_abs(project), default_dir, symbolic = TRUE)
-
-    cli_alert_info("default project was set to {project}")
-}
-
-
 #' Generate a 'deployment ready' bundle of the a project app
 #'
 #' Generate a 'deployment ready' bundle of the a project app

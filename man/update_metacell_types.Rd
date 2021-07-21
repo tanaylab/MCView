@@ -20,14 +20,16 @@ not exists in the data would be ignored.}
 Change the cell type assignments for each metacell to the ones listed at \code{metacell_types_file}.
 }
 \details{
-This is usually done after a first iteration of annotation using the "Annotate" tab in the MCView annotation, which can export a valid \code{metacell_types_file}.
+This is usually done after a first iteration of annotation using the "Annotate"
+tab in the MCView annotation, which can export a valid \code{metacell_types_file}.
 The file should have a column named "metacell" with the metacell ids and another
 column named "cell_type" or "cluster" with the cell type assignment.
 
 Note that the exported file from the __MCView__ app contains additional fields
 which will be ignored in this function.
 
-Under the hood - MCView updates a file named "metacell_types.tsv" under \code{project/cache/dataset}, which can also be edited manually.
+Under the hood - MCView updates a file named "metacell_types.tsv" under
+ \code{project/cache/dataset}, which can also be edited manually.
 }
 \examples{
 \dontrun{

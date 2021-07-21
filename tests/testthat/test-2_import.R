@@ -1,5 +1,3 @@
-MCView::create_project(project_dir)
-
 test_that("import_dataset works", {
     MCView::import_dataset(
         project = project_dir,
@@ -7,6 +5,7 @@ test_that("import_dataset works", {
         anndata_file = fs::path(raw_dir, "metacells.h5ad"),
         cell_type_field = NULL
     )
+    
     test_dataset(project_dir, "PBMC163k")
 })
 
