@@ -207,14 +207,16 @@ dataset_ls <- function(project) {
 #'
 #' Change the cell type assignments for each metacell to the ones listed at \code{metacell_types_file}.
 #'
-#' This is usually done after a first iteration of annotation using the "Annotate" tab in the MCView annotation, which can export a valid \code{metacell_types_file}.
+#' This is usually done after a first iteration of annotation using the "Annotate"
+#' tab in the MCView annotation, which can export a valid \code{metacell_types_file}.
 #' The file should have a column named "metacell" with the metacell ids and another
 #' column named "cell_type" or "cluster" with the cell type assignment.
 #'
 #' Note that the exported file from the __MCView__ app contains additional fields
 #' which will be ignored in this function.
 #'
-#' Under the hood - MCView updates a file named "metacell_types.tsv" under \code{project/cache/dataset}, which can also be edited manually.
+#' Under the hood - MCView updates a file named "metacell_types.tsv" under
+#'  \code{project/cache/dataset}, which can also be edited manually.
 #'
 #' @param project path to the project directory
 #' @param dataset name for the dataset, e.g. "PBMC"
@@ -245,7 +247,12 @@ update_metacell_types <- function(project, dataset, metacell_types_file) {
         select(-cell_type) %>%
         left_join(metacell_types %>% select(metacell, cell_type), by = "metacell")
 
-    serialize_shiny_data(metacell_types, "metacell_types", dataset = dataset, cache_dir = project_cache_dir(project), flat = TRUE)
+    serialize_shiny_data(
+        metacell_types,
+        "metacell_types",
+        dataset = dataset,
+        cache_dir = project_cache_dir(project), 
+        flat = TRUE)
 
     cli_alert_success("Succesfully changed metacell cell type assignments")
 }
@@ -255,18 +262,21 @@ update_metacell_types <- function(project, dataset, metacell_types_file) {
 #'
 #' Change the color assignments for each cell type to the ones listed at \code{cell_type_colors_file}.
 #'
-#' This is usually done after a first iteration of annotation using the "Annotate" tab in the MCView annotation, which can
+#' This is usually done after a first iteration of annotation using the
+#' "Annotate" tab in the MCView annotation, which can
 #' export a valid \code{cell_type_colors_file}.
 #'
-#' The file should have a column named "cell_type" or "cluster" with the cell types and another column named "color" with the color assignment.
+#' The file should have a column named "cell_type" or "cluster" with 
+#' the cell types and another column named "color" with the color assignment.
 #' Note that the exported file from the __MCView__ app contains additional fields which will be
 #' ignored in this function.
 #'
-#' Under the hood - MCView updates a file named "cell_type_colors.tsv" under \code{project/cache/dataset}, which can also be edited manually.
+#' Under the hood - MCView updates a file named "cell_type_colors.tsv" under
+#' \code{project/cache/dataset}, which can also be edited manually.
 #'
 #' @param project path to the project directory
 #' @param dataset name for the dataset, e.g. "PBMC"
-#' @param cell_type_colors_file path to a tabular file (csv,tsv) with color assignement for
+#' @param cell_type_colors_file path to a tabular file (csv,tsv) with color assignment for
 #' each cell type. The file should have a column named "cell_type" or "cluster" with the
 #' cell types and another column named "color" with the color assignment. Cell types that do not
 #' exist in the metacell types would be ignored, so if you changed the names of cell types you would have to also
