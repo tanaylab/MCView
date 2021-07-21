@@ -10,6 +10,10 @@ test_that("import_dataset works", {
     test_dataset(project_dir, "PBMC163k")
 })
 
+test_that("dataset_ls works", {
+    expect_equal(dataset_ls(project_dir), c("PBMC163k"))
+})
+
 test_that("import_dataset works with implicit cell type field", {
     MCView::import_dataset(
         project = project_dir,
@@ -22,6 +26,7 @@ test_that("import_dataset works with implicit cell type field", {
 })
 
 test_that("import_dataset works with non existing cell type field", {
+    set.seed(60427)
     MCView::import_dataset(
         project = project_dir,
         dataset = "PBMC163k_ctf",
@@ -68,4 +73,10 @@ test_that("import_dataset works with metacell_types file and cell_type_colors fi
     test_dataset(project_dir, "PBMC163k_mct_ctcf")
     withr::defer(unlink(fs::path(project_dir, "cache", "PBMC163k_mct_ctcf")))
     withr::defer(gc())
+})
+
+test_that("dataset_rm works", {
+    dataset_rm(project_dir, "PBMC163k_ctf")
+    expect_true(!fs::dir_exists(fs::path(project_dir, "cache", "PBMC163k_ctf")))
+    expect_true(!("PBMC_163k_ctf" %in% dataset_ls(project_dir)))
 })

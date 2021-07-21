@@ -20,3 +20,4 @@ docs
 tests/testthat/raw/*
 tests/testthat/PBMC/*
 check/
+settings.json

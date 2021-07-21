@@ -5,7 +5,7 @@ test_that("update_metacell_types works", {
     test_file <- fs::path(raw_dir, "metacell-types-test.csv")
     fwrite(metacell_types, test_file)
     withr::defer(unlink(test_file))
-    MCView::update_metacell_types("PBMC", "PBMC163k", test_file)
+    MCView::update_metacell_types(project_dir, "PBMC163k", test_file)
 
     init_config(project = project_dir)
     load_all_data(cache_dir = project_cache_dir(project_dir))
@@ -21,7 +21,7 @@ test_that("update_metacell_types works with missing cell types", {
     test_file <- fs::path(raw_dir, "metacell-types-test.csv")
     fwrite(metacell_types, test_file)
     withr::defer(unlink(test_file))
-    MCView::update_metacell_types("PBMC", "PBMC163k", test_file)
+    MCView::update_metacell_types(project_dir, "PBMC163k", test_file)
 
     init_config(project = project_dir)
     load_all_data(cache_dir = project_cache_dir(project_dir))
@@ -42,7 +42,7 @@ test_that("update_cell_type_colors works", {
     test_file <- fs::path(raw_dir, "cluster-colors-test.csv")
     fwrite(cell_type_colors, test_file)
     withr::defer(unlink(test_file))
-    MCView::update_cell_type_colors("PBMC", "PBMC163k", test_file)
+    MCView::update_cell_type_colors(project_dir, "PBMC163k", test_file)
 
     init_config(project = project_dir)
     load_all_data(cache_dir = project_cache_dir(project_dir))

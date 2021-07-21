@@ -1,12 +1,20 @@
-raw_dir <- test_path("raw")
+set.seed(60427)
+
+test_dir <- tempdir()
+
+raw_dir <- fs::path(test_dir, "raw")
 
 fs::dir_create(raw_dir)
 
-download.file("http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz", fs::path(raw_dir, "PBMC_processed.tar.gz"))
+download.file(
+    "http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz",
+    fs::path(raw_dir, "PBMC_processed.tar.gz")
+)
+
 untar(fs::path(raw_dir, "PBMC_processed.tar.gz"), exdir = raw_dir)
 
-project_dir <- test_path("PBMC")
-bundle_dir <- test_path("bundle")
+project_dir <- fs::path(test_dir, "PBMC")
+bundle_dir <- fs::path(test_dir, "bundle")
 
 withr::defer(
     {
@@ -17,7 +25,14 @@ withr::defer(
     teardown_env()
 )
 
-required_files <- c("mc_mat.qs", "mc_sum.qs", "mc2d.qs", "gg_mc_top_cor.qs", "metacell_types.tsv", "cell_type_colors.tsv")
+required_files <- c(
+    "mc_mat.qs",
+    "mc_sum.qs",
+    "mc2d.qs",
+    "gg_mc_top_cor.qs",
+    "metacell_types.tsv",
+    "cell_type_colors.tsv"
+)
 
 test_dataset <- function(project_dir, dataset) {
     dataset_dir <- fs::path(project_dir, "cache", dataset)
