@@ -10,6 +10,9 @@
 #' @import tgstat
 #' @import tgutil
 #' @import cli
+#' @import grDevices
+#' @import stats
+#' @import utils
 #' @importFrom rintrojs introBox
 #' @importFrom glue glue
 #' @importFrom promises %...>%

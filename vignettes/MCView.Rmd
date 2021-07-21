@@ -129,4 +129,4 @@ Or to any shiny-server hosting service by uploading the "PBMC_bundle" directory 
 
 ## Docker 
 
-See the [docker](https://tanaylab.github.io/MCView/articles/Docker.html vignette for instructions of using the docker image. 
+See the [docker](https://tanaylab.github.io/MCView/articles/Docker.html) vignette for instructions of using the docker image. 

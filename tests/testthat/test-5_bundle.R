@@ -1,8 +1,4 @@
-test_that("create_bundle works", {
-    MCView::create_bundle(project = project_dir, path = bundle_dir, name = "PBMC")
-
-
-    project_bundle <- fs::path(bundle_dir, "PBMC")
+test_bundle <- function(project_bundle) {
     expect_true(fs::dir_exists(project_bundle))
     expect_true(fs::dir_exists(fs::path(project_bundle, "project")))
     expect_true(fs::dir_exists(fs::path(project_bundle, "project", "cache")))
@@ -20,14 +16,35 @@ test_that("create_bundle works", {
     config_bundle <- yaml::read_yaml(fs::path(project_bundle, "project", "config", "config.yaml"))
 
     expect_equal(config, config_bundle)
+}
+
+
+test_that("create_bundle works", {
+    MCView::create_bundle(project = project_dir, path = bundle_dir, name = "PBMC")
+
+    project_bundle <- fs::path(bundle_dir, "PBMC")
+    withr::defer(fs::dir_delete((project_bundle)))
+    test_bundle(project_bundle)
+})
+
+test_that("create_bundle works with overwrite=TRUE", {
+    MCView::create_bundle(project = project_dir, path = bundle_dir, name = "PBMC")
+    MCView::create_bundle(project = project_dir, path = bundle_dir, name = "PBMC", overwrite = TRUE)
+
+    project_bundle <- fs::path(bundle_dir, "PBMC")
+    withr::defer(fs::dir_delete((project_bundle)))
+    test_bundle(project_bundle)
+})
+
+test_that("create_bundle fails with overwrite=FALSE", {
+    MCView::create_bundle(project = project_dir, path = bundle_dir, name = "PBMC")
+    expect_error(MCView::create_bundle(project = project_dir, path = bundle_dir, name = "PBMC"))
 })
 
 test_that(
     "bundle app launches",
     {
-        cur_wd <- getwd()
-        withr::defer(setwd(cur_wd))
-        setwd(fs::path(bundle_dir, "PBMC"))
+        withr::local_dir(fs::path(bundle_dir, "PBMC"))
 
         skip_on_cran()
         skip_on_travis()
