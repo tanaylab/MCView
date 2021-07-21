@@ -20,6 +20,7 @@ test_that("app server", {
 test_that(
     "app launches",
     {
+        skip_on_ci()
         skip_on_cran()
         skip_on_travis()
         skip_on_appveyor()

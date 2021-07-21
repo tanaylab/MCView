@@ -19,5 +19,6 @@ MCView_bundle
 docs
 tests/testthat/raw/*
 tests/testthat/PBMC/*
+tests/testthat/tmp/*
 check/
 settings.json
