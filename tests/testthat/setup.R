@@ -6,6 +6,8 @@ raw_dir <- fs::path(test_dir, "raw")
 
 fs::dir_create(raw_dir)
 
+# set the timeout to more than 60 seconds in order to be able to download the files on github
+options(timeout = 1e4)
 download.file(
     "http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz",
     fs::path(raw_dir, "PBMC_processed.tar.gz")
