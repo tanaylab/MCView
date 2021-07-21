@@ -1,10 +1,11 @@
 test_that("import_dataset works", {
+    set.seed(60427)
     MCView::import_dataset(
         project = project_dir,
         dataset = "PBMC163k",
         anndata_file = fs::path(raw_dir, "metacells.h5ad"),
         cell_type_field = NULL
-    )
+    )    
     
     test_dataset(project_dir, "PBMC163k")
 })
@@ -14,6 +15,7 @@ test_that("dataset_ls works", {
 })
 
 test_that("import_dataset works with implicit cell type field", {
+    set.seed(60427)
     MCView::import_dataset(
         project = project_dir,
         dataset = "PBMC163k_ctf",
@@ -38,6 +40,7 @@ test_that("import_dataset works with non existing cell type field", {
 })
 
 test_that("import_dataset works with cell type field and cell_type_colors file", {
+    set.seed(60427)
     MCView::import_dataset(
         project = project_dir,
         dataset = "PBMC163k_ctf_ctcf",
@@ -50,6 +53,7 @@ test_that("import_dataset works with cell type field and cell_type_colors file",
 })
 
 test_that("import_dataset works with metacell_types file", {
+    set.seed(60427)
     MCView::import_dataset(
         project = project_dir,
         dataset = "PBMC163k_mct",
@@ -62,6 +66,7 @@ test_that("import_dataset works with metacell_types file", {
 })
 
 test_that("import_dataset works with metacell_types file and cell_type_colors file", {
+    set.seed(60427)
     MCView::import_dataset(
         project = project_dir,
         dataset = "PBMC163k_mct_ctcf",
