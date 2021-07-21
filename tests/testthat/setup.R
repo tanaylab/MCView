@@ -23,6 +23,7 @@ withr::defer(
         unlink(raw_dir)
         unlink(project_dir)
         unlink(bundle_dir)
+        unlink(test_dir)
     },
     teardown_env()
 )
