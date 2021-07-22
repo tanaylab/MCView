@@ -78,6 +78,11 @@ init_tab_defs <- function() {
             module_name = "manifold",
             icon = "project-diagram"
         ),
+        "Markers" = list(
+            title = "Markers",
+            module_name = "markers",
+            icon = "map-marker"
+        ),
         "Genes" = list(
             title = "Genes",
             module_name = "gene_mc",
@@ -106,6 +111,11 @@ init_tab_defs <- function() {
         tab_defs <<- tab_defs[config$tabs]
     } else {
         tab_defs <<- tab_defs[default_tabs]
+    }
+
+    if (!rmarkdown::pandoc_available() && "About" %in% names(tab_defs)){        
+        warning("pandoc is not available, removing 'About' tab'")
+        tab_defs[["About"]] <<- NULL
     }
 }
 
