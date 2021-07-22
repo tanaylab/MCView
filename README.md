@@ -4,7 +4,7 @@
 
 <!-- badges: start -->
 <!-- badges: end -->
-The goal of MCView is to provide an interactive API for metacell analysis.
+MCView creates a shiny-app facilitating interactive exploration and annotation of metacell models. Metacell itself is described [here](https://github.com/tanaylab/metacells/blob/master/vignettes/Metacells_Vignette.ipynb). You can also explore examples of MCV output for [PBMC](https://tanaylab.weizmann.ac.il/PBMC) and [Mouse organogenesis](https://tanaylab.weizmann.ac.il/MOCA) on the Tanay group server.
 
 ## Installation
 
