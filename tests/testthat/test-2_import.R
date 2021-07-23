@@ -5,8 +5,8 @@ test_that("import_dataset works", {
         dataset = "PBMC163k",
         anndata_file = fs::path(raw_dir, "metacells.h5ad"),
         cell_type_field = NULL
-    )    
-    
+    )
+
     test_dataset(project_dir, "PBMC163k")
 })
 

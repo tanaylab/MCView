@@ -59,7 +59,6 @@ import_dataset <- function(project, dataset, anndata_file, cell_type_field = "cl
     }
 
     cli_alert_info("Reading {.file {anndata_file}}")
-    library(anndata)
     adata <- anndata::read_h5ad(anndata_file)
 
     cli_alert_info("Processing metacell matrix")
@@ -83,26 +82,13 @@ import_dataset <- function(project, dataset, anndata_file, cell_type_field = "cl
     )
     serialize_shiny_data(mc2d_list, "mc2d", dataset = dataset, cache_dir = cache_dir)
 
-    cli_alert_info("Calculating top genes per metacell")
     mc_egc <- t(t(mc_mat) / mc_sum)
 
-    mc_egc_norm <- mc_egc + 1e-5
-    mc_fp <- mc_egc_norm / apply(mc_egc_norm, 1, median, na.rm = TRUE)
-
-    mc_genes_top2 <- apply(mc_fp, 2, function(fp) {
-        top_ind <- order(-fp)[1:2]
-        return(rownames(mc_fp)[top_ind])
-    })
-
-    mc_genes_top2 <- mc_genes_top2 %>%
-        t() %>%
-        as.data.frame() %>%
-        rownames_to_column("metacell") %>%
-        rlang::set_names(c("metacell", "top1_gene", "top2_gene")) %>%
-        tibble::remove_rownames() %>%
-        distinct(metacell, .keep_all = TRUE) %>%
-        mutate(metacell = as.character(metacell))
-
+    cli_alert_info("Calculating top genes per metacell (marker genes)")
+    forbidden <- adata$var$forbidden_gene %||% rep(TRUE, nrow(mc_egc))
+    mc_genes_top2 <- calc_marker_genes(mc_egc[!forbidden, ], 2)
+    marker_genes <- sort(unique(c(mc_genes_top2$top1_gene, mc_genes_top2$top2_gene)))
+    serialize_shiny_data(marker_genes, "marker_genes", dataset = dataset, cache_dir = cache_dir)
 
     if (!is.null(metacell_types_file)) {
         if (!is.null(cell_type_field)) {
@@ -148,18 +134,14 @@ import_dataset <- function(project, dataset, anndata_file, cell_type_field = "cl
         arrange(as.numeric(metacell)) %>%
         left_join(mc_genes_top2, by = "metacell")
 
-    # filter metacell_types to contain only metacells that are included in mc_egc
+    # filter metacell_types to contain only metacells that are included in mc_mat
     metacell_types <- metacell_types %>%
         as.data.frame() %>%
         column_to_rownames("metacell")
-    metacell_types <- metacell_types[colnames(mc_egc), ]
+    metacell_types <- metacell_types[colnames(mc_mat), ]
     metacell_types <- metacell_types %>%
         rownames_to_column("metacell") %>%
         as_tibble()
-
-    # add the expression (log2) of top genes per metacell
-    metacell_types$top1_lfp <- purrr::map2_dbl(metacell_types$metacell, metacell_types$top1_gene, ~ log2(mc_fp[.y, .x]))
-    metacell_types$top2_lfp <- purrr::map2_dbl(metacell_types$metacell, metacell_types$top2_gene, ~ log2(mc_fp[.y, .x]))
 
     serialize_shiny_data(metacell_types, "metacell_types", dataset = dataset, cache_dir = cache_dir, flat = TRUE)
 
@@ -251,8 +233,9 @@ update_metacell_types <- function(project, dataset, metacell_types_file) {
         metacell_types,
         "metacell_types",
         dataset = dataset,
-        cache_dir = project_cache_dir(project), 
-        flat = TRUE)
+        cache_dir = project_cache_dir(project),
+        flat = TRUE
+    )
 
     cli_alert_success("Succesfully changed metacell cell type assignments")
 }
@@ -266,7 +249,7 @@ update_metacell_types <- function(project, dataset, metacell_types_file) {
 #' "Annotate" tab in the MCView annotation, which can
 #' export a valid \code{cell_type_colors_file}.
 #'
-#' The file should have a column named "cell_type" or "cluster" with 
+#' The file should have a column named "cell_type" or "cluster" with
 #' the cell types and another column named "color" with the color assignment.
 #' Note that the exported file from the __MCView__ app contains additional fields which will be
 #' ignored in this function.
@@ -356,6 +339,52 @@ parse_metacell_types <- function(file) {
         mutate(metacell = as.character(metacell))
 
     return(metacell_types)
+}
+
+#' calculate the top 2 marker genes for each metacell
+#'
+#' @param mc_egc egc matrix (normalized metacell counts per gene)
+#' @param minimal_max_log_fraction take only genes with at least one value
+#' (in log fraction units - normalized egc) above this threshold
+#' @param minimal_relative_log_fraction take only genes with relative
+#' log fraction (mc_fp) above this this value
+#'
+#' @noRd
+calc_marker_genes <- function(mc_egc,
+                              genes_per_metacell = 2,
+                              minimal_max_log_fraction = -10,
+                              minimal_relative_log_fraction = 2) {
+    max_log_fractions_of_genes <- apply(mc_egc, 1, max)
+
+    interesting_genes_mask <- (max_log_fractions_of_genes
+    >= minimal_max_log_fraction)
+
+    mc_egc_norm <- mc_egc + 1e-5
+    mc_fp <- mc_egc_norm / apply(mc_egc_norm, 1, median, na.rm = TRUE)
+
+    mc_fp_f <- mc_fp[interesting_genes_mask, ]
+    mc_fp_f[mc_fp_f < minimal_relative_log_fraction] <- NA
+
+    mc_top_genes <- apply(mc_fp_f, 2, function(fp) {
+        top_ind <- order(-fp)[1:genes_per_metacell]
+        return(rownames(mc_fp_f)[top_ind])
+    })
+
+    mc_top_genes <- mc_top_genes %>%
+        t() %>%
+        as.data.frame() %>%
+        rownames_to_column("metacell") %>%
+        rlang::set_names(c("metacell", glue("top{1:genes_per_metacell}_gene"))) %>%
+        tibble::remove_rownames() %>%
+        distinct(metacell, .keep_all = TRUE) %>%
+        mutate(metacell = as.character(metacell))
+
+    # add the expression (log2) of top genes per metacell
+    for (i in 1:genes_per_metacell) {
+        mc_top_genes[[glue("top{i}_lfp")]] <- purrr::map2_dbl(mc_top_genes$metacell, mc_top_genes[[glue("top{i}_gene")]], ~ log2(mc_fp_f[.y, .x]))
+    }
+
+    return(mc_top_genes)
 }
 
 #' calculate the k top correlated and anti correlated genes for each gene

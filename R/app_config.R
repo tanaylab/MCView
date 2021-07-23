@@ -113,7 +113,7 @@ init_tab_defs <- function() {
         tab_defs <<- tab_defs[default_tabs]
     }
 
-    if (!rmarkdown::pandoc_available() && "About" %in% names(tab_defs)){        
+    if (!rmarkdown::pandoc_available() && "About" %in% names(tab_defs)) {
         warning("pandoc is not available, removing 'About' tab'")
         tab_defs[["About"]] <<- NULL
     }

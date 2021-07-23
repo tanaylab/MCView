@@ -19,6 +19,7 @@ app_server <- function(input, output, session) {
 
     callModule(mod_manifold_server, "manifold_ui_1", dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors)
     callModule(mod_gene_mc_server, "gene_mc_ui_1", dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors)
+    callModule(mod_markers_server, "markers_ui_1", dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors)
     callModule(mod_mc_mc_server, "mc_mc_ui_1", dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors)
     callModule(mod_annotate_mc_server, "annotate_ui_1", dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors)
 
