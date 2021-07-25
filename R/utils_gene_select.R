@@ -19,7 +19,8 @@ server_gene_selectors <- function(input, output, session, values, dataset, ns) {
                 choices = gene_names,
                 selected = values$gene1, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
             ),
-            shinyWidgets::pickerInput(ns("gene2"), "Gene B", choices = gene_names, selected = values$gene2, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith"))
+            shinyWidgets::pickerInput(ns("gene2"), "Gene B", choices = gene_names, selected = values$gene2, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")),
+            shinyWidgets::actionGroupButtons(ns("switch_genes"), labels = c("Switch"), size = "sm")
         )
     })
 
@@ -87,5 +88,12 @@ server_gene_selectors <- function(input, output, session, values, dataset, ns) {
 
     observeEvent(input$select_top_cor2_gene2, {
         updateSelectInput(session, "gene2", selected = input$selected_top_gene2)
+    })
+
+    observeEvent(input$switch_genes, {
+        gene1 <- input$gene1
+        gene2 <- input$gene2
+        updateSelectInput(session, "gene1", selected = gene2)
+        updateSelectInput(session, "gene2", selected = gene1)
     })
 }
