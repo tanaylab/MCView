@@ -167,8 +167,8 @@ mod_mc_mc_server <- function(input, output, session, dataset, metacell_types, ce
         req(input$metacell2)
 
         highlight <- tibble::tibble(
-            metacell = c(input$metacell1, input$metacell2), 
-            label = c("metacell1", "metacell2"), 
+            metacell = c(input$metacell1, input$metacell2),
+            label = c("metacell1", "metacell2"),
             color = c("darkred", "darkblue")
         )
 

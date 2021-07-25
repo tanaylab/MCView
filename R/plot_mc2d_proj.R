@@ -42,10 +42,10 @@ mc2d_plot_ggp <- function(dataset, highlight = NULL, point_size = initial_proj_p
             )
         )
 
-  p <- mc2d_df %>%
+    p <- mc2d_df %>%
         ggplot(aes(x = x, y = y, label = metacell, fill = `Cell type`, tooltip_text = Metacell, customdata = id)) +
         scale_fill_manual(name = "", values = get_cell_type_colors(dataset, cell_type_colors))
- 
+
 
     if (nrow(graph) > 0) {
         if (scale_edges) {
@@ -63,12 +63,12 @@ mc2d_plot_ggp <- function(dataset, highlight = NULL, point_size = initial_proj_p
     p <- p + geom_point(size = point_size, shape = 21, stroke = stroke) +
         theme_void() +
         guides(size = "none")
-    
+
     if (!is.null(highlight)) {
         cols <- highlight %>%
             select(label, color) %>%
             tibble::deframe()
-        cols <- c(cols, "Other" = "black")       
+        cols <- c(cols, "Other" = "black")
 
         p <- p +
             geom_point(
@@ -82,7 +82,6 @@ mc2d_plot_ggp <- function(dataset, highlight = NULL, point_size = initial_proj_p
             ) + scale_color_manual(values = cols)
 
         p <- p + guides(color = "none")
-
     }
 
 
