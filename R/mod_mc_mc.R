@@ -155,8 +155,16 @@ mod_mc_mc_server <- function(input, output, session, dataset, metacell_types, ce
     output$plot_mc_proj_2d <- plotly::renderPlotly({
         req(input$point_size)
         req(input$min_edge_size)
+        req(input$metacell1)
+        req(input$metacell2)
 
-        p_proj <- mc2d_plot_ggp(dataset(), metacell_types = metacell_types(), cell_type_colors = cell_type_colors(), point_size = input$point_size, min_d = input$min_edge_size)
+        highlight <- tibble::tibble(
+            metacell = c(input$metacell1, input$metacell2), 
+            label = c("metacell1", "metacell2"), 
+            color = c("darkred", "darkblue")
+        )
+
+        p_proj <- mc2d_plot_ggp(dataset(), metacell_types = metacell_types(), cell_type_colors = cell_type_colors(), point_size = input$point_size, min_d = input$min_edge_size, highlight = highlight)
 
         if (has_time(dataset())) {
             subfig <- plotly::subplot(
