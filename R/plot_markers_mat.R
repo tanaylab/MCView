@@ -107,7 +107,7 @@ plot_markers_mat <- function(mc_fp,
         heatmap,
         colors_heatmap,
         nrows = 2,
-        shareX = FALSE,
+        shareX = TRUE,
         shareY = FALSE,
         heights = c(0.95,0.05))
 
