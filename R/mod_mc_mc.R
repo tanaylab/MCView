@@ -80,7 +80,8 @@ mod_mc_mc_sidebar_ui <- function(id) {
             div(
                 id = ns("sidebar_select"),
                 uiOutput(ns("metacell1_select")),
-                uiOutput(ns("metacell2_select"))
+                uiOutput(ns("metacell2_select")),
+                shinyWidgets::actionGroupButtons(ns("switch_metacells"), labels = c("Switch"), size = "sm")
             )
         )
     )
@@ -110,6 +111,13 @@ mod_mc_mc_server <- function(input, output, session, dataset, metacell_types, ce
 
     mc_mc_gene_scatter_df <- reactive({
         calc_mc_mc_gene_df(dataset(), input$metacell1, input$metacell2)
+    })
+
+    observeEvent(input$switch_metacells, {
+        mc1 <- input$metacell1
+        mc2 <- input$metacell2
+        updateSelectInput(session, "metacell1", selected = mc2)
+        updateSelectInput(session, "metacell2", selected = mc1)
     })
 
     # MC/MC plots
