@@ -2,7 +2,7 @@
 #' Plot 2d projection of mc2d colored by cell types
 #'
 #' @param dataset name of metacell object
-#' @param highlight data.frame with 'metacell','label' and 'color'
+#' @param highlight data.frame with 'metacell',"label" and 'color'
 #'
 #' @noRd
 mc2d_plot_ggp <- function(dataset, highlight = NULL, point_size = initial_proj_point_size(dataset), min_d = min_edge_length(dataset), stroke = NULL, graph_color = "black", graph_width = 0.1, scale_edges = FALSE, id = NULL, metacell_types = get_mc_data(dataset, "metacell_types"), cell_type_colors = get_mc_data(dataset, "cell_type_colors")) {
@@ -42,25 +42,10 @@ mc2d_plot_ggp <- function(dataset, highlight = NULL, point_size = initial_proj_p
             )
         )
 
-    if (!is.null(highlight)) {
-        cols <- highlight %>%
-            select(label, color) %>%
-            tibble::deframe()
-        cols <- c(cols, "Other" = "gray")
-
-        p <- mc2d_df %>%
-            left_join(highlight, by = "metacell") %>%
-            tidyr::replace_na(replace = list(label = "Other")) %>%
-            mutate(label = factor(label, levels = names(cols))) %>%
-            arrange(label) %>%
-            ggplot(aes(x = x, y = y, label = metacell, fill = label, tooltip_text = Metacell, customdata = id)) +
-            scale_fill_manual(name = "", values = cols)
-    } else {
-        p <- mc2d_df %>%
-            ggplot(aes(x = x, y = y, label = metacell, fill = `Cell type`, tooltip_text = Metacell, customdata = id)) +
-            scale_fill_manual(name = "", values = get_cell_type_colors(dataset, cell_type_colors))
-    }
-
+  p <- mc2d_df %>%
+        ggplot(aes(x = x, y = y, label = metacell, fill = `Cell type`, tooltip_text = Metacell, customdata = id)) +
+        scale_fill_manual(name = "", values = get_cell_type_colors(dataset, cell_type_colors))
+ 
 
     if (nrow(graph) > 0) {
         if (scale_edges) {
@@ -78,6 +63,27 @@ mc2d_plot_ggp <- function(dataset, highlight = NULL, point_size = initial_proj_p
     p <- p + geom_point(size = point_size, shape = 21, stroke = stroke) +
         theme_void() +
         guides(size = "none")
+    
+    if (!is.null(highlight)) {
+        cols <- highlight %>%
+            select(label, color) %>%
+            tibble::deframe()
+        cols <- c(cols, "Other" = "black")       
+
+        p <- p +
+            geom_point(
+                inherit.aes = TRUE,
+                data = mc2d_df %>% inner_join(highlight, by = "metacell"),
+                shape = 21,
+                size = point_size * 2.5,
+                stroke = 1,
+                fill = NA,
+                aes(color = label)
+            ) + scale_color_manual(values = cols)
+
+        p <- p + guides(color = "none")
+
+    }
 
 
     return(p)
