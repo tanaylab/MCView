@@ -52,7 +52,8 @@ plot_markers_mat <- function(mc_fp,
         z = mat,
         zmin = min_lfp,
         zmax = max_lfp,
-        colorscale = list(c(min_lfp, 0, max_lfp), c("#053061", "white", "#67001F")),
+        zmid = 0, 
+        colorscale = list(c(min_lfp, 0, max_lfp), c("#053061", "white", "#67001F")),        
         type = "heatmap" # no rownames are shown in webGL version so we use a regular heatmap
         # hoverinfo = "text", # rendering text was very slow
         # text = heatmap_text
@@ -87,28 +88,28 @@ plot_markers_mat <- function(mc_fp,
         ticks = ""
     )
 
-    # colors_heatmap <- plotly::plot_ly(
-    #     # x = 1:nrow(mc_types),
-    #     z = matrix(as.numeric(mc_types$metacell), nrow = 1, ncol = nrow(mc_types)),
-    #     type = "heatmap",
-    #     hoverinfo = 'text',
-    #     opacity = 1,
-    #     xgap = 0.5,
-    #     text = matrix(
-    #         glue("Metacell: {mc_types$metacell}<br>Cell type:{mc_types$cell_type}"),
-    #         nrow=1,
-    #         ncol=nrow(mc_types)),
-    #     colors = mc_types$color,
-    #     showscale = FALSE
-    #     ) %>% plotly::layout(xaxis = empty_axis_options, yaxis = empty_axis_options)
+    colors_heatmap <- plotly::plot_ly(
+        # x = 1:nrow(mc_types),
+        z = matrix(as.numeric(mc_types$metacell), nrow = 1, ncol = nrow(mc_types)),
+        type = "heatmap",
+        hoverinfo = 'text',
+        opacity = 1,
+        xgap = 0.5,
+        text = matrix(
+            glue("Metacell: {mc_types$metacell}<br>Cell type:{mc_types$cell_type}"),
+            nrow=1,
+            ncol=nrow(mc_types)),
+        colors = mc_types$color,
+        showscale = FALSE
+        ) %>% plotly::layout(xaxis = empty_axis_options, yaxis = empty_axis_options)
 
-    # fig <- plotly::subplot(
-    #     heatmap,
-    #     colors_heatmap,
-    #     nrows = 2,
-    #     shareX = FALSE,
-    #     shareY = FALSE,
-    #     heights = c(0.95,0.05))
+    fig <- plotly::subplot(
+        heatmap,
+        colors_heatmap,
+        nrows = 2,
+        shareX = FALSE,
+        shareY = FALSE,
+        heights = c(0.95,0.05))
 
-    return(heatmap)
+    return(fig)
 }
