@@ -646,12 +646,18 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
 
     output$metacell1_select <- renderUI({
         req(dataset())
-        selectizeInput(ns("metacell1"), "Metacell A", choices = metacell_names(), multiple = FALSE, selected = config$selected_mc1, options = list(maxOptions = 1e4))
+        shinyWidgets::pickerInput(ns("metacell1"), "Metacell A",
+            choices = metacell_names(),
+            selected = config$selected_mc1, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
+        )
     })
 
     output$metacell2_select <- renderUI({
         req(dataset())
-        selectizeInput(ns("metacell2"), "Metacell B", choices = metacell_names(), multiple = FALSE, selected = config$selected_mc2, options = list(maxOptions = 1e4))
+        shinyWidgets::pickerInput(ns("metacell2"), "Metacell B",
+            choices = metacell_names(),
+            selected = config$selected_mc2, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
+        )
     })
 
     mc_mc_gene_scatter_df <- reactive({
