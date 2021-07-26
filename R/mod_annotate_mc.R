@@ -110,7 +110,6 @@ mod_annotate_mc_ui <- function(id) {
                         actionButton(ns("reset_metacell_types"), "Reset", style = "align-items: center;"),
                         downloadButton(ns("metacell_types_download"), "Export", style = "align-items: center;")
                     ),
-                    shinyWidgets::prettySwitch(inputId = ns("show_all_annotation"), value = FALSE, label = "All metacells"),
                     uiOutput(ns("annotation_box")),
                     uiOutput(ns("update_all_selectors")),
                     shinycssloaders::withSpinner(
@@ -277,48 +276,38 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
 
 
     output$annotation_box <- renderUI({
-        if (!input$show_all_annotation) {
-            if (nrow(selected_metacell_types()) == 0) {
-                print("Please select metacells")
-            } else {
-                list(
-                    actionButton(ns("update_annotation"), "Apply"),
-                    actionButton(ns("reset_annotation"), "Reset Selection"),
-                    shinyWidgets::radioGroupButtons(
-                        inputId = ns("update_option"),
-                        label = "",
-                        choices = c(
-                            "Change all",
-                            "Change one by one"
-                        ),
-                        justified = TRUE
-                    )
-                )
-            }
+        if (nrow(selected_metacell_types()) == 0) {
+            print("Please select metacells")
         } else {
             list(
-                uiOutput(ns("cell_type_select")),
-                actionButton(ns("update_annotation"), "Apply")
+                actionButton(ns("update_annotation"), "Apply"),
+                actionButton(ns("reset_annotation"), "Reset Selection"),
+                shinyWidgets::radioGroupButtons(
+                    inputId = ns("update_option"),
+                    label = "",
+                    choices = c(
+                        "Change all",
+                        "Change one by one"
+                    ),
+                    justified = TRUE
+                )
             )
         }
     })
 
     output$update_all_selectors <- renderUI({
         req(input$update_option)
-        if (!input$show_all_annotation && input$update_option == "Change all") {
-            shinyWidgets::pickerInput(ns("selected_cell_type_update_all"), "Cell type", choices = c("(Missing)", cell_type_colors() %>% pull(cell_type) %>% as.character() %>% unique() %>% sort()), multiple = FALSE, selected = "(Missing)")
-        }
+        req(nrow(selected_metacell_types()) > 0)
+        req(input$update_option == "Change all")
+        shinyWidgets::pickerInput(ns("selected_cell_type_update_all"), "Cell type", choices = c("(Missing)", cell_type_colors() %>% pull(cell_type) %>% as.character() %>% unique() %>% sort()), multiple = FALSE, selected = "(Missing)")
     })
 
-    output$cell_type_select <- renderUI({
-        shinyWidgets::pickerInput(ns("selected_cell_type"), "Show cell type", choices = c("All", "(Missing)", cell_type_colors() %>% pull(cell_type) %>% as.character() %>% unique() %>% sort()), multiple = FALSE, selected = "(Missing)")
-    })
 
     observeEvent(input$update_annotation, {
         new_metacell_types <- metacell_types()
         changed <- FALSE
 
-        if (!input$show_all_annotation && !is.null(input$update_option) && input$update_option == "Change all") {
+        if (!is.null(input$update_option) && input$update_option == "Change all") {
             req(input$selected_cell_type_update_all)
             metacells <- selected_metacell_types() %>% pull(metacell)
             new_metacell_types <- new_metacell_types %>% mutate(
@@ -351,22 +340,18 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
 
     observeEvent(input$reset_annotation, {
         selected_metacell_types(tibble(metacell = character(), cell_type_id = character(), cell_type = character()))
+        to_show(NULL)
     })
 
 
     observe({
-        if (input$show_all_annotation) {
-            req(metacell_types)
-            req(input$selected_cell_type)
-            to_show_new <- metacell_types() %>% select(metacell, cell_type)
-            if (input$selected_cell_type != "All") {
-                to_show_new <- to_show_new %>% filter(cell_type == input$selected_cell_type)
-            }
-        } else {
-            to_show_new <- selected_metacell_types() %>% select(metacell, cell_type)
-        }
+        req(metacell_types)
+        req(nrow(selected_metacell_types()) != 0)
+        to_show_new <- metacell_types() %>%
+            select(metacell, cell_type) %>%
+            filter(metacell %in% selected_metacell_types()$metacell)
 
-        if (input$show_all_annotation || (!is.null(input$update_option) && input$update_option != "Change all")) {
+        if ((!is.null(input$update_option) && input$update_option != "Change all")) {
             to_show_new <- dt_selector_column(
                 to_show_new,
                 "select_type",
@@ -386,7 +371,8 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         filter = "top",
         options = list(
             dom = "t",
-            paging = FALSE
+            paging = FALSE,
+            language = list(emptyTable = "Please select metacells")
         ),
         callback = DT::JS("table.rows().every(function(i, tab, row) {
                         var $this = $(this.node());
@@ -686,7 +672,7 @@ observe_mc_click_event <- function(source, input, cell_type_colors, metacell_typ
 
         selected_metacell <- el$customdata
 
-        if (input$show_all_annotation && input$selected_cell_type %in% cell_type_colors()$cell_type) {
+        if (input$selected_cell_type %in% cell_type_colors()$cell_type) {
             new_metacell_types <- metacell_types() %>% mutate(cell_type = ifelse(metacell == selected_metacell, input$selected_cell_type, cell_type))
             metacell_types(new_metacell_types)
             showNotification(glue("Added metacell #{selected_metacell} to {input$selected_cell_type}"))
