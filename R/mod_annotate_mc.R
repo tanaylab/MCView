@@ -306,12 +306,12 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
     output$update_all_selectors <- renderUI({
         req(input$update_option)
         if (!input$show_all_annotation && input$update_option == "Change all") {
-            selectizeInput(ns("selected_cell_type_update_all"), "Cell type", choices = c("(Missing)", cell_type_colors() %>% pull(cell_type) %>% as.character() %>% unique() %>% sort()), multiple = FALSE, selected = "(Missing)")
+            shinyWidgets::pickerInput(ns("selected_cell_type_update_all"), "Cell type", choices = c("(Missing)", cell_type_colors() %>% pull(cell_type) %>% as.character() %>% unique() %>% sort()), multiple = FALSE, selected = "(Missing)")
         }
     })
 
     output$cell_type_select <- renderUI({
-        selectizeInput(ns("selected_cell_type"), "Show cell type", choices = c("All", "(Missing)", cell_type_colors() %>% pull(cell_type) %>% as.character() %>% unique() %>% sort()), multiple = FALSE, selected = "(Missing)")
+        shinyWidgets::pickerInput(ns("selected_cell_type"), "Show cell type", choices = c("All", "(Missing)", cell_type_colors() %>% pull(cell_type) %>% as.character() %>% unique() %>% sort()), multiple = FALSE, selected = "(Missing)")
     })
 
     observeEvent(input$update_annotation, {
