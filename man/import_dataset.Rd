@@ -13,7 +13,6 @@ import_dataset(
   cell_type_colors_file = NULL,
   metadata_fields = NULL,
   metadata = NULL,
-  metadata_types = NULL,
   metadata_colors = NULL
 )
 }
@@ -43,19 +42,15 @@ exist in the metacell types would be ignored.
 If this is missing, MCView would use the \code{chameleon} package to assign a color for each cell type.}
 
 \item{metadata_fields}{names of fields in the anndata \code{object$obs} which contains metadata for each metacell. 
-By default character fields are treated as categorical (factors) and numeric fields as continuous. 
-You can change the default behavior by setting \code{metadata_types} explicitly.}
+The fields should *always* be numeric - if you have cell categorical annotations use 
+\code{cell_metadata_to_metacell} with \code{categorical=TRUE} to convert them to a 
+numeric score (e.g. using fraction of the category).}
 
-\item{metadata}{can be either a data frame with a column named "metacell" with the metacell id and other metadata columns, 
-or a name of a delimited file which contains such data frame. 
-By default character fields are treated as categorical (factors) and numeric fields as continuous.
-You can change the default behavior by setting \code{metadata_types} explicitly.}
+\item{metadata}{can be either a data frame with a column named "metacell" with the metacell id and other metadata columns
+or a name of a delimited file which contains such data frame.}
 
-\item{metadata_types}{a named vector with type per metadata field. Types can be "categorical" or "continuous".}
-
-\item{metadata_colors}{a named list with colors for each metadata column. For categorical data the list element should 
-contain a named vector with color per category, and for continuous field it should contain a list where the first element 
-is a vector of breaks and the second element is a vector of colors.}
+\item{metadata_colors}{a named list with colors for each metadata column. 
+Colors should be given as a list where the first element is a vector of breaks and the second element is a vector of colors.}
 }
 \description{
 Read an \code{anndata} file which is the output of python \code{metacells} package,

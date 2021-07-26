@@ -103,7 +103,7 @@ mod_mc_mc_server <- function(input, output, session, dataset, metacell_types, ce
         shinyWidgets::pickerInput(ns("metacell1"), "Metacell A",
             choices = metacell_names(),
             selected = config$selected_mc1, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
-        )        
+        )
     })
 
     output$metacell2_select <- renderUI({
@@ -111,7 +111,7 @@ mod_mc_mc_server <- function(input, output, session, dataset, metacell_types, ce
         shinyWidgets::pickerInput(ns("metacell2"), "Metacell B",
             choices = metacell_names(),
             selected = config$selected_mc2, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
-        )        
+        )
     })
 
 

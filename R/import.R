@@ -31,18 +31,15 @@
 #' cell types and another column named "color" with the color assignment. Cell types that do not
 #' exist in the metacell types would be ignored.
 #' If this is missing, MCView would use the \code{chameleon} package to assign a color for each cell type.
-#' @param metadata_fields names of fields in the anndata \code{object$obs} which contains metadata for each metacell. 
-#' By default character fields are treated as categorical (factors) and numeric fields as continuous. 
-#' You can change the default behavior by setting \code{metadata_types} explicitly. 
-#' @param metadata can be either a data frame with a column named "metacell" with the metacell id and other metadata columns, 
-#' or a name of a delimited file which contains such data frame. 
-#' By default character fields are treated as categorical (factors) and numeric fields as continuous.
-#' You can change the default behavior by setting \code{metadata_types} explicitly.
-#' @param metadata_types a named vector with type per metadata field. Types can be "categorical" or "continuous". 
-#' @param metadata_colors a named list with colors for each metadata column. For categorical data the list element should 
-#' contain a named vector with color per category, and for continuous field it should contain a list where the first element 
-#' is a vector of breaks and the second element is a vector of colors.
-#'  
+#' @param metadata_fields names of fields in the anndata \code{object$obs} which contains metadata for each metacell.
+#' The fields should *always* be numeric - if you have cell categorical annotations use
+#' \code{cell_metadata_to_metacell} with \code{categorical=TRUE} to convert them to a
+#' numeric score (e.g. using fraction of the category).
+#' @param metadata can be either a data frame with a column named "metacell" with the metacell id and other metadata columns
+#' or a name of a delimited file which contains such data frame.
+#' @param metadata_colors a named list with colors for each metadata column.
+#' Colors should be given as a list where the first element is a vector of breaks and the second element is a vector of colors.
+#'
 #'
 #' @examples
 #' \dontrun{
@@ -57,18 +54,15 @@
 #' }
 #'
 #' @export
-import_dataset <- function(
-    project, 
-    dataset, 
-    anndata_file, 
-    cell_type_field = "cluster", 
-    metacell_types_file = NULL, 
-    cell_type_colors_file = NULL,
-    metadata_fields = NULL, 
-    metadata = NULL,     
-    metadata_types = NULL, 
-    metadata_colors = NULL
-    ) {
+import_dataset <- function(project,
+                           dataset,
+                           anndata_file,
+                           cell_type_field = "cluster",
+                           metacell_types_file = NULL,
+                           cell_type_colors_file = NULL,
+                           metadata_fields = NULL,
+                           metadata = NULL,
+                           metadata_colors = NULL) {
     verbose <- !is.null(getOption("MCView.verbose")) && getOption("MCView.verbose")
     verify_project_dir(project)
 
