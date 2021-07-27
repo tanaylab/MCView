@@ -72,6 +72,10 @@ selected_mc2: 2 # Default selected metacell2
 datasets: # optional parameters per dataset
   PBMC163k:
     min_d: 0.3 # default minimal edge distance to show in projection plots
+    # projection_point_size: 1 # Default size for projection points
+    # projection_stroke: 0.1 # Default line stroke for projection points
+    # scatters_point_size: 2 # Default size for scatter plot (such as gene gene plots)
+    # scatters_stroke_size: 0.1 # Default line stroke for scatter plot (such as gene gene plots)
 ```
 
 ### title

@@ -30,6 +30,7 @@ mod_gene_mc_ui <- function(id) {
                         uiOutput(ns("expr_range_ui")),
                         uiOutput(ns("enrich_range_ui")),
                         uiOutput(ns("point_size_ui")),
+                        uiOutput(ns("stroke_ui")),
                         uiOutput(ns("edge_distance_ui"))
                     ),
                     shinycssloaders::withSpinner(
@@ -56,6 +57,13 @@ mod_gene_mc_ui <- function(id) {
                     collapsible = TRUE,
                     closable = FALSE,
                     width = 12,
+                    sidebar = shinydashboardPlus::boxSidebar(
+                        startOpen = FALSE,
+                        width = 25,
+                        id = ns("gene_gene_sidebar"),                                                
+                        uiOutput(ns("gene_gene_point_size_ui")),
+                        uiOutput(ns("gene_gene_stroke_ui"))
+                    ),
                     shinycssloaders::withSpinner(
                         plotly::plotlyOutput(ns("plot_gene_gene_mc"))
                     )
@@ -136,9 +144,21 @@ mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, 
         shinyWidgets::numericRangeInput(ns("lfp"), "Enrichment range", c(-3, 3), width = "80%", separator = " to ")
     })
 
-    # Point size selector
+    # Point size selectors
     output$point_size_ui <- renderUI({
         numericInput(ns("point_size"), label = "Point size", value = initial_proj_point_size(dataset()), min = 0.1, max = 3, step = 0.1)
+    })
+
+    output$gene_gene_point_size_ui <- renderUI({
+        numericInput(ns("gene_gene_point_size"), label = "Point size", value = initial_scatters_point_size(dataset()), min = 0.05, max = 3, step = 0.1)
+    }) 
+
+    output$gene_gene_stroke_ui <- renderUI({
+        numericInput(ns("gene_gene_stroke"), label = "Stroke width", value = initial_scatters_stroke(dataset()), min = 0, max = 3, step = 0.01)
+    })       
+
+    output$stroke_ui <- renderUI({
+        numericInput(ns("stroke"), label = "Stroke width", value = initial_proj_stroke(dataset()), min = 0, max = 3, step = 0.01)
     })
 
     # Minimal edge length selector
@@ -152,8 +172,9 @@ mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, 
     output$plot_gene_gene_mc <- plotly::renderPlotly({
         req(values$gene1)
         req(values$gene2)
+        req(input$gene_gene_point_size)
 
-        p_gg <- plotly::ggplotly(plot_gg_over_mc(dataset(), values$gene1, values$gene2, metacell_types = metacell_types(), cell_type_colors = cell_type_colors(), plot_text = FALSE), tooltip = "tooltip_text", source = "gene_gene_plot") %>%
+        p_gg <- plotly::ggplotly(plot_gg_over_mc(dataset(), values$gene1, values$gene2, metacell_types = metacell_types(), cell_type_colors = cell_type_colors(), point_size = input$gene_gene_point_size, stroke = input$gene_gene_stroke, plot_text = FALSE), tooltip = "tooltip_text", source = "gene_gene_plot") %>%
             sanitize_for_WebGL() %>%
             plotly::toWebGL() %>%
             sanitize_plotly_buttons() %>%
