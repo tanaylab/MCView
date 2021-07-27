@@ -95,6 +95,7 @@ mc2d_plot_ggp <- function(dataset, highlight = NULL, point_size = initial_proj_p
 #'
 #' @noRd
 mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_size(dataset), min_d = min_edge_length(dataset), stroke = initial_proj_stroke(dataset), graph_color = "black", graph_width = 0.1, max_lfp = NULL, min_lfp = NULL, max_expr = NULL, min_expr = NULL, scale_edges = FALSE, stat = "expression") {
+
     mc2d <- get_mc_data(dataset, "mc2d")
     metacell_types <- get_mc_data(dataset, "metacell_types")
     min_lfp <- min_lfp %||% -3
@@ -127,6 +128,12 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
 
     graph <- mc2d_to_graph_df(mc2d, min_d = min_d)
 
+    if (is.null(id)) {
+        mc2d_df <- mc2d_df %>% mutate(id = metacell)
+    } else {
+        mc2d_df <- mc2d_df %>% mutate(id = paste(id, metacell, sep = "\t"))
+    }
+
     # define colors
     colspec <- c("#053061", "#2166AC", "#4393C3", "#92C5DE", "#D1E5F0", "#F7F7F7", "#FDDBC7", "#F4A582", "#D6604D", "#B2182B", "#67001F")
 
@@ -150,7 +157,7 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
         shades <- colorRampPalette(colspec)(100 * (max_lfp - min_lfp) + 1)
         p <- mc2d_df %>%
             mutate(col_x = shades[round(100 * enrich) + 1]) %>%
-            ggplot(aes(x = x, y = y, label = metacell, fill = col_x, color = enrich + min_lfp, tooltip_text = Metacell))
+            ggplot(aes(x = x, y = y, label = metacell, fill = col_x, color = enrich + min_lfp, tooltip_text = Metacell, customdata = id))
         legend_title <- glue("{gene}\nEnrichment.\n(log2)")
         shades_subset <- shades[seq(round(100 * min(mc2d_df$enrich)), round(100 * max(mc2d_df$enrich)), 1) + 1]
     } else { # expression
@@ -159,7 +166,7 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
             mutate(
                 col_x = shades[round(100 * expr_trans) + 1]
             ) %>%
-            ggplot(aes(x = x, y = y, label = metacell, fill = col_x, color = expr_clipped, tooltip_text = Metacell))
+            ggplot(aes(x = x, y = y, label = metacell, fill = col_x, color = expr_clipped, tooltip_text = Metacell, customdata = id))
         legend_title <- glue("{gene}\nExpression.\n(log2)")
 
         shades_subset <- rev(shades[abs(seq(round(100 * min(mc2d_df$expr_trans)), round(100 * max(mc2d_df$expr_trans)), 1) + 1)])
