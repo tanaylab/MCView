@@ -108,7 +108,7 @@ The default metacells that would be selected in the Metacells tab.
 
 ### datasets (optional)
 
-Additional per-dataset parameters. This is currently a bit degenerated but would include more parameters in the future. 
+Additional per-dataset parameters. Current parameters include default visualization properties of projection and scatter plots. 
 
 ### help.yaml
 

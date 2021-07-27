@@ -146,15 +146,15 @@ connect_gene_plots <- function(input, output, session, ns, source) {
 
 # TODO: find a better heuristic that takes into account the plot size
 initial_scatters_point_size <- function(dataset) {
-    if (!is.null(config[[dataset]]$scatters_point_size)) {
-        return(config[[dataset]]$scatters_point_size)
+    if (!is.null(config$datasets[[dataset]]$scatters_point_size)) {
+        return(config$datasets[[dataset]]$scatters_point_size)
     }
     return(2.5)
 }
 
 initial_scatters_stroke <- function(dataset){
-    if (!is.null(config[[dataset]]$scatters_stroke)) {
-        return(config[[dataset]]$scatters_stroke)
+    if (!is.null(config$datasets[[dataset]]$scatters_stroke)) {
+        return(config$datasets[[dataset]]$scatters_stroke)
     }
     return(0.2)
 }
