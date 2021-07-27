@@ -94,7 +94,8 @@ mc2d_plot_ggp <- function(dataset, highlight = NULL, point_size = initial_proj_p
 #' @param dataset name of metacell object
 #'
 #' @noRd
-mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_size(dataset), min_d = min_edge_length(dataset), stroke = NULL, graph_color = "black", graph_width = 0.1, max_lfp = NULL, min_lfp = NULL, max_expr = NULL, min_expr = NULL, scale_edges = FALSE, stat = "expression", id = NULL) {
+mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_size(dataset), min_d = min_edge_length(dataset), stroke = initial_proj_stroke(dataset), graph_color = "black", graph_width = 0.1, max_lfp = NULL, min_lfp = NULL, max_expr = NULL, min_expr = NULL, scale_edges = FALSE, stat = "expression") {
+
     mc2d <- get_mc_data(dataset, "mc2d")
     metacell_types <- get_mc_data(dataset, "metacell_types")
     min_lfp <- min_lfp %||% -3
@@ -183,8 +184,6 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
     }
 
 
-    stroke <- stroke %||% min(0.1, 5e5 / nrow(mc2d_df)^2)
-
     # Due to https://github.com/ropensci/plotly/issues/1234 we need to plot geom_point twice
     p <- p +
         geom_point(size = point_size) +
@@ -204,6 +203,7 @@ render_2d_plotly <- function(input, output, session, dataset, values, metacell_t
     plotly::renderPlotly({
         req(input$color_proj)
         req(input$point_size)
+        req(input$stroke)
         req(input$min_edge_size)
 
         plot_2d_gene <- function(gene) {
@@ -231,7 +231,7 @@ render_2d_plotly <- function(input, output, session, dataset, values, metacell_t
         }
 
         if (input$color_proj == "Cell type") {
-            fig <- plotly::ggplotly(mc2d_plot_ggp(dataset(), metacell_types = metacell_types(), cell_type_colors = cell_type_colors(), point_size = input$point_size, min_d = input$min_edge_size), tooltip = "tooltip_text", source = source)
+            fig <- plotly::ggplotly(mc2d_plot_ggp(dataset(), metacell_types = metacell_types(), cell_type_colors = cell_type_colors(), point_size = input$point_size, stroke = input$stroke, min_d = input$min_edge_size), tooltip = "tooltip_text", source = source)
         } else if (input$color_proj == "Gene A") {
             req(values$gene1)
             fig <- plot_2d_gene(values$gene1)
@@ -261,8 +261,19 @@ render_2d_plotly <- function(input, output, session, dataset, values, metacell_t
 
 # TODO: find a better heuristic that takes into account the plot size
 initial_proj_point_size <- function(dataset) {
+    if (!is.null(config$datasets[[dataset]]$projection_point_size)) {
+        return(config$datasets[[dataset]]$projection_point_size)
+    }
     n_metacells <- length(get_mc_data(dataset, "mc_sum"))
     return(max(1, min(1.5, 3e4 / n_metacells)))
+}
+
+initial_proj_stroke <- function(dataset) {
+    if (!is.null(config$datasets[[dataset]]$projection_stroke)) {
+        return(config$datasets[[dataset]]$projection_stroke)
+    }
+    n_metacells <- length(get_mc_data(dataset, "mc_sum"))
+    return(min(0.1, 5e5 / n_metacells^2))
 }
 
 min_edge_length <- function(dataset) {
