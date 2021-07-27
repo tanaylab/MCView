@@ -254,20 +254,19 @@ render_2d_plotly <- function(input, output, session, dataset, values, metacell_t
 
 # TODO: find a better heuristic that takes into account the plot size
 initial_proj_point_size <- function(dataset) {
-    if (!is.null(config$datasets[[dataset]]$projection_point_size)){
+    if (!is.null(config$datasets[[dataset]]$projection_point_size)) {
         return(config$datasets[[dataset]]$projection_point_size)
     }
     n_metacells <- length(get_mc_data(dataset, "mc_sum"))
     return(max(1, min(1.5, 3e4 / n_metacells)))
 }
 
-initial_proj_stroke <- function(dataset){
+initial_proj_stroke <- function(dataset) {
     if (!is.null(config$datasets[[dataset]]$projection_stroke)) {
         return(config$datasets[[dataset]]$projection_stroke)
     }
     n_metacells <- length(get_mc_data(dataset, "mc_sum"))
     return(min(0.1, 5e5 / n_metacells^2))
-    
 }
 
 min_edge_length <- function(dataset) {

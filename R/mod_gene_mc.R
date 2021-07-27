@@ -60,7 +60,7 @@ mod_gene_mc_ui <- function(id) {
                     sidebar = shinydashboardPlus::boxSidebar(
                         startOpen = FALSE,
                         width = 25,
-                        id = ns("gene_gene_sidebar"),                                                
+                        id = ns("gene_gene_sidebar"),
                         uiOutput(ns("gene_gene_point_size_ui")),
                         uiOutput(ns("gene_gene_stroke_ui"))
                     ),
@@ -151,11 +151,11 @@ mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, 
 
     output$gene_gene_point_size_ui <- renderUI({
         numericInput(ns("gene_gene_point_size"), label = "Point size", value = initial_scatters_point_size(dataset()), min = 0.05, max = 3, step = 0.1)
-    }) 
+    })
 
     output$gene_gene_stroke_ui <- renderUI({
         numericInput(ns("gene_gene_stroke"), label = "Stroke width", value = initial_scatters_stroke(dataset()), min = 0, max = 3, step = 0.01)
-    })       
+    })
 
     output$stroke_ui <- renderUI({
         numericInput(ns("stroke"), label = "Stroke width", value = initial_proj_stroke(dataset()), min = 0, max = 3, step = 0.01)

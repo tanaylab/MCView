@@ -116,7 +116,7 @@ plot_gene_time_over_mc <- function(dataset, gene, metacell_types = get_mc_data(d
     p <- ggplot(data = df, aes(x = `Age`, y = !!sym(gene), fill = `Cell type`, label = metacell, customdata = metacell, tooltip_text = Metacell)) +
         geom_point(size = point_size, shape = 21, stroke = stroke) +
         scale_x_continuous(limits = c(xmin, xmax)) +
-        scale_y_continuous(limits = c(ylims[ymin], ylims[ymax]), trans = "log2", breaks = ylims[ymin:ymax], labels = scales::scientific(ylims[ymin:ymax])) +    
+        scale_y_continuous(limits = c(ylims[ymin], ylims[ymax]), trans = "log2", breaks = ylims[ymin:ymax], labels = scales::scientific(ylims[ymin:ymax])) +
         scale_fill_manual(values = col_to_ct) +
         xlab("Metacell age (E[t])") +
         ylab(glue("{gene} Expression")) +
@@ -152,7 +152,7 @@ initial_scatters_point_size <- function(dataset) {
     return(2.5)
 }
 
-initial_scatters_stroke <- function(dataset){
+initial_scatters_stroke <- function(dataset) {
     if (!is.null(config$datasets[[dataset]]$scatters_stroke)) {
         return(config$datasets[[dataset]]$scatters_stroke)
     }
