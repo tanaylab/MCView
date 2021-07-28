@@ -50,7 +50,7 @@ Imports:
     colourpicker,
     anndata,
     matrixStats,
-    tglkmeans,
+    tglkmeans (>= 0.3.3),
     chameleon,
     furrr
 Encoding: UTF-8
