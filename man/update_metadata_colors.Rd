@@ -11,11 +11,11 @@ update_metadata_colors(project, dataset, metadata_colors, overwrite = FALSE)
 
 \item{dataset}{name for the dataset, e.g. "PBMC"}
 
-\item{metadata_colors}{a named list with colors for each metadata column, or a name of a yaml file with such list. 
-Colors should be given as a list where the first element is a vector of colors and the second element is a vector of breaks. 
+\item{metadata_colors}{a named list with colors for each metadata column, or a name of a yaml file with such list.
+Colors should be given as a list where the first element is a vector of colors and the second element is a vector of breaks.
 If only colors are given breaks would be implicitly determined from the minimum and maximum of the metadata field.}
 
-\item{overwrite}{overwrite all existing colors. If \code{FALSE} - would override only 
+\item{overwrite}{overwrite all existing colors. If \code{FALSE} - would override only
 the colors of existing metadata fields.}
 }
 \description{

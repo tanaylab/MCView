@@ -49,8 +49,8 @@ numeric score (e.g. using fraction of the category).}
 \item{metadata}{can be either a data frame with a column named "metacell" with the metacell id and other metadata columns
 or a name of a delimited file which contains such data frame.}
 
-\item{metadata_colors}{a named list with colors for each metadata column, or a name of a yaml file with such list. 
-Colors should be given as a list where the first element is a vector of colors and the second element is a vector of breaks. 
+\item{metadata_colors}{a named list with colors for each metadata column, or a name of a yaml file with such list.
+Colors should be given as a list where the first element is a vector of colors and the second element is a vector of breaks.
 If only colors are given breaks would be implicitly determined from the minimum and maximum of the metadata field.}
 }
 \description{

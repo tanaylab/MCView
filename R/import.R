@@ -86,7 +86,9 @@ import_dataset <- function(project,
     mc_sum <- colSums(mc_mat)
     serialize_shiny_data(mc_sum, "mc_sum", dataset = dataset, cache_dir = cache_dir)
 
-    metadata <- load_metadata(metadata, metadata_fields, adata)
+    metacells <- rownames(adata$obs)
+
+    metadata <- load_metadata(metadata, metadata_fields, metacells, adata)
     if (!is.null(metadata)) {
         serialize_shiny_data(
             metadata %>% select(metacell, everything()),

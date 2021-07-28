@@ -126,7 +126,8 @@ load_metadata <- function(metadata, metadata_fields, metacells, adata) {
             duplicated_metadata <- intersect(colnames(metadata), colnames(metadata_df))
             duplicated_metadata <- duplicated_metadata[duplicated_metadata != "metacell"]
             if (length(duplicated_metadata) > 0) {
-                cli_abort("The metadata fields {.field {fields}} appear both in {.code metadata} and {.code metadata_fields}", fields = paste(duplicated_metadata, collapse = ", "))
+                fields <- paste(duplicated_metadata, collapse = ", ")
+                cli_abort("The metadata fields {.field {fields}} appear both in {.code metadata} and {.code metadata_fields}")
             }
 
             metadata <- metadata_df_obs %>% full_join(metadata_df, by = "metacell")
@@ -143,18 +144,20 @@ load_metadata <- function(metadata, metadata_fields, metacells, adata) {
 parse_metadata <- function(metadata, metacells) {
     metadata <- metadata %>% as_tibble()
 
-    if (!has_name(metadata_colors, "metacell")) {
+    if (!has_name(metadata, "metacell")) {
         cli_abort("metadata doesn't have a field named {.field metacell}")
     }
 
     unknown_metacells <- metadata$metacell[!(metadata$metacell %in% metacells)]
     if (length(unknown_metacells) > 0) {
-        cli_abort("Metadata contains metacells that are missing from the data: {.field {mcs}}", mcs = paste(unknown_metacells, collapse = ", "))
+        mcs <- paste(unknown_metacells, collapse = ", ")
+        cli_abort("Metadata contains metacells that are missing from the data: {.field {mcs}}")
     }
 
     missing_metacells <- metacells[!(metacells %in% metadata$metacell)]
     if (length(missing_metacells) > 0) {
-        cli_warning("Some metacells are missing from metadata: {.field {mcs}}", mcs = paste(missing_metacells, collapse = ", "))
+        mcs <- paste(missing_metacells, collapse = ", ")
+        cli_warn("Some metacells are missing from metadata: {.field {mcs}}")
     }
 
     fields <- metadata %>%
@@ -162,7 +165,7 @@ parse_metadata <- function(metadata, metacells) {
         colnames()
 
     metadata <- metadata %>%
-        mutate_at(one_of(fields), as.numeric)
+        mutate_at(fields, as.numeric)
 
     purrr::walk(fields, ~ {
         if (all(is.na(metadata[[.x]]))) {
