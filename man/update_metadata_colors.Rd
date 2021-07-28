@@ -2,7 +2,7 @@
 % Please edit documentation in R/metadata.R
 \name{update_metadata_colors}
 \alias{update_metadata_colors}
-\title{Update metadata for a dataset}
+\title{Update metadata colors for a dataset}
 \usage{
 update_metadata_colors(project, dataset, metadata_colors, overwrite = FALSE)
 }
@@ -19,5 +19,5 @@ If only colors are given breaks would be implicitly determined from the minimum 
 the colors of existing metadata fields.}
 }
 \description{
-Update metadata for a dataset
+Update metadata colors for a dataset
 }

@@ -1,3 +1,7 @@
+get_metacell_ids <- function(project, dataset) {
+    qs::qread(fs::path(project_cache_dir(project), dataset, "mc2d.qs"))$mc_id
+}
+
 #' Update metadata for a dataset
 #'
 #'
@@ -27,18 +31,21 @@ update_metadata <- function(project,
             library(anndata)
             adata <- anndata::read_h5ad(anndata_file)
         }
+    } else {
+        adata <- NULL
     }
 
     cli_alert_info("Processing metadata")
-    metadata <- load_metadata(metadata, metadata_fields, adata)
+    metacells <- get_metacell_ids(project, dataset)
+    metadata <- load_metadata(metadata, metadata_fields, metacells, adata)
 
     prev_metadata_file <- fs::path(cache_dir, dataset, "metadata.tsv")
     if (fs::file_exists(prev_metadata_file)) {
         cli_alert_info("Merging with previous metadata")
         prev_metadata <- fread(prev_metadata_file) %>% as_tibble()
-        metadata <- metadata %>%
-            select(-any_of(colnames(prev_metadata)[-1])) %>%
-            left_join(prev_metadata, by = "metacell")
+        prev_metadata <- prev_metadata %>%
+            select(-any_of(colnames(metadata)[-1])) %>%
+            left_join(metadata, by = "metacell")
     }
 
 
@@ -53,7 +60,7 @@ update_metadata <- function(project,
     cli_alert_success("Successfully updated metadata of dataset {.field {dataset}} at {.path {project}} project")
 }
 
-#' Update metadata for a dataset
+#' Update metadata colors for a dataset
 #'
 #'
 #' @param overwrite overwrite all existing colors. If \code{FALSE} - would override only
@@ -68,6 +75,11 @@ update_metadata_colors <- function(project,
                                    metadata_colors,
                                    overwrite = FALSE) {
     cache_dir <- project_cache_dir(project)
+    prev_metadata_file <- fs::path(cache_dir, dataset, "metadata.tsv")
+    if (!fs::file_exists(prev_metadata_file)) {
+        cli_abort("No metadata found for project {.field {project}}. Please call {.code update_metadata} to add it and then run {.code update_metadata_colors} again.")
+    }
+    metadata <- tgutil::fread(prev_metadata_file) %>% as_tibble()
 
     cli_alert_info("Processing metadata colors")
     if (is.character(metadata_colors)) {
@@ -101,7 +113,7 @@ cell_metadata_to_metacell <- function() {
 
 
 
-load_metadata <- function(metadata, metadata_fields, metacells, adata) {
+load_metadata <- function(metadata, metadata_fields, metacells, adata = NULL) {
     metadata_df <- NULL
     if (!is.null(metadata)) {
         if (is.character(metadata)) {

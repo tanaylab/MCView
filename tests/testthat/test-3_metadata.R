@@ -22,28 +22,51 @@ test_that("import_dataset works with metadata dataframe", {
     withr::defer(gc())
 })
 
-test_that("import_dataset works with metadata file", {
+test_that("import_dataset works with metadata fields", {
     set.seed(60427)
     dataset <- "PBMC163k_md"
-    metadata_df <- get_test_metadata(raw_dir)
-    metadata_file <- fs::path(test_dir, "metadata.csv")
-    tgutil::fwrite(metadata_df, metadata_file)
 
     MCView::import_dataset(
         project = project_dir,
         dataset = dataset,
         anndata_file = fs::path(raw_dir, "metacells.h5ad"),
         cell_type_colors_file = fs::path(raw_dir, "cluster-colors.csv"),
-        metadata = metadata_file
+        metadata_fields = c("grouped", "pile", "candidate")
     )
     test_dataset(project_dir, dataset)
     test_cache_file_exists("metadata.tsv", project_dir, dataset)
 
-    saved_md <- fread(fs::path(project_dir, "cache", dataset, "metadata.tsv")) %>% as_tibble()
-    expect_equivalent(metadata_df, saved_md)
+    saved_md <- fread(fs::path(project_dir, "cache", dataset, "metadata.tsv")) %>%
+        as_tibble() %>%
+        mutate(metacell = as.character(metacell))
+
+    library(anndata)
+    adata <- anndata::read_h5ad(fs::path(raw_dir, "metacells.h5ad"))
+
+    expect_equivalent(
+        adata$obs %>%
+            rownames_to_column("metacell") %>%
+            select(metacell, grouped, pile, candidate),
+        saved_md
+    )
 
     withr::defer(unlink(fs::path(project_dir, "cache", dataset)))
     withr::defer(gc())
+})
+
+test_that("import_dataset works with metadata fields fails with non existing fields", {
+    set.seed(60427)
+    dataset <- "PBMC163k_md"
+
+    expect_error(
+        MCView::import_dataset(
+            project = project_dir,
+            dataset = dataset,
+            anndata_file = fs::path(raw_dir, "metacells.h5ad"),
+            cell_type_colors_file = fs::path(raw_dir, "cluster-colors.csv"),
+            metadata_fields = "savta"
+        )
+    )
 })
 
 test_that("import_dataset works with metadata without all metacells", {
@@ -315,4 +338,235 @@ test_that("import_dataset works with metadata colors with non-existing metadata 
             metadata_colors = metadata_colors
         )
     )
+})
+
+test_that("import_dataset works with metadata colors but without metadata", {
+    set.seed(60427)
+    dataset <- "PBMC163k_md"
+    metadata_df <- get_test_metadata(raw_dir)
+
+    metadata_colors <- list(
+        md18 = list(
+            colors = c("darblue", "white", "darkred")
+        )
+    )
+
+    expect_error(
+        MCView::import_dataset(
+            project = project_dir,
+            dataset = dataset,
+            anndata_file = fs::path(raw_dir, "metacells.h5ad"),
+            cell_type_colors_file = fs::path(raw_dir, "cluster-colors.csv"),
+            metadata_colors = metadata_colors
+        )
+    )
+})
+
+# update metadata and colors
+
+test_that("update_metadata works", {
+    set.seed(60427)
+    dataset <- "PBMC163k_md"
+    metadata_df <- get_test_metadata(raw_dir)
+
+    MCView::import_dataset(
+        project = project_dir,
+        dataset = dataset,
+        anndata_file = fs::path(raw_dir, "metacells.h5ad"),
+        cell_type_colors_file = fs::path(raw_dir, "cluster-colors.csv"),
+        metadata = metadata_df %>% select(-md3)
+    )
+
+    metadata_modified <- metadata_df %>%
+        mutate(md1 = rep(5, n()))
+
+    update_metadata(
+        project = project_dir,
+        dataset = dataset,
+        metadata = metadata_modified,
+        overwrite = FALSE
+    )
+
+    test_dataset(project_dir, dataset)
+    test_cache_file_exists("metadata.tsv", project_dir, dataset)
+
+    saved_md <- fread(fs::path(project_dir, "cache", dataset, "metadata.tsv")) %>% as_tibble()
+    expect_equal(saved_md$md1, metadata_modified$md1)
+    expect_equivalent(saved_md, metadata_modified)
+
+    withr::defer(unlink(fs::path(project_dir, "cache", dataset)))
+    withr::defer(gc())
+})
+
+test_that("update_metadata works with overwrite=TRUE", {
+    set.seed(60427)
+    dataset <- "PBMC163k_md"
+    metadata_df <- get_test_metadata(raw_dir)
+
+    MCView::import_dataset(
+        project = project_dir,
+        dataset = dataset,
+        anndata_file = fs::path(raw_dir, "metacells.h5ad"),
+        cell_type_colors_file = fs::path(raw_dir, "cluster-colors.csv"),
+        metadata = metadata_df %>% select(-md3)
+    )
+
+    metadata_modified <- metadata_df %>%
+        select(metacell) %>%
+        mutate(md1 = rep(5, n()))
+
+    update_metadata(
+        project = project_dir,
+        dataset = dataset,
+        metadata = metadata_modified,
+        overwrite = TRUE
+    )
+
+    test_dataset(project_dir, dataset)
+    test_cache_file_exists("metadata.tsv", project_dir, dataset)
+
+    saved_md <- fread(fs::path(project_dir, "cache", dataset, "metadata.tsv")) %>% as_tibble()
+    expect_equivalent(saved_md, metadata_modified)
+
+    withr::defer(unlink(fs::path(project_dir, "cache", dataset)))
+    withr::defer(gc())
+})
+
+test_that("update_metadata_colors work", {
+    set.seed(60427)
+    dataset <- "PBMC163k_md"
+    metadata_df <- get_test_metadata(raw_dir)
+
+    metadata_colors <- list(
+        md1 = list(
+            colors = c("darblue", "white", "darkred")
+        ),
+        md2 = list(
+            colors = c("black", "gray", "yellow"),
+            breaks = c(5, 500, 1000)
+        ),
+        md3 = list(
+            colors = c("green", "purple", "orange")
+        )
+    )
+
+    MCView::import_dataset(
+        project = project_dir,
+        dataset = dataset,
+        anndata_file = fs::path(raw_dir, "metacells.h5ad"),
+        cell_type_colors_file = fs::path(raw_dir, "cluster-colors.csv"),
+        metadata = metadata_df,
+        metadata_colors = metadata_colors
+    )
+
+    metadata_colors_modified <- metadata_colors
+    metadata_colors_modified$md1 <- NULL
+    metadata_colors_modified$md2 <- list(
+        colors = c("red", "red", "red"),
+        breaks = c(1, 2, 3)
+    )
+
+    update_metadata_colors(
+        project_dir,
+        dataset,
+        metadata_colors_modified,
+        overwrite = FALSE
+    )
+
+    saved_md_colors <- qs::qread(fs::path(project_dir, "cache", dataset, "metadata_colors.qs"))
+    expect_equivalent(metadata_colors_modified, saved_md_colors)
+
+    withr::defer(unlink(fs::path(project_dir, "cache", dataset)))
+    withr::defer(gc())
+})
+
+test_that("update_metadata_colors work with overwrite = TRUE", {
+    set.seed(60427)
+    dataset <- "PBMC163k_md"
+    metadata_df <- get_test_metadata(raw_dir)
+
+    metadata_colors <- list(
+        md1 = list(
+            colors = c("darblue", "white", "darkred")
+        ),
+        md2 = list(
+            colors = c("black", "gray", "yellow"),
+            breaks = c(5, 500, 1000)
+        ),
+        md3 = list(
+            colors = c("green", "purple", "orange")
+        )
+    )
+
+    MCView::import_dataset(
+        project = project_dir,
+        dataset = dataset,
+        anndata_file = fs::path(raw_dir, "metacells.h5ad"),
+        cell_type_colors_file = fs::path(raw_dir, "cluster-colors.csv"),
+        metadata = metadata_df,
+        metadata_colors = metadata_colors
+    )
+
+    metadata_colors_modified <- metadata_colors
+    metadata_colors_modified$md1 <- NULL
+    metadata_colors_modified$md2 <- list(
+        colors = c("red", "red", "red"),
+        breaks = c(1, 2, 3)
+    )
+
+    update_metadata_colors(
+        project_dir,
+        dataset,
+        metadata_colors_modified,
+        overwrite = TRUE
+    )
+
+    saved_md_colors <- qs::qread(fs::path(project_dir, "cache", dataset, "metadata_colors.qs"))
+    expect_equivalent(metadata_colors_modified, saved_md_colors)
+
+    withr::defer(unlink(fs::path(project_dir, "cache", dataset)))
+    withr::defer(gc())
+})
+
+test_that("update_metadata_colors fails without metadata", {
+    set.seed(60427)
+    dataset <- "PBMC163k_md"
+    metadata_df <- get_test_metadata(raw_dir)
+
+    metadata_colors <- list(
+        md1 = list(
+            colors = c("darblue", "white", "darkred")
+        ),
+        md2 = list(
+            colors = c("black", "gray", "yellow"),
+            breaks = c(5, 500, 1000)
+        ),
+        md3 = list(
+            colors = c("green", "purple", "orange")
+        )
+    )
+
+    MCView::import_dataset(
+        project = project_dir,
+        dataset = dataset,
+        anndata_file = fs::path(raw_dir, "metacells.h5ad"),
+        cell_type_colors_file = fs::path(raw_dir, "cluster-colors.csv")
+    )
+
+    prev_metadata_file <- fs::path(project_cache_dir(project_dir), dataset, "metadata.tsv")
+    if (fs::file_exists(prev_metadata_file)) {
+        fs::file_delete(prev_metadata_file)
+    }
+
+    expect_error(
+        update_metadata_colors(
+            project_dir,
+            dataset,
+            metadata_colors,
+            overwrite = TRUE
+        )
+    )
+
+    withr::defer(unlink(fs::path(project_dir, "cache", dataset)))
+    withr::defer(gc())
 })
