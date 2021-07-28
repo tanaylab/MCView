@@ -37,9 +37,9 @@
 #' numeric score (e.g. using fraction of the category).
 #' @param metadata can be either a data frame with a column named "metacell" with the metacell id and other metadata columns
 #' or a name of a delimited file which contains such data frame.
-#' @param metadata_colors a named list with colors for each metadata column, or a name of a yaml file with such list. 
-#' Colors should be given as a list where the first element is a vector of colors and the second element is a vector of breaks. 
-#' If only colors are given breaks would be implicitly determined from the minimum and maximum of the metadata field. 
+#' @param metadata_colors a named list with colors for each metadata column, or a name of a yaml file with such list.
+#' Colors should be given as a list where the first element is a vector of colors and the second element is a vector of breaks.
+#' If only colors are given breaks would be implicitly determined from the minimum and maximum of the metadata field.
 #'
 #'
 #' @examples
@@ -87,7 +87,7 @@ import_dataset <- function(project,
     serialize_shiny_data(mc_sum, "mc_sum", dataset = dataset, cache_dir = cache_dir)
 
     metadata <- load_metadata(metadata, metadata_fields, adata)
-    if (!is.null(metadata)){
+    if (!is.null(metadata)) {
         serialize_shiny_data(
             metadata %>% select(metacell, everything()),
             "metadata",
@@ -95,16 +95,16 @@ import_dataset <- function(project,
             cache_dir = cache_dir,
             flat = TRUE
         )
-    }    
+    }
 
-    if (!is.null(metadata_colors)){        
+    if (!is.null(metadata_colors)) {
         cli_alert_info("Processing metadata colors")
         if (is.character(metadata_colors)) {
             metadata_colors <- yaml::read_yaml(metadata_colors) %>% as_tibble()
         }
         metadata_colors <- parse_metadata_colors(metadata_colors, metadata)
         serialize_shiny_data(metadata_colors, "metadata_colors", dataset = dataset, cache_dir = cache_dir)
-    }        
+    }
 
     cli_alert_info("Processing 2d projection")
     graph <- Matrix::summary(adata$obsp$obs_outgoing_weights) %>%

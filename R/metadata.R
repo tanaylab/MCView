@@ -1,24 +1,22 @@
 #' Update metadata for a dataset
-#' 
-#' 
-#' @param overwrite overwrite all existing metadata. If \code{FALSE} - would override only existing metadata fields. 
-#' 
-#' 
+#'
+#'
+#' @param overwrite overwrite all existing metadata. If \code{FALSE} - would override only existing metadata fields.
+#'
+#'
 #' @inheritParams import_dataset
-#' 
+#'
 #' @export
-update_metadata <- function(
-    project, 
-    dataset,         
-    metadata=NULL,     
-    metadata_fields=NULL,
-    anndata_file = NULL, 
-    overwrite = FALSE){
-    
+update_metadata <- function(project,
+                            dataset,
+                            metadata = NULL,
+                            metadata_fields = NULL,
+                            anndata_file = NULL,
+                            overwrite = FALSE) {
     cache_dir <- project_cache_dir(project)
 
-    if (!is.null(metadata_fields)){
-        if (is.null(anndata_file)){
+    if (!is.null(metadata_fields)) {
+        if (is.null(anndata_file)) {
             cli_abort("You have to provide the {.code anndata_file} parameter with {.code metadata_fields}")
         } else {
             if (!fs::file_exists(anndata_file)) {
@@ -32,23 +30,23 @@ update_metadata <- function(
     }
 
     cli_alert_info("Processing metadata")
-    metadata <- load_metadata(metadata, metadata_fields, adata)    
+    metadata <- load_metadata(metadata, metadata_fields, adata)
 
     prev_metadata_file <- fs::path(cache_dir, dataset, "metadata.tsv")
-    if (fs::file_exists(prev_metadata_file)){
+    if (fs::file_exists(prev_metadata_file)) {
         cli_alert_info("Merging with previous metadata")
         prev_metadata <- fread(prev_metadata_file) %>% as_tibble()
         metadata <- metadata %>%
             select(-any_of(colnames(prev_metadata)[-1])) %>%
             left_join(prev_metadata, by = "metacell")
-    }       
+    }
 
 
     serialize_shiny_data(
-        metadata %>% select(metacell, everything()), 
+        metadata %>% select(metacell, everything()),
         "metadata",
-        dataset = dataset, 
-        cache_dir = cache_dir, 
+        dataset = dataset,
+        cache_dir = cache_dir,
         flat = TRUE
     )
 
@@ -58,7 +56,7 @@ update_metadata <- function(
 #' Update metadata for a dataset
 #'
 #'
-#' @param overwrite overwrite all existing colors. If \code{FALSE} - would override only 
+#' @param overwrite overwrite all existing colors. If \code{FALSE} - would override only
 #' the colors of existing metadata fields.
 #'
 #'
@@ -66,12 +64,12 @@ update_metadata <- function(
 #'
 #' @export
 update_metadata_colors <- function(project,
-                            dataset,
-                            metadata_colors,                            
-                            overwrite = FALSE) {
+                                   dataset,
+                                   metadata_colors,
+                                   overwrite = FALSE) {
     cache_dir <- project_cache_dir(project)
 
-    cli_alert_info("Processing metadata colors")       
+    cli_alert_info("Processing metadata colors")
     if (is.character(metadata_colors)) {
         metadata_colors <- yaml::read_yaml(metadata_colors) %>% as_tibble()
     }
@@ -88,8 +86,8 @@ update_metadata_colors <- function(project,
     } else {
         metadata_colors <- new_metadata_colors
     }
-    
-    serialize_shiny_data(metadata_colors, "metadata_colors", dataset = dataset, cache_dir = cache_dir)        
+
+    serialize_shiny_data(metadata_colors, "metadata_colors", dataset = dataset, cache_dir = cache_dir)
 }
 
 
@@ -103,23 +101,25 @@ cell_metadata_to_metacell <- function() {
 
 
 
-load_metadata <- function(metadata, metadata_fields, metacells, adata){
+load_metadata <- function(metadata, metadata_fields, metacells, adata) {
     metadata_df <- NULL
-    if (!is.null(metadata)){        
-        if (is.character(metadata)){
+    if (!is.null(metadata)) {
+        if (is.character(metadata)) {
             metadata <- tgutil::fread(metadata) %>% as_tibble()
         }
         metadata_df <- parse_metadata(metadata, metacells)
     }
-    
-    if (!is.null(metadata_fields)){
+
+    if (!is.null(metadata_fields)) {
         purrr::walk(metadata_fields, ~ {
             if (!(.x %in% colnames(adata$obs))) {
                 cli_abort("{.field {.x}} is not present in the h5ad object.")
             }
-        })        
-        
-        metadata_df_obs <- adata$obs %>% select(one_of(metadata_fields)) %>% rownames_to_column("metacell")
+        })
+
+        metadata_df_obs <- adata$obs %>%
+            select(one_of(metadata_fields)) %>%
+            rownames_to_column("metacell")
         metadata_df_obs <- parse_metadata(metadata_df_obs, metacells)
 
         if (!is.null(metadata_df)) {
@@ -135,20 +135,20 @@ load_metadata <- function(metadata, metadata_fields, metacells, adata){
         }
     } else {
         metadata <- metadata_df
-    } 
+    }
 
     return(metadata)
 }
 
-parse_metadata <- function(metadata, metacells){
+parse_metadata <- function(metadata, metacells) {
     metadata <- metadata %>% as_tibble()
 
-    if (!has_name(metadata_colors, "metacell")){
+    if (!has_name(metadata_colors, "metacell")) {
         cli_abort("metadata doesn't have a field named {.field metacell}")
     }
 
     unknown_metacells <- metadata$metacell[!(metadata$metacell %in% metacells)]
-    if (length(unknown_metacells) > 0){
+    if (length(unknown_metacells) > 0) {
         cli_abort("Metadata contains metacells that are missing from the data: {.field {mcs}}", mcs = paste(unknown_metacells, collapse = ", "))
     }
 
@@ -163,9 +163,9 @@ parse_metadata <- function(metadata, metacells){
 
     metadata <- metadata %>%
         mutate_at(one_of(fields), as.numeric)
-    
+
     purrr::walk(fields, ~ {
-        if (all(is.na(metadata[[.x]]))){
+        if (all(is.na(metadata[[.x]]))) {
             cli_abort("The metadata variable {.field {.x}} is all NA. Is it numeric? Convert categorical variables to numeric using {.code cell_metadata_to_metacell} with {.code categorical=TRUE}")
         }
     })
@@ -174,7 +174,7 @@ parse_metadata <- function(metadata, metacells){
 }
 
 parse_metadata_colors <- function(metadata_colors, metadata) {
-    if (is.null(metadata)){
+    if (is.null(metadata)) {
         cli_abort("{.code metadata_colors} is set but {.code metadata} is {.code NULL}. Did you forget to set the {.code metadata} parameter?")
     }
 
@@ -182,14 +182,14 @@ parse_metadata_colors <- function(metadata_colors, metadata) {
         if (!has_name(metadata, .y)) {
             cli_abort("{.code metadata} doesen't have a field named {.field {.y}} but it exists in {.code metadata_colors}")
         }
-        
+
         if (length(.x) == 0 || length(.x[[1]]) == 0) {
             cli_abort("{.field {.y}} in {.code metadata_colors} does not contain any colors.")
         }
-        
+
         colors <- .x[[1]]
-        
-        if (length(.x) > 1){
+
+        if (length(.x) > 1) {
             breaks <- .x[[2]]
             if (length(breaks) != length(colors)) {
                 cli_abort("In metadata colors field {.field {.y}}: length of {.code breaks} shuold be equal to {.code colors}")
@@ -207,6 +207,3 @@ parse_metadata_colors <- function(metadata_colors, metadata) {
 
     return(metadata_colors)
 }
-
-
-

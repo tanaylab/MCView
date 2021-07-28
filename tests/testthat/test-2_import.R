@@ -1,4 +1,4 @@
-test_that("import_dataset works", {    
+test_that("import_dataset works", {
     set.seed(60427)
     dataset <- "PBMC163k"
     MCView::import_dataset(
@@ -16,7 +16,7 @@ test_that("dataset_ls works", {
 
 test_that("import_dataset works with implicit cell type field", {
     set.seed(60427)
-    dataset <- "PBMC163k_ctf" 
+    dataset <- "PBMC163k_ctf"
     MCView::import_dataset(
         project = project_dir,
         dataset = dataset,
@@ -29,7 +29,7 @@ test_that("import_dataset works with implicit cell type field", {
 
 test_that("import_dataset works with non existing cell type field", {
     set.seed(60427)
-    dataset <- "PBMC163k_ctf1" 
+    dataset <- "PBMC163k_ctf1"
     MCView::import_dataset(
         project = project_dir,
         dataset = dataset,
@@ -43,7 +43,7 @@ test_that("import_dataset works with non existing cell type field", {
 
 test_that("import_dataset works with cell type field and cell_type_colors file", {
     set.seed(60427)
-    dataset <- "PBMC163k_ctf_ctcf" 
+    dataset <- "PBMC163k_ctf_ctcf"
     MCView::import_dataset(
         project = project_dir,
         dataset = dataset,
@@ -57,7 +57,7 @@ test_that("import_dataset works with cell type field and cell_type_colors file",
 
 test_that("import_dataset works with metacell_types file", {
     set.seed(60427)
-    dataset <- "PBMC163k_mct" 
+    dataset <- "PBMC163k_mct"
     MCView::import_dataset(
         project = project_dir,
         dataset = dataset,
@@ -65,13 +65,13 @@ test_that("import_dataset works with metacell_types file", {
         metacell_types_file = fs::path(raw_dir, "metacell-types.csv")
     )
     test_dataset(project_dir, dataset)
-    withr::defer(unlink(fs::path(project_dir, "cache",  dataset)))
+    withr::defer(unlink(fs::path(project_dir, "cache", dataset)))
     withr::defer(gc())
 })
 
 test_that("import_dataset works with metacell_types file and cell_type_colors file", {
     set.seed(60427)
-    dataset <- "PBMC163k_mct" 
+    dataset <- "PBMC163k_mct"
     MCView::import_dataset(
         project = project_dir,
         dataset = dataset,
