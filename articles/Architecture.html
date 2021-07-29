@@ -138,7 +138,11 @@
 <span class="fu">selected_mc2:</span><span class="at"> 2 </span><span class="co"># Default selected metacell2</span>
 <span class="fu">datasets:</span><span class="at"> </span><span class="co"># optional parameters per dataset</span>
   <span class="fu">PBMC163k:</span>
-    <span class="fu">min_d:</span><span class="at"> 0.3 </span><span class="co"># default minimal edge distance to show in projection plots</span></code></pre></div>
+    <span class="fu">min_d:</span><span class="at"> 0.3 </span><span class="co"># default minimal edge distance to show in projection plots</span>
+    <span class="co"># projection_point_size: 1 # Default size for projection points</span>
+    <span class="co"># projection_stroke: 0.1 # Default line stroke for projection points</span>
+    <span class="co"># scatters_point_size: 2 # Default size for scatter plot (such as gene gene plots)</span>
+    <span class="co"># scatters_stroke_size: 0.1 # Default line stroke for scatter plot (such as gene gene plots)</span></code></pre></div>
 <div id="title" class="section level3">
 <h3 class="hasAnchor">
 <a href="#title" class="anchor"></a>title</h3>
@@ -170,7 +174,7 @@
 <div id="datasets-optional" class="section level3">
 <h3 class="hasAnchor">
 <a href="#datasets-optional" class="anchor"></a>datasets (optional)</h3>
-<p>Additional per-dataset parameters. This is currently a bit degenerated but would include more parameters in the future.</p>
+<p>Additional per-dataset parameters. Current parameters include default visualization properties of projection and scatter plots.</p>
 </div>
 <div id="help-yaml" class="section level3">
 <h3 class="hasAnchor">
