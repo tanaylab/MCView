@@ -127,9 +127,65 @@ update_metadata_colors <- function(project,
 #'
 #' @export
 cell_metadata_to_metacell <- function(cell_metadata, cell_to_metacell, func, categorical = FALSE) {
+    if (is.character(cell_metadata)) {
+        cell_metadata <- tgutil::fread(cell_metadata) %>% as_tibble()
+    }
 
+    if (colnames(cell_metadata)[1] == "cell_id") {
+        cli_abort("First column of {.code cell_metadata} is not named {.field cell_id} (it is named {.field {colnames(cell_metadata)[1]}}")
+    }
+
+    if (colnames(cell_to_metacell)[1] == "cell_id") {
+        cli_abort("First column of {.code cell_to_metacell} is not named {.field cell_id} (it is named {.field {colnames(cell_to_metacell)[1]}}")
+    }
+
+    if (colnames(cell_to_metacell)[2] == "metacell") {
+        cli_abort("Second column of {.code cell_to_metacell} is not named {.field metacell} (it is named {.field {colnames(cell_to_metacell)[2]}}")
+    }
+
+    if (categorical) {
+        if (ncol(cell_metadata) != 2) {
+            cli_abort("When {.code categorical=TRUE}, {.code cell_metadata} should have only two columns, {.field cell_id} and the categorical metadata.")
+        }
+
+        cell_metadata <- cell_metadata %>%
+            left_join(cell_to_metacell, by = "cell_id")
+
+        colnames(cell_metadata)[2] <- "categorical_var"
+
+        metadata <- cell_metadata %>%
+            select(metacell, cat_var) %>%
+            group_by(metacell, cat_var) %>%
+            summarise(cat_var_n = n(), .groups = "drop") %>%
+            group_by(metacell) %>%
+            summarise(cat_var = cat_var_n / n(), .groups = "drop") %>%
+            spread(cat_var)
+    } else {
+        fields <- cell_metadata %>%
+            select(-cell_id) %>%
+            colnames()
+
+        cell_metadata <- cell_metadata %>%
+            mutate_at(fields, as.numeric)
+
+        purrr::walk(fields, ~ {
+            if (all(is.na(cell_metadata[[.x]]))) {
+                cli_abort("The cell_metadata variable {.field {.x}} is all NA. Is it numeric? Convert categorical variables to numeric by setting {.code categorical=TRUE}")
+            }
+        })
+
+        cell_metadata <- cell_metadata %>%
+            left_join(cell_to_metacell, by = "cell_id")
+
+        metadata <- cell_metadata %>%
+            select(-cell_id) %>%
+            group_by(metacell) %>%
+            summarise_at(vars(fields), func) %>%
+            ungroup()
+    }
+
+    return(metadata)
 }
-
 
 
 load_metadata <- function(metadata, metadata_fields, metacells, adata = NULL) {
