@@ -4,7 +4,33 @@
 \alias{cell_metadata_to_metacell}
 \title{Convert cell metadata to metacell metadata}
 \usage{
-cell_metadata_to_metacell()
+cell_metadata_to_metacell(
+  cell_metadata,
+  cell_to_metacell,
+  func,
+  categorical = FALSE
+)
+}
+\arguments{
+\item{cell_metadata}{data frame with a column with a column named "cell_id" with 
+the cell id and other metadata columns, or a name of a delimited file which 
+contains such data frame. if \code{categorical = TRUE} the data frame can have only 
+a single metadata categorical column.}
+
+\item{cell_to_metacell}{data frame with a column named "cell_id" with cell id and 
+another column named "metacell" with the metacell the cell is part of, or a 
+name of a delimited file which contains such data frame.}
+
+\item{func}{summary function for the cell metadata for non categorical metadata columns
+(e.g. mean, median, sum)}
+
+\item{categorical}{is the metadata categorical. if \code{TRUE} - \code{cell_metadata}
+can have only a single metadata column, and the returned data frame would have 
+a column for each category where the values are the fraction of cells with the
+category in each metacell.}
+}
+\value{
+
 }
 \description{
 Convert cell metadata to metacell metadata

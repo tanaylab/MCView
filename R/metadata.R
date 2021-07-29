@@ -1,7 +1,3 @@
-get_metacell_ids <- function(project, dataset) {
-    qs::qread(fs::path(project_cache_dir(project), dataset, "mc2d.qs"))$mc_id
-}
-
 #' Update metadata for a dataset
 #'
 #'
@@ -106,8 +102,31 @@ update_metadata_colors <- function(project,
 
 #' Convert cell metadata to metacell metadata
 #'
+#' @param cell_metadata data frame with a column with a column named "cell_id" with
+#' the cell id and other metadata columns, or a name of a delimited file which
+#' contains such data frame. if \code{categorical = TRUE} the data frame can have only
+#' a single metadata categorical column.
+#' @param cell_to_metacell data frame with a column named "cell_id" with cell id and
+#' another column named "metacell" with the metacell the cell is part of, or a
+#' name of a delimited file which contains such data frame.
+#' @param func summary function for the cell metadata for non categorical metadata columns
+#' (e.g. mean, median, sum)
+#' @param categorical is the metadata categorical. if \code{TRUE} - \code{cell_metadata}
+#' can have only a single metadata column, and the returned data frame would have
+#' a column for each category where the values are the fraction of cells with the
+#' category in each metacell.
+#'
+#' @return if \code{categorical=FALSE} - a data frame with a column named "metacell" and
+#' the metadata columns from \{cell_metadata} summarized for each metacell using
+#' \code{func}. If \code{categorical=TRUE} - a data frame with a column named "metacell"
+#' and a column for each category of the *single* categorical metadata variable in
+#' \code{cell_metadata}, where the values are the fraction of cells with the category
+#' in each metacell.
+#'
+#'
+#'
 #' @export
-cell_metadata_to_metacell <- function() {
+cell_metadata_to_metacell <- function(cell_metadata, cell_to_metacell, func, categorical = FALSE) {
 
 }
 

@@ -133,3 +133,7 @@ has_network <- function(dataset) {
 has_time <- function(dataset) {
     !is.null(get_mc_data(dataset, "time_annot"))
 }
+
+get_metacell_ids <- function(project, dataset) {
+    qs::qread(fs::path(project_cache_dir(project), dataset, "mc2d.qs"))$mc_id
+}
