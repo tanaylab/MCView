@@ -36,6 +36,7 @@ server_gene_selectors <- function(input, output, session, values, dataset, ns) {
     output$top_correlated_select_gene1 <- renderUI({
         req(values$gene1)
         req(input$gene1)
+        req(has_gg_mc_top_cor(project, dataset()))
         tagList(
             selectInput(
                 ns("selected_top_gene1"),
@@ -52,6 +53,7 @@ server_gene_selectors <- function(input, output, session, values, dataset, ns) {
     output$top_correlated_select_gene2 <- renderUI({
         req(values$gene2)
         req(input$gene2)
+        req(has_gg_mc_top_cor(project, dataset()))
         tagList(
             selectInput(
                 ns("selected_top_gene2"),

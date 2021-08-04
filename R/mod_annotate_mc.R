@@ -318,9 +318,10 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
 
     output$annotation_box <- renderUI({
         if (nrow(selected_metacell_types()) == 0) {
-            print("Please select metacells")
+            textOutput(ns("please_select_metacells"))
         } else {
             list(
+                textOutput(ns("number_of_selected_metacells")),
                 actionButton(ns("update_annotation"), "Apply"),
                 actionButton(ns("reset_annotation"), "Reset Selection"),
                 shinyWidgets::radioGroupButtons(
@@ -335,6 +336,9 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
             )
         }
     })
+
+    output$number_of_selected_metacells <- renderPrint(glue("Selected {nrow(selected_metacell_types())} metacells"))
+    output$please_select_metacells <- renderPrint(glue("Please select metacells"))
 
     output$update_all_selectors <- renderUI({
         req(input$update_option)
