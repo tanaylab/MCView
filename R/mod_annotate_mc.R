@@ -354,6 +354,10 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
 
     observe({
         req(metacell_types)
+        if (nrow(selected_metacell_types()) == 0) {
+            to_show(NULL)
+        }
+
         req(nrow(selected_metacell_types()) != 0)
         to_show_new <- metacell_types() %>%
             select(metacell, cell_type) %>%
@@ -496,10 +500,10 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
 
 
     # Select metacell when clicking on it
-    observe_mc_click_event("proj_annot_plot", input, cell_type_colors, metacell_types)
-    observe_mc_click_event("gene_gene_plot_annot", input, cell_type_colors, metacell_types)
-    observe_mc_click_event("gene_time_mc_plot1_annot", input, cell_type_colors, metacell_types)
-    observe_mc_click_event("gene_time_mc_plot2_annot", input, cell_type_colors, metacell_types)
+    observe_mc_click_event("proj_annot_plot", input, cell_type_colors, metacell_types, selected_metacell_types)
+    observe_mc_click_event("gene_gene_plot_annot", input, cell_type_colors, metacell_types, selected_metacell_types)
+    observe_mc_click_event("gene_time_mc_plot1_annot", input, cell_type_colors, metacell_types, selected_metacell_types)
+    observe_mc_click_event("gene_time_mc_plot2_annot", input, cell_type_colors, metacell_types, selected_metacell_types)
 
     # Select multiple metacells
     observer_mc_select_event("proj_annot_plot", input, cell_type_colors, metacell_types, selected_metacell_types)
@@ -687,17 +691,14 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
 }
 
 
-observe_mc_click_event <- function(source, input, cell_type_colors, metacell_types) {
+observe_mc_click_event <- function(source, input, cell_type_colors, metacell_types, selected_metacell_types) {
     observeEvent(plotly::event_data("plotly_click", source = source), {
         el <- plotly::event_data("plotly_click", source = source)
 
         selected_metacell <- el$customdata
 
-        if (input$selected_cell_type %in% cell_type_colors()$cell_type) {
-            new_metacell_types <- metacell_types() %>% mutate(cell_type = ifelse(metacell == selected_metacell, input$selected_cell_type, cell_type))
-            metacell_types(new_metacell_types)
-            showNotification(glue("Added metacell #{selected_metacell} to {input$selected_cell_type}"))
-        }
+        new_selected_annot <- metacell_types() %>% filter(metacell == selected_metacell)
+        selected_metacell_types(new_selected_annot)
     })
 }
 

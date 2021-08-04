@@ -95,7 +95,6 @@ mc2d_plot_ggp <- function(dataset, highlight = NULL, point_size = initial_proj_p
 #'
 #' @noRd
 mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_size(dataset), min_d = min_edge_length(dataset), stroke = initial_proj_stroke(dataset), graph_color = "black", graph_width = 0.1, id = NULL, max_lfp = NULL, min_lfp = NULL, max_expr = NULL, min_expr = NULL, scale_edges = FALSE, stat = "expression") {
-
     mc2d <- get_mc_data(dataset, "mc2d")
     metacell_types <- get_mc_data(dataset, "metacell_types")
     min_lfp <- min_lfp %||% -3
