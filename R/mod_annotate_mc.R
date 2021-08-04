@@ -128,7 +128,7 @@ mod_annotate_mc_ui <- function(id) {
             column(
                 width = 4,
                 shinydashboardPlus::box(
-                    id = ns("cell_type_colorsation"),
+                    id = ns("cell_type_colors"),
                     title = "Cell Types",
                     status = "primary",
                     solidHeader = TRUE,
@@ -151,8 +151,8 @@ mod_annotate_mc_ui <- function(id) {
                         ),
                         actionButton(ns("reset_cell_type_colors"), "Reset", style = "align-items: center;"),
                         downloadButton(ns("cell_type_colors_download"), "Export", style = "align-items: center;"),
-                        actionButton(ns("delete_cell_type_colorsation"), "Delete"),
-                        actionButton(ns("add_cell_type_colorsation"), "Add")
+                        actionButton(ns("delete_cell_type_colors"), "Delete"),
+                        actionButton(ns("add_cell_type_colors"), "Add")
                     ),
                     uiOutput(ns("annot_color_picker")),
                     shinycssloaders::withSpinner(
@@ -420,17 +420,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         new_input <- input$cell_type_table_cell_edit %>% mutate(col = col + 1)
         edited_data <- DT::editData(cell_type_colors(), new_input, "cell_type_table")
 
-        # Should we reorder or is it annoying?
-        # if (!is.numeric(edited_data$order)){
-        #     edited_data <- edited_data %>% mutate(order = 1:n())
-        # }
-
-        # edited_data <- edited_data %>%
-        #     arrange(order) %>%
-        #     distinct(cell_type, .keep_all=TRUE) %>%
-        #     mutate(order = 1:n())
-
-        # change corresponding metacell_typeentries
+        # change corresponding metacell_type entries
         if (new_input$col == 1) {
             old_cell_type <- as.character(cell_type_colors()$cell_type[new_input$row])
             new_cell_type <- as.character(edited_data$cell_type[new_input$row])
@@ -443,7 +433,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         DT::replaceData(cell_type_table_proxy, cell_type_colors(), resetPaging = FALSE)
     })
 
-    observeEvent(input$delete_cell_type_colorsation, {
+    observeEvent(input$delete_cell_type_colors, {
         rows <- input$cell_type_table_rows_selected
 
         if (!is.null(rows) && length(rows) > 0) {
@@ -459,7 +449,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         }
     })
 
-    observeEvent(input$add_cell_type_colorsation, {
+    observeEvent(input$add_cell_type_colors, {
         rows <- input$cell_type_table_rows_selected
         if (!is.null(rows) && length(rows) > 0) {
             place <- rows[1] + 1
@@ -483,7 +473,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         cell_type_colors(new_data)
     })
 
-    output$annot_color_picker <- renderUI({                
+    output$annot_color_picker <- renderUI({
         fluidRow(
             column(6, actionButton(ns("submit_new_color"), "Change color")),
             column(6, colourpicker::colourInput(ns("selected_new_color"), NULL, "black"))
@@ -556,7 +546,19 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         sliderInput(ns("min_edge_size"), label = "Min edge length", min = 0, max = 0.3, value = min_edge_length(dataset()), step = 0.001)
     })
     # Projection plots
-    output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, values, metacell_types, cell_type_colors, source = "proj_annot_plot", buttons = c("hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = "select")
+    output$plot_gene_proj_2d <- render_2d_plotly(
+        input,
+        output,
+        session,
+        dataset,
+        values,
+        metacell_types,
+        cell_type_colors,
+        show_selected_metacells = TRUE,
+        source = "proj_annot_plot",
+        buttons = c("hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"),
+        dragmode = "select"
+    )
 
 
     output$plot_gene_gene_mc <- plotly::renderPlotly({
