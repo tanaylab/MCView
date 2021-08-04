@@ -1,13 +1,13 @@
 Package: MCView
 Title: A Shiny App for Metacell Analysis
-Version: 0.1.9000
+Version: 0.2.0
 Authors@R: 
     c(person(given = "Aviezer",
            family = "Lifshitz",
            role = c("aut", "cre"),
            email = "aviezer.lifshitz@weizmann.ac.il")
     )    
-Description: MCView creates a shiny-app facilitating interactive exploration and annotation of metacell models. Metacell itself is described [here](https://github.com/tanaylab/metacells/blob/master/vignettes/Metacells_Vignette.ipynb). You can also explore examples of MCV output for [PBMC](https://tanaylab.weizmann.ac.il/PBMC) and [Mouse organogenesis](https://tanaylab.weizmann.ac.il/MOCA) on the Tanay group server.
+Description: MCView creates a shiny-app facilitating interactive exploration and annotation of metacell models. Metacell itself is described [here](https://github.com/tanaylab/metacells/blob/master/vignettes/Metacells_Vignette.ipynb). You can also explore examples of MCV output for [PBMC](https://tanaylab.weizmann.ac.il/MCV/PBMC) and [Mouse organogenesis](https://tanaylab.weizmann.ac.il/MCV/MOCA) on the Tanay group server.
 License: MIT + file LICENSE
 Imports: 
     config,

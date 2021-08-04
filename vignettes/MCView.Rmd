@@ -74,6 +74,7 @@ You can see that we also specified a field in the `h5ad` object that has pre-com
 Note that the import part might take a few minutes, depending (mostly) on the number of metacells. 
 
 __MCView__ supports also importing datasets from the old R `metacell` package, see `import_dataset_metacell1` for details.
+
 ## Run the app
 
 ```{r, eval=FALSE}
