@@ -483,8 +483,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         cell_type_colors(new_data)
     })
 
-    output$annot_color_picker <- renderUI({
-        req(input$cell_type_table_rows_selected)
+    output$annot_color_picker <- renderUI({                
         fluidRow(
             column(6, actionButton(ns("submit_new_color"), "Change color")),
             column(6, colourpicker::colourInput(ns("selected_new_color"), NULL, "black"))
