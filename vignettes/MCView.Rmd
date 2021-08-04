@@ -128,6 +128,8 @@ rsconnect::deployApp(appDir = file.path(getwd(), "PBMC_bundle"))
 
 Or to any shiny-server hosting service by uploading the "PBMC_bundle" directory to the service. 
 
+> Note that you might need to set your hosting service to allow higher memory than the default - __MCView__ keeps the metacell matrix in-memory and therefore needs around 1GB of RAM for small datasets such as PBMC, but up to 2-4GB for large datasets such as MOCA. 
+
 ## Docker 
 
 See the [docker](https://tanaylab.github.io/MCView/articles/Docker.html) vignette for instructions of using the docker image. 
