@@ -217,15 +217,29 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
     observe({
         req(input$metacell_types_fn)
         new_metacell_types <- tgutil::fread(input$metacell_types_fn$datapath, colClasses = c("cell_type_id" = "character", "cell_type" = "character", "metacell" = "character")) %>% as_tibble()
-        
+
         input_ok <- TRUE
         required_fields <- c("cell_type_id", "cell_type", "metacell")
-        if (!all(required_fields %in% colnames(new_metacell_types))){
+        if (!all(required_fields %in% colnames(new_metacell_types))) {
             showNotification(glue("Please provide a file with the following fields: cell_type_id, cell_type, metacell"), type = "error")
             input_ok <- FALSE
         }
 
-        # browser()
+        metacells <- get_metacell_ids(project, dataset())
+
+        unknown_metacells <- new_metacell_types$metacell[!(new_metacell_types$metacell %in% metacells)]
+        if (length(unknown_metacells) > 0) {
+            mcs <- paste(unknown_metacells, collapse = ", ")
+            showNotification(glue("Metacell types contains metacells that are missing from the data: {mcs}"), type = "error")
+            input_ok <- FALSE
+        }
+
+        missing_metacells <- metacells[!(metacells %in% new_metacell_types$metacell)]
+        if (length(missing_metacells) > 0) {
+            mcs <- paste(missing_metacells, collapse = ", ")
+            showNotification(glue("Some metacells are missing from metacell types: {mcs}"), type = "warning")
+        }
+
         req(input_ok)
 
         cur_metacell_types <- metacell_types()
@@ -246,7 +260,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
 
         input_ok <- TRUE
         required_fields <- c("cell_type_id", "cell_type", "color")
-        if (!all(required_fields %in% colnames(new_cell_type_colors))){
+        if (!all(required_fields %in% colnames(new_cell_type_colors))) {
             showNotification(glue("Please provide a file with the following fields: cell_type_id, cell_type, color"), type = "error")
             input_ok <- FALSE
         }
@@ -572,7 +586,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         dataset,
         values,
         metacell_types,
-        cell_type_colors,        
+        cell_type_colors,
         source = "proj_annot_plot",
         buttons = c("hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"),
         dragmode = "select"
