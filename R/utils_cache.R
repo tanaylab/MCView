@@ -52,7 +52,7 @@ load_all_mc_data <- function(dataset, cache_dir) {
     }
 }
 
-verify_app_cache <- function(project, required_files = c("mc_mat.qs", "mc_sum.qs", "mc2d.qs", "gg_mc_top_cor.qs", "metacell_types.tsv", "cell_type_colors.tsv")) {
+verify_app_cache <- function(project, required_files = c("mc_mat.qs", "mc_sum.qs", "mc2d.qs", "metacell_types.tsv", "cell_type_colors.tsv")) {
     cache_dir <- project_cache_dir(project)
     datasets <- dataset_ls(project)
 
@@ -136,4 +136,8 @@ has_time <- function(dataset) {
 
 get_metacell_ids <- function(project, dataset) {
     qs::qread(fs::path(project_cache_dir(project), dataset, "mc2d.qs"))$mc_id
+}
+
+has_gg_mc_top_cor <- function(project, dataset) {
+    !is.null(get_mc_data(dataset, "gg_mc_top_cor"))
 }

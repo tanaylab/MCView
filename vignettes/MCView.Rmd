@@ -71,7 +71,7 @@ The most important field is the `anndata` field which points to the h5ad file we
 
 You can see that we also specified a field in the `h5ad` object that has pre-computed cluster assignments per metacell, and the path of a file which contains color assignment per cluster, but these where optional, as __MCView__ can generate initial clustering and coloring automatically. 
 
-Note that the import part might take a few minutes, depending (mostly) on the number of metacells. 
+Note that the import part might take a few minutes, depending (mostly) on the number of metacells. If you see that it takes too long - set `calc_gg_cor` to `FALSE` in order to skip calculating correlation between all genes. This would save significant amount of import time but would make this feature unavailable in the app. 
 
 __MCView__ supports also importing datasets from the old R `metacell` package, see `import_dataset_metacell1` for details.
 

@@ -10,7 +10,8 @@ import_dataset(
   anndata_file,
   cell_type_field = "cluster",
   metacell_types_file = NULL,
-  cell_type_colors_file = NULL
+  cell_type_colors_file = NULL,
+  calc_gg_cor = TRUE
 )
 }
 \arguments{
@@ -37,6 +38,10 @@ each cell type. The file should have a column named "cell_type" or "cluster" wit
 cell types and another column named "color" with the color assignment. Cell types that do not
 exist in the metacell types would be ignored.
 If this is missing, MCView would use the \code{chameleon} package to assign a color for each cell type.}
+
+\item{calc_gg_cor}{calculate top 30 correlated and anti-correlated genes for each gene. This computation can be heavy
+for large datasets or weaker machines, so you can set \code{calc_gg_cor=FALSE} to skip it. Note that then this feature
+would be missing from the app.}
 }
 \description{
 Read an \code{anndata} file which is the output of python \code{metacells} package,

@@ -50,6 +50,29 @@ test_that("import_dataset works with cell type field and cell_type_colors file",
     withr::defer(gc())
 })
 
+test_that("import_dataset works with calc_gg_cor=FALSE", {
+    MCView::import_dataset(
+        project = project_dir,
+        dataset = "PBMC163k_gg_cor",
+        anndata_file = fs::path(raw_dir, "metacells.h5ad"),
+        cell_type_colors_file = fs::path(raw_dir, "cluster-colors.csv"),
+        calc_gg_cor = FALSE
+    )
+    test_dataset(
+        project_dir,
+        "PBMC163k_gg_cor",
+        required_files = c(
+            "mc_mat.qs",
+            "mc_sum.qs",
+            "mc2d.qs",
+            "metacell_types.tsv",
+            "cell_type_colors.tsv"
+        )
+    )
+    withr::defer(unlink(fs::path(project_dir, "cache", "PBMC163k_ctf_ctcf")))
+    withr::defer(gc())
+})
+
 test_that("import_dataset works with metacell_types file", {
     MCView::import_dataset(
         project = project_dir,

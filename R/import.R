@@ -31,6 +31,9 @@
 #' cell types and another column named "color" with the color assignment. Cell types that do not
 #' exist in the metacell types would be ignored.
 #' If this is missing, MCView would use the \code{chameleon} package to assign a color for each cell type.
+#' @param calc_gg_cor calculate top 30 correlated and anti-correlated genes for each gene. This computation can be heavy
+#' for large datasets or weaker machines, so you can set \code{calc_gg_cor=FALSE} to skip it. Note that then this feature
+#' would be missing from the app.
 #'
 #'
 #' @examples
@@ -46,7 +49,7 @@
 #' }
 #'
 #' @export
-import_dataset <- function(project, dataset, anndata_file, cell_type_field = "cluster", metacell_types_file = NULL, cell_type_colors_file = NULL) {
+import_dataset <- function(project, dataset, anndata_file, cell_type_field = "cluster", metacell_types_file = NULL, cell_type_colors_file = NULL, calc_gg_cor = TRUE) {
     verbose <- !is.null(getOption("MCView.verbose")) && getOption("MCView.verbose")
     verify_project_dir(project)
 
@@ -160,10 +163,14 @@ import_dataset <- function(project, dataset, anndata_file, cell_type_field = "cl
 
     serialize_shiny_data(metacell_types, "metacell_types", dataset = dataset, cache_dir = cache_dir, flat = TRUE)
 
-    cli_alert_info("Calculating top 30 correlated and anti-correlated genes for each gene")
-    gg_mc_top_cor <- calc_gg_mc_top_cor(mc_egc, k = 30)
+    if (calc_gg_cor) {
+        cli_alert_info("Calculating top 30 correlated and anti-correlated genes for each gene")
+        gg_mc_top_cor <- calc_gg_mc_top_cor(mc_egc, k = 30)
+        serialize_shiny_data(gg_mc_top_cor, "gg_mc_top_cor", dataset = dataset, cache_dir = cache_dir)
+    } else {
+        cli_alert_info("Skipping calculation of top 30 correlated and anti-correlated genes for each gene. Some features in the app would not be available")
+    }
 
-    serialize_shiny_data(gg_mc_top_cor, "gg_mc_top_cor", dataset = dataset, cache_dir = cache_dir)
 
     cli_alert_success("{.field {dataset}} dataset imported succesfully to {.path {project}} project")
 }
