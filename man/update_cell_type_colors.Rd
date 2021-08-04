@@ -11,7 +11,7 @@ update_cell_type_colors(project, dataset, cell_type_colors_file)
 
 \item{dataset}{name for the dataset, e.g. "PBMC"}
 
-\item{cell_type_colors_file}{path to a tabular file (csv,tsv) with color assignement for
+\item{cell_type_colors_file}{path to a tabular file (csv,tsv) with color assignment for
 each cell type. The file should have a column named "cell_type" or "cluster" with the
 cell types and another column named "color" with the color assignment. Cell types that do not
 exist in the metacell types would be ignored, so if you changed the names of cell types you would have to also
