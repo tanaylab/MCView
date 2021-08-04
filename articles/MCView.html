@@ -31,7 +31,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">MCView</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.1.9000</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.2.0</span>
       </span>
     </div>
 
@@ -63,6 +63,9 @@
       <a href="../articles/Docker.html">Docker</a>
     </li>
   </ul>
+</li>
+<li>
+  <a href="../news/index.html">Changelog</a>
 </li>
       </ul>
 <ul class="nav navbar-nav navbar-right"></ul>
@@ -129,8 +132,12 @@
                cell_type_colors_file <span class="op">=</span> <span class="st">"raw/cluster-colors.csv"</span><span class="op">)</span></code></pre></div>
 <p>The most important field is the <code>anndata</code> field which points to the h5ad file we downloaded.</p>
 <p>You can see that we also specified a field in the <code>h5ad</code> object that has pre-computed cluster assignments per metacell, and the path of a file which contains color assignment per cluster, but these where optional, as <strong>MCView</strong> can generate initial clustering and coloring automatically.</p>
-<p>Note that the import part might take a few minutes, depending (mostly) on the number of metacells.</p>
-<p><strong>MCView</strong> supports also importing datasets from the old R <code>metacell</code> package, see <code>import_dataset_metacell1</code> for details. ## Run the app</p>
+<p>Note that the import part might take a few minutes, depending (mostly) on the number of metacells. If you see that it takes too long - set <code>calc_gg_cor</code> to <code>FALSE</code> in order to skip calculating correlation between all genes. This would save significant amount of import time but would make this feature unavailable in the app.</p>
+<p><strong>MCView</strong> supports also importing datasets from the old R <code>metacell</code> package, see <code>import_dataset_metacell1</code> for details.</p>
+</div>
+<div id="run-the-app" class="section level2">
+<h2 class="hasAnchor">
+<a href="#run-the-app" class="anchor"></a>Run the app</h2>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="../reference/run_app.html">run_app</a></span><span class="op">(</span>project <span class="op">=</span> <span class="st">"PBMC"</span>, launch.browser <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></code></pre></div>
 <p>A browser window would be opened with the app.</p>
@@ -165,6 +172,9 @@
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu">rsconnect</span><span class="fu">::</span><span class="fu">deployApp</span><span class="op">(</span>appDir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/getwd.html">getwd</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"PBMC_bundle"</span><span class="op">)</span><span class="op">)</span></code></pre></div>
 <p>Or to any shiny-server hosting service by uploading the “PBMC_bundle” directory to the service.</p>
+<blockquote>
+<p>Note that you might need to set your hosting service to allow higher memory than the default - <strong>MCView</strong> keeps the metacell matrix in-memory and therefore needs around 1GB of RAM for small datasets such as PBMC, but up to 2-4GB for large datasets such as MOCA.</p>
+</blockquote>
 </div>
 <div id="docker" class="section level2">
 <h2 class="hasAnchor">
