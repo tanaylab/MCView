@@ -66,6 +66,8 @@ import_dataset <- function(project, dataset, anndata_file, cell_type_field = "cl
     mc_mat <- t(adata$X)
     serialize_shiny_data(mc_mat, "mc_mat", dataset = dataset, cache_dir = cache_dir)
 
+    metacells <- colnames(mc_mat)
+
     mc_sum <- colSums(mc_mat)
     serialize_shiny_data(mc_sum, "mc_sum", dataset = dataset, cache_dir = cache_dir)
 
@@ -103,13 +105,12 @@ import_dataset <- function(project, dataset, anndata_file, cell_type_field = "cl
         distinct(metacell, .keep_all = TRUE) %>%
         mutate(metacell = as.character(metacell))
 
-
     if (!is.null(metacell_types_file)) {
         if (!is.null(cell_type_field)) {
             cli_alert_warning("{.field cell_type_field} was ignored since {.field metacell_types_file} was set.")
         }
         cli_alert_info("Loading metacell type annotations from {.file {metacell_types_file}}")
-        metacell_types <- parse_metacell_types(metacell_types_file)
+        metacell_types <- parse_metacell_types(metacell_types_file, metacells)
     } else {
         if (!is.null(cell_type_field) && !is.null(adata$obs[[cell_type_field]])) {
             cli_alert_info("Taking cell type annotations from {.field {cell_type_field}} field in the anndata object")
@@ -150,11 +151,7 @@ import_dataset <- function(project, dataset, anndata_file, cell_type_field = "cl
 
     # filter metacell_types to contain only metacells that are included in mc_egc
     metacell_types <- metacell_types %>%
-        as.data.frame() %>%
-        column_to_rownames("metacell")
-    metacell_types <- metacell_types[colnames(mc_egc), ]
-    metacell_types <- metacell_types %>%
-        rownames_to_column("metacell") %>%
+        filter(metacell %in% colnames(mc_egc)) %>%
         as_tibble()
 
     # add the expression (log2) of top genes per metacell
@@ -162,7 +159,6 @@ import_dataset <- function(project, dataset, anndata_file, cell_type_field = "cl
     metacell_types$top2_lfp <- purrr::map2_dbl(metacell_types$metacell, metacell_types$top2_gene, ~ log2(mc_fp[.y, .x]))
 
     serialize_shiny_data(metacell_types, "metacell_types", dataset = dataset, cache_dir = cache_dir, flat = TRUE)
-
 
     cli_alert_info("Calculating top 30 correlated and anti-correlated genes for each gene")
     gg_mc_top_cor <- calc_gg_mc_top_cor(mc_egc, k = 30)
@@ -239,7 +235,7 @@ update_metacell_types <- function(project, dataset, metacell_types_file) {
     prev_metacell_types <- prev_metacell_types %>%
         mutate(metacell = as.character(metacell))
 
-    metacell_types <- parse_metacell_types(metacell_types_file)
+    metacell_types <- parse_metacell_types(metacell_types_file, prev_metacell_types$metacell)
 
     metacell_types <- prev_metacell_types %>%
         select(-cell_type) %>%
@@ -318,7 +314,7 @@ parse_cell_type_colors <- function(file) {
 }
 
 
-parse_metacell_types <- function(file) {
+parse_metacell_types <- function(file, metacells) {
     metacell_types <- fread(file) %>% as_tibble()
 
     if (!has_name(metacell_types, "metacell")) {
@@ -344,6 +340,18 @@ parse_metacell_types <- function(file) {
 
     metacell_types <- metacell_types %>%
         mutate(metacell = as.character(metacell))
+
+    unknown_metacells <- metacell_types$metacell[!(metacell_types$metacell %in% metacells)]
+    if (length(unknown_metacells) > 0) {
+        mcs <- paste(unknown_metacells, collapse = ", ")
+        cli_abort("Metacell types contains metacells that are missing from the data: {.field {mcs}}")
+    }
+
+    missing_metacells <- metacells[!(metacells %in% metacell_types$metacell)]
+    if (length(missing_metacells) > 0) {
+        mcs <- paste(missing_metacells, collapse = ", ")
+        cli_warn("Some metacells are missing from metacell types: {.field {mcs}}")
+    }
 
     return(metacell_types)
 }
