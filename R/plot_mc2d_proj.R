@@ -198,12 +198,22 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
 }
 
 
-render_2d_plotly <- function(input, output, session, dataset, values, metacell_types, cell_type_colors, source, buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL) {
+render_2d_plotly <- function(input, output, session, dataset, values, metacell_types, cell_type_colors, source, buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL, show_selected_metacells = FALSE) {
     plotly::renderPlotly({
         req(input$color_proj)
         req(input$point_size)
         req(input$stroke)
         req(input$min_edge_size)
+
+        if (show_selected_metacells && !is.null(input$metacell1) && !is.null(input$metacell2) && input$color_proj == "Cell type") {
+            highlight <- tibble::tibble(
+                metacell = c(input$metacell1, input$metacell2),
+                label = c("metacell1", "metacell2"),
+                color = c("darkred", "darkblue")
+            )
+        } else {
+            highlight <- NULL
+        }
 
         plot_2d_gene <- function(gene) {
             req(input$proj_stat)
@@ -230,7 +240,7 @@ render_2d_plotly <- function(input, output, session, dataset, values, metacell_t
         }
 
         if (input$color_proj == "Cell type") {
-            fig <- plotly::ggplotly(mc2d_plot_ggp(dataset(), metacell_types = metacell_types(), cell_type_colors = cell_type_colors(), point_size = input$point_size, stroke = input$stroke, min_d = input$min_edge_size), tooltip = "tooltip_text", source = source)
+            fig <- plotly::ggplotly(mc2d_plot_ggp(dataset(), metacell_types = metacell_types(), cell_type_colors = cell_type_colors(), point_size = input$point_size, stroke = input$stroke, min_d = input$min_edge_size, highlight = highlight), tooltip = "tooltip_text", source = source)
         } else if (input$color_proj == "Gene A") {
             req(values$gene1)
             fig <- plot_2d_gene(values$gene1)
