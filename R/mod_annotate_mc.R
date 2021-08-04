@@ -25,6 +25,7 @@ mod_annotate_mc_ui <- function(id) {
                         startOpen = FALSE,
                         width = 25,
                         id = ns("gene_projection_sidebar"),
+                        checkboxInput(ns("show_selected_metacells"), "Show selected metacells", value = FALSE),
                         selectInput(ns("proj_stat"), label = "Statistic", choices = c("Expression" = "expression", "Enrichment" = "enrichment"), selected = "Expression", multiple = FALSE, selectize = FALSE),
                         uiOutput(ns("set_range_ui")),
                         uiOutput(ns("expr_range_ui")),
@@ -216,6 +217,16 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
     observe({
         req(input$metacell_types_fn)
         new_metacell_types <- tgutil::fread(input$metacell_types_fn$datapath, colClasses = c("cell_type_id" = "character", "cell_type" = "character", "metacell" = "character")) %>% as_tibble()
+        
+        input_ok <- TRUE
+        required_fields <- c("cell_type_id", "cell_type", "metacell")
+        if (!all(required_fields %in% colnames(new_metacell_types))){
+            showNotification(glue("Please provide a file with the following fields: cell_type_id, cell_type, metacell"), type = "error")
+            input_ok <- FALSE
+        }
+
+        # browser()
+        req(input_ok)
 
         cur_metacell_types <- metacell_types()
         new_metacell_types <- cur_metacell_types %>%
@@ -232,6 +243,14 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
     observe({
         req(input$cell_type_colors_fn)
         new_cell_type_colors <- tgutil::fread(input$cell_type_colors_fn$datapath, colClasses = c("cell_type_id" = "character", "cell_type" = "character", "color" = "character")) %>% as_tibble()
+
+        input_ok <- TRUE
+        required_fields <- c("cell_type_id", "cell_type", "color")
+        if (!all(required_fields %in% colnames(new_cell_type_colors))){
+            showNotification(glue("Please provide a file with the following fields: cell_type_id, cell_type, color"), type = "error")
+            input_ok <- FALSE
+        }
+        req(input_ok)
 
         if ("order" %in% colnames(new_cell_type_colors)) {
             new_cell_type_colors <- new_cell_type_colors %>% arrange(order)
@@ -553,8 +572,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         dataset,
         values,
         metacell_types,
-        cell_type_colors,
-        show_selected_metacells = TRUE,
+        cell_type_colors,        
         source = "proj_annot_plot",
         buttons = c("hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"),
         dragmode = "select"
