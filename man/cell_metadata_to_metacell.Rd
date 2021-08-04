@@ -2,36 +2,66 @@
 % Please edit documentation in R/metadata.R
 \name{cell_metadata_to_metacell}
 \alias{cell_metadata_to_metacell}
+\alias{cell_metadata_to_metacell_from_h5ad}
 \title{Convert cell metadata to metacell metadata}
 \usage{
 cell_metadata_to_metacell(
   cell_metadata,
   cell_to_metacell,
-  func,
+  func = mean,
   categorical = FALSE
+)
+
+cell_metadata_to_metacell_from_h5ad(
+  anndata_file,
+  metadata_fields,
+  func = mean,
+  categorical = FALSE,
+  rm_outliers = TRUE
 )
 }
 \arguments{
-\item{cell_metadata}{data frame with a column with a column named "cell_id" with 
-the cell id and other metadata columns, or a name of a delimited file which 
-contains such data frame. if \code{categorical = TRUE} the data frame can have only 
+\item{cell_metadata}{data frame with a column named "cell_id" with
+the cell id and other metadata columns, or a name of a delimited file which
+contains such data frame. if \code{categorical = TRUE} the data frame can have only
 a single metadata categorical column.}
 
-\item{cell_to_metacell}{data frame with a column named "cell_id" with cell id and 
-another column named "metacell" with the metacell the cell is part of, or a 
+\item{cell_to_metacell}{data frame with a column named "cell_id" with cell id and
+another column named "metacell" with the metacell the cell is part of, or a
 name of a delimited file which contains such data frame.}
 
 \item{func}{summary function for the cell metadata for non categorical metadata columns
 (e.g. mean, median, sum)}
 
 \item{categorical}{is the metadata categorical. if \code{TRUE} - \code{cell_metadata}
-can have only a single metadata column, and the returned data frame would have 
+can have only a single metadata column, and the returned data frame would have
 a column for each category where the values are the fraction of cells with the
 category in each metacell.}
+
+\item{anndata_file}{path to \code{h5ad} file which contains the output of metacell2 pipeline (metacells python package).}
+
+\item{metadata_fields}{names of fields in the anndata \code{object$obs} which contains metadata for each cell.}
+
+\item{rm_outliers}{do not calculate statistics for cells that are marked as outliers (\code{outiler=TRUE} in \code{object$obs})}
 }
 \value{
-
+if \code{categorical=FALSE} - a data frame with a column named "metacell" and
+the metadata columns from \code{cell_metadata} summarized for each metacell using
+\code{func}. If \code{categorical=TRUE} - a data frame with a column named "metacell"
+and a column for each category of the *single* categorical metadata variable in
+\code{cell_metadata}, where the values are the fraction of cells with the category
+in each metacell.
 }
 \description{
-Convert cell metadata to metacell metadata
+Summarise cell metadata for each metacell. Metadata fields can be either numeric and then the summary function \code{func} is
+applied for the values of each field, or a single categorical metadata field which is expanded to multiple metadata columns with
+the fraction of cells (in each metacell) for every category.
+\code{cell_metadata_to_metacell} converts cell metadata to metacell metadata from data frames.
+\code{cell_metadata_to_metacell_from_h5ad} extracts metadata fields and cell_to_metacell from cells h5ad file and
+then runs \code{cell_metadata_to_metacell}.
 }
+\section{Functions}{
+\itemize{
+\item \code{cell_metadata_to_metacell_from_h5ad}: 
+}}
+

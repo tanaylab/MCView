@@ -22,6 +22,120 @@ test_that("import_dataset works with metadata dataframe", {
     withr::defer(gc())
 })
 
+test_that("cell_metadata_to_metacell works", {
+    set.seed(60427)
+    n_cells <- 5e6
+    cell_metadata <- tibble(
+        cell_id = 1:n_cells,
+        md1 = sample(1:5, size = n_cells, replace = TRUE),
+        md2 = rnorm(n = n_cells)
+    )
+
+    cell_To_metacell <- tibble(
+        cell_id = 1:n_cells,
+        metacell = sample(0:1535, size = n_cells, replace = TRUE)
+    )
+
+    metadata <- cell_metadata_to_metacell(cell_metadata, cell_To_metacell)
+
+    expect_equivalent(metadata$md1[1:5], c(
+        3.01056763285024, 3.05427782888684, 2.99559748427673, 3.02988361119849,
+        2.96641221374046
+    ))
+    expect_equivalent(metadata$md2[1:5], c(
+        0.00148788798193235, 0.0181742754379464, 0.0271565244845097,
+        0.0409454954704143, 0.0102880587793541
+    ))
+    expect_equal(metadata$metacell, 0:1535)
+    expect_equal(colnames(metadata), c("metacell", "md1", "md2"))
+})
+
+test_that("cell_metadata_to_metacell works with categorical variable", {
+    set.seed(60427)
+    n_cells <- 5e6
+    cell_metadata <- tibble(
+        cell_id = 1:n_cells,
+        md1 = sample(paste0("batch", 1:5), size = n_cells, replace = TRUE)
+    )
+
+    cell_To_metacell <- tibble(
+        cell_id = 1:n_cells,
+        metacell = sample(0:1535, size = n_cells, replace = TRUE)
+    )
+
+    metadata <- cell_metadata_to_metacell(cell_metadata, cell_To_metacell, categorical = TRUE)
+
+    expect_equivalent(metadata$batch1[1:5], c(
+        0.201421800947867, 0.213386552041756, 0.198876053699657, 0.206535141800247,
+        0.201992753623188
+    ))
+    expect_equivalent(metadata$batch2[1:5], c(
+        0.198755924170616, 0.195271722443967, 0.191695285669685, 0.200369913686806,
+        0.191425120772947
+    ))
+    expect_equal(metadata$metacell, 0:1535)
+    expect_equal(colnames(metadata), c("metacell", paste0("batch", 1:5)))
+    sums <- metadata %>%
+        column_to_rownames("metacell") %>%
+        as.matrix() %>%
+        rowSums()
+    expect_equivalent(sums, rep(1, length(sums)))
+})
+
+test_that("cell_metadata_to_metacell_from_h5ad works", {
+    # Skip on ci
+    h5ad_file <- "/home/aviezerl/src/metacell.shiny/cells.h5ad"
+    skip_if(!fs::file_exists(h5ad_file))
+
+    metadata <- cell_metadata_to_metacell_from_h5ad(h5ad_file, c("pile", "properly_sampled_cell"))
+    expect_true(all(metadata$properly_sampled_cell == 1))
+    expect_equal(metadata$pile[1:5], c(0, 0, 1, 1, 1))
+    expect_equal(metadata$metacell, 0:1535)
+    expect_equal(colnames(metadata), c("metacell", "pile", "properly_sampled_cell"))
+})
+
+test_that("cell_metadata_to_metacell_from_h5ad works with categorical=TRUE", {
+    # Skip on ci
+    h5ad_file <- "/home/aviezerl/src/metacell.shiny/cells.h5ad"
+    skip_if(!fs::file_exists(h5ad_file))
+
+    metadata <- cell_metadata_to_metacell_from_h5ad(h5ad_file, c("batch"), categorical = TRUE)
+
+    expect_setequal(
+        colnames(metadata),
+        c(
+            "metacell", "8batchall", "b_cells", "cd14", "cd34",
+            "cd4_t_helper", "cd56_nk", "cyto_t", "memory_t", "naive_cyto",
+            "naive_t", "reg_t"
+        )
+    )
+
+    sums <- metadata %>%
+        column_to_rownames("metacell") %>%
+        as.matrix() %>%
+        rowSums()
+    expect_equivalent(sums, rep(1, length(sums)))
+    expect_equal(metadata$metacell, 0:1535)
+    expect_equal(metadata$cd34[1:5], c(1, 1, 1, 1, 0))
+})
+
+# TODO:
+# test edge cases cell_metadata_to_metacell
+
+
+test_that("cell_metadata_to_metacell_from_h5ad works with custom function", {
+    # Skip on ci
+    h5ad_file <- "/home/aviezerl/src/metacell.shiny/cells.h5ad"
+    skip_if(!fs::file_exists(h5ad_file))
+
+    metadata <- cell_metadata_to_metacell_from_h5ad(h5ad_file, c("pile", "properly_sampled_cell"), func = function(x) median(x) * 2)
+    expect_true(all(metadata$properly_sampled_cell == 2))
+    expect_equal(metadata$pile[1:5], c(0, 0, 2, 2, 2))
+    expect_equal(metadata$metacell, 0:1535)
+    expect_equal(colnames(metadata), c("metacell", "pile", "properly_sampled_cell"))
+})
+
+
 test_that("import_dataset works with metadata fields", {
     set.seed(60427)
     dataset <- "PBMC163k_md"
@@ -121,12 +235,14 @@ test_that("import_dataset fails when metadata is categorical", {
         mutate(md1 = "savta")
 
     expect_error(
-        MCView::import_dataset(
-            project = project_dir,
-            dataset = dataset,
-            anndata_file = fs::path(raw_dir, "metacells.h5ad"),
-            cell_type_colors_file = fs::path(raw_dir, "cluster-colors.csv"),
-            metadata = metadata_df
+        expect_warning(
+            MCView::import_dataset(
+                project = project_dir,
+                dataset = dataset,
+                anndata_file = fs::path(raw_dir, "metacells.h5ad"),
+                cell_type_colors_file = fs::path(raw_dir, "cluster-colors.csv"),
+                metadata = metadata_df
+            )
         )
     )
 })

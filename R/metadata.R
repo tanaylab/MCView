@@ -102,7 +102,7 @@ update_metadata_colors <- function(project,
 
 #' Convert cell metadata to metacell metadata
 #'
-#' @param cell_metadata data frame with a column with a column named "cell_id" with
+#' @param cell_metadata data frame with a column named "cell_id" with
 #' the cell id and other metadata columns, or a name of a delimited file which
 #' contains such data frame. if \code{categorical = TRUE} the data frame can have only
 #' a single metadata categorical column.
@@ -115,32 +115,75 @@ update_metadata_colors <- function(project,
 #' can have only a single metadata column, and the returned data frame would have
 #' a column for each category where the values are the fraction of cells with the
 #' category in each metacell.
+#' @param anndata_file path to \code{h5ad} file which contains the output of metacell2 pipeline (metacells python package).
+#' @param metadata_fields names of fields in the anndata \code{object$obs} which contains metadata for each cell.
+#' @param rm_outliers do not calculate statistics for cells that are marked as outliers (\code{outiler=TRUE} in \code{object$obs})
+#'
 #'
 #' @return if \code{categorical=FALSE} - a data frame with a column named "metacell" and
-#' the metadata columns from \{cell_metadata} summarized for each metacell using
+#' the metadata columns from \code{cell_metadata} summarized for each metacell using
 #' \code{func}. If \code{categorical=TRUE} - a data frame with a column named "metacell"
 #' and a column for each category of the *single* categorical metadata variable in
 #' \code{cell_metadata}, where the values are the fraction of cells with the category
 #' in each metacell.
 #'
+#' @description
+#' Summarise cell metadata for each metacell. Metadata fields can be either numeric and then the summary function \code{func} is
+#' applied for the values of each field, or a single categorical metadata field which is expanded to multiple metadata columns with
+#' the fraction of cells (in each metacell) for every category.
+#' \code{cell_metadata_to_metacell} converts cell metadata to metacell metadata from data frames.
+#' \code{cell_metadata_to_metacell_from_h5ad} extracts metadata fields and cell_to_metacell from cells h5ad file and
+#' then runs \code{cell_metadata_to_metacell}.
+#'
+#' @examples
+#' set.seed(60427)
+#' n_cells <- 5e6
+#' cell_metadata <- tibble(
+#'     cell_id = 1:n_cells,
+#'     md1 = sample(1:5, size = n_cells, replace = TRUE),
+#'     md2 = rnorm(n = n_cells)
+#' )
+#' cell_To_metacell <- tibble(
+#'     cell_id = 1:n_cells,
+#'     metacell = sample(0:1535, size = n_cells, replace = TRUE)
+#' )
+#' metadata <- cell_metadata_to_metacell(cell_metadata, cell_To_metacell)
+#' head(metadata)
+#'
+#' metadata1 <- cell_metadata_to_metacell(cell_metadata, cell_To_metacell, func=function(x) x * 2)
+#' head(metadata1)
+#'
+#' cell_metadata_categorical <- tibble(
+#'    cell_id = 1:n_cells,
+#'    md1 = sample(paste0("batch", 1:5), size = n_cells, replace = TRUE)
+#' )
+#' 
+#' metadata3 <- cell_metadata_to_metacell(cell_metadata_categorical, cell_To_metacell, categorical=TRUE)
+#' head(metadata3)
+#'
+#' \dontrun{
+#'   cell_metadata_to_metacell_from_h5ad("cells.h5ad", c("pile", "age"))
+#'   cell_metadata_to_metacell_from_h5ad("cells.h5ad", "batch", categorical=TRUE)
+#' }
+#'
 #'
 #'
 #' @export
-cell_metadata_to_metacell <- function(cell_metadata, cell_to_metacell, func, categorical = FALSE) {
+cell_metadata_to_metacell <- function(cell_metadata, cell_to_metacell, func = mean, categorical = FALSE) {
     if (is.character(cell_metadata)) {
         cell_metadata <- tgutil::fread(cell_metadata) %>% as_tibble()
     }
 
-    if (colnames(cell_metadata)[1] == "cell_id") {
-        cli_abort("First column of {.code cell_metadata} is not named {.field cell_id} (it is named {.field {colnames(cell_metadata)[1]}}")
+    if (colnames(cell_metadata)[1] != "cell_id") {
+        cli_abort("First column of {.code cell_metadata} is not named {.field cell_id} (it is named {.field {colnames(cell_metadata)[1]}})")
     }
 
-    if (colnames(cell_to_metacell)[1] == "cell_id") {
-        cli_abort("First column of {.code cell_to_metacell} is not named {.field cell_id} (it is named {.field {colnames(cell_to_metacell)[1]}}")
+    if (colnames(cell_to_metacell)[1] != "cell_id") {
+        cli_abort("First column of {.code cell_to_metacell} is not named {.field cell_id} (it is named {.field {colnames(cell_to_metacell)[1]}})")
     }
 
-    if (colnames(cell_to_metacell)[2] == "metacell") {
-        cli_abort("Second column of {.code cell_to_metacell} is not named {.field metacell} (it is named {.field {colnames(cell_to_metacell)[2]}}")
+    if (colnames(cell_to_metacell)[2] != "metacell") {
+        cli_abort("Second column of {.code cell_to_metacell} is not named {.field metacell} (it is named {.field {colnames(cell_to_metacell)[2]}})")
     }
 
     if (categorical) {
@@ -151,15 +194,17 @@ cell_metadata_to_metacell <- function(cell_metadata, cell_to_metacell, func, cat
         cell_metadata <- cell_metadata %>%
             left_join(cell_to_metacell, by = "cell_id")
 
-        colnames(cell_metadata)[2] <- "categorical_var"
+        colnames(cell_metadata)[2] <- "cat_var"
 
         metadata <- cell_metadata %>%
             select(metacell, cat_var) %>%
             group_by(metacell, cat_var) %>%
             summarise(cat_var_n = n(), .groups = "drop") %>%
             group_by(metacell) %>%
-            summarise(cat_var = cat_var_n / n(), .groups = "drop") %>%
-            spread(cat_var)
+            mutate(cat_varp = cat_var_n / sum(cat_var_n)) %>%
+            select(-cat_var_n) %>%
+            spread(cat_var, cat_varp, fill = 0) %>%
+            ungroup()
     } else {
         fields <- cell_metadata %>%
             select(-cell_id) %>%
@@ -185,6 +230,50 @@ cell_metadata_to_metacell <- function(cell_metadata, cell_to_metacell, func, cat
     }
 
     return(metadata)
+}
+
+#'
+#' @describeIn cell_metadata_to_metacell
+#'
+#' @export
+cell_metadata_to_metacell_from_h5ad <- function(anndata_file, metadata_fields, func = mean, categorical = FALSE, rm_outliers = TRUE) {
+    if (!fs::file_exists(anndata_file)) {
+        cli_abort("{anndata_file} doesn't exist. Maybe there is a typo?")
+    }
+
+    cli_alert_info("Reading {.file {anndata_file}}")
+    library(anndata)
+    adata <- anndata::read_h5ad(anndata_file)
+
+    if (!("metacell" %in% colnames(adata$obs))) {
+        cli_abort("h5ad object doesn't have a 'metacell' field.")
+    }
+
+    purrr::walk(metadata_fields, ~ {
+        if (!(.x %in% colnames(adata$obs))) {
+            cli_abort("{.field {.x}} is not present in the h5ad object.")
+        }
+    })
+
+    if (categorical && length(metadata_fields) > 1) {
+        cli_abort("{.code metadata_fields} should have a single field when {.code categorical=TRUE}")
+    }
+
+    df <- adata$obs %>%
+        rownames_to_column("cell_id")
+
+    if (rm_outliers && has_name(adata$obs, "outlier")) {
+        df <- df %>% filter(!outlier)
+    }
+
+    cell_metadata <- df %>%
+        select(cell_id, one_of(metadata_fields))
+
+    cell_to_metacell <- df %>%
+        select(cell_id, metacell)
+
+
+    cell_metadata_to_metacell(cell_metadata = cell_metadata, cell_to_metacell = cell_to_metacell, func = func, categorical = categorical)
 }
 
 
