@@ -23,6 +23,14 @@ MCView creates a shiny-app facilitating interactive exploration and annotation o
 
 ## Installation
 
+Install the latest github release:
+
+```r
+remotes::install_github("tanaylab/MCView", ref = remotes::github_release()
+```
+
+Or install the development version: 
+
 ```r
 remotes::install_github("tanaylab/MCView")
 ```

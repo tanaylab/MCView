@@ -1,20 +1,20 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-
 # MCView
 
 <!-- badges: start -->
 <!-- badges: end -->
-
-MCView creates a shiny-app facilitating interactive exploration and
-annotation of metacell models. Metacell itself is described
-[here](https://pypi.org/project/metacells/). You can also explore
-examples of MCV output for
-[PBMC](https://tanaylab.weizmann.ac.il/MCV/PBMC) and [Mouse
-organogenesis](https://tanaylab.weizmann.ac.il/MCV/MOCA) on the Tanay
-group server.
+MCView creates a shiny-app facilitating interactive exploration and annotation of metacell models. Metacell itself is described [here](https://pypi.org/project/metacells/). You can also explore examples of MCV output for [PBMC](https://tanaylab.weizmann.ac.il/MCV/PBMC) and [Mouse organogenesis](https://tanaylab.weizmann.ac.il/MCV/MOCA) on the Tanay group server.
 
 ## Installation
+
+Install the latest github release:
+
+``` r
+remotes::install_github("tanaylab/MCView", ref = remotes::github_release()
+```
+
+Or install the development version:
 
 ``` r
 remotes::install_github("tanaylab/MCView")
@@ -22,8 +22,7 @@ remotes::install_github("tanaylab/MCView")
 
 ## Usage
 
-See the
-[vignette](https://tanaylab.github.io/MCView/articles/MCView.html).
+See the [vignette](https://tanaylab.github.io/MCView/articles/MCView.html).
 
 Tl;dr:
 
