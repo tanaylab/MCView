@@ -61,7 +61,7 @@ import_dataset <- function(project, dataset, anndata_file, cell_type_field = "cl
         cli_abort("{anndata_file} doesn't exist. Maybe there is a typo?")
     }
 
-    cli_alert_info("Reading {.file {anndata_file}}")    
+    cli_alert_info("Reading {.file {anndata_file}}")
     adata <- anndata::read_h5ad(anndata_file)
 
     cli_alert_info("Processing metacell matrix")
