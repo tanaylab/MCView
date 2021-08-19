@@ -541,6 +541,12 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         )
     })
 
+    observe({
+        req(input$cell_type_table_rows_selected)
+        row <- tail(input$cell_type_table_rows_selected, n = 1)
+        colourpicker::updateColourInput(session, "selected_new_color", value = cell_type_colors()$color[row])
+    })
+
     observeEvent(input$submit_new_color, {
         rows <- input$cell_type_table_rows_selected
         new_data <- cell_type_colors()
