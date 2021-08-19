@@ -213,7 +213,8 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         cell_type_colors(initial_cell_type_colors)
     })
 
-    # load metacell types file
+    files_data <- reactiveValues(metacell_types = NULL, cell_types = NULL)
+
     observe({
         req(input$metacell_types_fn)
         new_metacell_types <- tgutil::fread(input$metacell_types_fn$datapath, colClasses = c("cell_type_id" = "character", "cell_type" = "character", "metacell" = "character")) %>% as_tibble()
@@ -240,7 +241,16 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
             showNotification(glue("Some metacells are missing from metacell types: {mcs}"), type = "warning")
         }
 
-        req(input_ok)
+        if (input_ok) {
+            files_data$metacell_types <- new_metacell_types
+        }
+    })
+
+    # load metacell types file
+    observe({
+        req(files_data$metacell_types)
+
+        new_metacell_types <- files_data$metacell_types
 
         cur_metacell_types <- metacell_types()
         new_metacell_types <- cur_metacell_types %>%
@@ -251,9 +261,11 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         new_metacell_types <- sanitize_metacell_types(new_metacell_types, cell_type_colors(), dataset())
 
         metacell_types(new_metacell_types)
+
+        files_data$metacell_types <- NULL
     })
 
-    # load metacell colors
+    # load cell type colors
     observe({
         req(input$cell_type_colors_fn)
         new_cell_type_colors <- tgutil::fread(input$cell_type_colors_fn$datapath, colClasses = c("cell_type_id" = "character", "cell_type" = "character", "color" = "character")) %>% as_tibble()
@@ -264,7 +276,17 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
             showNotification(glue("Please provide a file with the following fields: cell_type_id, cell_type, color"), type = "error")
             input_ok <- FALSE
         }
+
         req(input_ok)
+
+        files_data$cell_types <- new_cell_type_colors
+    })
+
+
+    observe({
+        req(files_data$cell_types)
+
+        new_cell_type_colors <- files_data$cell_types
 
         if ("order" %in% colnames(new_cell_type_colors)) {
             new_cell_type_colors <- new_cell_type_colors %>% arrange(order)
@@ -274,6 +296,8 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         }
 
         cell_type_colors(new_cell_type_colors)
+
+        files_data$cell_types <- NULL
     })
 
     output$metacell_types_download <- downloadHandler(
