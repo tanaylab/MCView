@@ -167,7 +167,7 @@ mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, 
     })
 
     # Projection plots
-    output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, values, metacell_types, cell_type_colors, source = "proj_mc_plot_gene_tab")
+    output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, values, metacell_types, cell_type_colors, source = "proj_mc_plot_gene_tab", refresh_on_gene_change = TRUE)
 
     output$plot_gene_gene_mc <- plotly::renderPlotly({
         req(values$gene1)

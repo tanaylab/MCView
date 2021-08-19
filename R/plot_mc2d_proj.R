@@ -198,7 +198,7 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
 }
 
 
-render_2d_plotly <- function(input, output, session, dataset, values, metacell_types, cell_type_colors, source, buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL) {
+render_2d_plotly <- function(input, output, session, dataset, values, metacell_types, cell_type_colors, source, buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL, refresh_on_gene_change = FALSE) {
     plotly::renderPlotly({
         req(input$color_proj)
         req(input$point_size)
@@ -242,6 +242,10 @@ render_2d_plotly <- function(input, output, session, dataset, values, metacell_t
         }
 
         if (input$color_proj == "Cell type") {
+            if (refresh_on_gene_change) {
+                req(values$gene1)
+                req(values$gene2)
+            }
             fig <- plotly::ggplotly(mc2d_plot_ggp(dataset(), metacell_types = metacell_types(), cell_type_colors = cell_type_colors(), point_size = input$point_size, stroke = input$stroke, min_d = input$min_edge_size, highlight = highlight), tooltip = "tooltip_text", source = source)
             if (show_selected_metacells) {
                 fig <- fig %>% plotly::hide_legend()

@@ -593,7 +593,8 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         cell_type_colors,
         source = "proj_annot_plot",
         buttons = c("hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"),
-        dragmode = "select"
+        dragmode = "select",
+        refresh_on_gene_change = TRUE
     )
 
 
