@@ -300,6 +300,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         files_data$cell_types <- NULL
     })
 
+    # export metacell types file
     output$metacell_types_download <- downloadHandler(
         filename = function() {
             paste("metacell_types-", Sys.Date(), ".csv", sep = "")
@@ -313,6 +314,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         }
     )
 
+    # export cell type colors file
     output$cell_type_colors_download <- downloadHandler(
         filename = function() {
             paste("cell_type_colors-", Sys.Date(), ".csv", sep = "")
@@ -326,13 +328,17 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         }
     )
 
+    # set reactive values
     selected_metacell_types <- reactiveVal(tibble(metacell = character(), cell_type_id = character(), cell_type = character()))
     to_show <- reactiveVal()
+    # keep the last cell type that was chosen in order for it to be defaulty selected
+    last_chosen_cell_type <- reactiveVal("(Missing)")
 
     observeEvent(input$reset_metacell_types, {
         metacell_types(get_mc_data(dataset(), "metacell_types"))
         selected_metacell_types(tibble(metacell = character(), cell_type_id = character(), cell_type = character()))
         to_show(NULL)
+        last_chosen_cell_type("(Missing)")
     })
 
     observeEvent(input$reset_cell_type_colors, {
@@ -368,7 +374,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         req(input$update_option)
         req(nrow(selected_metacell_types()) > 0)
         req(input$update_option == "Change all")
-        shinyWidgets::pickerInput(ns("selected_cell_type_update_all"), "Cell type", choices = c("(Missing)", cell_type_colors() %>% pull(cell_type) %>% as.character() %>% unique() %>% sort()), multiple = FALSE, selected = "(Missing)")
+        shinyWidgets::pickerInput(ns("selected_cell_type_update_all"), "Cell type", choices = c("(Missing)", cell_type_colors() %>% pull(cell_type) %>% as.character() %>% unique() %>% sort()), multiple = FALSE, selected = last_chosen_cell_type())
     })
 
 
@@ -389,6 +395,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
                 cell_type_id = ifelse(metacell %in% metacells, cell_type_to_cell_type_id(input$selected_cell_type_update_all, cell_type_colors()), cell_type_id)
             )
             selected_metacell_types(new_selected_annot)
+            last_chosen_cell_type(input$selected_cell_type_update_all)
             changed <- TRUE
         } else {
             for (i in 1:nrow(new_metacell_types)) {
