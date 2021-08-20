@@ -21,6 +21,7 @@ app_server <- function(input, output, session) {
     callModule(mod_gene_mc_server, "gene_mc_ui_1", dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors)
     callModule(mod_mc_mc_server, "mc_mc_ui_1", dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors)
     callModule(mod_annotate_mc_server, "annotate_ui_1", dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors)
+    callModule(mod_metadata_server, "metadata_ui_1", dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors)
 
     show_help <- function(input, output, session) {
         if (input$tab_sidebar == "about") {
@@ -61,6 +62,16 @@ app_server <- function(input, output, session) {
                     "nextLabel" = "next",
                     "prevLabel" = "back",
                     steps = get_tab_steps("metacells", "annotate_ui_1")
+                )
+            )
+        } else if (input$tab_sidebar == "metadata") {
+            rintrojs::introjs(session,
+                options = list(
+                    "showProgress" = TRUE,
+                    "showBullets" = FALSE,
+                    "nextLabel" = "next",
+                    "prevLabel" = "back",
+                    steps = get_tab_steps("metadata", "metadata_ui_1")
                 )
             )
         }

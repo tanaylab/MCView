@@ -134,6 +134,20 @@ has_time <- function(dataset) {
     !is.null(get_mc_data(dataset, "time_annot"))
 }
 
+has_metadata <- function(dataset){
+    !is.null(get_mc_data(dataset, "metadata"))
+}
+
+dataset_metadata_fields <- function(dataset){
+    metadata <- get_mc_data(dataset, "metadata")
+    if (is.null(metadata)) {
+        return(c())
+    }
+    fields <- colnames(metadata)
+    fields <- fields[fields != "metacell"]
+    return(fields)
+}
+
 get_metacell_ids <- function(project, dataset) {
     qs::qread(fs::path(project_cache_dir(project), dataset, "mc2d.qs"))$mc_id
 }
