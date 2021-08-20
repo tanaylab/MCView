@@ -31,6 +31,7 @@ mod_manifold_ui <- function(id) {
                         uiOutput(ns("expr_range_ui")),
                         uiOutput(ns("enrich_range_ui")),
                         uiOutput(ns("point_size_ui")),
+                        uiOutput(ns("stroke_ui")),
                         uiOutput(ns("edge_distance_ui"))
                     ),
                     shinycssloaders::withSpinner(
@@ -105,6 +106,10 @@ mod_manifold_server <- function(input, output, session, dataset, metacell_types,
     # Point size selector
     output$point_size_ui <- renderUI({
         numericInput(ns("point_size"), label = "Point size", value = initial_proj_point_size(dataset()), min = 0.1, max = 3, step = 0.1)
+    })
+
+    output$stroke_ui <- renderUI({
+        numericInput(ns("stroke"), label = "Stroke width", value = initial_proj_stroke(dataset()), min = 0, max = 3, step = 0.01)
     })
 
     # Minimal edge length selector

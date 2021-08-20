@@ -86,6 +86,8 @@ import_dataset_metacell1 <- function(project,
     mc_mat <- tgs_matrix_tapply(mat@mat[, names(mc@mc)], mc@mc, sum, na.rm = TRUE) %>% t()
     serialize_shiny_data(mc_mat, "mc_mat", dataset = dataset, cache_dir = cache_dir)
 
+    metacells <- colnames(mc_mat)
+
     mc_sum <- colSums(mc_mat)
     serialize_shiny_data(mc_sum, "mc_sum", dataset = dataset, cache_dir = cache_dir)
 
@@ -130,7 +132,7 @@ import_dataset_metacell1 <- function(project,
     serialize_shiny_data(marker_genes, "marker_genes", dataset = dataset, cache_dir = cache_dir)
 
     cli_alert_info("Loading metacell type annotations from {.file {metacell_types_file}}")
-    metacell_types <- parse_metacell_types(metacell_types_file)
+    metacell_types <- parse_metacell_types(metacell_types_file, metacells)
 
 
     cli_alert_info("Loading cell type color annotations from {.file {cell_type_colors_file}}")

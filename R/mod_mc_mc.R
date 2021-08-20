@@ -80,7 +80,8 @@ mod_mc_mc_sidebar_ui <- function(id) {
             div(
                 id = ns("sidebar_select"),
                 uiOutput(ns("metacell1_select")),
-                uiOutput(ns("metacell2_select"))
+                uiOutput(ns("metacell2_select")),
+                shinyWidgets::actionGroupButtons(ns("switch_metacells"), labels = c("Switch"), size = "sm")
             )
         )
     )
@@ -99,17 +100,30 @@ mod_mc_mc_server <- function(input, output, session, dataset, metacell_types, ce
 
     output$metacell1_select <- renderUI({
         req(dataset())
-        selectizeInput(ns("metacell1"), "Metacell A", choices = metacell_names(), multiple = FALSE, selected = config$selected_mc1, options = list(maxOptions = 1e4))
+        shinyWidgets::pickerInput(ns("metacell1"), "Metacell A",
+            choices = metacell_names(),
+            selected = config$selected_mc1, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
+        )
     })
 
     output$metacell2_select <- renderUI({
         req(dataset())
-        selectizeInput(ns("metacell2"), "Metacell B", choices = metacell_names(), multiple = FALSE, selected = config$selected_mc2, options = list(maxOptions = 1e4))
+        shinyWidgets::pickerInput(ns("metacell2"), "Metacell B",
+            choices = metacell_names(),
+            selected = config$selected_mc2, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
+        )
     })
 
 
     mc_mc_gene_scatter_df <- reactive({
         calc_mc_mc_gene_df(dataset(), input$metacell1, input$metacell2)
+    })
+
+    observeEvent(input$switch_metacells, {
+        mc1 <- input$metacell1
+        mc2 <- input$metacell2
+        updateSelectInput(session, "metacell1", selected = mc2)
+        updateSelectInput(session, "metacell2", selected = mc1)
     })
 
     # MC/MC plots
@@ -155,8 +169,16 @@ mod_mc_mc_server <- function(input, output, session, dataset, metacell_types, ce
     output$plot_mc_proj_2d <- plotly::renderPlotly({
         req(input$point_size)
         req(input$min_edge_size)
+        req(input$metacell1)
+        req(input$metacell2)
 
-        p_proj <- mc2d_plot_ggp(dataset(), metacell_types = metacell_types(), cell_type_colors = cell_type_colors(), point_size = input$point_size, min_d = input$min_edge_size)
+        highlight <- tibble::tibble(
+            metacell = c(input$metacell1, input$metacell2),
+            label = c("metacell1", "metacell2"),
+            color = c("darkred", "darkblue")
+        )
+
+        p_proj <- mc2d_plot_ggp(dataset(), metacell_types = metacell_types(), cell_type_colors = cell_type_colors(), point_size = input$point_size, min_d = input$min_edge_size, highlight = highlight)
 
         if (has_time(dataset())) {
             subfig <- plotly::subplot(

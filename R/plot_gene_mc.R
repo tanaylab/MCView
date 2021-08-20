@@ -6,7 +6,7 @@
 #'
 #'
 #' @noRd
-plot_gg_over_mc <- function(dataset, g1, g2, metacell_types = get_mc_data(dataset, "metacell_types"), cell_type_colors = get_mc_data(dataset, "cell_type_colors"), plot_text = TRUE) {
+plot_gg_over_mc <- function(dataset, g1, g2, metacell_types = get_mc_data(dataset, "metacell_types"), cell_type_colors = get_mc_data(dataset, "cell_type_colors"), plot_text = TRUE, point_size = initial_scatters_point_size(dataset), stroke = initial_scatters_stroke(dataset)) {
     egc_g1 <- get_gene_egc(g1, dataset) + egc_epsilon
     egc_g2 <- get_gene_egc(g2, dataset) + egc_epsilon
 
@@ -53,7 +53,7 @@ plot_gg_over_mc <- function(dataset, g1, g2, metacell_types = get_mc_data(datase
         )
 
     p <- ggplot(data = df, aes(x = !!sym(g1), y = !!sym(g2), fill = `Cell type`, label = metacell, customdata = metacell, tooltip_text = Metacell)) +
-        geom_point(size = 2.5, shape = 21) +
+        geom_point(size = point_size, shape = 21, stroke = stroke) +
         scale_x_continuous(limits = c(xylims[xmin], xylims[xmax]), trans = "log2", breaks = xylims[xmin:xmax], labels = scales::scientific(xylims[xmin:xmax])) +
         scale_y_continuous(limits = c(xylims[ymin], xylims[ymax]), trans = "log2", breaks = xylims[ymin:ymax], labels = scales::scientific(xylims[ymin:ymax])) +
         scale_fill_manual(values = col_to_ct) +
@@ -74,7 +74,7 @@ plot_gg_over_mc <- function(dataset, g1, g2, metacell_types = get_mc_data(datase
 #' @param gene name of the gene
 #'
 #' @noRd
-plot_gene_time_over_mc <- function(dataset, gene, metacell_types = get_mc_data(dataset, "metacell_types"), cell_type_colors = get_mc_data(dataset, "cell_type_colors")) {
+plot_gene_time_over_mc <- function(dataset, gene, metacell_types = get_mc_data(dataset, "metacell_types"), cell_type_colors = get_mc_data(dataset, "cell_type_colors"), point_size = initial_scatters_point_size(dataset), stroke = initial_scatters_stroke(dataset), plot_text = TRUE) {
     egc_gene <- get_gene_egc(gene, dataset) + egc_epsilon
 
     df <- metacell_types %>%
@@ -114,14 +114,17 @@ plot_gene_time_over_mc <- function(dataset, gene, metacell_types = get_mc_data(d
         )
 
     p <- ggplot(data = df, aes(x = `Age`, y = !!sym(gene), fill = `Cell type`, label = metacell, customdata = metacell, tooltip_text = Metacell)) +
-        geom_point(size = 2.5, shape = 21, stroke = 0.1) +
+        geom_point(size = point_size, shape = 21, stroke = stroke) +
         scale_x_continuous(limits = c(xmin, xmax)) +
         scale_y_continuous(limits = c(ylims[ymin], ylims[ymax]), trans = "log2", breaks = ylims[ymin:ymax], labels = scales::scientific(ylims[ymin:ymax])) +
-        geom_text(size = 1, color = "black") +
         scale_fill_manual(values = col_to_ct) +
         xlab("Metacell age (E[t])") +
         ylab(glue("{gene} Expression")) +
         guides(color = "none")
+
+    if (plot_text) {
+        p <- p + geom_text(size = 1, color = "black")
+    }
 
     return(p)
 }
@@ -139,4 +142,19 @@ connect_gene_plots <- function(input, output, session, ns, source) {
         plotly::plotlyProxyInvoke(plot_gene_age_mc1_proxy, "restyle", restyle_events[[1]], restyle_events[[2]])
         plotly::plotlyProxyInvoke(plot_gene_age_mc2_proxy, "restyle", restyle_events[[1]], restyle_events[[2]])
     })
+}
+
+# TODO: find a better heuristic that takes into account the plot size
+initial_scatters_point_size <- function(dataset) {
+    if (!is.null(config$datasets[[dataset]]$scatters_point_size)) {
+        return(config$datasets[[dataset]]$scatters_point_size)
+    }
+    return(2.5)
+}
+
+initial_scatters_stroke <- function(dataset) {
+    if (!is.null(config$datasets[[dataset]]$scatters_stroke)) {
+        return(config$datasets[[dataset]]$scatters_stroke)
+    }
+    return(0.2)
 }

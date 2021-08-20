@@ -110,6 +110,9 @@ create_project <- function(project, project_dir = NULL) {
 #' @export
 create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overwrite = FALSE) {
     bundle_dir <- fs::path(path, name)
+    if (!(fs::dir_exists(project))) {
+        cli::cli_abort("{.path {project}} does not exists.")
+    }
     if (fs::dir_exists(bundle_dir)) {
         if (overwrite) {
             fs::dir_delete(bundle_dir)

@@ -1,68 +1,77 @@
 Package: MCView
 Title: A Shiny App for Metacell Analysis
-Version: 0.1.9000
+Version: 0.2.1
 Authors@R: 
-    c(person(given = "Aviezer",
+    person(given = "Aviezer",
            family = "Lifshitz",
            role = c("aut", "cre"),
            email = "aviezer.lifshitz@weizmann.ac.il")
-    )    
-Description: A shiny app for metacell analysis
+Description: MCView creates a shiny-app facilitating interactive
+    exploration and annotation of metacell models. Metacell itself is
+    described
+    [here](https://github.com/tanaylab/metacells/blob/master/vignettes/Metacells_Vignette.ipynb).
+    You can also explore examples of MCV output for
+    [PBMC](https://tanaylab.weizmann.ac.il/MCV/PBMC) and [Mouse
+    organogenesis](https://tanaylab.weizmann.ac.il/MCV/MOCA) on the Tanay
+    group server.
 License: MIT + file LICENSE
+URL: https://tanaylab.github.io/MCView, https://github.com/tanaylab/MCView
+BugReports: https://github.com/tanaylab/MCView/issues
+Depends: 
+    R (>= 3.5)
 Imports: 
-    config,
-    golem,
-    shiny (>= 1.6.0),
-    processx,
+    anndata,
     attempt,
+    chameleon,
     cli,
-    DT,
-    glue,
-    htmltools,
-    dplyr,
-    ggplot2,
-    purrr,
-    tgutil (>= 0.1.6),
-    tgstat,
-    plotly (>= 4.9.3),    
-    shinydashboard,
-    shinydashboardPlus (>= 2.0.0),
-    shinycssloaders,
-    tibble,
-    tidyr,
-    rlang,
+    colourpicker,
+    config,
     cowplot,
-    shinyWidgets,
+    dplyr,
+    DT,
+    forcats,
     fs,
-    promises,
+    furrr,
     future,
     ggnewscale,
-    shinyEffects,
+    ggplot2,
     ggrepel,
-    yaml,
-    pkgload,
-    viridis,
-    qs,
-    forcats,
-    rintrojs,
+    glue,
+    golem,
+    htmltools,
     markdown,
-    rmarkdown,
-    colourpicker,
-    anndata,
     matrixStats,
+    pkgload,
+    plotly (>= 4.9.3),
+    processx,
+    promises,
+    purrr,
+    qs,
+    rintrojs,
+    rlang,
+    rmarkdown,
+    shiny (>= 1.6.0),
+    shinycssloaders,
+    shinydashboard,
+    shinydashboardPlus (>= 2.0.0),
+    shinyEffects,
+    shinyWidgets,
     tglkmeans,
-    chameleon,
-    furrr
+    tgstat,
+    tgutil (>= 0.1.6),
+    tibble,
+    tidyr,
+    viridis,
+    yaml
+Suggests: 
+    knitr,
+    R.utils,
+    testthat
+VignetteBuilder: 
+    knitr
+Remotes: 
+    tanaylab/tglkmeans,
+    tanaylab/tgutil
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.1.1
-Suggests: 
-    testthat,
-    knitr,
-    R.utils
-Depends: 
-    R (>= 3.5)
-Remotes: 
-    tanaylab/tgutil,
-    tanaylab/tglkmeans
-VignetteBuilder: knitr
