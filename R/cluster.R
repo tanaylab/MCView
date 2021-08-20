@@ -4,7 +4,7 @@ cluster_egc <- function(egc, k = NULL, filter_genes = FALSE, min_max_thresh = 3,
     if (filter_genes) {
         gmax <- matrixStats::rowMaxs(legc, na.rm = TRUE)
         gmin <- matrixStats::rowMins(legc, na.rm = TRUE)
-        f <- (gmax - gmin) >= min_max_thresh & gmax >= -12
+        f <- (gmax - gmin) >= min_max_thresh & gmax >= min_gene_expr
         m <- legc[f, ]
     } else {
         m <- legc
@@ -13,7 +13,7 @@ cluster_egc <- function(egc, k = NULL, filter_genes = FALSE, min_max_thresh = 3,
     cli_alert_info("using {nrow(m)} genes")
 
     if (is.null(k)) {
-        k <- round(min(64, ncol(legc) / 30))
+        k <- round(max(5, min(64, ncol(legc) / 30)))
     }
 
     cli_alert_info("clustering k = {.val {k}}")

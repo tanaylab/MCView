@@ -25,11 +25,13 @@ mod_annotate_mc_ui <- function(id) {
                         startOpen = FALSE,
                         width = 25,
                         id = ns("gene_projection_sidebar"),
+                        checkboxInput(ns("show_selected_metacells"), "Show selected metacells", value = FALSE),
                         selectInput(ns("proj_stat"), label = "Statistic", choices = c("Expression" = "expression", "Enrichment" = "enrichment"), selected = "Expression", multiple = FALSE, selectize = FALSE),
                         uiOutput(ns("set_range_ui")),
                         uiOutput(ns("expr_range_ui")),
                         uiOutput(ns("enrich_range_ui")),
                         uiOutput(ns("point_size_ui")),
+                        uiOutput(ns("stroke_ui")),
                         uiOutput(ns("edge_distance_ui"))
                     ),
                     shinycssloaders::withSpinner(
@@ -57,6 +59,13 @@ mod_annotate_mc_ui <- function(id) {
                             collapsible = TRUE,
                             closable = FALSE,
                             width = 12,
+                            sidebar = shinydashboardPlus::boxSidebar(
+                                startOpen = FALSE,
+                                width = 25,
+                                id = ns("gene_gene_sidebar"),
+                                uiOutput(ns("gene_gene_point_size_ui")),
+                                uiOutput(ns("gene_gene_stroke_ui"))
+                            ),
                             shinycssloaders::withSpinner(
                                 plotly::plotlyOutput(ns("plot_gene_gene_mc"))
                             )
@@ -110,7 +119,6 @@ mod_annotate_mc_ui <- function(id) {
                         actionButton(ns("reset_metacell_types"), "Reset", style = "align-items: center;"),
                         downloadButton(ns("metacell_types_download"), "Export", style = "align-items: center;")
                     ),
-                    shinyWidgets::prettySwitch(inputId = ns("show_all_annotation"), value = FALSE, label = "All metacells"),
                     uiOutput(ns("annotation_box")),
                     uiOutput(ns("update_all_selectors")),
                     shinycssloaders::withSpinner(
@@ -121,7 +129,7 @@ mod_annotate_mc_ui <- function(id) {
             column(
                 width = 4,
                 shinydashboardPlus::box(
-                    id = ns("cell_type_colorsation"),
+                    id = ns("cell_type_colors"),
                     title = "Cell Types",
                     status = "primary",
                     solidHeader = TRUE,
@@ -144,8 +152,8 @@ mod_annotate_mc_ui <- function(id) {
                         ),
                         actionButton(ns("reset_cell_type_colors"), "Reset", style = "align-items: center;"),
                         downloadButton(ns("cell_type_colors_download"), "Export", style = "align-items: center;"),
-                        actionButton(ns("delete_cell_type_colorsation"), "Delete"),
-                        actionButton(ns("add_cell_type_colorsation"), "Add")
+                        actionButton(ns("delete_cell_type_colors"), "Delete"),
+                        actionButton(ns("add_cell_type_colors"), "Add")
                     ),
                     uiOutput(ns("annot_color_picker")),
                     shinycssloaders::withSpinner(
@@ -205,10 +213,44 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         cell_type_colors(initial_cell_type_colors)
     })
 
-    # load metacell types file
+    files_data <- reactiveValues(metacell_types = NULL, cell_types = NULL)
+
     observe({
         req(input$metacell_types_fn)
         new_metacell_types <- tgutil::fread(input$metacell_types_fn$datapath, colClasses = c("cell_type_id" = "character", "cell_type" = "character", "metacell" = "character")) %>% as_tibble()
+
+        input_ok <- TRUE
+        required_fields <- c("cell_type_id", "cell_type", "metacell")
+        if (!all(required_fields %in% colnames(new_metacell_types))) {
+            showNotification(glue("Please provide a file with the following fields: cell_type_id, cell_type, metacell"), type = "error")
+            input_ok <- FALSE
+        }
+
+        metacells <- get_metacell_ids(project, dataset())
+
+        unknown_metacells <- new_metacell_types$metacell[!(new_metacell_types$metacell %in% metacells)]
+        if (length(unknown_metacells) > 0) {
+            mcs <- paste(unknown_metacells, collapse = ", ")
+            showNotification(glue("Metacell types contains metacells that are missing from the data: {mcs}"), type = "error")
+            input_ok <- FALSE
+        }
+
+        missing_metacells <- metacells[!(metacells %in% new_metacell_types$metacell)]
+        if (length(missing_metacells) > 0) {
+            mcs <- paste(missing_metacells, collapse = ", ")
+            showNotification(glue("Some metacells are missing from metacell types: {mcs}"), type = "warning")
+        }
+
+        if (input_ok) {
+            files_data$metacell_types <- new_metacell_types
+        }
+    })
+
+    # load metacell types file
+    observe({
+        req(files_data$metacell_types)
+
+        new_metacell_types <- files_data$metacell_types
 
         cur_metacell_types <- metacell_types()
         new_metacell_types <- cur_metacell_types %>%
@@ -219,12 +261,32 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         new_metacell_types <- sanitize_metacell_types(new_metacell_types, cell_type_colors(), dataset())
 
         metacell_types(new_metacell_types)
+
+        files_data$metacell_types <- NULL
     })
 
-    # load metacell colors
+    # load cell type colors
     observe({
         req(input$cell_type_colors_fn)
         new_cell_type_colors <- tgutil::fread(input$cell_type_colors_fn$datapath, colClasses = c("cell_type_id" = "character", "cell_type" = "character", "color" = "character")) %>% as_tibble()
+
+        input_ok <- TRUE
+        required_fields <- c("cell_type_id", "cell_type", "color")
+        if (!all(required_fields %in% colnames(new_cell_type_colors))) {
+            showNotification(glue("Please provide a file with the following fields: cell_type_id, cell_type, color"), type = "error")
+            input_ok <- FALSE
+        }
+
+        req(input_ok)
+
+        files_data$cell_types <- new_cell_type_colors
+    })
+
+
+    observe({
+        req(files_data$cell_types)
+
+        new_cell_type_colors <- files_data$cell_types
 
         if ("order" %in% colnames(new_cell_type_colors)) {
             new_cell_type_colors <- new_cell_type_colors %>% arrange(order)
@@ -234,8 +296,11 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         }
 
         cell_type_colors(new_cell_type_colors)
+
+        files_data$cell_types <- NULL
     })
 
+    # export metacell types file
     output$metacell_types_download <- downloadHandler(
         filename = function() {
             paste("metacell_types-", Sys.Date(), ".csv", sep = "")
@@ -249,6 +314,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         }
     )
 
+    # export cell type colors file
     output$cell_type_colors_download <- downloadHandler(
         filename = function() {
             paste("cell_type_colors-", Sys.Date(), ".csv", sep = "")
@@ -262,13 +328,17 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         }
     )
 
+    # set reactive values
     selected_metacell_types <- reactiveVal(tibble(metacell = character(), cell_type_id = character(), cell_type = character()))
     to_show <- reactiveVal()
+    # keep the last cell type that was chosen in order for it to be defaulty selected
+    last_chosen_cell_type <- reactiveVal("(Missing)")
 
     observeEvent(input$reset_metacell_types, {
         metacell_types(get_mc_data(dataset(), "metacell_types"))
         selected_metacell_types(tibble(metacell = character(), cell_type_id = character(), cell_type = character()))
         to_show(NULL)
+        last_chosen_cell_type("(Missing)")
     })
 
     observeEvent(input$reset_cell_type_colors, {
@@ -277,48 +347,42 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
 
 
     output$annotation_box <- renderUI({
-        if (!input$show_all_annotation) {
-            if (nrow(selected_metacell_types()) == 0) {
-                print("Please select metacells")
-            } else {
-                list(
-                    actionButton(ns("update_annotation"), "Apply"),
-                    actionButton(ns("reset_annotation"), "Reset Selection"),
-                    shinyWidgets::radioGroupButtons(
-                        inputId = ns("update_option"),
-                        label = "",
-                        choices = c(
-                            "Change all",
-                            "Change one by one"
-                        ),
-                        justified = TRUE
-                    )
-                )
-            }
+        if (nrow(selected_metacell_types()) == 0) {
+            textOutput(ns("please_select_metacells"))
         } else {
             list(
-                uiOutput(ns("cell_type_select")),
-                actionButton(ns("update_annotation"), "Apply")
+                textOutput(ns("number_of_selected_metacells")),
+                actionButton(ns("update_annotation"), "Apply"),
+                actionButton(ns("reset_annotation"), "Reset Selection"),
+                shinyWidgets::radioGroupButtons(
+                    inputId = ns("update_option"),
+                    label = "",
+                    choices = c(
+                        "Change all",
+                        "Change one by one"
+                    ),
+                    justified = TRUE
+                )
             )
         }
     })
 
+    output$number_of_selected_metacells <- renderPrint(glue("Selected {nrow(selected_metacell_types())} metacells"))
+    output$please_select_metacells <- renderPrint(glue("Please select metacells"))
+
     output$update_all_selectors <- renderUI({
         req(input$update_option)
-        if (!input$show_all_annotation && input$update_option == "Change all") {
-            selectizeInput(ns("selected_cell_type_update_all"), "Cell type", choices = c("(Missing)", cell_type_colors() %>% pull(cell_type) %>% as.character() %>% unique() %>% sort()), multiple = FALSE, selected = "(Missing)")
-        }
+        req(nrow(selected_metacell_types()) > 0)
+        req(input$update_option == "Change all")
+        shinyWidgets::pickerInput(ns("selected_cell_type_update_all"), "Cell type", choices = c("(Missing)", cell_type_colors() %>% pull(cell_type) %>% as.character() %>% unique() %>% sort()), multiple = FALSE, selected = last_chosen_cell_type())
     })
 
-    output$cell_type_select <- renderUI({
-        selectizeInput(ns("selected_cell_type"), "Show cell type", choices = c("All", "(Missing)", cell_type_colors() %>% pull(cell_type) %>% as.character() %>% unique() %>% sort()), multiple = FALSE, selected = "(Missing)")
-    })
 
     observeEvent(input$update_annotation, {
         new_metacell_types <- metacell_types()
         changed <- FALSE
 
-        if (!input$show_all_annotation && !is.null(input$update_option) && input$update_option == "Change all") {
+        if (!is.null(input$update_option) && input$update_option == "Change all") {
             req(input$selected_cell_type_update_all)
             metacells <- selected_metacell_types() %>% pull(metacell)
             new_metacell_types <- new_metacell_types %>% mutate(
@@ -331,6 +395,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
                 cell_type_id = ifelse(metacell %in% metacells, cell_type_to_cell_type_id(input$selected_cell_type_update_all, cell_type_colors()), cell_type_id)
             )
             selected_metacell_types(new_selected_annot)
+            last_chosen_cell_type(input$selected_cell_type_update_all)
             changed <- TRUE
         } else {
             for (i in 1:nrow(new_metacell_types)) {
@@ -351,22 +416,22 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
 
     observeEvent(input$reset_annotation, {
         selected_metacell_types(tibble(metacell = character(), cell_type_id = character(), cell_type = character()))
+        to_show(NULL)
     })
 
 
     observe({
-        if (input$show_all_annotation) {
-            req(metacell_types)
-            req(input$selected_cell_type)
-            to_show_new <- metacell_types() %>% select(metacell, cell_type)
-            if (input$selected_cell_type != "All") {
-                to_show_new <- to_show_new %>% filter(cell_type == input$selected_cell_type)
-            }
-        } else {
-            to_show_new <- selected_metacell_types() %>% select(metacell, cell_type)
+        req(metacell_types)
+        if (nrow(selected_metacell_types()) == 0) {
+            to_show(NULL)
         }
 
-        if (input$show_all_annotation || (!is.null(input$update_option) && input$update_option != "Change all")) {
+        req(nrow(selected_metacell_types()) != 0)
+        to_show_new <- metacell_types() %>%
+            select(metacell, cell_type) %>%
+            filter(metacell %in% selected_metacell_types()$metacell)
+
+        if ((!is.null(input$update_option) && input$update_option != "Change all")) {
             to_show_new <- dt_selector_column(
                 to_show_new,
                 "select_type",
@@ -386,7 +451,8 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         filter = "top",
         options = list(
             dom = "t",
-            paging = FALSE
+            paging = FALSE,
+            language = list(emptyTable = "Please select metacells")
         ),
         callback = DT::JS("table.rows().every(function(i, tab, row) {
                         var $this = $(this.node());
@@ -422,17 +488,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         new_input <- input$cell_type_table_cell_edit %>% mutate(col = col + 1)
         edited_data <- DT::editData(cell_type_colors(), new_input, "cell_type_table")
 
-        # Should we reorder or is it annoying?
-        # if (!is.numeric(edited_data$order)){
-        #     edited_data <- edited_data %>% mutate(order = 1:n())
-        # }
-
-        # edited_data <- edited_data %>%
-        #     arrange(order) %>%
-        #     distinct(cell_type, .keep_all=TRUE) %>%
-        #     mutate(order = 1:n())
-
-        # change corresponding metacell_typeentries
+        # change corresponding metacell_type entries
         if (new_input$col == 1) {
             old_cell_type <- as.character(cell_type_colors()$cell_type[new_input$row])
             new_cell_type <- as.character(edited_data$cell_type[new_input$row])
@@ -445,7 +501,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         DT::replaceData(cell_type_table_proxy, cell_type_colors(), resetPaging = FALSE)
     })
 
-    observeEvent(input$delete_cell_type_colorsation, {
+    observeEvent(input$delete_cell_type_colors, {
         rows <- input$cell_type_table_rows_selected
 
         if (!is.null(rows) && length(rows) > 0) {
@@ -461,7 +517,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         }
     })
 
-    observeEvent(input$add_cell_type_colorsation, {
+    observeEvent(input$add_cell_type_colors, {
         rows <- input$cell_type_table_rows_selected
         if (!is.null(rows) && length(rows) > 0) {
             place <- rows[1] + 1
@@ -486,11 +542,16 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
     })
 
     output$annot_color_picker <- renderUI({
-        req(input$cell_type_table_rows_selected)
         fluidRow(
             column(6, actionButton(ns("submit_new_color"), "Change color")),
             column(6, colourpicker::colourInput(ns("selected_new_color"), NULL, "black"))
         )
+    })
+
+    observe({
+        req(input$cell_type_table_rows_selected)
+        row <- tail(input$cell_type_table_rows_selected, n = 1)
+        colourpicker::updateColourInput(session, "selected_new_color", value = cell_type_colors()$color[row])
     })
 
     observeEvent(input$submit_new_color, {
@@ -502,10 +563,10 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
 
 
     # Select metacell when clicking on it
-    observe_mc_click_event("proj_annot_plot", input, cell_type_colors, metacell_types)
-    observe_mc_click_event("gene_gene_plot_annot", input, cell_type_colors, metacell_types)
-    observe_mc_click_event("gene_time_mc_plot1_annot", input, cell_type_colors, metacell_types)
-    observe_mc_click_event("gene_time_mc_plot2_annot", input, cell_type_colors, metacell_types)
+    observe_mc_click_event("proj_annot_plot", input, session, cell_type_colors, metacell_types, selected_metacell_types)
+    observe_mc_click_event("gene_gene_plot_annot", input, session, cell_type_colors, metacell_types, selected_metacell_types)
+    observe_mc_click_event("gene_time_mc_plot1_annot", input, session, cell_type_colors, metacell_types, selected_metacell_types)
+    observe_mc_click_event("gene_time_mc_plot2_annot", input, session, cell_type_colors, metacell_types, selected_metacell_types)
 
     # Select multiple metacells
     observer_mc_select_event("proj_annot_plot", input, cell_type_colors, metacell_types, selected_metacell_types)
@@ -537,9 +598,21 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         shinyWidgets::numericRangeInput(ns("lfp"), "Enrichment range", c(-3, 3), width = "80%", separator = " to ")
     })
 
-    # Point size selector
+    # Point size selectors
     output$point_size_ui <- renderUI({
         numericInput(ns("point_size"), label = "Point size", value = initial_proj_point_size(dataset()), min = 0.1, max = 3, step = 0.1)
+    })
+
+    output$gene_gene_point_size_ui <- renderUI({
+        numericInput(ns("gene_gene_point_size"), label = "Point size", value = initial_scatters_point_size(dataset()), min = 0.05, max = 3, step = 0.1)
+    })
+
+    output$gene_gene_stroke_ui <- renderUI({
+        numericInput(ns("gene_gene_stroke"), label = "Stroke width", value = initial_scatters_stroke(dataset()), min = 0, max = 3, step = 0.01)
+    })
+
+    output$stroke_ui <- renderUI({
+        numericInput(ns("stroke"), label = "Stroke width", value = initial_proj_stroke(dataset()), min = 0, max = 3, step = 0.01)
     })
 
     # Minimal edge length selector
@@ -547,7 +620,19 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         sliderInput(ns("min_edge_size"), label = "Min edge length", min = 0, max = 0.3, value = min_edge_length(dataset()), step = 0.001)
     })
     # Projection plots
-    output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, values, metacell_types, cell_type_colors, source = "proj_annot_plot", buttons = c("hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = "select")
+    output$plot_gene_proj_2d <- render_2d_plotly(
+        input,
+        output,
+        session,
+        dataset,
+        values,
+        metacell_types,
+        cell_type_colors,
+        source = "proj_annot_plot",
+        buttons = c("hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"),
+        dragmode = "select",
+        refresh_on_gene_change = TRUE
+    )
 
 
     output$plot_gene_gene_mc <- plotly::renderPlotly({
@@ -555,8 +640,9 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         req(values$gene2)
         req(metacell_types())
         req(dataset())
+        req(input$gene_gene_point_size)
 
-        p_gg <- plotly::ggplotly(plot_gg_over_mc(dataset(), values$gene1, values$gene2, metacell_types = metacell_types(), cell_type_colors = cell_type_colors(), plot_text = FALSE), tooltip = "tooltip_text", source = "gene_gene_plot_annot") %>%
+        p_gg <- plotly::ggplotly(plot_gg_over_mc(dataset(), values$gene1, values$gene2, metacell_types = metacell_types(), cell_type_colors = cell_type_colors(), point_size = input$gene_gene_point_size, stroke = input$gene_gene_stroke, plot_text = FALSE), tooltip = "tooltip_text", source = "gene_gene_plot_annot") %>%
             sanitize_for_WebGL() %>%
             plotly::toWebGL() %>%
             sanitize_plotly_buttons(buttons = c("hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines")) %>%
@@ -680,17 +766,16 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
 }
 
 
-observe_mc_click_event <- function(source, input, cell_type_colors, metacell_types) {
+observe_mc_click_event <- function(source, input, session, cell_type_colors, metacell_types, selected_metacell_types) {
     observeEvent(plotly::event_data("plotly_click", source = source), {
         el <- plotly::event_data("plotly_click", source = source)
 
         selected_metacell <- el$customdata
 
-        if (input$show_all_annotation && input$selected_cell_type %in% cell_type_colors()$cell_type) {
-            new_metacell_types <- metacell_types() %>% mutate(cell_type = ifelse(metacell == selected_metacell, input$selected_cell_type, cell_type))
-            metacell_types(new_metacell_types)
-            showNotification(glue("Added metacell #{selected_metacell} to {input$selected_cell_type}"))
-        }
+        new_selected_annot <- metacell_types() %>% filter(metacell == selected_metacell)
+        selected_metacell_types(new_selected_annot)
+
+        shinyWidgets::updatePickerInput(session, "metacell1", selected = selected_metacell)
     })
 }
 

@@ -297,6 +297,9 @@ col_1 <- function(...) {
 #' @importFrom markdown markdownToHTML
 #' @importFrom htmltools HTML
 includeRMarkdown <- function(path) {
+    if (!rmarkdown::pandoc_available()) {
+        return(NULL)
+    }
     md <- tempfile(fileext = ".md")
     on.exit(unlink(md), add = TRUE)
     rmarkdown::render(

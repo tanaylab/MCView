@@ -65,3 +65,37 @@ then runs \code{cell_metadata_to_metacell}.
 \item \code{cell_metadata_to_metacell_from_h5ad}: 
 }}
 
+\examples{
+set.seed(60427)
+n_cells <- 5e6
+cell_metadata <- tibble(
+    cell_id = 1:n_cells,
+    md1 = sample(1:5, size = n_cells, replace = TRUE),
+    md2 = rnorm(n = n_cells)
+)
+cell_To_metacell <- tibble(
+    cell_id = 1:n_cells,
+    metacell = sample(0:1535, size = n_cells, replace = TRUE)
+)
+metadata <- cell_metadata_to_metacell(cell_metadata, cell_To_metacell)
+head(metadata)
+
+metadata1 <- cell_metadata_to_metacell(cell_metadata, cell_To_metacell, func=function(x) x * 2)
+head(metadata1)
+
+cell_metadata_categorical <- tibble(
+   cell_id = 1:n_cells,
+   md1 = sample(paste0("batch", 1:5), size = n_cells, replace = TRUE)
+)
+
+metadata3 <- cell_metadata_to_metacell(cell_metadata_categorical, cell_To_metacell, categorical=TRUE)
+head(metadata3)
+
+\dontrun{
+  cell_metadata_to_metacell_from_h5ad("cells.h5ad", c("pile", "age"))
+  cell_metadata_to_metacell_from_h5ad("cells.h5ad", "batch", categorical=TRUE)
+}
+
+
+
+}

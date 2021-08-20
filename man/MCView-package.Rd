@@ -6,7 +6,23 @@
 \alias{MCView-package}
 \title{MCView: A Shiny App for Metacell Analysis}
 \description{
-MCView creates a shiny-app facilitating interactive exploration and annotation of metacell models. Metacell itself is described [here](https://github.com/tanaylab/metacells/blob/master/vignettes/Metacells_Vignette.ipynb). You can also explore examples of MCV output for [PBMC](https://tanaylab.weizmann.ac.il/PBMC) and [Mouse organogenesis](https://tanaylab.weizmann.ac.il/MOCA) on the Tanay group server.
+MCView creates a shiny-app facilitating interactive
+    exploration and annotation of metacell models. Metacell itself is
+    described
+    [here](https://github.com/tanaylab/metacells/blob/master/vignettes/Metacells_Vignette.ipynb).
+    You can also explore examples of MCV output for
+    [PBMC](https://tanaylab.weizmann.ac.il/MCV/PBMC) and [Mouse
+    organogenesis](https://tanaylab.weizmann.ac.il/MCV/MOCA) on the Tanay
+    group server.
+}
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://tanaylab.github.io/MCView}
+  \item \url{https://github.com/tanaylab/MCView}
+  \item Report bugs at \url{https://github.com/tanaylab/MCView/issues}
+}
+
 }
 \author{
 \strong{Maintainer}: Aviezer Lifshitz \email{aviezer.lifshitz@weizmann.ac.il}

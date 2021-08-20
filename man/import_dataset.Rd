@@ -13,7 +13,8 @@ import_dataset(
   cell_type_colors_file = NULL,
   metadata_fields = NULL,
   metadata = NULL,
-  metadata_colors = NULL
+  metadata_colors = NULL,
+  calc_gg_cor = TRUE
 )
 }
 \arguments{
@@ -52,6 +53,10 @@ or a name of a delimited file which contains such data frame.}
 \item{metadata_colors}{a named list with colors for each metadata column, or a name of a yaml file with such list.
 Colors should be given as a list where the first element is a vector of colors and the second element is a vector of breaks.
 If only colors are given breaks would be implicitly determined from the minimum and maximum of the metadata field.}
+
+\item{calc_gg_cor}{calculate top 30 correlated and anti-correlated genes for each gene. This computation can be heavy
+for large datasets or weaker machines, so you can set \code{calc_gg_cor=FALSE} to skip it. Note that then this feature
+would be missing from the app.}
 }
 \description{
 Read an \code{anndata} file which is the output of python \code{metacells} package,
