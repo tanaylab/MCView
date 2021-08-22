@@ -279,6 +279,10 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
 
         req(input_ok)
 
+        if (!has_name(new_cell_type_colors, "order")) {
+            new_cell_type_colors <- new_cell_type_colors %>% mutate(order = 1:n())
+        }
+
         files_data$cell_types <- new_cell_type_colors
     })
 
