@@ -490,7 +490,15 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
     observeEvent(input$cell_type_table_cell_edit, {
         # fix column number to be 1 based
         new_input <- input$cell_type_table_cell_edit %>% mutate(col = col + 1)
-        edited_data <- DT::editData(cell_type_colors(), new_input, "cell_type_table")
+        edited_data <- DT::editData(cell_type_colors() %>% select(cell_type, color), new_input, "cell_type_table")
+
+        # the data table was given only cell_type and color columns so we add the rest
+        edited_data <- bind_cols(
+            cell_type_colors() %>%
+                select(-cell_type, -color),
+            edited_data
+        ) %>%
+            select(cell_type_id, cell_type, color, order)
 
         # change corresponding metacell_type entries
         if (new_input$col == 1) {
@@ -500,9 +508,10 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
             metacell_types(new_metacell_types)
         }
 
+
         cell_type_colors(edited_data)
 
-        DT::replaceData(cell_type_table_proxy, cell_type_colors(), resetPaging = FALSE)
+        DT::replaceData(cell_type_table_proxy, cell_type_colors() %>% select(cell_type, color), resetPaging = FALSE)
     })
 
     observeEvent(input$delete_cell_type_colors, {
