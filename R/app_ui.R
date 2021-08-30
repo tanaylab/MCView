@@ -53,7 +53,6 @@ app_ui <- function(request) {
     }
 
 
-
     body <- shinydashboard::dashboardBody(
         shinydashboard::tabItems(
             shinydashboard::tabItem(tabName = "about", mod_about_ui("about_ui_1")),
@@ -65,9 +64,14 @@ app_ui <- function(request) {
         )
     )
 
+    app_title <- config$title
+    if (is.null(app_title) || app_title == "MCView") {
+        app_title <- glue("MCView {version}", version = packageVersion("MCView"))
+    }
+
     dashboard_page <- shinydashboardPlus::dashboardPage(
         shinydashboardPlus::dashboardHeader(
-            title = config$title,
+            title = app_title,
             tags$li(
                 title = "",
                 class = "dropdown",
