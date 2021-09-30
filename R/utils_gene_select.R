@@ -1,5 +1,5 @@
 
-server_gene_selectors <- function(input, output, session, values, dataset, ns) {
+server_gene_selectors <- function(input, output, session, values, dataset, ns, show_button = FALSE) {
     # Gene selectors
     # When a gene changes via the picker input the query string is changed => values are changed.
     # When a gene changes via the query string the gene selectors are not rendered until values are updated, and then they are initialized with the query string genes.
@@ -10,19 +10,46 @@ server_gene_selectors <- function(input, output, session, values, dataset, ns) {
         values$gene2 <- query$gene2 %||% default_gene2
     })
 
+    # We render the gene selectors on demand in order to allow faster initialization
+    if (show_button) {
+        output$toggle_gene_selectors_button <- renderUI({
+            div(
+                actionButton(
+                    ns("show_gene_selectors"),
+                    "Choose genes",
+                    onclick = "var $btn=$(this); setTimeout(function(){$btn.remove();},0);"
+                )
+            )
+        })
+    }
+
     output$gene_selectors <- renderUI({
+        if (show_button) {
+            req(input$show_gene_selectors)
+        }
+
         req(values$gene1)
         req(values$gene2)
+        picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
         div(
             id = ns("sidebar_select"),
             shinyWidgets::pickerInput(ns("gene1"), "Gene A",
                 choices = gene_names,
-                selected = values$gene1, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
+                selected = values$gene1,
+                multiple = FALSE,
+                options = picker_options
             ),
-            shinyWidgets::pickerInput(ns("gene2"), "Gene B", choices = gene_names, selected = values$gene2, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")),
-            shinyWidgets::actionGroupButtons(ns("switch_genes"), labels = c("Switch"), size = "sm")
+            shinyWidgets::pickerInput(ns("gene2"), "Gene B",
+                choices = gene_names,
+                selected = values$gene2,
+                multiple = FALSE,
+                options = picker_options
+            ),
+            shinyWidgets::actionGroupButtons(ns("switch_genes"), labels = c("Switch"), size = "sm"),
+            tags$hr()
         )
     })
+
 
     gene_changed <- reactive({
         list(input$gene1, input$gene2)
@@ -34,6 +61,9 @@ server_gene_selectors <- function(input, output, session, values, dataset, ns) {
     })
 
     output$top_correlated_select_gene1 <- renderUI({
+        if (show_button) {
+            req(input$show_gene_selectors)
+        }
         req(values$gene1)
         req(input$gene1)
         req(has_gg_mc_top_cor(project, dataset()))
@@ -51,6 +81,9 @@ server_gene_selectors <- function(input, output, session, values, dataset, ns) {
     })
 
     output$top_correlated_select_gene2 <- renderUI({
+        if (show_button) {
+            req(input$show_gene_selectors)
+        }
         req(values$gene2)
         req(input$gene2)
         req(has_gg_mc_top_cor(project, dataset()))
@@ -63,11 +96,15 @@ server_gene_selectors <- function(input, output, session, values, dataset, ns) {
                 size = 10,
                 selectize = FALSE
             ),
-            shinyWidgets::actionGroupButtons(c(ns("select_top_cor2_gene1"), ns("select_top_cor2_gene2")), labels = c("Select as Gene A", "Select as Gene B"), size = "sm")
+            shinyWidgets::actionGroupButtons(c(ns("select_top_cor2_gene1"), ns("select_top_cor2_gene2")), labels = c("Select as Gene A", "Select as Gene B"), size = "sm"),
+            tags$hr()
         )
     })
 
     output$genecards_buttons <- renderUI({
+        if (show_button) {
+            req(input$show_gene_selectors)
+        }
         req(values$gene1)
         req(values$gene2)
         tagList(
