@@ -271,10 +271,10 @@ render_2d_plotly <- function(input, output, session, dataset, values, metacell_t
         fig <- fig %>%
             sanitize_for_WebGL() %>%
             plotly::toWebGL() %>%
-            arrange_2d_proj_tooltip()        
+            arrange_2d_proj_tooltip()
 
         return(fig)
-    }) 
+    })
 }
 
 # TODO: find a better heuristic that takes into account the plot size
