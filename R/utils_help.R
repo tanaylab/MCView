@@ -2,6 +2,7 @@
 
 get_tab_steps <- function(tab, module_id = NULL) {
     steps <- tibble(element = names(help_config[[tab]]), intro = help_config[[tab]])
+
     if (!is.null(module_id)) {
         steps <- steps %>% mutate(element = NS(module_id)(element))
     }

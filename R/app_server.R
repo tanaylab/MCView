@@ -33,6 +33,16 @@ app_server <- function(input, output, session) {
                     steps = get_tab_steps("about")
                 )
             )
+        } else if (input$tab_sidebar == "manifold") {
+            rintrojs::introjs(session,
+                options = list(
+                    "showProgress" = TRUE,
+                    "showBullets" = FALSE,
+                    "nextLabel" = "next",
+                    "prevLabel" = "back",
+                    steps = get_tab_steps("manifold", "manifold_ui_1")
+                )
+            )
         } else if (input$tab_sidebar == "gene_mc") {
             rintrojs::introjs(session,
                 options = list(
