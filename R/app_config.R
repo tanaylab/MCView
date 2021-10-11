@@ -86,7 +86,7 @@ init_tab_defs <- function() {
         "Metacells" = list(
             title = "Metacells",
             module_name = "mc_mc",
-            icon = "bar-chart"
+            icon = "chart-bar"
         ),
         "Annotate" = list(
             title = "Annotate",
