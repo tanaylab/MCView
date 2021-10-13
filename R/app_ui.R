@@ -76,10 +76,20 @@ app_ui <- function(request) {
                     icon = NULL,
                     style = "fill",
                     color = "default",
-                    size = "lg",
-                    block = FALSE,
-                    no_outline = TRUE
-                )
+                    size = "sm",
+                    block = TRUE,
+                    no_outline = FALSE
+                ),
+                shinyWidgets::actionBttn(
+                    inputId = "download_modal",
+                    label = "Run locally",
+                    icon = NULL, 
+                    style = "fill",
+                    color = "default",
+                    size = "sm",
+                    block = TRUE,
+                    no_outline = FALSE
+                )                
             )
         ),
         sidebar = sidebar,

@@ -78,9 +78,7 @@ app_server <- function(input, output, session) {
                 steps =
                     rbind(
                         data.frame(element = NA, intro = help_config$introduction),
-                        get_tab_steps("about")
-                        # get_tab_steps("genes", "gene_mc_ui_1"),
-                        # get_tab_steps("metacells", "mc_mc_ui_1")
+                        get_tab_steps("about")                        
                     )
             )
         )
@@ -89,5 +87,51 @@ app_server <- function(input, output, session) {
     observeEvent(
         input$help,
         show_help(input, output, session)
+    )
+
+    observeEvent(
+        input$download_modal, 
+        showModal(modalDialog(
+            title = "Run MCView locally",
+            "To run the app locally (on a unix or mac machine*), download the bundle by pressing the download button below:",
+            br(),
+            br(),
+            downloadButton("download_bundle", "Download", style = "align-items: center;"),
+            br(),
+            br(),
+            "Then, run the following lines in R (make sure that you are at the download directory):",
+            br(),
+            br(),
+            glue("if (!require('remotes')) install.packages('remotes')"),
+            br(),
+            glue("if (!require('MCView')) remotes::install_github('tanaylab/MCView')"),
+            br(),
+            glue("zip::unzip('MCView-{project}.zip')"),
+            br(),
+            glue("MCView::run_app('{project}', launch.browser = TRUE)"),              
+            br(),            
+            br(),            
+            "* It is possible to run on a windows machine using WSL",
+            br(),            
+            easyClose = TRUE
+      ))
+    )
+
+    output$download_bundle <- downloadHandler(
+        filename = function() {
+            glue("MCView-{project}.zip")
+        },
+        content = function(file) {
+            temp_dir <- tempdir()
+            bundle_dir <- download_project(project, temp_dir)            
+            zip::zip(
+                file, 
+                bundle_dir,
+                include_directories = TRUE,
+                recurse = TRUE, 
+                mode = "cherry-pick",
+                compression_level = 1
+            )  
+        }
     )
 }
