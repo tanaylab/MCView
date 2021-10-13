@@ -102,11 +102,16 @@ app_server <- function(input, output, session) {
             "Then, run the following lines in R (make sure that you are at the download directory):",
             br(),
             br(),
+            glue("# install dependencies if needed"),
+            br(),
             glue("if (!require('remotes')) install.packages('remotes')"),
             br(),
-            glue("if (!require('MCView')) remotes::install_github('tanaylab/MCView')"),
+            glue("if (!require('MCView')) remotes::install_github('tanaylab/MCView', ref = remotes::github_release())"),
             br(),
             glue("zip::unzip('MCView-{project}.zip')"),
+            br(),
+            br(),
+            glue("# run the app"),
             br(),
             glue("MCView::run_app('{project}', launch.browser = TRUE)"),
             br(),
@@ -122,16 +127,7 @@ app_server <- function(input, output, session) {
             glue("MCView-{project}.zip")
         },
         content = function(file) {
-            temp_dir <- tempdir()
-            bundle_dir <- download_project(project, temp_dir)
-            zip::zip(
-                file,
-                bundle_dir,
-                include_directories = TRUE,
-                recurse = TRUE,
-                mode = "cherry-pick",
-                compression_level = 1
-            )
+            download_project(file, project)
         }
     )
 }

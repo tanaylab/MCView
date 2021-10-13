@@ -71,23 +71,23 @@ app_ui <- function(request) {
                 title = "",
                 class = "dropdown",
                 shinyWidgets::actionBttn(
-                    inputId = "help",
-                    label = "Help",
-                    icon = NULL,
-                    style = "fill",
-                    color = "default",
-                    size = "sm",
-                    block = TRUE,
-                    no_outline = FALSE
-                ),
-                shinyWidgets::actionBttn(
                     inputId = "download_modal",
                     label = "Run locally",
                     icon = NULL,
-                    style = "fill",
+                    # style = "fill",
                     color = "default",
                     size = "sm",
-                    block = TRUE,
+                    block = FALSE,
+                    no_outline = FALSE
+                ),
+                shinyWidgets::actionBttn(
+                    inputId = "help",
+                    label = "Help",
+                    icon = NULL,
+                    # style = "fill",
+                    color = "default",
+                    size = "sm",
+                    block = FALSE,
                     no_outline = FALSE
                 )
             )

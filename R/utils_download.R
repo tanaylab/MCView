@@ -3,12 +3,19 @@
 #' @return path to the new bundle
 #'
 #' @noRd
-download_project <- function(project, dir) {
-    create_bundle(
-        project,
-        path = dir,
-        name = project,
-        overwrite = TRUE
+download_project <- function(file, project) {
+    dir <- tempdir()
+    bundle_dir <- fs::path(dir, project)
+
+    fs::dir_copy(project, bundle_dir)
+    on.exit(fs::dir_delete(bundle_dir))
+    zip::zip(file,
+        bundle_dir,
+        include_directories = TRUE,
+        recurse = TRUE,
+        mode = "cherry-pick",
+        compression_level = 1
     )
-    return(fs::path(dir, project))
+
+    invisible(file)
 }
