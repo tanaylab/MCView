@@ -62,7 +62,8 @@ Imports:
     tibble,
     tidyr,
     viridis,
-    yaml
+    yaml,
+    zip
 Suggests: 
     knitr,
     R.utils,
