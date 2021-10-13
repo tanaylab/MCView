@@ -83,13 +83,13 @@ app_ui <- function(request) {
                 shinyWidgets::actionBttn(
                     inputId = "download_modal",
                     label = "Run locally",
-                    icon = NULL, 
+                    icon = NULL,
                     style = "fill",
                     color = "default",
                     size = "sm",
                     block = TRUE,
                     no_outline = FALSE
-                )                
+                )
             )
         ),
         sidebar = sidebar,

@@ -78,7 +78,7 @@ app_server <- function(input, output, session) {
                 steps =
                     rbind(
                         data.frame(element = NA, intro = help_config$introduction),
-                        get_tab_steps("about")                        
+                        get_tab_steps("about")
                     )
             )
         )
@@ -90,7 +90,7 @@ app_server <- function(input, output, session) {
     )
 
     observeEvent(
-        input$download_modal, 
+        input$download_modal,
         showModal(modalDialog(
             title = "Run MCView locally",
             "To run the app locally (on a unix or mac machine*), download the bundle by pressing the download button below:",
@@ -108,13 +108,13 @@ app_server <- function(input, output, session) {
             br(),
             glue("zip::unzip('MCView-{project}.zip')"),
             br(),
-            glue("MCView::run_app('{project}', launch.browser = TRUE)"),              
-            br(),            
-            br(),            
+            glue("MCView::run_app('{project}', launch.browser = TRUE)"),
+            br(),
+            br(),
             "* It is possible to run on a windows machine using WSL",
-            br(),            
+            br(),
             easyClose = TRUE
-      ))
+        ))
     )
 
     output$download_bundle <- downloadHandler(
@@ -123,15 +123,15 @@ app_server <- function(input, output, session) {
         },
         content = function(file) {
             temp_dir <- tempdir()
-            bundle_dir <- download_project(project, temp_dir)            
+            bundle_dir <- download_project(project, temp_dir)
             zip::zip(
-                file, 
+                file,
                 bundle_dir,
                 include_directories = TRUE,
-                recurse = TRUE, 
+                recurse = TRUE,
                 mode = "cherry-pick",
                 compression_level = 1
-            )  
+            )
         }
     )
 }
