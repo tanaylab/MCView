@@ -92,7 +92,7 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
             filter(cell_type %in% input$selected_cell_types) %>%
             select(metacell) %>%
             inner_join(get_mc_data(dataset(), "marker_genes"), by = "metacell")
-        new_markers <- choose_markers(markers_df, 80)
+        new_markers <- choose_markers(markers_df, 100)
 
         markers(new_markers)
     })
