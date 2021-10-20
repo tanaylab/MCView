@@ -26,7 +26,7 @@ This is usually done after a first iteration of annotation using the
 "Annotate" tab in the MCView annotation, which can
 export a valid \code{cell_type_colors_file}.
 
-The file should have a column named "cell_type" or "cluster" with 
+The file should have a column named "cell_type" or "cluster" with
 the cell types and another column named "color" with the color assignment.
 Note that the exported file from the __MCView__ app contains additional fields which will be
 ignored in this function.
