@@ -18,6 +18,14 @@ get_mc_fp <- function(dataset, genes = NULL) {
     return(mc_fp)
 }
 
+filter_mat_by_cell_types <- function(mat, cell_types, metacell_types) {
+    metacells <- metacell_types %>%
+        filter(cell_type %in% cell_types) %>%
+        pull(metacell)
+
+    mat <- mat[, metacells]
+    return(mat)
+}
 
 get_gene_egc <- function(gene, dataset) {
     mc_mat <- get_mc_data(dataset, "mc_mat")

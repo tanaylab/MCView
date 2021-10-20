@@ -91,9 +91,16 @@ import_dataset <- function(project, dataset, anndata_file, cell_type_field = "cl
 
     cli_alert_info("Calculating top genes per metacell (marker genes)")
     forbidden <- adata$var$forbidden_gene %||% rep(TRUE, nrow(mc_egc))
-    mc_genes_top2 <- calc_marker_genes(mc_egc[!forbidden, ], 2)
-    marker_genes <- sort(unique(c(mc_genes_top2$top1_gene, mc_genes_top2$top2_gene)))
+    marker_genes <- calc_marker_genes(mc_egc[!forbidden, ], 20)
     serialize_shiny_data(marker_genes, "marker_genes", dataset = dataset, cache_dir = cache_dir)
+
+    mc_genes_top2 <- marker_genes %>%
+        group_by(metacell) %>%
+        slice(1:2) %>%
+        ungroup() %>%
+        pivot_wider(names_from = "rank", values_from = c("gene", "fp"))
+
+    colnames(mc_genes_top2) <- c("metacell", "top1_gene", "top2_gene", "top1_lfp", "top2_lfp")
 
     if (!is.null(metacell_types_file)) {
         if (!is.null(cell_type_field)) {
@@ -357,7 +364,7 @@ parse_metacell_types <- function(file, metacells) {
     return(metacell_types)
 }
 
-#' calculate the top 2 marker genes for each metacell
+#' calculate the top k marker genes for each metacell
 #'
 #' @param mc_egc egc matrix (normalized metacell counts per gene)
 #' @param minimal_max_log_fraction take only genes with at least one value
@@ -369,7 +376,8 @@ parse_metacell_types <- function(file, metacells) {
 calc_marker_genes <- function(mc_egc,
                               genes_per_metacell = 2,
                               minimal_max_log_fraction = -10,
-                              minimal_relative_log_fraction = 2) {
+                              minimal_relative_log_fraction = 2,
+                              fold_change_reg = 0.1) {
     max_log_fractions_of_genes <- apply(mc_egc, 1, max)
 
     interesting_genes_mask <- (max_log_fractions_of_genes
@@ -378,30 +386,20 @@ calc_marker_genes <- function(mc_egc,
     mc_egc_norm <- mc_egc + 1e-5
     mc_fp <- mc_egc_norm / apply(mc_egc_norm, 1, median, na.rm = TRUE)
 
-    mc_fp_f <- mc_fp[interesting_genes_mask, ]
+    mc_fp_f <- mc_fp[interesting_genes_mask, ] + fold_change_reg
     mc_fp_f[mc_fp_f < minimal_relative_log_fraction] <- NA
 
     mc_top_genes <- apply(mc_fp_f, 2, function(fp) {
         top_ind <- order(-fp)[1:genes_per_metacell]
-        return(rownames(mc_fp_f)[top_ind])
-    })
-
-    mc_top_genes <- mc_top_genes %>%
-        t() %>%
-        as.data.frame() %>%
-        rownames_to_column("metacell") %>%
-        rlang::set_names(c("metacell", glue("top{1:genes_per_metacell}_gene"))) %>%
-        tibble::remove_rownames() %>%
-        distinct(metacell, .keep_all = TRUE) %>%
-        mutate(metacell = as.character(metacell))
-
-    # add the expression (log2) of top genes per metacell
-    for (i in 1:genes_per_metacell) {
-        mc_top_genes[[glue("top{i}_lfp")]] <- purrr::map2_dbl(mc_top_genes$metacell, mc_top_genes[[glue("top{i}_gene")]], ~ log2(mc_fp_f[.y, .x]))
-    }
+        return(tibble(gene = rownames(mc_fp_f)[top_ind], rank = 1:length(top_ind), fp = fp[top_ind]))
+    }) %>%
+        purrr::imap_dfr(~ .x %>% mutate(metacell = .y)) %>%
+        arrange(metacell, rank) %>%
+        select(metacell, gene, rank, fp)
 
     return(mc_top_genes)
 }
+
 
 #' calculate the k top correlated and anti correlated genes for each gene
 #'

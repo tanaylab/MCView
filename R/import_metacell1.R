@@ -127,7 +127,7 @@ import_dataset_metacell1 <- function(project,
         distinct(metacell, .keep_all = TRUE) %>%
         mutate(metacell = as.character(metacell))
 
-    cli_alert_info("Calculating top genes per metacell (marker genes)")    
+    cli_alert_info("Calculating top genes per metacell (marker genes)")
     marker_genes <- sort(unique(c(mc_genes_top2$top1_gene, mc_genes_top2$top2_gene)))
     serialize_shiny_data(marker_genes, "marker_genes", dataset = dataset, cache_dir = cache_dir)
 

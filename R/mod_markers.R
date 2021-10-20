@@ -34,16 +34,8 @@ mod_markers_ui <- function(id) {
                     #     uiOutput(ns("edge_distance_ui"))
                     # ),
                     shinycssloaders::withSpinner(
-                        plotly::plotlyOutput(ns("markers_heatmap"), height = "80vh")
-                    ) # ,
-                    # shinyWidgets::prettyRadioButtons(
-                    #     ns("color_proj"),
-                    #     label = "Color by:",
-                    #     choices = c("Cell type", "Gene A", "Gene B"),
-                    #     inline = TRUE,
-                    #     status = "danger",
-                    #     fill = TRUE
-                    # )
+                        plotOutput(ns("markers_heatmap"), height = "80vh")
+                    )
                 )
             )
         )
@@ -64,6 +56,9 @@ mod_markers_sidebar_ui <- function(id) {
     ns <- NS(id)
     tagList(
         list(
+            shinyWidgets::actionGroupButtons(ns("apply"), labels = "Apply"),
+            uiOutput(ns("cell_type_list")),
+            shinyWidgets::actionGroupButtons(ns("update_markers"), labels = "Update markers", size = "sm"),
             uiOutput(ns("marker_genes_list")),
             uiOutput(ns("add_genes_ui"))
         )
@@ -77,11 +72,42 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
     ns <- session$ns
 
     markers <- reactiveVal()
+    markers_matrix <- reactiveVal()
 
     observe({
-        initial_markers <- sort(get_mc_data(dataset(), "marker_genes"))
-
+        initial_markers <- choose_markers(get_mc_data(dataset(), "marker_genes"), 80)
         markers(initial_markers)
+
+        mat <- get_marker_matrix(
+            dataset(),
+            initial_markers
+        )
+        markers_matrix(mat)
+    })
+
+    observeEvent(input$update_markers, {
+        req(metacell_types())
+        req(input$selected_cell_types)
+
+        markers_df <- metacell_types() %>%
+            filter(cell_type %in% input$selected_cell_types) %>%
+            select(metacell) %>%
+            inner_join(get_mc_data(dataset(), "marker_genes"), by = "metacell")
+        new_markers <- choose_markers(markers_df, 80)
+
+        markers(new_markers)
+    })
+
+    output$cell_type_list <- renderUI({
+        shinyWidgets::pickerInput(ns("selected_cell_types"), "Cell types",
+            choices = cell_type_colors()$cell_type,
+            selected = cell_type_colors()$cell_type,
+            multiple = TRUE,
+            options = list(`actions-box` = TRUE, `dropup-auto` = FALSE),
+            choicesOpt = list(
+                style = paste0("color: ", cell_type_colors()$color, ";")
+            )
+        )
     })
 
     output$marker_genes_list <- renderUI({
@@ -95,7 +121,7 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
                 size = 30,
                 selectize = FALSE
             ),
-            shinyWidgets::actionGroupButtons(ns("remove_genes"), labels = "Remove genes", size = "sm")
+            shinyWidgets::actionGroupButtons(ns("remove_genes"), labels = "Remove selected genes", size = "sm")
         )
     })
 
@@ -123,14 +149,44 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
         shinyWidgets::updatePickerInput(session = session, inputId = "genes_to_add", selected = character(0))
     })
 
-    output$markers_heatmap <- plotly::renderPlotly({
-        req(dataset())
+    observeEvent(input$apply, {
+        req(input$selected_cell_types)
         req(markers())
 
+        mat <- get_marker_matrix(
+            dataset(),
+            markers(),
+            input$selected_cell_types,
+            metacell_types()
+        )
+
+        markers_matrix(mat)
+    })
+
+    output$markers_heatmap <- renderPlot({
+        req(dataset())
+        req(markers_matrix())
+
         plot_markers_mat(
-            get_mc_fp(dataset(), markers()),
+            markers_matrix(),
             metacell_types(),
             cell_type_colors()
         )
     })
+}
+
+get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_types = NULL) {
+    mc_fp <- get_mc_fp(dataset, markers)
+
+    if (!is.null(cell_types)) {
+        mat <- filter_mat_by_cell_types(mc_fp, cell_types, metacell_types)
+    } else {
+        mat <- mc_fp
+    }
+
+    mc_order <- order_mc_by_most_var_genes(mat)
+
+    mat <- mat[, mc_order]
+
+    return(mat)
 }
