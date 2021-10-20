@@ -103,7 +103,6 @@ import_dataset_metacell1 <- function(project,
         warning(glue("mc2d@mc_y doesn't have names. Setting to 1:{length(mc2d@mc_y)})"))
     }
 
-
     mc2d_list <- list(
         graph = mc2d@graph,
         mc_id = mc2d@mc_id,
@@ -112,20 +111,18 @@ import_dataset_metacell1 <- function(project,
     )
     serialize_shiny_data(mc2d_list, "mc2d", dataset = dataset, cache_dir = cache_dir)
 
+    cli_alert_info("Calculating top genes per metacell (marker genes)")
+    marker_genes <- calc_marker_genes(mc_egc, 20)
+    serialize_shiny_data(marker_genes, "marker_genes", dataset = dataset, cache_dir = cache_dir)
 
-    mc_genes_top2 <- apply(mc@mc_fp, 2, function(fp) {
-        top_ind <- order(-fp)[1:2]
-        return(rownames(mc@mc_fp)[top_ind])
-    })
+    mc_genes_top2 <- marker_genes %>%
+        group_by(metacell) %>%
+        slice(1:2) %>%
+        ungroup() %>%
+        pivot_wider(names_from = "rank", values_from = c("gene", "fp"))
 
-    mc_genes_top2 <- mc_genes_top2 %>%
-        t() %>%
-        as.data.frame() %>%
-        rownames_to_column("metacell") %>%
-        rlang::set_names(c("metacell", "top1_gene", "top2_gene")) %>%
-        tibble::remove_rownames() %>%
-        distinct(metacell, .keep_all = TRUE) %>%
-        mutate(metacell = as.character(metacell))
+    colnames(mc_genes_top2) <- c("metacell", "top1_gene", "top2_gene", "top1_lfp", "top2_lfp")
+
 
     cli_alert_info("Loading metacell type annotations from {.file {metacell_types_file}}")
     metacell_types <- parse_metacell_types(metacell_types_file, metacells)

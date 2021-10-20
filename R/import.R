@@ -91,8 +91,16 @@ import_dataset <- function(project, dataset, anndata_file, cell_type_field = "cl
 
     cli_alert_info("Calculating top genes per metacell (marker genes)")
     forbidden <- adata$var$forbidden_gene %||% rep(TRUE, nrow(mc_egc))
-    mc_genes_top2 <- calc_marker_genes(mc_egc[!forbidden, ], 2)
-    marker_genes <- sort(unique(c(mc_genes_top2$top1_gene, mc_genes_top2$top2_gene)))
+    marker_genes <- calc_marker_genes(mc_egc[!forbidden, ], 20)
+    serialize_shiny_data(marker_genes, "marker_genes", dataset = dataset, cache_dir = cache_dir)
+
+    mc_genes_top2 <- marker_genes %>%
+        group_by(metacell) %>%
+        slice(1:2) %>%
+        ungroup() %>%
+        pivot_wider(names_from = "rank", values_from = c("gene", "fp"))
+
+    colnames(mc_genes_top2) <- c("metacell", "top1_gene", "top2_gene", "top1_lfp", "top2_lfp")
 
     if (!is.null(metacell_types_file)) {
         if (!is.null(cell_type_field)) {
@@ -192,14 +200,16 @@ dataset_ls <- function(project) {
 #'
 #' Change the cell type assignments for each metacell to the ones listed at \code{metacell_types_file}.
 #'
-#' This is usually done after a first iteration of annotation using the "Annotate" tab in the MCView annotation, which can export a valid \code{metacell_types_file}.
+#' This is usually done after a first iteration of annotation using the "Annotate"
+#' tab in the MCView annotation, which can export a valid \code{metacell_types_file}.
 #' The file should have a column named "metacell" with the metacell ids and another
 #' column named "cell_type" or "cluster" with the cell type assignment.
 #'
 #' Note that the exported file from the __MCView__ app contains additional fields
 #' which will be ignored in this function.
 #'
-#' Under the hood - MCView updates a file named "metacell_types.tsv" under \code{project/cache/dataset}, which can also be edited manually.
+#' Under the hood - MCView updates a file named "metacell_types.tsv" under
+#'  \code{project/cache/dataset}, which can also be edited manually.
 #'
 #' @param project path to the project directory
 #' @param dataset name for the dataset, e.g. "PBMC"
@@ -230,7 +240,13 @@ update_metacell_types <- function(project, dataset, metacell_types_file) {
         select(-cell_type) %>%
         left_join(metacell_types %>% select(metacell, cell_type), by = "metacell")
 
-    serialize_shiny_data(metacell_types, "metacell_types", dataset = dataset, cache_dir = project_cache_dir(project), flat = TRUE)
+    serialize_shiny_data(
+        metacell_types,
+        "metacell_types",
+        dataset = dataset,
+        cache_dir = project_cache_dir(project),
+        flat = TRUE
+    )
 
     cli_alert_success("Succesfully changed metacell cell type assignments")
 }
@@ -240,14 +256,17 @@ update_metacell_types <- function(project, dataset, metacell_types_file) {
 #'
 #' Change the color assignments for each cell type to the ones listed at \code{cell_type_colors_file}.
 #'
-#' This is usually done after a first iteration of annotation using the "Annotate" tab in the MCView annotation, which can
+#' This is usually done after a first iteration of annotation using the
+#' "Annotate" tab in the MCView annotation, which can
 #' export a valid \code{cell_type_colors_file}.
 #'
-#' The file should have a column named "cell_type" or "cluster" with the cell types and another column named "color" with the color assignment.
+#' The file should have a column named "cell_type" or "cluster" with
+#' the cell types and another column named "color" with the color assignment.
 #' Note that the exported file from the __MCView__ app contains additional fields which will be
 #' ignored in this function.
 #'
-#' Under the hood - MCView updates a file named "cell_type_colors.tsv" under \code{project/cache/dataset}, which can also be edited manually.
+#' Under the hood - MCView updates a file named "cell_type_colors.tsv" under
+#' \code{project/cache/dataset}, which can also be edited manually.
 #'
 #' @param project path to the project directory
 #' @param dataset name for the dataset, e.g. "PBMC"
@@ -343,52 +362,6 @@ parse_metacell_types <- function(file, metacells) {
     }
 
     return(metacell_types)
-}
-
-#' calculate the top 2 marker genes for each metacell
-#'
-#' @param mc_egc egc matrix (normalized metacell counts per gene)
-#' @param minimal_max_log_fraction take only genes with at least one value
-#' (in log fraction units - normalized egc) above this threshold
-#' @param minimal_relative_log_fraction take only genes with relative
-#' log fraction (mc_fp) above this this value
-#'
-#' @noRd
-calc_marker_genes <- function(mc_egc,
-                              genes_per_metacell = 2,
-                              minimal_max_log_fraction = -10,
-                              minimal_relative_log_fraction = 2) {
-    max_log_fractions_of_genes <- apply(mc_egc, 1, max)
-
-    interesting_genes_mask <- (max_log_fractions_of_genes
-    >= minimal_max_log_fraction)
-
-    mc_egc_norm <- mc_egc + 1e-5
-    mc_fp <- mc_egc_norm / apply(mc_egc_norm, 1, median, na.rm = TRUE)
-
-    mc_fp_f <- mc_fp[interesting_genes_mask, ]
-    mc_fp_f[mc_fp_f < minimal_relative_log_fraction] <- NA
-
-    mc_top_genes <- apply(mc_fp_f, 2, function(fp) {
-        top_ind <- order(-fp)[1:genes_per_metacell]
-        return(rownames(mc_fp_f)[top_ind])
-    })
-
-    mc_top_genes <- mc_top_genes %>%
-        t() %>%
-        as.data.frame() %>%
-        rownames_to_column("metacell") %>%
-        rlang::set_names(c("metacell", glue("top{1:genes_per_metacell}_gene"))) %>%
-        tibble::remove_rownames() %>%
-        distinct(metacell, .keep_all = TRUE) %>%
-        mutate(metacell = as.character(metacell))
-
-    # add the expression (log2) of top genes per metacell
-    for (i in 1:genes_per_metacell) {
-        mc_top_genes[[glue("top{i}_lfp")]] <- purrr::map2_dbl(mc_top_genes$metacell, mc_top_genes[[glue("top{i}_gene")]], ~ log2(mc_fp_f[.y, .x]))
-    }
-
-    return(mc_top_genes)
 }
 
 #' calculate the k top correlated and anti correlated genes for each gene

@@ -31,6 +31,10 @@ app_ui <- function(request) {
             mod_gene_mc_sidebar_ui("gene_mc_ui_1")
         ),
         conditionalPanel(
+            condition = "input.tab_sidebar == 'markers'",
+            mod_markers_sidebar_ui("markers_ui_1")
+        ),
+        conditionalPanel(
             condition = "input.tab_sidebar == 'mc_mc'",
             mod_mc_mc_sidebar_ui("mc_mc_ui_1")
         ),
@@ -54,6 +58,7 @@ app_ui <- function(request) {
             shinydashboard::tabItem(tabName = "about", mod_about_ui("about_ui_1")),
             shinydashboard::tabItem(tabName = "manifold", mod_manifold_ui("manifold_ui_1")),
             shinydashboard::tabItem(tabName = "gene_mc", mod_gene_mc_ui("gene_mc_ui_1")),
+            shinydashboard::tabItem(tabName = "markers", mod_markers_ui("markers_ui_1")),
             shinydashboard::tabItem(tabName = "mc_mc", mod_mc_mc_ui("mc_mc_ui_1")),
             shinydashboard::tabItem(tabName = "annotate", mod_annotate_mc_ui("annotate_ui_1"))
         )
