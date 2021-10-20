@@ -15,7 +15,7 @@ mod_markers_ui <- function(id) {
                 width = 12,
                 shinydashboardPlus::box(
                     id = ns("markers_heatmap_box"),
-                    title = "Markers heatmap",
+                    title = "Markers Heatmap",
                     status = "primary",
                     solidHeader = TRUE,
                     collapsible = TRUE,
@@ -25,7 +25,8 @@ mod_markers_ui <- function(id) {
                     sidebar = shinydashboardPlus::boxSidebar(
                         startOpen = FALSE,
                         width = 25,
-                        id = ns("markers_heatmap_sidebar"),                          
+                        id = ns("markers_heatmap_sidebar"),
+                        checkboxInput(ns("force_cell_type"), "Force cell type", value = FALSE),
                         shinyWidgets::numericRangeInput(ns("lfp_range"), "Fold change range", c(-3, 3), width = "80%", separator = " to ")
                     ),
                     shinycssloaders::withSpinner(
@@ -68,6 +69,7 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
 
     markers <- reactiveVal()
     markers_matrix <- reactiveVal()
+    lfp_range <- reactiveVal()
 
     observe({
         initial_markers <- choose_markers(get_mc_data(dataset(), "marker_genes"), 80)
@@ -78,6 +80,8 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
             initial_markers
         )
         markers_matrix(mat)
+
+        lfp_range(c(-3, 3))
     })
 
     observeEvent(input$update_markers, {
@@ -145,17 +149,21 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
     })
 
     observeEvent(input$apply, {
-        req(input$selected_cell_types)
+        selected_cell_types <- input$selected_cell_types %||% cell_type_colors()$cell_type
+        force_cell_type <- input$force_cell_type %||% FALSE
         req(markers())
 
         mat <- get_marker_matrix(
             dataset(),
             markers(),
             input$selected_cell_types,
-            metacell_types()
+            metacell_types(),
+            force_cell_type = input$force_cell_type
         )
 
         markers_matrix(mat)
+
+        lfp_range(input$lfp_range)
     })
 
     output$markers_heatmap <- renderPlot({
@@ -166,13 +174,13 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
             markers_matrix(),
             metacell_types(),
             cell_type_colors(),
-            min_lfp = input$lfp_range[1],
-            max_lfp = input$lfp_range[2]
+            min_lfp = lfp_range()[1],
+            max_lfp = lfp_range()[2]
         )
     })
 }
 
-get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_types = NULL) {
+get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_types = NULL, force_cell_type = FALSE) {
     mc_fp <- get_mc_fp(dataset, markers)
 
     if (!is.null(cell_types)) {
@@ -181,7 +189,7 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
         mat <- mc_fp
     }
 
-    mc_order <- order_mc_by_most_var_genes(mat)
+    mc_order <- order_mc_by_most_var_genes(mat, force_cell_type = force_cell_type, metacell_types = metacell_types)
 
     mat <- mat[, mc_order]
 

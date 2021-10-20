@@ -27,7 +27,7 @@ choose_markers <- function(marker_genes, max_markers = 80) {
 #'
 #'
 #' @return named vector with metacell order
-order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers = FALSE) {
+order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers = FALSE, force_cell_type = FALSE, metacell_types = NULL) {
     if (filter_markers) {
         good_marks <- unique(as.vector(unlist(
             apply(
@@ -69,6 +69,7 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
     }
 
     hc <- hclust(tgs_dist(tgs_cor(feat, pairwise.complete.obs = TRUE)), method = "ward.D2")
+
     d <- reorder(
         as.dendrogram(hc),
         feat[main_mark, ] - feat[second_mark, ],
@@ -76,5 +77,50 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
     )
     ord <- as.hclust(d)$order
     names(ord) <- colnames(feat)
+
+    if (force_cell_type) {
+        ord_df <- enframe(ord, "metacell", "glob_ord") %>%
+            left_join(
+                metacell_types %>% select(metacell, cell_type),
+                by = "metacell"
+            )
+
+        ord_inside_cell_type <- function(x) {
+            if (nrow(x) == 1) {
+                ct_ord <- 1
+            } else {
+                ct_ord <- suppressWarnings(order_mc_by_most_var_genes(gene_folds[, x$metacell]))
+            }
+
+            tibble(
+                metacell = x$metacell,
+                orig_ord = x$orig_ord,
+                glob_ord = x$glob_ord,
+                ct_ord = ct_ord
+            )
+        }
+
+        ord <- ord_df %>%
+            mutate(orig_ord = 1:n()) %>%
+            group_by(cell_type) %>%
+            do(ord_inside_cell_type(.)) %>%
+            mutate(glob_ord = mean(glob_ord)) %>%
+            ungroup() %>%
+            arrange(glob_ord, ct_ord) %>%
+            select(metacell, orig_ord) %>%
+            deframe()
+
+        # The commented strategy is faster - only order according to the
+        # global markers
+        # ord <- ord_df %>%
+        #     mutate(orig_ord = 1:n()) %>%
+        #     group_by(cell_type) %>%
+        #     mutate(ct_ord = mean(glob_ord)) %>%
+        #     ungroup() %>%
+        #     arrange(ct_ord, glob_ord) %>%
+        #     select(metacell, orig_ord) %>%
+        #     deframe()
+    }
+
     return(ord)
 }
