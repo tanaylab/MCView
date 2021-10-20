@@ -17,9 +17,10 @@ plot_markers_mat <- function(mc_fp,
     mat <- log2(mc_fp[gene_ord, ])
 
     p_mat <- tgutil::tgplot_heatmap(
-        clip_vals(mat, min_lfp, max_lfp), 
+        clip_vals(mat, min_lfp, max_lfp),
         col_names = FALSE,
-        interleave=TRUE) +
+        interleave = TRUE
+    ) +
         scale_fill_gradientn(name = "Fold change", colors = colors, values = scales::rescale(values))
 
     mc_types <- tibble(metacell = colnames(mat)) %>%

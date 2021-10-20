@@ -48,3 +48,15 @@ get_metacells_egc <- function(metacells, dataset) {
     mc_egc <- t(t(mc_mat[, metacells]) / mc_sum[metacells])
     return(mc_egc)
 }
+
+get_markers <- function(dataset) {
+    marker_genes <- get_mc_data(dataset, "marker_genes")
+    if (!is.null(marker_genes)) {
+        return(marker_genes)
+    }
+
+    marker_genes <- calc_marker_genes(get_mc_egc(dataset), 20)
+    serialize_shiny_data(marker_genes, "marker_genes", dataset = dataset, cache_dir = cache_dir)
+
+    return(marker_genes)
+}
