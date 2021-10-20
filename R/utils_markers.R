@@ -61,7 +61,7 @@ choose_markers <- function(marker_genes, max_markers) {
 
 #' Order metacells based on 2 most variable genes
 #'
-#' @noRd 
+#' @noRd
 #' @return named vector with metacell order
 order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers = FALSE, force_cell_type = FALSE, metacell_types = NULL) {
     if (filter_markers) {
