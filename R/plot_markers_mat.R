@@ -2,9 +2,18 @@ plot_markers_mat <- function(mc_fp,
                              metacell_types,
                              cell_type_colors,
                              colors = c("darkblue", "blue", "lightblue", "white", "red", "darkred"),
-                             values = c(-3, -2, -1, 0, 1.5, 3)) {
-    min_lfp <- min(values)
-    max_lfp <- max(values)
+                             mid_color = 4,
+                             min_lfp = NULL, 
+                             max_lfp = NULL
+                             ) {    
+    
+    min_lfp <- min_lfp %||% -3
+    max_lfp <- max_lfp %||% 3
+
+    values <- c(
+        seq(min_lfp, 0, length.out=mid_color),
+        seq(0, max_lfp, length.out = length(colors) - mid_color + 1)[-1]
+        )    
 
     gene_ord <- order(apply(mc_fp, 1, which.max))
     mat <- log2(mc_fp[gene_ord, ])

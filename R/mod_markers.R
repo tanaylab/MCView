@@ -22,17 +22,12 @@ mod_markers_ui <- function(id) {
                     closable = FALSE,
                     width = 12,
                     height = "80vh",
-                    # sidebar = shinydashboardPlus::boxSidebar(
-                    #     startOpen = FALSE,
-                    #     width = 25,
-                    #     id = ns("gene_projection_sidebar"),
-                    #     selectInput(ns("proj_stat"), label = "Statistic", choices = c("Expression" = "expression", "Enrichment" = "enrichment"), selected = "Expression", multiple = FALSE, selectize = FALSE),
-                    #     uiOutput(ns("set_range_ui")),
-                    #     uiOutput(ns("expr_range_ui")),
-                    #     uiOutput(ns("enrich_range_ui")),
-                    #     uiOutput(ns("point_size_ui")),
-                    #     uiOutput(ns("edge_distance_ui"))
-                    # ),
+                    sidebar = shinydashboardPlus::boxSidebar(
+                        startOpen = FALSE,
+                        width = 25,
+                        id = ns("markers_heatmap_sidebar"),                          
+                        shinyWidgets::numericRangeInput(ns("lfp_range"), "Fold change range", c(-3, 3), width = "80%", separator = " to ")
+                    ),
                     shinycssloaders::withSpinner(
                         plotOutput(ns("markers_heatmap"), height = "80vh")
                     )
@@ -170,7 +165,9 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
         plot_markers_mat(
             markers_matrix(),
             metacell_types(),
-            cell_type_colors()
+            cell_type_colors(),
+            min_lfp = input$lfp_range[1],
+            max_lfp = input$lfp_range[2]
         )
     })
 }
