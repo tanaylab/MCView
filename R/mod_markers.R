@@ -52,7 +52,7 @@ mod_markers_sidebar_ui <- function(id) {
     ns <- NS(id)
     tagList(
         list(
-            shinyWidgets::actionGroupButtons(ns("apply"), labels = "Apply"),
+            shinyWidgets::actionGroupButtons(ns("apply"), labels = "Draw Heatmap"),
             uiOutput(ns("cell_type_list")),
             shinyWidgets::actionGroupButtons(ns("update_markers"), labels = "Update markers", size = "sm"),
             uiOutput(ns("marker_genes_list")),
