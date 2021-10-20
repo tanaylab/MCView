@@ -1,4 +1,40 @@
-choose_markers <- function(marker_genes, max_markers = 80) {
+#' calculate the top k marker genes for each metacell
+#'
+#' @param mc_egc egc matrix (normalized metacell counts per gene)
+#' @param minimal_max_log_fraction take only genes with at least one value
+#' (in log fraction units - normalized egc) above this threshold
+#' @param minimal_relative_log_fraction take only genes with relative
+#' log fraction (mc_fp) above this this value
+#'
+#' @noRd
+calc_marker_genes <- function(mc_egc,
+                              genes_per_metacell = 2,
+                              minimal_max_log_fraction = -10,
+                              minimal_relative_log_fraction = 2,
+                              fold_change_reg = 0.1) {
+    max_log_fractions_of_genes <- apply(mc_egc, 1, max)
+
+    interesting_genes_mask <- (max_log_fractions_of_genes
+    >= minimal_max_log_fraction)
+
+    mc_egc_norm <- mc_egc + 1e-5
+    mc_fp <- mc_egc_norm / apply(mc_egc_norm, 1, median, na.rm = TRUE)
+
+    mc_fp_f <- mc_fp[interesting_genes_mask, ] + fold_change_reg
+    mc_fp_f[mc_fp_f < minimal_relative_log_fraction] <- NA
+
+    mc_top_genes <- apply(mc_fp_f, 2, function(fp) {
+        top_ind <- order(-fp)[1:genes_per_metacell]
+        return(tibble(gene = rownames(mc_fp_f)[top_ind], rank = 1:length(top_ind), fp = fp[top_ind]))
+    }) %>%
+        purrr::imap_dfr(~ .x %>% mutate(metacell = .y)) %>%
+        arrange(metacell, rank) %>%
+        select(metacell, gene, rank, fp)
+
+    return(mc_top_genes)
+}
+
+choose_markers <- function(marker_genes, max_markers) {
     markers <- marker_genes %>%
         group_by(metacell) %>%
         slice(2) %>%
