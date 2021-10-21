@@ -477,7 +477,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
                 "color", "cell_type",
                 backgroundColor = DT::styleEqual(
                     cell_type_colors()$cell_type,
-                    cell_type_colors()$color
+                    col2hex(cell_type_colors()$color)
                 )
             ),
         server = TRUE # see https://github.com/rstudio/DT/issues/598
