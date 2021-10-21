@@ -112,10 +112,14 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
         agglo.FUN = mean
     )
     ord <- as.hclust(d)$order
-    names(ord) <- colnames(feat)
 
     if (force_cell_type) {
-        ord_df <- enframe(ord, "metacell", "glob_ord") %>%
+        ord_df <- tibble(metacell = colnames(feat)) %>%
+            mutate(orig_ord = 1:n()) %>%
+            left_join(
+                tibble(metacell = colnames(feat)[ord]) %>% mutate(glob_ord = 1:n()),
+                by = "metacell"
+            ) %>%
             left_join(
                 metacell_types %>% select(metacell, cell_type),
                 by = "metacell"
@@ -137,14 +141,13 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
         }
 
         ord <- ord_df %>%
-            mutate(orig_ord = 1:n()) %>%
             group_by(cell_type) %>%
             do(ord_inside_cell_type(.)) %>%
             mutate(glob_ord = mean(glob_ord)) %>%
             ungroup() %>%
             arrange(glob_ord, ct_ord) %>%
-            select(metacell, orig_ord) %>%
-            deframe()
+            pull(orig_ord)
+
 
         # The commented strategy is faster - only order according to the
         # global markers
@@ -154,8 +157,7 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
         #     mutate(ct_ord = mean(glob_ord)) %>%
         #     ungroup() %>%
         #     arrange(ct_ord, glob_ord) %>%
-        #     select(metacell, orig_ord) %>%
-        #     deframe()
+        #     pull(orig_ord)
     }
 
     return(ord)
