@@ -27,7 +27,8 @@ mod_markers_ui <- function(id) {
                         width = 25,
                         id = ns("markers_heatmap_sidebar"),
                         checkboxInput(ns("force_cell_type"), "Force cell type", value = FALSE),
-                        shinyWidgets::numericRangeInput(ns("lfp_range"), "Fold change range", c(-3, 3), width = "80%", separator = " to ")
+                        shinyWidgets::numericRangeInput(ns("lfp_range"), "Fold change range", c(-3, 3), width = "80%", separator = " to "),
+                        checkboxInput(ns("plot_legend"), "Plot legend", value = FALSE)
                     ),
                     shinycssloaders::withSpinner(
                         plotOutput(ns("markers_heatmap"), height = "80vh")
@@ -179,7 +180,8 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
             metacell_types(),
             cell_type_colors(),
             min_lfp = lfp_range()[1],
-            max_lfp = lfp_range()[2]
+            max_lfp = lfp_range()[2],
+            plot_legend = input$plot_legend %||% TRUE
         )
     })
 }
