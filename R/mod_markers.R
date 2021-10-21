@@ -151,6 +151,7 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
     })
 
     observeEvent(input$apply, {
+        shinyjs::hide("markers_heatmap")
         selected_cell_types <- input$selected_cell_types %||% cell_type_colors()$cell_type
         force_cell_type <- input$force_cell_type %||% FALSE
         req(markers())
@@ -166,6 +167,7 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
         markers_matrix(mat)
 
         lfp_range(input$lfp_range)
+        shinyjs::show("markers_heatmap")
     })
 
     output$markers_heatmap <- renderPlot({

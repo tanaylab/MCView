@@ -103,6 +103,7 @@ app_ui <- function(request) {
     )
 
     tagList(
+        shinyjs::useShinyjs(), # Set up shinyjs
         rintrojs::introjsUI(),
         dashboard_page
     )
