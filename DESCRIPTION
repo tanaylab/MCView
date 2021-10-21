@@ -36,6 +36,7 @@ Imports:
     ggnewscale,
     ggplot2,
     ggrepel,
+    grDevices,
     glue,
     golem,
     htmltools,

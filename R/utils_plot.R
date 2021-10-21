@@ -15,3 +15,12 @@ plot_color_bar <- function(vals, labels, cols, title = "") {
     text(50, vals, labels = labels, pos = 4)
     text(7, length(cols) / 2 + 1, labels = title, srt = 90, cex = 1)
 }
+
+#' Convert R color to hex (for css usage)
+#'
+#' @param x R color name
+#'
+#' @noRd
+col2hex <- function(x) {
+    grDevices::rgb(t(grDevices::col2rgb(x) / 255))
+}
