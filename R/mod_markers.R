@@ -28,7 +28,7 @@ mod_markers_ui <- function(id) {
                         id = ns("markers_heatmap_sidebar"),
                         checkboxInput(ns("force_cell_type"), "Force cell type", value = FALSE),
                         shinyWidgets::numericRangeInput(ns("lfp_range"), "Fold change range", c(-3, 3), width = "80%", separator = " to "),
-                        checkboxInput(ns("plot_legend"), "Plot legend", value = FALSE)
+                        checkboxInput(ns("plot_legend"), "Plot legend", value = TRUE)
                     ),
                     shinycssloaders::withSpinner(
                         plotOutput(ns("markers_heatmap"), height = "80vh")
