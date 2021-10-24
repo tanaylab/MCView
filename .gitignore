@@ -13,7 +13,7 @@ data-raw/projects-config/*/
 !data-raw/projects-config/default
 MCView.data/
 inst/doc
-PBMC/
+PBMC*/
 PBMC_bak/
 data-raw/default
 MCView_bundle
