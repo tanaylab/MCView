@@ -78,6 +78,11 @@ init_tab_defs <- function() {
             module_name = "manifold",
             icon = "project-diagram"
         ),
+        "Markers" = list(
+            title = "Markers",
+            module_name = "markers",
+            icon = "map-marker"
+        ),
         "Genes" = list(
             title = "Genes",
             module_name = "gene_mc",
@@ -86,7 +91,7 @@ init_tab_defs <- function() {
         "Metacells" = list(
             title = "Metacells",
             module_name = "mc_mc",
-            icon = "bar-chart"
+            icon = "chart-bar"
         ),
         "Metadata" = list(
             title = "Metadata",
@@ -112,12 +117,21 @@ init_tab_defs <- function() {
     } else {
         tab_defs <<- tab_defs[default_tabs]
     }
+
+    if (!rmarkdown::pandoc_available() && "About" %in% names(tab_defs)) {
+        warning("pandoc is not available, removing 'About' tab'")
+        tab_defs[["About"]] <<- NULL
+    }
 }
 
 get_gene_names <- function() {
     gene_names <- rownames(get_mc_data(dataset_ls(project)[1], "mc_mat"))
     # We remove gene names that are too long in order to reduce pickerInput search bar width
-    gene_names <- gene_names[stringr::str_length(gene_names) <= 30]
+    long_genes <- stringr::str_length(gene_names) > 30
+    if (sum(long_genes) > 0) {
+        warning("Some genes were longer than 30 characters and were removed")
+        gene_names <- gene_names[!long_genes]
+    }
     return(gene_names)
 }
 

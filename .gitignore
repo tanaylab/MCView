@@ -14,6 +14,7 @@ data-raw/projects-config/*/
 MCView.data/
 inst/doc
 PBMC/
+PBMC_bak/
 data-raw/default
 MCView_bundle
 docs

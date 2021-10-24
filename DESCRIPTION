@@ -1,6 +1,6 @@
 Package: MCView
 Title: A Shiny App for Metacell Analysis
-Version: 0.2.1
+Version: 0.2.1.9000
 Authors@R: 
     person(given = "Aviezer",
            family = "Lifshitz",
@@ -36,6 +36,7 @@ Imports:
     ggnewscale,
     ggplot2,
     ggrepel,
+    grDevices,
     glue,
     golem,
     htmltools,
@@ -50,7 +51,9 @@ Imports:
     rintrojs,
     rlang,
     rmarkdown,
+    scales,
     shiny (>= 1.6.0),
+    shinyjs,
     shinycssloaders,
     shinydashboard,
     shinydashboardPlus (>= 2.0.0),
@@ -58,11 +61,12 @@ Imports:
     shinyWidgets,
     tglkmeans,
     tgstat,
-    tgutil (>= 0.1.6),
+    tgutil (>= 0.1.7),
     tibble,
     tidyr,
     viridis,
-    yaml
+    yaml,
+    zip
 Suggests: 
     knitr,
     R.utils,

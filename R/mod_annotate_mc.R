@@ -179,10 +179,8 @@ mod_annotate_mc_sidebar_ui <- function(id) {
     ns <- NS(id)
     tagList(
         uiOutput(ns("gene_selectors")),
-        tags$hr(),
         uiOutput(ns("top_correlated_select_gene1")),
         uiOutput(ns("top_correlated_select_gene2")),
-        tags$hr(),
         uiOutput(ns("genecards_buttons"))
     )
 }
@@ -278,6 +276,10 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         }
 
         req(input_ok)
+
+        if (!has_name(new_cell_type_colors, "order")) {
+            new_cell_type_colors <- new_cell_type_colors %>% mutate(order = 1:n())
+        }
 
         files_data$cell_types <- new_cell_type_colors
     })
@@ -475,7 +477,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
                 "color", "cell_type",
                 backgroundColor = DT::styleEqual(
                     cell_type_colors()$cell_type,
-                    cell_type_colors()$color
+                    col2hex(cell_type_colors()$color)
                 )
             ),
         server = TRUE # see https://github.com/rstudio/DT/issues/598
@@ -486,7 +488,15 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
     observeEvent(input$cell_type_table_cell_edit, {
         # fix column number to be 1 based
         new_input <- input$cell_type_table_cell_edit %>% mutate(col = col + 1)
-        edited_data <- DT::editData(cell_type_colors(), new_input, "cell_type_table")
+        edited_data <- DT::editData(cell_type_colors() %>% select(cell_type, color), new_input, "cell_type_table")
+
+        # the data table was given only cell_type and color columns so we add the rest
+        edited_data <- bind_cols(
+            cell_type_colors() %>%
+                select(-cell_type, -color),
+            edited_data
+        ) %>%
+            select(cell_type_id, cell_type, color, order)
 
         # change corresponding metacell_type entries
         if (new_input$col == 1) {
@@ -496,9 +506,10 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
             metacell_types(new_metacell_types)
         }
 
+
         cell_type_colors(edited_data)
 
-        DT::replaceData(cell_type_table_proxy, cell_type_colors(), resetPaging = FALSE)
+        DT::replaceData(cell_type_table_proxy, cell_type_colors() %>% select(cell_type, color), resetPaging = FALSE)
     })
 
     observeEvent(input$delete_cell_type_colors, {

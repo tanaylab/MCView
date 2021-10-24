@@ -42,7 +42,7 @@ A text editor would be opened with `PBMC/config/config.yaml` file:
 
 ```yaml
 title: MCView
-tabs: ["Manifold", "Genes", "Metacells", "Metadata", "Annotate", "About"] # which tabs to show
+tabs: ["Manifold", "Genes", "Markers", "Metacells", "Metadata", "Annotate", "About"] # which tabs to show
 help: false # set to true to show introjs help on start
 # selected_gene1: Foxc1 # Default selected gene1
 # selected_gene2: Twist1 # Default selected gene2

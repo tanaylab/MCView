@@ -89,10 +89,8 @@ mod_gene_mc_sidebar_ui <- function(id) {
     tagList(
         list(
             uiOutput(ns("gene_selectors")),
-            tags$hr(),
             uiOutput(ns("top_correlated_select_gene1")),
             uiOutput(ns("top_correlated_select_gene2")),
-            tags$hr(),
             uiOutput(ns("genecards_buttons"))
         )
     )
