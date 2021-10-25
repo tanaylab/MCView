@@ -24,15 +24,16 @@ plot_markers_mat <- function(mc_fp,
     ) +
         scale_fill_gradientn(name = "Fold change", colors = colors, values = scales::rescale(values))
 
+    cell_type_colors <- cell_type_colors %>% select(cell_type, color)
     mc_types <- tibble(metacell = colnames(mat)) %>%
         left_join(metacell_types %>% select("metacell", "cell_type"), by = "metacell") %>%
-        left_join(cell_type_colors %>% select(cell_type, color), by = "cell_type")
+        left_join(cell_type_colors, by = "cell_type")
 
     if (plot_legend) {
         legend <- cowplot::get_legend(cell_type_colors %>%
             ggplot(aes(x = cell_type, color = cell_type, y = 1)) +
             geom_point() +
-            scale_color_manual("", values = deframe(cell_type_colors[, 1:2])) +
+            scale_color_manual("", values = deframe(cell_type_colors)) +
             guides(color = guide_legend(ncol = 1)))
         p_mat <- p_mat + theme(legend.position = "top")
         cowplot::ggdraw(cowplot::plot_grid(p_mat %>% tgplot_add_axis_annotation(mc_types$color), legend, nrow = 1, rel_widths = c(0.8, 0.15)))
