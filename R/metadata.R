@@ -150,23 +150,20 @@ update_metadata_colors <- function(project,
 #' metadata <- cell_metadata_to_metacell(cell_metadata, cell_To_metacell)
 #' head(metadata)
 #'
-#' metadata1 <- cell_metadata_to_metacell(cell_metadata, cell_To_metacell, func=function(x) x * 2)
+#' metadata1 <- cell_metadata_to_metacell(cell_metadata, cell_To_metacell, func = function(x) x * 2)
 #' head(metadata1)
 #'
 #' cell_metadata_categorical <- tibble(
-#'    cell_id = 1:n_cells,
-#'    md1 = sample(paste0("batch", 1:5), size = n_cells, replace = TRUE)
+#'     cell_id = 1:n_cells,
+#'     md1 = sample(paste0("batch", 1:5), size = n_cells, replace = TRUE)
 #' )
-#' 
-#' metadata3 <- cell_metadata_to_metacell(cell_metadata_categorical, cell_To_metacell, categorical=TRUE)
+#'
+#' metadata3 <- cell_metadata_to_metacell(cell_metadata_categorical, cell_To_metacell, categorical = TRUE)
 #' head(metadata3)
-#'
 #' \dontrun{
-#'   cell_metadata_to_metacell_from_h5ad("cells.h5ad", c("pile", "age"))
-#'   cell_metadata_to_metacell_from_h5ad("cells.h5ad", "batch", categorical=TRUE)
+#' cell_metadata_to_metacell_from_h5ad("cells.h5ad", c("pile", "age"))
+#' cell_metadata_to_metacell_from_h5ad("cells.h5ad", "batch", categorical = TRUE)
 #' }
-#'
-#'
 #'
 #' @export
 cell_metadata_to_metacell <- function(cell_metadata, cell_to_metacell, func = mean, categorical = FALSE) {

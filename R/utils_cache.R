@@ -134,11 +134,11 @@ has_time <- function(dataset) {
     !is.null(get_mc_data(dataset, "time_annot"))
 }
 
-has_metadata <- function(dataset){
+has_metadata <- function(dataset) {
     !is.null(get_mc_data(dataset, "metadata"))
 }
 
-dataset_metadata_fields <- function(dataset){
+dataset_metadata_fields <- function(dataset) {
     metadata <- get_mc_data(dataset, "metadata")
     if (is.null(metadata)) {
         return(c())

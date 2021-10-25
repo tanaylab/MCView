@@ -26,14 +26,14 @@ mod_metadata_ui <- function(id) {
                         startOpen = FALSE,
                         width = 25,
                         id = ns("metadata_projection_sidebar"),
-                        uiOutput(ns("metadata_range_ui")),
                         uiOutput(ns("point_size_ui")),
+                        uiOutput(ns("stroke_ui")),
                         uiOutput(ns("edge_distance_ui"))
                     ),
+                    uiOutput(ns("manifold_metadata_select_ui")),
                     shinycssloaders::withSpinner(
                         plotly::plotlyOutput(ns("plot_metadata_proj_2d"), height = "80vh")
-                    ),
-                    uiOutput(ns("manifold_metadata_select_ui"))
+                    )
                 )
             )
         )
@@ -72,15 +72,19 @@ mod_metadata_server <- function(input, output, session, dataset, metacell_types,
 
     # Manifold metadata select
     output$manifold_metadata_select_ui <- renderUI({
+        req(dataset())
         if (!has_metadata(dataset())) {
             print(glue("Dataset \"{dataset()}\" doesn't have any metadata. Use `update_metadata` to add it to your dataset."))
         } else {
-            selectInput(ns("manifold_metadata"), label = "Metadata", choices = dataset_metadata_fields(dataset()), selected = dataset_metadata_fields(dataset())[1])
+            shinyWidgets::pickerInput(
+                ns("color_proj"),
+                label = "Color by:",
+                choices = c("Cell type", dataset_metadata_fields(dataset())),
+                selected = dataset_metadata_fields(dataset())[1],
+                width = "70%",
+                multiple = FALSE
+            )
         }
-    })
-
-    output$metadata_range_ui <- renderUI({
-        shinyWidgets::numericRangeInput(ns("expr_range"), "Expression range", c(-18, -5), width = "80%", separator = " to ")
     })
 
     # Point size selector
@@ -91,6 +95,10 @@ mod_metadata_server <- function(input, output, session, dataset, metacell_types,
     # Minimal edge length selector
     output$edge_distance_ui <- renderUI({
         sliderInput(ns("min_edge_size"), label = "Min edge length", min = 0, max = 0.3, value = min_edge_length(dataset()), step = 0.001)
+    })
+
+    output$stroke_ui <- renderUI({
+        numericInput(ns("stroke"), label = "Stroke width", value = initial_proj_stroke(dataset()), min = 0, max = 3, step = 0.01)
     })
 
     # Projection plots
