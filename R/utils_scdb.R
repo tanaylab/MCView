@@ -14,5 +14,9 @@ init_temp_scdb <- function(scdb, matrix, mc, mc2d, network = NULL, dataset, scdb
         scdb_files <- fs::path(scdb, files_to_copy)
     }
 
-    purrr::walk(scdb_files, ~ fs::link_create(.x, fs::path(scdb_dir, basename(.x))))
+    purrr::walk(scdb_files, ~ {
+        if (!fs::file_exists(.x)) {
+            fs::link_create(.x, fs::path(scdb_dir, basename(.x)))
+        }
+    })
 }
