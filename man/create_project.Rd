@@ -4,7 +4,7 @@
 \alias{create_project}
 \title{Create a configuration folder for a project}
 \usage{
-create_project(project, project_dir = NULL, edit_config = TRUE)
+create_project(project, edit_config = TRUE)
 }
 \arguments{
 \item{project}{path of the project}
