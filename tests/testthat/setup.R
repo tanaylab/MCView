@@ -24,6 +24,7 @@ withr::defer(
         unlink(project_dir)
         unlink(bundle_dir)
         unlink(test_dir)
+        unlink(fs::path(test_dir, "PBMC1"))
     },
     teardown_env()
 )
