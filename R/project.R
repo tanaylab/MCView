@@ -73,7 +73,7 @@ create_project_dirs <- function(project_dir) {
 #' }
 #'
 #' @export
-create_project <- function(project, project_dir = NULL, edit_config = TRUE) {
+create_project <- function(project, edit_config = TRUE) {
     project_dir <- create_project_dirs(project)
     project_dir <- fs::path(project_dir, "config")
 
