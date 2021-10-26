@@ -1,4 +1,4 @@
-MCView::create_project("PBMC", project_dir = project_dir)
+MCView::create_project(project_dir)
 
 test_that("import_dataset works", {
     set.seed(60427)
@@ -14,6 +14,18 @@ test_that("import_dataset works", {
 
 test_that("dataset_ls works", {
     expect_equal(dataset_ls(project_dir), c("PBMC163k"))
+})
+
+test_that("import_dataset works when project was not created yet", {
+    set.seed(60427)
+    MCView::import_dataset(
+        project = fs::path(test_dir, "PBMC1"),
+        dataset = "PBMC163k",
+        anndata_file = fs::path(raw_dir, "metacells.h5ad"),
+        cell_type_field = NULL
+    )
+
+    test_dataset(fs::path(test_dir, "PBMC1"), "PBMC163k")
 })
 
 test_that("import_dataset works with implicit cell type field", {

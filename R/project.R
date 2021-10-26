@@ -22,22 +22,22 @@ project_cache_dir <- function(path) {
     fs::path(path, "cache")
 }
 
-verify_project_dir <- function(path) {
+verify_project_dir <- function(path, create = FALSE) {
     if (!dir.exists(path)) {
-        cli_abort("{.path path} does not exist. Maybe there is a typo? You can start a new project by running {.code MCView::create_project}.")
-    }
-    config_file <- project_config_file(path)
-    if (!file.exists(config_file)) {
-        cli_abort("No config file found in {.file {config_file}}. Are you sure this is an MCView project dir? You can start a new project by running {.code MCView::create_project}.")
+        if (create) {
+            create_project(project = basename(path), project_dir = dirname(path), edit_config = FALSE)
+        } else {
+            cli_abort("{.path path} does not exist. Maybe there is a typo? You can start a new project by running {.code MCView::create_project}.")
+        }
+    } else {
+        config_file <- project_config_file(path)
+        if (!file.exists(config_file)) {
+            cli_abort("No config file found in {.file {config_file}}. Are you sure this is an MCView project dir? You can start a new project by running {.code MCView::create_project}.")
+        }
     }
 }
 
-create_project_dirs <- function(project_dir, project) {
-    if (is.null(project_dir)) {
-        project_dir <- fs::path(getwd(), project)
-        cli_alert_info("creating {project} under current directory")
-    }
-
+create_project_dirs <- function(project_dir) {
     fs::dir_create(project_dir)
     cli_alert_info("creating {project_dir}")
 
@@ -61,8 +61,8 @@ create_project_dirs <- function(project_dir, project) {
 #' Create a project directory with the default configuration files and directory structure.
 #' A text editor would be opened in order to edit the project \code{config.yaml} file.
 #'
-#' @param project name of the project
-#' @param project_dir directory of the project. Would be created if not existing. If \code{NULL} - the project would be created under current directory.
+#' @param project path of the project
+#' @param edit_config open file editor for config file editing
 #'
 #' @examples
 #' \dontrun{
@@ -73,11 +73,11 @@ create_project_dirs <- function(project_dir, project) {
 #' }
 #'
 #' @export
-create_project <- function(project, project_dir = NULL) {
-    project_dir <- create_project_dirs(project_dir, project)
+create_project <- function(project, edit_config = TRUE) {
+    project_dir <- create_project_dirs(project)
     project_dir <- fs::path(project_dir, "config")
 
-    if (rlang::is_interactive()) {
+    if (rlang::is_interactive() && edit_config) {
         utils::file.edit(fs::path(project_dir, "config.yaml"))
     }
     cli_alert("please edit {.file {fs::path(project_dir, 'config.yaml')}}")

@@ -51,7 +51,7 @@
 #' @export
 import_dataset <- function(project, dataset, anndata_file, cell_type_field = "cluster", metacell_types_file = NULL, cell_type_colors_file = NULL, calc_gg_cor = TRUE) {
     verbose <- !is.null(getOption("MCView.verbose")) && getOption("MCView.verbose")
-    verify_project_dir(project)
+    verify_project_dir(project, create = TRUE)
 
     cli_alert_info("Importing {.field {dataset}}")
 

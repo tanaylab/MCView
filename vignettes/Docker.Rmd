@@ -28,7 +28,7 @@ docker pull tanaylab/mcview:latest
 
 ```bash
 mkdir PBMC
-docker run -v $(pwd)/PBMC:/project tanaylab/mcview R -e 'MCView::create_project("PBMC", project_dir = "/project")'
+docker run -v $(pwd)/PBMC:/project tanaylab/mcview R -e 'MCView::create_project("/project/PBMC")'
 ```
 
 ## Import a dataset

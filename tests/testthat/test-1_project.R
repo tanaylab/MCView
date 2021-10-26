@@ -1,5 +1,5 @@
 test_that("create_project works", {
-    MCView::create_project("PBMC", project_dir = project_dir)
+    MCView::create_project(project_dir)
 
     config_file <- project_config_file(project_dir)
     expect_true(fs::file_exists(config_file))
