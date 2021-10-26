@@ -64,6 +64,7 @@ Imports:
     tgutil (>= 0.1.7),
     tibble,
     tidyr,
+    vctrs,
     viridis,
     yaml,
     zip

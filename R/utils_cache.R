@@ -77,8 +77,7 @@ load_all_data <- function(cache_dir) {
 get_cell_type_data <- function(dataset) {
     cell_type_colors <- mc_data[[dataset]][["cell_type_colors"]]
     cell_type_colors <- cell_type_colors %>%
-        mutate(cell_type = as.character(cell_type)) %>%
-        mutate(cell_type_id = as.character(1:n()))
+        mutate(cell_type = as.character(cell_type))
     return(cell_type_colors)
 }
 
