@@ -17,6 +17,13 @@
 #' \code{network}, \code{time_annotation_file} and \code{time_bin_field} are only relevant
 #' if you computed flows/networks for your dataset and therefore are optional.
 #'
+#' In order to add time annotation to your dataset you will have to:
+#' \itemize{
+#'  \item{1. }{Add a column named "mc_age" or "age" to \code{metacell_types_file} with time per metacell}
+#'  \item{2. }{Create a \code{time_annotation_file} with id for each time bin and description}
+#' }
+#'
+#'
 #' @param scdb path to R metacell single cell RNA database
 #' @param matrix  name of the umi matrix to use
 #' @param mc  name of the metacell object to use
@@ -167,55 +174,59 @@ import_dataset_metacell1 <- function(project,
         serialize_shiny_data(mc_ag_n, "mc_ag_n", dataset = dataset, cache_dir = cache_dir)
     }
 
-    if (!is.null(time_annotation_file) && !is.null(time_bin_field)) {
+    if (!is.null(time_annotation_file)) {
         time_annot <- fread(time_annotation_file) %>% as_tibble()
         serialize_shiny_data(time_annot, "time_annot", dataset = dataset, cache_dir = cache_dir)
 
-        cell_md <- mat@cell_metadata[names(mc@mc), ] %>%
-            rownames_to_column("cell_id") %>%
-            mutate(metacell = as.character(mc@mc)) %>%
-            left_join(metacell_types)
+        if (!is.null(time_bin_field)) {
+            cell_md <- mat@cell_metadata[names(mc@mc), ] %>%
+                rownames_to_column("cell_id") %>%
+                mutate(metacell = as.character(mc@mc)) %>%
+                left_join(metacell_types)
 
-        if (time_bin_field != "time_bin") {
-            if (rlang::has_name(cell_md, "time_bin")) {
+            if (time_bin_field != "time_bin") {
+                if (rlang::has_name(cell_md, "time_bin")) {
+                    cell_md <- cell_md %>%
+                        select(-time_bin)
+                }
                 cell_md <- cell_md %>%
-                    select(-time_bin)
+                    rename(time_bin = !!time_bin_field) %>%
+                    as_tibble()
             }
+
+            min_time_bin <- min(cell_md$time_bin, na.rm = TRUE)
+            max_time_bin <- max(cell_md$time_bin, na.rm = TRUE)
+            obs_time_bins <- sort(unique(as.numeric(cell_md$time_bin)))
+
+            # in case time bins are not from 1:max_t
+            if (min_time_bin != 1 || length(obs_time_bins) != length(1:max_time_bin) || !all(1:max_time_bin == obs_time_bins)) {
+                cell_md <- cell_md %>% mutate(time_bin = as.numeric(factor(time_bin, levels = obs_time_bins)))
+            }
+
             cell_md <- cell_md %>%
-                rename(time_bin = !!time_bin_field) %>%
-                as_tibble()
+                left_join(time_annot, by = "time_bin")
+
+            type_ag <- cell_md %>%
+                count(cell_type, time_bin) %>%
+                filter(!is.na(time_bin)) %>%
+                spread(time_bin, n, fill = 0) %>%
+                as.data.frame() %>%
+                column_to_rownames("cell_type") %>%
+                as.matrix()
+            serialize_shiny_data(type_ag, "type_ag", dataset = dataset, df2mat = TRUE, cache_dir = cache_dir)
+
+            mc_ag <- cell_md %>%
+                count(metacell, time_bin) %>%
+                filter(!is.na(time_bin)) %>%
+                spread(time_bin, n, fill = 0) %>%
+                as.data.frame() %>%
+                column_to_rownames("metacell") %>%
+                as.matrix()
+            serialize_shiny_data(mc_ag, "mc_ag", dataset = dataset, df2mat = TRUE, cache_dir = cache_dir)
         }
-
-        min_time_bin <- min(cell_md$time_bin, na.rm = TRUE)
-        max_time_bin <- max(cell_md$time_bin, na.rm = TRUE)
-        obs_time_bins <- sort(unique(as.numeric(cell_md$time_bin)))
-
-        # in case time bins are not from 1:max_t
-        if (min_time_bin != 1 || length(obs_time_bins) != length(1:max_time_bin) || !all(1:max_time_bin == obs_time_bins)) {
-            cell_md <- cell_md %>% mutate(time_bin = as.numeric(factor(time_bin, levels = obs_time_bins)))
-        }
-
-        cell_md <- cell_md %>%
-            left_join(time_annot, by = "time_bin")
-
-        type_ag <- cell_md %>%
-            count(cell_type, time_bin) %>%
-            filter(!is.na(time_bin)) %>%
-            spread(time_bin, n, fill = 0) %>%
-            as.data.frame() %>%
-            column_to_rownames("cell_type") %>%
-            as.matrix()
-        serialize_shiny_data(type_ag, "type_ag", dataset = dataset, df2mat = TRUE, cache_dir = cache_dir)
-
-        mc_ag <- cell_md %>%
-            count(metacell, time_bin) %>%
-            filter(!is.na(time_bin)) %>%
-            spread(time_bin, n, fill = 0) %>%
-            as.data.frame() %>%
-            column_to_rownames("metacell") %>%
-            as.matrix()
-        serialize_shiny_data(mc_ag, "mc_ag", dataset = dataset, df2mat = TRUE, cache_dir = cache_dir)
     }
+
+
 
     if (!is.null(network)) {
         mc_network <- scdb_mctnetwork(network)
