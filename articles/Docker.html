@@ -109,7 +109,7 @@
 <h2 class="hasAnchor">
 <a href="#create-a-project" class="anchor"></a>Create a project</h2>
 <div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1"></a><span class="fu">mkdir</span> PBMC</span>
-<span id="cb2-2"><a href="#cb2-2"></a><span class="ex">docker</span> run -v <span class="va">$(</span><span class="bu">pwd</span><span class="va">)</span>/PBMC:/project tanaylab/mcview R -e <span class="st">'MCView::create_project("PBMC", project_dir = "/project")'</span></span></code></pre></div>
+<span id="cb2-2"><a href="#cb2-2"></a><span class="ex">docker</span> run -v <span class="va">$(</span><span class="bu">pwd</span><span class="va">)</span>/PBMC:/project tanaylab/mcview R -e <span class="st">'MCView::create_project("/project/PBMC")'</span></span></code></pre></div>
 </div>
 <div id="import-a-dataset" class="section level2">
 <h2 class="hasAnchor">

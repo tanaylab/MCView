@@ -140,18 +140,18 @@ A text editor would be opened in order to edit the project config.yaml file." />
 A text editor would be opened in order to edit the project <code>config.yaml</code> file.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>create_project</span><span class='op'>(</span><span class='va'>project</span>, project_dir <span class='op'>=</span> <span class='cn'>NULL</span><span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>create_project</span><span class='op'>(</span><span class='va'>project</span>, edit_config <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>project</th>
-      <td><p>name of the project</p></td>
+      <td><p>path of the project</p></td>
     </tr>
     <tr>
-      <th>project_dir</th>
-      <td><p>directory of the project. Would be created if not existing. If <code>NULL</code> - the project would be created under current directory.</p></td>
+      <th>edit_config</th>
+      <td><p>open file editor for config file editing</p></td>
     </tr>
     </table>
 

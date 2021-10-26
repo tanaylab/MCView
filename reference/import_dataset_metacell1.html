@@ -221,6 +221,11 @@ would contain objects used by MCView shiny app (such as the metacell matrix).</p
 this function.</p>
 <p><code>network</code>, <code>time_annotation_file</code> and <code>time_bin_field</code> are only relevant
 if you computed flows/networks for your dataset and therefore are optional.</p>
+<p>In order to add time annotation to your dataset you will have to:</p><ul>
+<li><p>1. Add a column named "mc_age" or "age" to <code>metacell_types_file</code> with time per metacell</p></li>
+<li><p>2. Create a <code>time_annotation_file</code> with id for each time bin and description</p></li>
+</ul>
+
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
