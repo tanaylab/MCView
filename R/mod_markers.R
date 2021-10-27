@@ -73,7 +73,7 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
     lfp_range <- reactiveVal()
 
     observe({
-        initial_markers <- choose_markers(get_markers(dataset()), 80)
+        initial_markers <- choose_markers(get_markers(dataset()), 100)
         markers(initial_markers)
 
         mat <- get_marker_matrix(
