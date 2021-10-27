@@ -55,6 +55,7 @@ mod_markers_sidebar_ui <- function(id) {
         list(
             shinyWidgets::actionGroupButtons(ns("apply"), labels = "Draw Heatmap"),
             uiOutput(ns("cell_type_list")),
+            uiOutput(ns("metadata_list")),
             shinyWidgets::actionGroupButtons(ns("update_markers"), labels = "Update markers", size = "sm"),
             uiOutput(ns("marker_genes_list")),
             uiOutput(ns("add_genes_ui"))
@@ -109,6 +110,18 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
             choicesOpt = list(
                 style = paste0("color: ", cell_types_hex, ";")
             )
+        )
+    })
+
+    output$metadata_list <- renderUI({
+        metadata <- get_mc_data(dataset(), "metadata")
+        req(metadata)
+        metadata_fields <- colnames(metadata)[-1]
+        shinyWidgets::pickerInput(ns("selected_md"), "Metadata",
+            choices = metadata_fields,
+            selected = NULL,
+            multiple = TRUE,
+            options = list(`actions-box` = TRUE, `dropup-auto` = FALSE)
         )
     })
 
@@ -175,13 +188,22 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
         req(dataset())
         req(markers_matrix())
 
+        if (!is.null(input$selected_md)) {
+            metadata <- get_mc_data(dataset(), "metadata") %>%
+                select(metacell, one_of(input$selected_md))
+        } else {
+            metadata <- NULL
+        }
+
         plot_markers_mat(
             markers_matrix(),
             metacell_types(),
             cell_type_colors(),
+            dataset(),
             min_lfp = lfp_range()[1],
             max_lfp = lfp_range()[2],
-            plot_legend = input$plot_legend %||% TRUE
+            plot_legend = input$plot_legend %||% TRUE,
+            metadata = metadata
         )
     })
 }

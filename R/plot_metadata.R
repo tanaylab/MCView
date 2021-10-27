@@ -91,7 +91,6 @@ mc2d_plot_metadata_ggp <- function(dataset,
     md_colors <- get_metadata_colors(dataset, md, colors = colors, color_breaks = color_breaks, metadata = metadata)
     palette <- circlize::colorRamp2(colors = md_colors$colors, breaks = md_colors$breaks)
 
-
     mc2d_df <- mc2d_df %>%
         mutate(col_x = palette(.[[md]]))
 
