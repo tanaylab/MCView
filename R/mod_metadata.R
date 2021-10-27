@@ -135,7 +135,7 @@ mod_metadata_server <- function(input, output, session, dataset, metacell_types,
 
     output$y_axis_select <- render_axis_select_ui("y_axis", "Y axis", md_choices = dataset_metadata_fields(dataset()), md_selected = dataset_metadata_fields(dataset())[2], selected_gene = default_gene2, input = input, ns = ns, dataset = dataset)
 
-    output$color_by_select <- render_axis_select_ui("color_by", "Color", md_choices = c("Cell type", dataset_metadata_fields(dataset())), md_selected = "Cell type", selected_gene = NULL, input = input, ns = ns, dataset = dataset)
+    output$color_by_select <- render_axis_select_ui("color_by", "Color", md_choices = c("Cell type", dataset_metadata_fields(dataset())), md_selected = "Cell type", selected_gene = default_gene1, input = input, ns = ns, dataset = dataset)
 
     axis_vars_ok <- function(dataset, input) {
         metadata <- get_mc_data(dataset, "metadata")
