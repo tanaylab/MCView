@@ -1,4 +1,4 @@
-MCView::create_project("PBMC", project_dir = project_dir)
+MCView::create_project(project_dir)
 
 test_that("import_dataset works with metadata dataframe", {
     set.seed(60427)

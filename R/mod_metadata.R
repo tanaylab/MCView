@@ -12,7 +12,7 @@ mod_metadata_ui <- function(id) {
     tagList(
         fluidRow(
             column(
-                width = 12,
+                width = 7,
                 shinydashboardPlus::box(
                     id = ns("metadata_projection"),
                     title = "Metadata",
@@ -21,7 +21,7 @@ mod_metadata_ui <- function(id) {
                     collapsible = TRUE,
                     closable = FALSE,
                     width = 12,
-                    height = "80vh",
+                    height = "65vh",
                     sidebar = shinydashboardPlus::boxSidebar(
                         startOpen = FALSE,
                         width = 25,
@@ -32,17 +32,15 @@ mod_metadata_ui <- function(id) {
                     ),
                     uiOutput(ns("manifold_metadata_select_ui")),
                     shinycssloaders::withSpinner(
-                        plotly::plotlyOutput(ns("plot_metadata_proj_2d"), height = "80vh")
+                        plotly::plotlyOutput(ns("plot_metadata_proj_2d"), height = "65vh")
                     )
                 )
-            )
-        ),
-        fluidRow(
+            ),
             column(
-                width = 6,
+                width = 5,
                 shinydashboardPlus::box(
                     id = ns("md_md_box"),
-                    title = "Comparison",
+                    title = "Metadata Comparison",
                     status = "primary",
                     solidHeader = TRUE,
                     collapsible = TRUE,
@@ -55,9 +53,9 @@ mod_metadata_ui <- function(id) {
                         uiOutput(ns("md_md_point_size_ui")),
                         uiOutput(ns("md_md_stroke_ui"))
                     ),
-                    uiOutput(ns("md1_select")),
-                    uiOutput(ns("md2_select")),
-                    uiOutput(ns("color_by_md_select")),
+                    axis_selector("x_axis", ns),
+                    axis_selector("y_axis", ns),
+                    axis_selector("color_by", ns),
                     shinycssloaders::withSpinner(
                         plotly::plotlyOutput(ns("plot_md_md_mc"))
                     )
@@ -89,8 +87,6 @@ mod_metadata_sidebar_ui <- function(id) {
 #' @noRd
 mod_metadata_server <- function(input, output, session, dataset, metacell_types, cell_type_colors) {
     ns <- session$ns
-
-    values <- reactiveValues()
 
     # Manifold metadata select
     output$manifold_metadata_select_ui <- renderUI({
@@ -135,50 +131,53 @@ mod_metadata_server <- function(input, output, session, dataset, metacell_types,
     output$plot_metadata_proj_2d <- render_2d_plotly(input, output, session, dataset, values, metacell_types, cell_type_colors, source = "proj_metadata_plot")
 
     # Metadata/Metadata plots
-    output$md1_select <- renderUI({
-        req(dataset())
-        shinyWidgets::pickerInput(ns("md1"), "Metadata A",
-            choices = dataset_metadata_fields(dataset()),
-            selected = dataset_metadata_fields(dataset())[1], multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
-        )
-    })
+    output$x_axis_select <- render_axis_select_ui("x_axis", "X axis", md_choices = dataset_metadata_fields(dataset()), md_selected = dataset_metadata_fields(dataset())[1], selected_gene = NULL, input = input, ns = ns, dataset = dataset)
 
-    output$md2_select <- renderUI({
-        req(dataset())
-        req(length(dataset_metadata_fields(dataset())) > 1)
-        shinyWidgets::pickerInput(ns("md2"), "Metadata B",
-            choices = dataset_metadata_fields(dataset()),
-            selected = dataset_metadata_fields(dataset())[2], multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
-        )
-    })
+    output$y_axis_select <- render_axis_select_ui("y_axis", "Y axis", md_choices = dataset_metadata_fields(dataset()), md_selected = dataset_metadata_fields(dataset())[2], selected_gene = NULL, input = input, ns = ns, dataset = dataset)
 
-    output$color_by_md_select <- renderUI({
-        req(dataset())
-        shinyWidgets::pickerInput(ns("color_by_md"), "Color by",
-            choices = c("Cell type", dataset_metadata_fields(dataset())),
-            selected = "Cell type", multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
-        )
-    })
+    output$color_by_select <- render_axis_select_ui("color_by", "Color", md_choices = c("Cell type", dataset_metadata_fields(dataset())), md_selected = "Cell type", selected_gene = NULL, input = input, ns = ns, dataset = dataset)
 
-
+    axis_vars_ok <- function(dataset, input) {
+        metadata <- get_mc_data(dataset, "metadata")
+        vars_ok <- purrr::map_lgl(c("x_axis", "y_axis", "color_by"), function(v) {
+            type <- input[[glue("{v}_type")]]
+            var <- input[[glue("{v}_var")]]
+            if (type == "Metadata" && (var %in% c(colnames(metadata), "Cell type"))) {
+                return(TRUE)
+            } else if (type == "Gene" && var %in% gene_names) {
+                return(TRUE)
+            } else {
+                return(FALSE)
+            }
+        })
+        return(all(vars_ok))
+    }
 
     output$plot_md_md_mc <- plotly::renderPlotly({
-        req(input$md1)
-        req(input$md2)
-        req(input$color_by_md)
+        req(input$x_axis_var)
+        req(input$y_axis_var)
+        req(input$color_by_var)
+        req(input$x_axis_type)
+        req(input$y_axis_type)
+        req(input$color_by_type)
         req(input$md_md_point_size)
         req(input$md_md_stroke)
 
-        color_by_md <- input$color_by_md
-        if (input$color_by_md == "Cell type") {
-            color_by_md <- NULL
+        req(axis_vars_ok(dataset(), input))
+
+        color_var <- input$color_by_var
+        if (input$color_by_var == "Cell type") {
+            color_var <- NULL
         }
 
-        fig <- plot_md_md_mc(
+        fig <- plot_mc_scatter(
             dataset(),
-            input$md1,
-            input$md2,
-            color_by_md,
+            input$x_axis_var,
+            input$y_axis_var,
+            color_var,
+            x_type = input$x_axis_type,
+            y_type = input$y_axis_type,
+            color_type = input$color_by_type,
             metacell_types = metacell_types(),
             cell_type_colors = cell_type_colors(),
             point_size = input$md_md_point_size,
@@ -190,7 +189,7 @@ mod_metadata_server <- function(input, output, session, dataset, metacell_types,
             plotly::toWebGL() %>%
             sanitize_plotly_buttons()
 
-        if (input$color_by_md == "Cell type") {
+        if (input$color_by_var == "Cell type") {
             fig <- plotly::hide_legend(fig)
         } else {
             # This ugly hack is due to https://github.com/ropensci/plotly/issues/1234
@@ -201,8 +200,55 @@ mod_metadata_server <- function(input, output, session, dataset, metacell_types,
             })
         }
 
-
-
         return(fig)
+    })
+}
+
+
+axis_selector <- function(axis, ns) {
+    fluidRow(
+        column(
+            width = 9,
+            uiOutput(ns(glue("{axis}_select")))
+        ),
+        column(
+            width = 3,
+            shinyWidgets::prettyRadioButtons(
+                ns(glue("{axis}_type")),
+                label = "",
+                choices = c("Metadata", "Gene"),
+                inline = TRUE,
+                status = "danger",
+                fill = TRUE
+            )
+        )
+    )
+}
+
+render_axis_select_ui <- function(axis, title, md_choices, md_selected, selected_gene, ns, input, dataset) {
+    picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
+
+    renderUI({
+        req(dataset())
+        req(input[[glue("{axis}_type")]])
+        if (input[[glue("{axis}_type")]] == "Metadata") {
+            shinyWidgets::pickerInput(
+                ns(glue("{axis}_var")),
+                title,
+                choices = md_choices,
+                selected = md_selected,
+                multiple = FALSE,
+                options = picker_options
+            )
+        } else if (input[[glue("{axis}_type")]] == "Gene") {
+            shinyWidgets::pickerInput(
+                ns(glue("{axis}_var")),
+                title,
+                choices = gene_names,
+                selected = selected_gene,
+                multiple = FALSE,
+                options = picker_options
+            )
+        }
     })
 }
