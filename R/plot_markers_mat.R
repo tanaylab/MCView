@@ -51,15 +51,19 @@ plot_markers_mat <- function(mc_fp,
 
 add_markers_colorbars <- function(p, mc_types, dataset, top_cell_type_bar = TRUE, metadata = NULL) {
     if (!is.null(metadata)) {
+        metadata <- metadata %>%
+            mutate(metacell = as.character(metacell)) %>%
+            right_join(mc_types %>% select(metacell), by = "metacell")
+
         for (md in rev(colnames(metadata)[-1])) {
             md_colors <- get_metadata_colors(dataset, md, metadata = metadata)
             palette <- circlize::colorRamp2(colors = md_colors$colors, breaks = md_colors$breaks)
-            p <- p %>% tgplot_add_axis_annotation(palette(metadata[[md]]), position = "bottom")
+            p <- p %>% tgplot_add_axis_annotation(palette(metadata[[md]]), position = "bottom", label = md)
         }
     }
-    p <- p %>% tgplot_add_axis_annotation(mc_types$color)
+    p <- p %>% tgplot_add_axis_annotation(mc_types$color, label = "Cell type", plot_left = FALSE)
     if (top_cell_type_bar) {
-        p <- p %>% tgplot_add_axis_annotation(mc_types$color, position = "top")
+        p <- p %>% tgplot_add_axis_annotation(mc_types$color, position = "top", label = "Cell type", plot_right = FALSE)
     }
     return(p)
 }

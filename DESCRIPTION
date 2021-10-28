@@ -61,7 +61,7 @@ Imports:
     shinyWidgets,
     tglkmeans,
     tgstat,
-    tgutil (>= 0.1.7),
+    tgutil (>= 0.1.8),
     tibble,
     tidyr,
     viridis,
