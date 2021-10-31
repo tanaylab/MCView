@@ -169,9 +169,9 @@
 <p>You can now rerun the app and the types/colors would be updated.</p>
 <p>Note that if you changed cell type <strong>names</strong> you should update both <code>cell_type_colors</code> and <code>metacell_types</code>, as otherwise metacells with the old name would appear with a “(Missing)” cell type tag.</p>
 </div>
-<div id="metadata" class="section level1">
-<h1 class="hasAnchor">
-<a href="#metadata" class="anchor"></a>Metadata</h1>
+<div id="metadata" class="section level2">
+<h2 class="hasAnchor">
+<a href="#metadata" class="anchor"></a>Metadata</h2>
 <p>You can load numeric metadata fields for each metacell using the <code>metadata</code> parameter in <code>import_dataset</code> command:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="../reference/import_dataset.html">import_dataset</a></span><span class="op">(</span>project <span class="op">=</span> <span class="st">"PBMC"</span>, 
@@ -186,6 +186,7 @@
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="../reference/update_metadata.html">update_metadata</a></span><span class="op">(</span><span class="op">)</span></code></pre></div>
 <p>You can generate metadata per metacell from cell metadata using <code>cell_metadata_to_metacell</code> and <code>cell_metadata_to_metacell_from_h5ad</code> functions.</p>
+</div>
 <div id="deploy" class="section level2">
 <h2 class="hasAnchor">
 <a href="#deploy" class="anchor"></a>Deploy</h2>
@@ -204,7 +205,6 @@
 <h2 class="hasAnchor">
 <a href="#docker" class="anchor"></a>Docker</h2>
 <p>See the <a href="https://tanaylab.github.io/MCView/articles/Docker.html">docker</a> vignette for instructions of using the docker image.</p>
-</div>
 </div>
   </div>
 
