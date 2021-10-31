@@ -11,6 +11,9 @@ import_dataset(
   cell_type_field = "cluster",
   metacell_types_file = NULL,
   cell_type_colors_file = NULL,
+  metadata_fields = NULL,
+  metadata = NULL,
+  metadata_colors = NULL,
   calc_gg_cor = TRUE
 )
 }
@@ -21,7 +24,7 @@ import_dataset(
 
 \item{anndata_file}{path to \code{h5ad} file which contains the output of metacell2 pipeline (metacells python package).}
 
-\item{cell_type_field}{name of a field in the anndata object$obs which contains a cell type (optional).
+\item{cell_type_field}{name of a field in the anndata \code{object$obs} which contains a cell type (optional).
 If the field doesn't exist and \code{metacell_types_file} are missing, MCView would cluster the
 metacell matrix using kmeans++ algorithm (from the \code{tglkmeans} package).
 If \code{metacell_types} parameter is set this field is ignored.}
@@ -38,6 +41,18 @@ each cell type. The file should have a column named "cell_type" or "cluster" wit
 cell types and another column named "color" with the color assignment. Cell types that do not
 exist in the metacell types would be ignored.
 If this is missing, MCView would use the \code{chameleon} package to assign a color for each cell type.}
+
+\item{metadata_fields}{names of fields in the anndata \code{object$obs} which contains metadata for each metacell.
+The fields should *always* be numeric - if you have cell categorical annotations use
+\code{cell_metadata_to_metacell} with \code{categorical=TRUE} to convert them to a
+numeric score (e.g. using fraction of the category).}
+
+\item{metadata}{can be either a data frame with a column named "metacell" with the metacell id and other metadata columns
+or a name of a delimited file which contains such data frame.}
+
+\item{metadata_colors}{a named list with colors for each metadata column, or a name of a yaml file with such list.
+Colors should be given as a list where the first element is a vector of colors and the second element is a vector of breaks.
+If only colors are given breaks would be implicitly determined from the minimum and maximum of the metadata field.}
 
 \item{calc_gg_cor}{calculate top 30 correlated and anti-correlated genes for each gene. This computation can be heavy
 for large datasets or weaker machines, so you can set \code{calc_gg_cor=FALSE} to skip it. Note that then this feature

@@ -93,10 +93,15 @@ init_tab_defs <- function() {
             module_name = "mc_mc",
             icon = "chart-bar"
         ),
+        "Metadata" = list(
+            title = "Metadata",
+            module_name = "metadata",
+            icon = "sticky-note"
+        ),
         "Annotate" = list(
             title = "Annotate",
             module_name = "annotate",
-            icon = "sticky-note"
+            icon = "pen"
         )
     )
 

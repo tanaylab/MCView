@@ -10,6 +10,7 @@
 #' @import tgstat
 #' @import tgutil
 #' @import cli
+#' @importFrom rlang has_name
 #' @importFrom rintrojs introBox
 #' @importFrom glue glue
 #' @importFrom promises %...>%

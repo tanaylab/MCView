@@ -35,6 +35,11 @@ arrange_2d_proj_tooltip <- function(fig) {
     return(fig)
 }
 
+rm_plotly_grid <- function(fig) {
+    fig %>%
+        plotly::layout(xaxis = list(showgrid = FALSE), yaxis = list(showgrid = FALSE))
+}
+
 
 sanitize_plotly_buttons <- function(p,
                                     buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"),

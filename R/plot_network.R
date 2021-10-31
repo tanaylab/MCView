@@ -18,7 +18,7 @@ plot_propagation_net_metacell <- function(dataset,
     bg_col <- "gray90"
     bg <- "white"
 
-    score_shades <- colorRampPalette(c("lightgray", "gray", "darkgray", "lightpink", "pink", "red", "darkred"))(1000)
+    score_shades <- grDevices::colorRampPalette(c("lightgray", "gray", "darkgray", "lightpink", "pink", "red", "darkred"))(1000)
 
     nn <- mc_network %>%
         filter(flow > 1e-4) %>%

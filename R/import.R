@@ -16,7 +16,7 @@
 #' @param project path to the project
 #' @param dataset name for the dataset, e.g. "PBMC"
 #' @param anndata_file path to \code{h5ad} file which contains the output of metacell2 pipeline (metacells python package).
-#' @param cell_type_field name of a field in the anndata object$obs which contains a cell type (optional).
+#' @param cell_type_field name of a field in the anndata \code{object$obs} which contains a cell type (optional).
 #' If the field doesn't exist and \code{metacell_types_file} are missing, MCView would cluster the
 #' metacell matrix using kmeans++ algorithm (from the \code{tglkmeans} package).
 #' If \code{metacell_types} parameter is set this field is ignored.
@@ -31,6 +31,15 @@
 #' cell types and another column named "color" with the color assignment. Cell types that do not
 #' exist in the metacell types would be ignored.
 #' If this is missing, MCView would use the \code{chameleon} package to assign a color for each cell type.
+#' @param metadata_fields names of fields in the anndata \code{object$obs} which contains metadata for each metacell.
+#' The fields should *always* be numeric - if you have cell categorical annotations use
+#' \code{cell_metadata_to_metacell} with \code{categorical=TRUE} to convert them to a
+#' numeric score (e.g. using fraction of the category).
+#' @param metadata can be either a data frame with a column named "metacell" with the metacell id and other metadata columns
+#' or a name of a delimited file which contains such data frame.
+#' @param metadata_colors a named list with colors for each metadata column, or a name of a yaml file with such list.
+#' Colors should be given as a list where the first element is a vector of colors and the second element is a vector of breaks.
+#' If only colors are given breaks would be implicitly determined from the minimum and maximum of the metadata field.
 #' @param calc_gg_cor calculate top 30 correlated and anti-correlated genes for each gene. This computation can be heavy
 #' for large datasets or weaker machines, so you can set \code{calc_gg_cor=FALSE} to skip it. Note that then this feature
 #' would be missing from the app.
@@ -49,7 +58,16 @@
 #' }
 #'
 #' @export
-import_dataset <- function(project, dataset, anndata_file, cell_type_field = "cluster", metacell_types_file = NULL, cell_type_colors_file = NULL, calc_gg_cor = TRUE) {
+import_dataset <- function(project,
+                           dataset,
+                           anndata_file,
+                           cell_type_field = "cluster",
+                           metacell_types_file = NULL,
+                           cell_type_colors_file = NULL,
+                           metadata_fields = NULL,
+                           metadata = NULL,
+                           metadata_colors = NULL,
+                           calc_gg_cor = TRUE) {
     verbose <- !is.null(getOption("MCView.verbose")) && getOption("MCView.verbose")
     verify_project_dir(project, create = TRUE)
 
@@ -72,6 +90,28 @@ import_dataset <- function(project, dataset, anndata_file, cell_type_field = "cl
 
     mc_sum <- colSums(mc_mat)
     serialize_shiny_data(mc_sum, "mc_sum", dataset = dataset, cache_dir = cache_dir)
+
+    metacells <- rownames(adata$obs)
+
+    metadata <- load_metadata(metadata, metadata_fields, metacells, adata)
+    if (!is.null(metadata)) {
+        serialize_shiny_data(
+            metadata %>% select(metacell, everything()),
+            "metadata",
+            dataset = dataset,
+            cache_dir = cache_dir,
+            flat = TRUE
+        )
+    }
+
+    if (!is.null(metadata_colors)) {
+        cli_alert_info("Processing metadata colors")
+        if (is.character(metadata_colors)) {
+            metadata_colors <- yaml::read_yaml(metadata_colors) %>% as_tibble()
+        }
+        metadata_colors <- parse_metadata_colors(metadata_colors, metadata)
+        serialize_shiny_data(metadata_colors, "metadata_colors", dataset = dataset, cache_dir = cache_dir)
+    }
 
     cli_alert_info("Processing 2d projection")
     graph <- Matrix::summary(adata$obsp$obs_outgoing_weights) %>%

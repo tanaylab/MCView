@@ -63,7 +63,7 @@ The main configuration file (`config/config.yaml`) contains the parameters:
 
 ```yaml
 title: MCView
-tabs: ["Manifold", "Genes", "Markers", "Metacells", "Annotate", "About"] # which tabs to show
+tabs: ["Manifold", "Genes", "Markers", "Metacells", "Metadata", "Annotate", "About"] # which tabs to show
 help: false # set to true to show introjs help on start
 selected_gene1: Foxc1 # Default selected gene1 (optional)
 selected_gene2: Twist1 # Default selected gene2 (optional)
@@ -87,7 +87,7 @@ The title of the app. This would be shown on the top left of the screen.
 Controls which tabs to show in the left sidebar and their order. Options are: 
 
 ```yaml
-["Manifold", "Genes", "Markers", "Metacells", "Annotate", "About"]
+["Manifold", "Genes", "Markers", "Metacells", "Metadata", "Annotate", "About"]
 ```
 
 Why would you want to remove tabs? 

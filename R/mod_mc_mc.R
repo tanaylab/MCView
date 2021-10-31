@@ -237,7 +237,6 @@ mod_mc_mc_server <- function(input, output, session, dataset, metacell_types, ce
         }
     })
 
-
     output$metacell_flow_box <- renderUI({
         req(has_network(dataset()))
         shinydashboardPlus::box(
@@ -281,31 +280,6 @@ mod_mc_mc_server <- function(input, output, session, dataset, metacell_types, ce
         plot_propagation_net_metacell(dataset(), mc_to_plot, metacell_types = metacell_types()) +
             ggtitle(glue("metacell #{mc_to_plot} ({mc_data$cell_type[1]})")) +
             theme(plot.title = element_text(colour = color))
-    })
-
-
-    observeEvent(plotly::event_data("plotly_click", source = "proj_mc_plot_gene_tab"), {
-        el <- plotly::event_data("plotly_click", source = "proj_mc_plot_gene_tab")
-
-        metacell <- el$customdata
-        updateSelectInput(session, "metacell1", selected = metacell)
-        showNotification(glue("Selected Metacell #{metacell}"))
-    })
-
-    observeEvent(plotly::event_data("plotly_click", source = "gene_time_mc_plot1"), {
-        el <- plotly::event_data("plotly_click", source = "gene_time_mc_plot1")
-
-        metacell <- el$customdata
-        updateSelectInput(session, "metacell1", selected = metacell)
-        showNotification(glue("Selected Metacell #{metacell}"))
-    })
-
-    observeEvent(plotly::event_data("plotly_click", source = "gene_time_mc_plot2"), {
-        el <- plotly::event_data("plotly_click", source = "gene_time_mc_plot2")
-
-        metacell <- el$customdata
-        updateSelectInput(session, "metacell1", selected = metacell)
-        showNotification(glue("Selected Metacell #{metacell}"))
     })
 
     # Gene trajectory plots
@@ -368,9 +342,27 @@ mod_mc_mc_server <- function(input, output, session, dataset, metacell_types, ce
     })
 
 
+    # metacell click observers
+    metacell_click_observer("proj_manifold_plot", session)
+    metacell_click_observer("md_md_plot", session)
+    metacell_click_observer("gene_gene_plot", session)
+    metacell_click_observer("proj_metadata_plot", session)
+    metacell_click_observer("proj_mc_plot_gene_tab", session)
+    metacell_click_observer("gene_time_mc_plot1", session)
+    metacell_click_observer("gene_time_mc_plot2", session)
+
     # Output priorities
     outputOptions(output, "plot_mc_proj_2d", priority = 6)
     outputOptions(output, "plot_mc_mc_gene_scatter", priority = 5)
     outputOptions(output, "plot_metacell1_flow", priority = 4)
     outputOptions(output, "plot_mc_traj", priority = 3)
+}
+
+metacell_click_observer <- function(source_id, session) {
+    observeEvent(plotly::event_data("plotly_click", source = source_id), {
+        el <- plotly::event_data("plotly_click", source = source_id)
+        metacell <- el$customdata
+        updateSelectInput(session, "metacell1", selected = metacell)
+        showNotification(glue("Selected Metacell A #{metacell}"))
+    })
 }

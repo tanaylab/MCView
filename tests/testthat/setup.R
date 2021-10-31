@@ -29,6 +29,11 @@ withr::defer(
     teardown_env()
 )
 
+test_cache_file_exists <- function(file, project_dir, dataset) {
+    dataset_dir <- fs::path(project_dir, "cache", dataset)
+    expect_true(fs::file_exists(fs::path(dataset_dir, file)))
+}
+
 test_dataset <- function(project_dir,
                          dataset,
                          required_files = c(
@@ -43,5 +48,5 @@ test_dataset <- function(project_dir,
     dataset_dir <- fs::path(project_dir, "cache", dataset)
     expect_true(fs::dir_exists(project_dir))
     expect_true(fs::dir_exists(dataset_dir))
-    purrr::walk(required_files, ~ expect_true(fs::file_exists(fs::path(dataset_dir, .x))))
+    purrr::walk(required_files, ~ test_cache_file_exists(.x, project_dir, dataset))
 }

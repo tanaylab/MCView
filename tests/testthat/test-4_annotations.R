@@ -15,6 +15,8 @@ test_that("update_metacell_types works", {
 })
 
 test_that("update_metacell_types works with missing cell types", {
+    init_config(project = project_dir)
+    load_all_data(cache_dir = project_cache_dir(project_dir))
     orig_mc_types <- get_metacell_types_data("PBMC163k")
     metacell_types <- fread(fs::path(raw_dir, "metacell-types.csv"))
     metacell_types <- metacell_types %>% filter(!(metacell %in% 1:50))

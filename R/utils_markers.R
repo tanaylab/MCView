@@ -59,42 +59,53 @@ choose_markers <- function(marker_genes, max_markers) {
     return(markers)
 }
 
+filter_markers_mat <- function(gene_folds) {
+    good_marks <- unique(as.vector(unlist(
+        apply(
+            gene_folds,
+            2,
+            function(x) {
+                names(head(sort(-x[x > 0.5]), n = 10))
+            }
+        )
+    )))
+
+    if (is.null(good_marks) | length(good_marks) < 4) {
+        good_marks <- rownames(gene_folds)
+    }
+
+    return(gene_folds[good_marks, ])
+}
+
+get_top_marks <- function(feat) {
+    g_ncover <- apply(feat > 1, 1, sum)
+    main_mark <- names(g_ncover)[which.max(g_ncover)]
+    f <- feat[main_mark, ] < 0.25
+    if (sum(f) > 0.2 * ncol(feat)) {
+        g_score <- apply(feat[, f] > 1, 1, sum)
+    } else {
+        g_score <- -apply(feat, 1, cor, feat[main_mark, ])
+    }
+    second_mark <- names(g_score)[which.max(g_score)]
+    cli_alert_info("Ordering metacells based on {.file {main_mark}} vs {.file {second_mark}}")
+    return(c(main_mark, second_mark))
+}
+
 #' Order metacells based on 2 most variable genes
 #'
 #' @noRd
 #' @return named vector with metacell order
 order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers = FALSE, force_cell_type = FALSE, metacell_types = NULL) {
     if (filter_markers) {
-        good_marks <- unique(as.vector(unlist(
-            apply(
-                gene_folds,
-                2,
-                function(x) {
-                    names(head(sort(-x[x > 0.5]), n = 10))
-                }
-            )
-        )))
-
-        if (is.null(good_marks) | length(good_marks) < 4) {
-            good_marks <- rownames(gene_folds)
-        }
-    } else {
-        good_marks <- rownames(gene_folds)
+        gene_folds <- filter_markers_mat(gene_folds)
     }
 
-    feat <- log2(gene_folds[good_marks, ])
+    feat <- log2(gene_folds)
 
     if (is.null(marks)) {
-        g_ncover <- apply(feat > 1, 1, sum)
-        main_mark <- names(g_ncover)[which.max(g_ncover)]
-        f <- feat[main_mark, ] < 0.25
-        if (sum(f) > 0.2 * ncol(feat)) {
-            g_score <- apply(feat[, f] > 1, 1, sum)
-        } else {
-            g_score <- -apply(feat, 1, cor, feat[main_mark, ])
-        }
-        second_mark <- names(g_score)[which.max(g_score)]
-        cli_alert_info("Ordering metacells based on {.file {main_mark}} vs {.file {second_mark}}")
+        marks <- get_top_marks(feat)
+        main_mark <- marks[1]
+        second_mark <- marks[2]
     } else {
         main_mark <- marks[1]
         second_mark <- marks[2]
