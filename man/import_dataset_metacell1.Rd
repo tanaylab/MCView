@@ -65,6 +65,12 @@ this function.
 
 \code{network}, \code{time_annotation_file} and \code{time_bin_field} are only relevant
 if you computed flows/networks for your dataset and therefore are optional.
+
+In order to add time annotation to your dataset you will have to:
+\itemize{
+ \item{1. }{Add a column named "mc_age" or "age" to \code{metacell_types_file} with time per metacell}
+ \item{2. }{Create a \code{time_annotation_file} with id for each time bin and description}
+}
 }
 \examples{
 \dontrun{

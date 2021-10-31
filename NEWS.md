@@ -1,6 +1,14 @@
 # MCView 0.2.1.9000
 
-* Added metadata tab
+* Added metadata tab.
+* Added Markers tab.
+* Added a download button.
+* `create_project` now only takes path (instead of path + project name)
+* implicitly create a project when importing
+* import cell type annotation using a single file which contains both metacell types and cell type colors. 
+* Bug fixes: issues #48, #51, #52, #60, #62 and more. 
+* Changed gene selectors on manifold tab to be on demand (to reduce initialization time).
+* Added (some) caching.
 
 # MCView 0.2.1
 

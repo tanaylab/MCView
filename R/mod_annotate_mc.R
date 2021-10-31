@@ -137,19 +137,6 @@ mod_annotate_mc_ui <- function(id) {
                     closable = FALSE,
                     width = 12,
                     splitLayout(
-                        fileInput(ns("cell_type_colors_fn"),
-                            label = NULL,
-                            buttonLabel = "Load",
-                            multiple = FALSE,
-                            accept =
-                                c(
-                                    "text/csv",
-                                    "text/comma-separated-values,text/plain",
-                                    "text/tab-separated-values",
-                                    ".csv",
-                                    ".tsv"
-                                )
-                        ),
                         actionButton(ns("reset_cell_type_colors"), "Reset", style = "align-items: center;"),
                         downloadButton(ns("cell_type_colors_download"), "Export", style = "align-items: center;"),
                         actionButton(ns("delete_cell_type_colors"), "Delete"),
@@ -193,7 +180,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
     ns <- session$ns
 
     # gene selectors
-    values <- reactiveValues(gene1 = default_gene1, gene2 = default_gene2)
+    values <- reactiveValues(gene1 = default_gene1, gene2 = default_gene2, file_status = NULL)
     server_gene_selectors(input, output, session, values, dataset, ns)
 
     observe({
@@ -203,24 +190,27 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         # remove metacell color column if exists
         initial_metacell_types$mc_col <- NULL
 
-        # add cell_type_id and cell type color from initial cell type annotation
+        # add cell type color from initial cell type annotation
         initial_metacell_types <- initial_metacell_types %>%
-            left_join(initial_cell_type_colors %>% select(cell_type, cell_type_id, mc_col = color), by = "cell_type")
+            left_join(initial_cell_type_colors %>% select(cell_type, mc_col = color), by = "cell_type")
 
         metacell_types(initial_metacell_types)
         cell_type_colors(initial_cell_type_colors)
     })
 
-    files_data <- reactiveValues(metacell_types = NULL, cell_types = NULL)
+    observeEvent(input$metacell_types_fn, {
+        values$file_status <- "uploaded"
+    })
 
     observe({
         req(input$metacell_types_fn)
-        new_metacell_types <- tgutil::fread(input$metacell_types_fn$datapath, colClasses = c("cell_type_id" = "character", "cell_type" = "character", "metacell" = "character")) %>% as_tibble()
+        req(values$file_status)
+        new_metacell_types <- tgutil::fread(input$metacell_types_fn$datapath, colClasses = c("cell_type" = "character", "metacell" = "character")) %>% as_tibble()
 
         input_ok <- TRUE
-        required_fields <- c("cell_type_id", "cell_type", "metacell")
+        required_fields <- c("cell_type", "metacell")
         if (!all(required_fields %in% colnames(new_metacell_types))) {
-            showNotification(glue("Please provide a file with the following fields: cell_type_id, cell_type, metacell"), type = "error")
+            showNotification(glue("Please provide a file with the following fields: cell_type, metacell"), type = "error")
             input_ok <- FALSE
         }
 
@@ -240,66 +230,27 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         }
 
         if (input_ok) {
-            files_data$metacell_types <- new_metacell_types
+            if (has_name(new_metacell_types, "color")) {
+                new_cell_type_colors <- new_metacell_types %>%
+                    distinct(cell_type, color) %>%
+                    filter(cell_type != "(Missing)") %>%
+                    arrange(cell_type) %>%
+                    mutate(order = 1:n())
+
+                cell_type_colors(new_cell_type_colors)
+            }
+
+            cur_metacell_types <- metacell_types()
+            new_metacell_types <- cur_metacell_types %>%
+                select(-any_of(c("cell_type"))) %>%
+                left_join(new_metacell_types %>% select(metacell, cell_type), by = "metacell") %>%
+                mutate(cell_type = ifelse(cell_type == "(Missing)", NA, cell_type)) %>%
+                mutate(cell_type = as.character(forcats::fct_explicit_na(factor(cell_type))))
+
+            new_metacell_types <- sanitize_metacell_types(new_metacell_types, cell_type_colors(), dataset())
+            metacell_types(new_metacell_types)
+            values$file_status <- NULL
         }
-    })
-
-    # load metacell types file
-    observe({
-        req(files_data$metacell_types)
-
-        new_metacell_types <- files_data$metacell_types
-
-        cur_metacell_types <- metacell_types()
-        new_metacell_types <- cur_metacell_types %>%
-            select(-any_of(c("cell_type", "cell_type_id"))) %>%
-            left_join(new_metacell_types %>% select(metacell, cell_type, cell_type_id), by = "metacell") %>%
-            mutate(cell_type = as.character(forcats::fct_explicit_na(factor(cell_type))))
-
-        new_metacell_types <- sanitize_metacell_types(new_metacell_types, cell_type_colors(), dataset())
-
-        metacell_types(new_metacell_types)
-
-        files_data$metacell_types <- NULL
-    })
-
-    # load cell type colors
-    observe({
-        req(input$cell_type_colors_fn)
-        new_cell_type_colors <- tgutil::fread(input$cell_type_colors_fn$datapath, colClasses = c("cell_type_id" = "character", "cell_type" = "character", "color" = "character")) %>% as_tibble()
-
-        input_ok <- TRUE
-        required_fields <- c("cell_type_id", "cell_type", "color")
-        if (!all(required_fields %in% colnames(new_cell_type_colors))) {
-            showNotification(glue("Please provide a file with the following fields: cell_type_id, cell_type, color"), type = "error")
-            input_ok <- FALSE
-        }
-
-        req(input_ok)
-
-        if (!has_name(new_cell_type_colors, "order")) {
-            new_cell_type_colors <- new_cell_type_colors %>% mutate(order = 1:n())
-        }
-
-        files_data$cell_types <- new_cell_type_colors
-    })
-
-
-    observe({
-        req(files_data$cell_types)
-
-        new_cell_type_colors <- files_data$cell_types
-
-        if ("order" %in% colnames(new_cell_type_colors)) {
-            new_cell_type_colors <- new_cell_type_colors %>% arrange(order)
-        }
-        if (!rlang::has_name(new_cell_type_colors, "cell_type_id")) {
-            new_cell_type_colors <- new_cell_type_colors %>% mutate(cell_type_id = as.character(1:n()))
-        }
-
-        cell_type_colors(new_cell_type_colors)
-
-        files_data$cell_types <- NULL
     })
 
     # export metacell types file
@@ -310,7 +261,8 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         content = function(file) {
             fwrite(
                 metacell_types() %>%
-                    select(metacell, cell_type_id, cell_type, top1_gene, top1_lfp, top2_gene, top2_lfp),
+                    select(metacell, cell_type, top1_gene, top1_lfp, top2_gene, top2_lfp) %>%
+                    left_join(cell_type_colors() %>% select(cell_type, color), by = "cell_type"),
                 file
             )
         }
@@ -324,29 +276,30 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         content = function(file) {
             fwrite(
                 cell_type_colors() %>%
-                    select(cell_type_id, cell_type, color),
+                    select(cell_type, color),
                 file
             )
         }
     )
 
     # set reactive values
-    selected_metacell_types <- reactiveVal(tibble(metacell = character(), cell_type_id = character(), cell_type = character()))
+    selected_metacell_types <- reactiveVal(tibble(metacell = character(), cell_type = character()))
     to_show <- reactiveVal()
-    # keep the last cell type that was chosen in order for it to be defaulty selected
+
+    # keep the last cell type that was chosen in order for it to be defaultly selected
     last_chosen_cell_type <- reactiveVal("(Missing)")
 
     observeEvent(input$reset_metacell_types, {
         metacell_types(get_mc_data(dataset(), "metacell_types"))
-        selected_metacell_types(tibble(metacell = character(), cell_type_id = character(), cell_type = character()))
+        selected_metacell_types(tibble(metacell = character(), cell_type = character()))
         to_show(NULL)
         last_chosen_cell_type("(Missing)")
+        values$file_status <- NULL
     })
 
     observeEvent(input$reset_cell_type_colors, {
         cell_type_colors(get_mc_data(dataset(), "cell_type_colors"))
     })
-
 
     output$annotation_box <- renderUI({
         if (nrow(selected_metacell_types()) == 0) {
@@ -388,13 +341,11 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
             req(input$selected_cell_type_update_all)
             metacells <- selected_metacell_types() %>% pull(metacell)
             new_metacell_types <- new_metacell_types %>% mutate(
-                cell_type = ifelse(metacell %in% metacells, input$selected_cell_type_update_all, cell_type),
-                cell_type_id = ifelse(metacell %in% metacells, cell_type_to_cell_type_id(input$selected_cell_type_update_all, cell_type_colors()), cell_type_id)
+                cell_type = ifelse(metacell %in% metacells, input$selected_cell_type_update_all, cell_type)
             )
             new_selected_annot <- selected_metacell_types()
             new_selected_annot <- new_selected_annot %>% mutate(
                 cell_type = ifelse(metacell %in% metacells, input$selected_cell_type_update_all, cell_type),
-                cell_type_id = ifelse(metacell %in% metacells, cell_type_to_cell_type_id(input$selected_cell_type_update_all, cell_type_colors()), cell_type_id)
             )
             selected_metacell_types(new_selected_annot)
             last_chosen_cell_type(input$selected_cell_type_update_all)
@@ -405,7 +356,6 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
                 if (!is.null(cur_input)) {
                     if (cur_input != new_metacell_types[i, ]$metacell) {
                         new_metacell_types[i, ]$cell_type <- cur_input
-                        new_metacell_types[i, ]$cell_type_id <- cell_type_to_cell_type_id(cur_input, cell_type_colors())
                         changed <- TRUE
                     }
                 }
@@ -417,7 +367,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
     })
 
     observeEvent(input$reset_annotation, {
-        selected_metacell_types(tibble(metacell = character(), cell_type_id = character(), cell_type = character()))
+        selected_metacell_types(tibble(metacell = character(), cell_type = character()))
         to_show(NULL)
     })
 
@@ -496,7 +446,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
                 select(-cell_type, -color),
             edited_data
         ) %>%
-            select(cell_type_id, cell_type, color, order)
+            select(cell_type, color, order)
 
         # change corresponding metacell_type entries
         if (new_input$col == 1) {
@@ -521,8 +471,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
             metacell_types(
                 metacell_types() %>%
                     mutate(
-                        cell_type = ifelse(cell_type_id %in% to_delete$cell_type_id, NA, cell_type),
-                        cell_type_id = ifelse(cell_type_id %in% to_delete$cell_type_id, NA, cell_type_id)
+                        cell_type = ifelse(cell_type %in% to_delete$cell_type, NA, cell_type),
                     )
             )
         }
@@ -538,16 +487,22 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
 
         # TODO: allow creation of more than one new row without editing (e.g. by adding a suffix to cell_type)
         new_data <- cell_type_colors() %>% arrange(order)
-        new_id <- as.character(max(as.numeric(cell_type_colors()$cell_type_id)) + 1)
-        new_row <- tibble(cell_type = "Cell Type", cell_type_id = new_id, color = "red", order = place)
+
+        new_name <- vctrs::vec_as_names(c("Cell type", new_data$cell_type), repair = "unique") %>%
+            setdiff(new_data$cell_type) %>%
+            sort() %>%
+            tail(1)
+
+        new_row <- tibble(cell_type = new_name, color = "red", order = place)
         new_data <- bind_rows(
             new_data %>% filter(order < place),
             new_row,
             new_data %>% filter(order >= place) %>% mutate(order = order + 1)
         )
+
         new_data <- new_data %>%
             arrange(order) %>%
-            distinct(cell_type, cell_type_id, .keep_all = TRUE) %>%
+            distinct(cell_type, .keep_all = TRUE) %>%
             mutate(order = 1:n())
         cell_type_colors(new_data)
     })

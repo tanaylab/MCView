@@ -4,12 +4,12 @@
 \alias{create_project}
 \title{Create a configuration folder for a project}
 \usage{
-create_project(project, project_dir = NULL)
+create_project(project, edit_config = TRUE)
 }
 \arguments{
-\item{project}{name of the project}
+\item{project}{path of the project}
 
-\item{project_dir}{directory of the project. Would be created if not existing. If \code{NULL} - the project would be created under current directory.}
+\item{edit_config}{open file editor for config file editing}
 }
 \description{
 Create a project directory with the default configuration files and directory structure.
