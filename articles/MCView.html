@@ -118,7 +118,7 @@
 <code class="sourceCode R"><span class="fu"><a href="../reference/create_project.html">create_project</a></span><span class="op">(</span><span class="st">"PBMC"</span><span class="op">)</span></code></pre></div>
 <p>A text editor would be opened with <code>PBMC/config/config.yaml</code> file:</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1"></a><span class="fu">title</span><span class="kw">:</span><span class="at"> MCView</span></span>
-<span id="cb4-2"><a href="#cb4-2"></a><span class="fu">tabs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">"Manifold"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Genes"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Markers"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Metacells"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Annotate"</span><span class="kw">,</span><span class="at"> </span><span class="st">"About"</span><span class="kw">]</span><span class="co"> # which tabs to show</span></span>
+<span id="cb4-2"><a href="#cb4-2"></a><span class="fu">tabs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">"Manifold"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Genes"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Markers"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Metacells"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Metadata"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Annotate"</span><span class="kw">,</span><span class="at"> </span><span class="st">"About"</span><span class="kw">]</span><span class="co"> # which tabs to show</span></span>
 <span id="cb4-3"><a href="#cb4-3"></a><span class="fu">help</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span><span class="co"> # set to true to show introjs help on start</span></span>
 <span id="cb4-4"><a href="#cb4-4"></a><span class="co"># selected_gene1: Foxc1 # Default selected gene1</span></span>
 <span id="cb4-5"><a href="#cb4-5"></a><span class="co"># selected_gene2: Twist1 # Default selected gene2</span></span>
@@ -169,14 +169,31 @@
 <p>You can now rerun the app and the types/colors would be updated.</p>
 <p>Note that if you changed cell type <strong>names</strong> you should update both <code>cell_type_colors</code> and <code>metacell_types</code>, as otherwise metacells with the old name would appear with a “(Missing)” cell type tag.</p>
 </div>
+<div id="metadata" class="section level1">
+<h1 class="hasAnchor">
+<a href="#metadata" class="anchor"></a>Metadata</h1>
+<p>You can load numeric metadata fields for each metacell using the <code>metadata</code> parameter in <code>import_dataset</code> command:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="../reference/import_dataset.html">import_dataset</a></span><span class="op">(</span>project <span class="op">=</span> <span class="st">"PBMC"</span>, 
+               dataset <span class="op">=</span> <span class="st">"PBMC163k"</span>, 
+               anndata_file <span class="op">=</span> <span class="st">"raw/metacells.h5ad"</span>, 
+               cell_type_field <span class="op">=</span>  <span class="st">"cluster"</span>,
+               cell_type_colors_file <span class="op">=</span> <span class="st">"raw/cluster-colors.csv"</span>,
+               metadata <span class="op">=</span> <span class="st">"raw/metadata.csv"</span>
+               <span class="op">)</span></code></pre></div>
+<p>The format is a data frame (or a delimited filename) with a column named metacell and the annotation fields. In addition, you can set the breaks and colors for each metadata field using the <code>metadata_colors</code> parameter.</p>
+<p>You can update the metadata or metadata colors using <code>update_metadata</code> and <code>update_metadata_colors</code> functions:</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="../reference/update_metadata.html">update_metadata</a></span><span class="op">(</span><span class="op">)</span></code></pre></div>
+<p>You can generate metadata per metacell from cell metadata using <code>cell_metadata_to_metacell</code> and <code>cell_metadata_to_metacell_from_h5ad</code> functions.</p>
 <div id="deploy" class="section level2">
 <h2 class="hasAnchor">
 <a href="#deploy" class="anchor"></a>Deploy</h2>
 <p>Create a deployment ready bundle by running:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="../reference/create_bundle.html">create_bundle</a></span><span class="op">(</span>project <span class="op">=</span> <span class="st">"PBMC"</span>, path <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/getwd.html">getwd</a></span><span class="op">(</span><span class="op">)</span>, name <span class="op">=</span> <span class="st">"PBMC_bundle"</span><span class="op">)</span></code></pre></div>
 <p>You can then upload the bundle to <a href="https://docs.rstudio.com/shinyapps.io/getting-started.html#deploying-applications">shinyapps.io</a> by running:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu">rsconnect</span><span class="fu">::</span><span class="fu">deployApp</span><span class="op">(</span>appDir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/getwd.html">getwd</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"PBMC_bundle"</span><span class="op">)</span><span class="op">)</span></code></pre></div>
 <p>Or to any shiny-server hosting service by uploading the “PBMC_bundle” directory to the service.</p>
 <blockquote>
@@ -187,6 +204,7 @@
 <h2 class="hasAnchor">
 <a href="#docker" class="anchor"></a>Docker</h2>
 <p>See the <a href="https://tanaylab.github.io/MCView/articles/Docker.html">docker</a> vignette for instructions of using the docker image.</p>
+</div>
 </div>
   </div>
 

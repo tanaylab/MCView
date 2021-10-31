@@ -149,6 +149,9 @@ which can be in the app using the right sidebar.</p>
   cell_type_field <span class='op'>=</span> <span class='st'>"cluster"</span>,
   metacell_types_file <span class='op'>=</span> <span class='cn'>NULL</span>,
   cell_type_colors_file <span class='op'>=</span> <span class='cn'>NULL</span>,
+  metadata_fields <span class='op'>=</span> <span class='cn'>NULL</span>,
+  metadata <span class='op'>=</span> <span class='cn'>NULL</span>,
+  metadata_colors <span class='op'>=</span> <span class='cn'>NULL</span>,
   calc_gg_cor <span class='op'>=</span> <span class='cn'>TRUE</span>
 <span class='op'>)</span></pre>
 
@@ -169,7 +172,7 @@ which can be in the app using the right sidebar.</p>
     </tr>
     <tr>
       <th>cell_type_field</th>
-      <td><p>name of a field in the anndata object$obs which contains a cell type (optional).
+      <td><p>name of a field in the anndata <code>object$obs</code> which contains a cell type (optional).
 If the field doesn't exist and <code>metacell_types_file</code> are missing, MCView would cluster the
 metacell matrix using kmeans++ algorithm (from the <code>tglkmeans</code> package).
 If <code>metacell_types</code> parameter is set this field is ignored.</p></td>
@@ -190,6 +193,24 @@ each cell type. The file should have a column named "cell_type" or "cluster" wit
 cell types and another column named "color" with the color assignment. Cell types that do not
 exist in the metacell types would be ignored.
 If this is missing, MCView would use the <code>chameleon</code> package to assign a color for each cell type.</p></td>
+    </tr>
+    <tr>
+      <th>metadata_fields</th>
+      <td><p>names of fields in the anndata <code>object$obs</code> which contains metadata for each metacell.
+The fields should *always* be numeric - if you have cell categorical annotations use
+<code>cell_metadata_to_metacell</code> with <code>categorical=TRUE</code> to convert them to a
+numeric score (e.g. using fraction of the category).</p></td>
+    </tr>
+    <tr>
+      <th>metadata</th>
+      <td><p>can be either a data frame with a column named "metacell" with the metacell id and other metadata columns
+or a name of a delimited file which contains such data frame.</p></td>
+    </tr>
+    <tr>
+      <th>metadata_colors</th>
+      <td><p>a named list with colors for each metadata column, or a name of a yaml file with such list.
+Colors should be given as a list where the first element is a vector of colors and the second element is a vector of breaks.
+If only colors are given breaks would be implicitly determined from the minimum and maximum of the metadata field.</p></td>
     </tr>
     <tr>
       <th>calc_gg_cor</th>
