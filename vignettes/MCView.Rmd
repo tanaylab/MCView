@@ -112,7 +112,7 @@ You can now rerun the app and the types/colors would be updated.
 
 Note that if you changed cell type __names__ you should update both `cell_type_colors` and `metacell_types`, as otherwise metacells with the old name would appear with a "(Missing)" cell type tag. 
 
-# Metadata
+## Metadata
 
 You can load numeric metadata fields for each metacell using the `metadata` parameter in `import_dataset` command:
 
