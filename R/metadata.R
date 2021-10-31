@@ -321,6 +321,11 @@ parse_metadata <- function(metadata, metacells) {
         cli_abort("metadata doesn't have a field named {.field metacell}")
     }
 
+    metadata <- metadata %>% filter(!is.na(metacell))
+
+    metadata$metacell <- as.character(metadata$metacell)
+    metacells <- as.character(metacells)
+
     unknown_metacells <- metadata$metacell[!(metadata$metacell %in% metacells)]
     if (length(unknown_metacells) > 0) {
         mcs <- paste(unknown_metacells, collapse = ", ")
