@@ -25,7 +25,7 @@ project_cache_dir <- function(path) {
 verify_project_dir <- function(path, create = FALSE) {
     if (!dir.exists(path)) {
         if (create) {
-            create_project(project = basename(path), project_dir = dirname(path), edit_config = FALSE)
+            create_project(project = basename(path), edit_config = FALSE)
         } else {
             cli_abort("{.path path} does not exist. Maybe there is a typo? You can start a new project by running {.code MCView::create_project}.")
         }
