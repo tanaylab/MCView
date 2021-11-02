@@ -148,7 +148,7 @@ dataset_metadata_fields <- function(dataset) {
 }
 
 get_metacell_ids <- function(project, dataset) {
-    qs::qread(fs::path(project_cache_dir(project), dataset, "mc2d.qs"))$mc_id
+    names(get_mc_data(dataset, "mc_sum"))
 }
 
 has_gg_mc_top_cor <- function(project, dataset) {
