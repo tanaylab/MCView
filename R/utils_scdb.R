@@ -3,7 +3,7 @@ init_temp_scdb <- function(scdb, matrix, mc, mc2d, network = NULL, dataset, scdb
     fs::dir_create(scdb_dir)
     metacell::scdb_init(base_dir = scdb_dir, force_reinit = TRUE)
 
-    scdb <- normalizePath(scdb)
+    scdb <- normalizePath(scdb)    
 
     if (!force_copy && dir.exists(system.file("scdb", package = "MCView"))) {
         scdb_files <- list.files(system.file("scdb", package = "MCView"), full.names = TRUE)
@@ -15,8 +15,9 @@ init_temp_scdb <- function(scdb, matrix, mc, mc2d, network = NULL, dataset, scdb
     }
 
     purrr::walk(scdb_files, ~ {
-        if (!fs::file_exists(.x)) {
-            fs::link_create(.x, fs::path(scdb_dir, basename(.x)))
+        link <- fs::path(scdb_dir, basename(.x))
+        if (!fs::file_exists(link)) {
+            fs::link_create(.x, link)
         }
     })
 }
