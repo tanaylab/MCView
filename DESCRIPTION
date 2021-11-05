@@ -60,6 +60,7 @@ Imports:
     shinydashboardPlus (>= 2.0.0),
     shinyEffects,
     shinyWidgets,
+    shinybusy,
     tglkmeans,
     tgstat,
     tgutil (>= 0.1.8),
