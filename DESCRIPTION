@@ -25,6 +25,7 @@ Imports:
     chameleon,
     cli,
     colourpicker,
+    circlize,
     config,
     cowplot,
     dplyr,
