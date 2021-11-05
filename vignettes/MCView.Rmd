@@ -126,7 +126,9 @@ import_dataset(project = "PBMC",
                )
 ```
 
-The format is a data frame (or a delimited filename) with a column named metacell and the annotation fields. In addition, you can set the breaks and colors for each metadata field using the `metadata_colors` parameter. 
+The format is a data frame (or a delimited filename) with a column named `metacell` and the annotation fields. Note that the metadata has to be numeric - for categorical annotations please use the `metacell_types` annotations.
+
+In addition, you can set the breaks and colors for each metadata field using the `metadata_colors` parameter. 
 
 You can update the metadata or metadata colors using `update_metadata` and `update_metadata_colors` functions:
 
