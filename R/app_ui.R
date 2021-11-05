@@ -110,6 +110,7 @@ app_ui <- function(request) {
     tagList(
         shinyjs::useShinyjs(), # Set up shinyjs
         rintrojs::introjsUI(),
+        shinybusy::add_busy_spinner(spin = "breeding-rhombus", position = "bottom-right", timeout = 100),
         dashboard_page
     )
 }

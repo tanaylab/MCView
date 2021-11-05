@@ -205,7 +205,7 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
             plot_legend = input$plot_legend %||% TRUE,
             metadata = metadata
         )
-    })
+    }) %>% bindCache(dataset(), markers_matrix(), metacell_types(), cell_type_colors(), lfp_range(), input$plot_legend, input$selected_md)
 }
 
 get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_types = NULL, force_cell_type = FALSE) {

@@ -3,7 +3,7 @@ init_temp_scdb <- function(scdb, matrix, mc, mc2d, network = NULL, dataset, scdb
     fs::dir_create(scdb_dir)
     metacell::scdb_init(base_dir = scdb_dir, force_reinit = TRUE)
 
-    scdb <- normalizePath(scdb)    
+    scdb <- normalizePath(scdb)
 
     if (!force_copy && dir.exists(system.file("scdb", package = "MCView"))) {
         scdb_files <- list.files(system.file("scdb", package = "MCView"), full.names = TRUE)
