@@ -9,22 +9,21 @@ cell_metadata_to_metacell(
   cell_metadata,
   cell_to_metacell,
   func = mean,
-  categorical = FALSE
+  categorical = c()
 )
 
 cell_metadata_to_metacell_from_h5ad(
   anndata_file,
   metadata_fields,
   func = mean,
-  categorical = FALSE,
+  categorical = c(),
   rm_outliers = TRUE
 )
 }
 \arguments{
 \item{cell_metadata}{data frame with a column named "cell_id" with
 the cell id and other metadata columns, or a name of a delimited file which
-contains such data frame. if \code{categorical = TRUE} the data frame can have only
-a single metadata categorical column.}
+contains such data frame.}
 
 \item{cell_to_metacell}{data frame with a column named "cell_id" with cell id and
 another column named "metacell" with the metacell the cell is part of, or a
@@ -33,29 +32,28 @@ name of a delimited file which contains such data frame.}
 \item{func}{summary function for the cell metadata for non categorical metadata columns
 (e.g. mean, median, sum)}
 
-\item{categorical}{is the metadata categorical. if \code{TRUE} - \code{cell_metadata}
-can have only a single metadata column, and the returned data frame would have
-a column for each category where the values are the fraction of cells with the
-category in each metacell.}
-
 \item{anndata_file}{path to \code{h5ad} file which contains the output of metacell2 pipeline (metacells python package).}
 
 \item{metadata_fields}{names of fields in the anndata \code{object$obs} which contains metadata for each cell.}
 
-\item{rm_outliers}{do not calculate statistics for cells that are marked as outliers (\code{outiler=TRUE} in \code{object$obs})}
+\item{rm_outliers}{do not calculate statistics for cells that are marked as outliers (\code{outiler=TRUE} in \code{object$obs}) (only relevant when running \code{cell_metadata_to_metacell_from_h5ad})}
+
+\item{categorical_vars}{a vector with names of categorical variables. The returned data frame would have
+a column for each category where the values are the fraction of cells with the
+category in each metacell.}
 }
 \value{
-if \code{categorical=FALSE} - a data frame with a column named "metacell" and
+A data frame with a column named "metacell" and
 the metadata columns from \code{cell_metadata} summarized for each metacell using
-\code{func}. If \code{categorical=TRUE} - a data frame with a column named "metacell"
-and a column for each category of the *single* categorical metadata variable in
-\code{cell_metadata}, where the values are the fraction of cells with the category
-in each metacell.
+\code{func} for non-categorical variables, and a column for each category of the categorical metadata variables
+in\code{cell_metadata}, where the values are the fraction of cells with the category in each metacell.
 }
 \description{
-Summarise cell metadata for each metacell. Metadata fields can be either numeric and then the summary function \code{func} is
-applied for the values of each field, or a single categorical metadata field which is expanded to multiple metadata columns with
-the fraction of cells (in each metacell) for every category.
+Summarise cell metadata for each metacell. Metadata fields can be either numeric and then the summary function \code{func} is applied for the values of each field, or categorical metadata fields which are expanded to multiple
+metadata columns with the fraction of cells (in each metacell) for every category. Variables that are either character,
+factor or are explicitly set at \code{categorical_vars} are treated as categorical.
+
+
 \code{cell_metadata_to_metacell} converts cell metadata to metacell metadata from data frames.
 \code{cell_metadata_to_metacell_from_h5ad} extracts metadata fields and cell_to_metacell from cells h5ad file and
 then runs \code{cell_metadata_to_metacell}.
@@ -71,31 +69,26 @@ n_cells <- 5e6
 cell_metadata <- tibble(
     cell_id = 1:n_cells,
     md1 = sample(1:5, size = n_cells, replace = TRUE),
-    md2 = rnorm(n = n_cells)
+    md2 = rnorm(n = n_cells),
+    md_categorical1 = sample(paste0("batch", 1:5), size = n_cells, replace = TRUE),
+    md_categorical2 = sample(1:5, size = n_cells, replace = TRUE)
 )
-cell_To_metacell <- tibble(
+
+cell_to_metacell <- tibble(
     cell_id = 1:n_cells,
     metacell = sample(0:1535, size = n_cells, replace = TRUE)
 )
-metadata <- cell_metadata_to_metacell(cell_metadata, cell_To_metacell)
+metadata <- cell_metadata_to_metacell(cell_metadata[, 1:3], cell_to_metacell)
 head(metadata)
 
-metadata1 <- cell_metadata_to_metacell(cell_metadata, cell_To_metacell, func=function(x) x * 2)
+metadata1 <- cell_metadata_to_metacell(cell_metadata[, 11:3], cell_to_metacell, func = function(x) x * 2)
 head(metadata1)
 
-cell_metadata_categorical <- tibble(
-   cell_id = 1:n_cells,
-   md1 = sample(paste0("batch", 1:5), size = n_cells, replace = TRUE)
-)
 
-metadata3 <- cell_metadata_to_metacell(cell_metadata_categorical, cell_To_metacell, categorical=TRUE)
+metadata3 <- cell_metadata_to_metacell(cell_metadata, cell_to_metacell, categorical = c("md_categorical1", "md_categorical2"))
 head(metadata3)
-
 \dontrun{
-  cell_metadata_to_metacell_from_h5ad("cells.h5ad", c("pile", "age"))
-  cell_metadata_to_metacell_from_h5ad("cells.h5ad", "batch", categorical=TRUE)
+cell_metadata_to_metacell_from_h5ad("cells.h5ad", c("pile", "age", "batch"), categorical = "batch")
 }
-
-
 
 }

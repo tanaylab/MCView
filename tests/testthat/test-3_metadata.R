@@ -63,18 +63,18 @@ test_that("cell_metadata_to_metacell works with categorical variable", {
         metacell = sample(0:1535, size = n_cells, replace = TRUE)
     )
 
-    metadata <- cell_metadata_to_metacell(cell_metadata, cell_To_metacell, categorical = TRUE)
+    metadata <- cell_metadata_to_metacell(cell_metadata, cell_To_metacell)
 
-    expect_equivalent(metadata$batch1[1:5], c(
+    expect_equivalent(metadata$`md1: batch1`[1:5], c(
         0.201421800947867, 0.213386552041756, 0.198876053699657, 0.206535141800247,
         0.201992753623188
     ))
-    expect_equivalent(metadata$batch2[1:5], c(
+    expect_equivalent(metadata$`md1: batch2`[1:5], c(
         0.198755924170616, 0.195271722443967, 0.191695285669685, 0.200369913686806,
         0.191425120772947
     ))
     expect_equal(metadata$metacell, 0:1535)
-    expect_equal(colnames(metadata), c("metacell", paste0("batch", 1:5)))
+    expect_equal(colnames(metadata), c("metacell", paste0("md1: batch", 1:5)))
     sums <- metadata %>%
         column_to_rownames("metacell") %>%
         as.matrix() %>%
@@ -99,14 +99,17 @@ test_that("cell_metadata_to_metacell_from_h5ad works with categorical=TRUE", {
     h5ad_file <- "/home/aviezerl/src/metacell.shiny/cells.h5ad"
     skip_if(!fs::file_exists(h5ad_file))
 
-    metadata <- cell_metadata_to_metacell_from_h5ad(h5ad_file, c("batch"), categorical = TRUE)
+    metadata <- cell_metadata_to_metacell_from_h5ad(h5ad_file, c("batch"), categorical = "batch")
 
     expect_setequal(
         colnames(metadata),
-        c(
-            "metacell", "8batchall", "b_cells", "cd14", "cd34",
-            "cd4_t_helper", "cd56_nk", "cyto_t", "memory_t", "naive_cyto",
-            "naive_t", "reg_t"
+        paste0(
+            "batch: ",
+            c(
+                "metacell", "8batchall", "b_cells", "cd14", "cd34",
+                "cd4_t_helper", "cd56_nk", "cyto_t", "memory_t", "naive_cyto",
+                "naive_t", "reg_t"
+            )
         )
     )
 
@@ -118,9 +121,6 @@ test_that("cell_metadata_to_metacell_from_h5ad works with categorical=TRUE", {
     expect_equal(metadata$metacell, 0:1535)
     expect_equal(metadata$cd34[1:5], c(1, 1, 1, 1, 0))
 })
-
-# TODO:
-# test edge cases cell_metadata_to_metacell
 
 
 test_that("cell_metadata_to_metacell_from_h5ad works with custom function", {

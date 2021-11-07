@@ -104,33 +104,31 @@ update_metadata_colors <- function(project,
 #'
 #' @param cell_metadata data frame with a column named "cell_id" with
 #' the cell id and other metadata columns, or a name of a delimited file which
-#' contains such data frame. if \code{categorical = TRUE} the data frame can have only
-#' a single metadata categorical column.
+#' contains such data frame.
 #' @param cell_to_metacell data frame with a column named "cell_id" with cell id and
 #' another column named "metacell" with the metacell the cell is part of, or a
 #' name of a delimited file which contains such data frame.
 #' @param func summary function for the cell metadata for non categorical metadata columns
 #' (e.g. mean, median, sum)
-#' @param categorical is the metadata categorical. if \code{TRUE} - \code{cell_metadata}
-#' can have only a single metadata column, and the returned data frame would have
+#' @param categorical_vars a vector with names of categorical variables. The returned data frame would have
 #' a column for each category where the values are the fraction of cells with the
 #' category in each metacell.
 #' @param anndata_file path to \code{h5ad} file which contains the output of metacell2 pipeline (metacells python package).
 #' @param metadata_fields names of fields in the anndata \code{object$obs} which contains metadata for each cell.
-#' @param rm_outliers do not calculate statistics for cells that are marked as outliers (\code{outiler=TRUE} in \code{object$obs})
+#' @param rm_outliers do not calculate statistics for cells that are marked as outliers (\code{outiler=TRUE} in \code{object$obs}) (only relevant when running \code{cell_metadata_to_metacell_from_h5ad})
 #'
 #'
-#' @return if \code{categorical=FALSE} - a data frame with a column named "metacell" and
+#' @return A data frame with a column named "metacell" and
 #' the metadata columns from \code{cell_metadata} summarized for each metacell using
-#' \code{func}. If \code{categorical=TRUE} - a data frame with a column named "metacell"
-#' and a column for each category of the *single* categorical metadata variable in
-#' \code{cell_metadata}, where the values are the fraction of cells with the category
-#' in each metacell.
+#' \code{func} for non-categorical variables, and a column for each category of the categorical metadata variables
+#' in\code{cell_metadata}, where the values are the fraction of cells with the category in each metacell.
 #'
 #' @description
-#' Summarise cell metadata for each metacell. Metadata fields can be either numeric and then the summary function \code{func} is
-#' applied for the values of each field, or a single categorical metadata field which is expanded to multiple metadata columns with
-#' the fraction of cells (in each metacell) for every category.
+#' Summarise cell metadata for each metacell. Metadata fields can be either numeric and then the summary function \code{func} is applied for the values of each field, or categorical metadata fields which are expanded to multiple
+#' metadata columns with the fraction of cells (in each metacell) for every category. Variables that are either character,
+#' factor or are explicitly set at \code{categorical_vars} are treated as categorical.
+#'
+#'
 #' \code{cell_metadata_to_metacell} converts cell metadata to metacell metadata from data frames.
 #' \code{cell_metadata_to_metacell_from_h5ad} extracts metadata fields and cell_to_metacell from cells h5ad file and
 #' then runs \code{cell_metadata_to_metacell}.
@@ -141,32 +139,30 @@ update_metadata_colors <- function(project,
 #' cell_metadata <- tibble(
 #'     cell_id = 1:n_cells,
 #'     md1 = sample(1:5, size = n_cells, replace = TRUE),
-#'     md2 = rnorm(n = n_cells)
+#'     md2 = rnorm(n = n_cells),
+#'     md_categorical1 = sample(paste0("batch", 1:5), size = n_cells, replace = TRUE),
+#'     md_categorical2 = sample(1:5, size = n_cells, replace = TRUE)
 #' )
-#' cell_To_metacell <- tibble(
+#'
+#' cell_to_metacell <- tibble(
 #'     cell_id = 1:n_cells,
 #'     metacell = sample(0:1535, size = n_cells, replace = TRUE)
 #' )
-#' metadata <- cell_metadata_to_metacell(cell_metadata, cell_To_metacell)
+#' metadata <- cell_metadata_to_metacell(cell_metadata[, 1:3], cell_to_metacell)
 #' head(metadata)
 #'
-#' metadata1 <- cell_metadata_to_metacell(cell_metadata, cell_To_metacell, func = function(x) x * 2)
+#' metadata1 <- cell_metadata_to_metacell(cell_metadata[, 11:3], cell_to_metacell, func = function(x) x * 2)
 #' head(metadata1)
 #'
-#' cell_metadata_categorical <- tibble(
-#'     cell_id = 1:n_cells,
-#'     md1 = sample(paste0("batch", 1:5), size = n_cells, replace = TRUE)
-#' )
 #'
-#' metadata3 <- cell_metadata_to_metacell(cell_metadata_categorical, cell_To_metacell, categorical = TRUE)
+#' metadata3 <- cell_metadata_to_metacell(cell_metadata, cell_to_metacell, categorical = c("md_categorical1", "md_categorical2"))
 #' head(metadata3)
 #' \dontrun{
-#' cell_metadata_to_metacell_from_h5ad("cells.h5ad", c("pile", "age"))
-#' cell_metadata_to_metacell_from_h5ad("cells.h5ad", "batch", categorical = TRUE)
+#' cell_metadata_to_metacell_from_h5ad("cells.h5ad", c("pile", "age", "batch"), categorical = "batch")
 #' }
 #'
 #' @export
-cell_metadata_to_metacell <- function(cell_metadata, cell_to_metacell, func = mean, categorical = FALSE) {
+cell_metadata_to_metacell <- function(cell_metadata, cell_to_metacell, func = mean, categorical = c()) {
     if (is.character(cell_metadata)) {
         cell_metadata <- tgutil::fread(cell_metadata) %>% as_tibble()
     }
@@ -175,55 +171,67 @@ cell_metadata_to_metacell <- function(cell_metadata, cell_to_metacell, func = me
         cli_abort("First column of {.code cell_metadata} is not named {.field cell_id} (it is named {.field {colnames(cell_metadata)[1]}})")
     }
 
-    if (colnames(cell_to_metacell)[1] != "cell_id") {
-        cli_abort("First column of {.code cell_to_metacell} is not named {.field cell_id} (it is named {.field {colnames(cell_to_metacell)[1]}})")
-    }
-
     if (colnames(cell_to_metacell)[2] != "metacell") {
         cli_abort("Second column of {.code cell_to_metacell} is not named {.field metacell} (it is named {.field {colnames(cell_to_metacell)[2]}})")
     }
 
-    if (categorical) {
-        if (ncol(cell_metadata) != 2) {
-            cli_abort("When {.code categorical=TRUE}, {.code cell_metadata} should have only two columns, {.field cell_id} and the categorical metadata.")
+    if (length(categorical) > 0) {
+        purrr::walk(categorical, ~ {
+            if (!rlang::has_name(cell_metadata, .x)) {
+                cli_abort("The field {.field {.x}} doesn't exist in {.field cell_metadata}")
+            }
+        })
+    }
+
+    md_vars <- colnames(cell_metadata)[-1]
+
+    categorical_f <- purrr::map_lgl(cell_metadata[, -1], ~ is.factor(.x) || is.character(.x))
+    categorical_vars <- sort(unique(c(categorical, md_vars[categorical_f])))
+    numerical_vars <- sort(setdiff(md_vars, categorical_vars))
+
+    cell_metadata <- cell_metadata %>%
+        left_join(cell_to_metacell, by = "cell_id")
+
+    metadata <- cell_to_metacell %>%
+        distinct(metacell) %>%
+        arrange(metacell)
+
+    if (length(categorical_vars) > 0) {
+        cli_alert_info(glue("Categorical variables: {vars}", vars = paste(categorical_vars, collapse = ", ")))
+        for (v in categorical_vars) {
+            metadata_var <- cell_metadata %>%
+                select(metacell, !!sym(v)) %>%
+                group_by(metacell, !!sym(v)) %>%
+                summarise(cat_var_n = n(), .groups = "drop") %>%
+                group_by(metacell) %>%
+                mutate(cat_varp = cat_var_n / sum(cat_var_n)) %>%
+                select(-cat_var_n) %>%
+                spread(!!sym(v), cat_varp, fill = 0) %>%
+                ungroup()
+            colnames(metadata_var) <- c("metacell", paste0(v, ": ", colnames(metadata_var)[-1]))
+            metadata <- metadata %>% left_join(metadata_var, by = "metacell")
         }
+    }
+
+    if (length(numerical_vars) > 0) {
+        cli_alert_info(glue("Numerical variables: {vars}", vars = paste(numerical_vars, collapse = ", ")))
 
         cell_metadata <- cell_metadata %>%
-            left_join(cell_to_metacell, by = "cell_id")
-
-        colnames(cell_metadata)[2] <- "cat_var"
-
-        metadata <- cell_metadata %>%
-            select(metacell, cat_var) %>%
-            group_by(metacell, cat_var) %>%
-            summarise(cat_var_n = n(), .groups = "drop") %>%
-            group_by(metacell) %>%
-            mutate(cat_varp = cat_var_n / sum(cat_var_n)) %>%
-            select(-cat_var_n) %>%
-            spread(cat_var, cat_varp, fill = 0) %>%
-            ungroup()
-    } else {
-        fields <- cell_metadata %>%
-            select(-cell_id) %>%
-            colnames()
-
-        cell_metadata <- cell_metadata %>%
-            mutate_at(fields, as.numeric)
-
-        purrr::walk(fields, ~ {
+            mutate_at(numerical_vars, as.numeric)
+        purrr::walk(numerical_vars, ~ {
             if (all(is.na(cell_metadata[[.x]]))) {
-                cli_abort("The cell_metadata variable {.field {.x}} is all NA. Is it numeric? Convert categorical variables to numeric by setting {.code categorical=TRUE}")
+                cli_abort("The cell_metadata variable {.field {.x}} is all NA. Is it numeric? Convert categorical variables to numeric by adding it to the {.code categorical} parameter")
             }
         })
 
-        cell_metadata <- cell_metadata %>%
-            left_join(cell_to_metacell, by = "cell_id")
-
-        metadata <- cell_metadata %>%
+        metadata_numeric <- cell_metadata %>%
             select(-cell_id) %>%
             group_by(metacell) %>%
-            summarise_at(vars(fields), func) %>%
+            summarise_at(vars(numerical_vars), func) %>%
             ungroup()
+
+        metadata <- metadata %>%
+            left_join(metadata_numeric, by = "metacell")
     }
 
     return(metadata)
@@ -233,7 +241,7 @@ cell_metadata_to_metacell <- function(cell_metadata, cell_to_metacell, func = me
 #' @describeIn cell_metadata_to_metacell
 #'
 #' @export
-cell_metadata_to_metacell_from_h5ad <- function(anndata_file, metadata_fields, func = mean, categorical = FALSE, rm_outliers = TRUE) {
+cell_metadata_to_metacell_from_h5ad <- function(anndata_file, metadata_fields, func = mean, categorical = c(), rm_outliers = TRUE) {
     if (!fs::file_exists(anndata_file)) {
         cli_abort("{anndata_file} doesn't exist. Maybe there is a typo?")
     }
