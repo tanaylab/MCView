@@ -2,20 +2,4 @@ template:
   params:
     bootswatch: flatly
 
- 
-reference:
-- title: All functions
-  contents:
-  - '`create_project`'
-  - '`import_dataset`'  
-  - '`dataset_rm`'
-  - '`dataset_ls`'
-  - '`update_metacell_types`'
-  - '`update_cell_type_colors`'
-  - '`run_app`'
-  - '`create_bundle`'
-  - '`import_dataset_metacell1`'
 
-  
-  
-  
