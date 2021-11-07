@@ -52,9 +52,9 @@ plot_markers_mat <- function(mc_fp,
 
 add_markers_colorbars <- function(p, mc_types, dataset, top_cell_type_bar = TRUE, metadata = NULL) {
     if (!is.null(metadata)) {
-        metadata <- metadata %>%
-            mutate(metacell = as.character(metacell)) %>%
-            right_join(mc_types %>% select(metacell), by = "metacell")
+        metadata <- mc_types %>%
+            select(metacell) %>%
+            left_join(metadata %>% mutate(metacell = as.character(metacell)), by = "metacell")
 
         for (md in rev(colnames(metadata)[-1])) {
             md_colors <- get_metadata_colors(dataset, md, metadata = metadata)
