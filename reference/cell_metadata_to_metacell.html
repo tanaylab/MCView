@@ -40,9 +40,10 @@
 
 
 <meta property="og:title" content="Convert cell metadata to metacell metadata — cell_metadata_to_metacell" />
-<meta property="og:description" content="Summarise cell metadata for each metacell. Metadata fields can be either numeric and then the summary function func is
-applied for the values of each field, or a single categorical metadata field which is expanded to multiple metadata columns with
-the fraction of cells (in each metacell) for every category.
+<meta property="og:description" content="Summarise cell metadata for each metacell. Metadata fields can be either numeric and then the summary function func is applied for the values of each field, or categorical metadata fields which are expanded to multiple
+metadata columns with the fraction of cells (in each metacell) for every category. Variables that are either character,
+factor or are explicitly set at categorical_vars are treated as categorical.
+
 cell_metadata_to_metacell converts cell metadata to metacell metadata from data frames.
 cell_metadata_to_metacell_from_h5ad extracts metadata fields and cell_to_metacell from cells h5ad file and
 then runs cell_metadata_to_metacell." />
@@ -140,10 +141,11 @@ then runs cell_metadata_to_metacell." />
     </div>
 
     <div class="ref-description">
-    <p>Summarise cell metadata for each metacell. Metadata fields can be either numeric and then the summary function <code>func</code> is
-applied for the values of each field, or a single categorical metadata field which is expanded to multiple metadata columns with
-the fraction of cells (in each metacell) for every category.
-<code>cell_metadata_to_metacell</code> converts cell metadata to metacell metadata from data frames.
+    <p>Summarise cell metadata for each metacell. Metadata fields can be either numeric and then the summary function <code>func</code> is applied for the values of each field, or categorical metadata fields which are expanded to multiple
+metadata columns with the fraction of cells (in each metacell) for every category. Variables that are either character,
+factor or are explicitly set at <code>categorical_vars</code> are treated as categorical.</p>
+
+<p><code>cell_metadata_to_metacell</code> converts cell metadata to metacell metadata from data frames.
 <code>cell_metadata_to_metacell_from_h5ad</code> extracts metadata fields and cell_to_metacell from cells h5ad file and
 then runs <code>cell_metadata_to_metacell</code>.</p>
     </div>
@@ -152,14 +154,14 @@ then runs <code>cell_metadata_to_metacell</code>.</p>
   <span class='va'>cell_metadata</span>,
   <span class='va'>cell_to_metacell</span>,
   func <span class='op'>=</span> <span class='va'>mean</span>,
-  categorical <span class='op'>=</span> <span class='cn'>FALSE</span>
+  categorical <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='op'>)</span>
 <span class='op'>)</span>
 
 <span class='fu'>cell_metadata_to_metacell_from_h5ad</span><span class='op'>(</span>
   <span class='va'>anndata_file</span>,
   <span class='va'>metadata_fields</span>,
   func <span class='op'>=</span> <span class='va'>mean</span>,
-  categorical <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  categorical <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='op'>)</span>,
   rm_outliers <span class='op'>=</span> <span class='cn'>TRUE</span>
 <span class='op'>)</span></pre>
 
@@ -170,8 +172,7 @@ then runs <code>cell_metadata_to_metacell</code>.</p>
       <th>cell_metadata</th>
       <td><p>data frame with a column named "cell_id" with
 the cell id and other metadata columns, or a name of a delimited file which
-contains such data frame. if <code>categorical = TRUE</code> the data frame can have only
-a single metadata categorical column.</p></td>
+contains such data frame.</p></td>
     </tr>
     <tr>
       <th>cell_to_metacell</th>
@@ -185,13 +186,6 @@ name of a delimited file which contains such data frame.</p></td>
 (e.g. mean, median, sum)</p></td>
     </tr>
     <tr>
-      <th>categorical</th>
-      <td><p>is the metadata categorical. if <code>TRUE</code> - <code>cell_metadata</code>
-can have only a single metadata column, and the returned data frame would have
-a column for each category where the values are the fraction of cells with the
-category in each metacell.</p></td>
-    </tr>
-    <tr>
       <th>anndata_file</th>
       <td><p>path to <code>h5ad</code> file which contains the output of metacell2 pipeline (metacells python package).</p></td>
     </tr>
@@ -201,18 +195,22 @@ category in each metacell.</p></td>
     </tr>
     <tr>
       <th>rm_outliers</th>
-      <td><p>do not calculate statistics for cells that are marked as outliers (<code>outiler=TRUE</code> in <code>object$obs</code>)</p></td>
+      <td><p>do not calculate statistics for cells that are marked as outliers (<code>outiler=TRUE</code> in <code>object$obs</code>) (only relevant when running <code>cell_metadata_to_metacell_from_h5ad</code>)</p></td>
+    </tr>
+    <tr>
+      <th>categorical_vars</th>
+      <td><p>a vector with names of categorical variables. The returned data frame would have
+a column for each category where the values are the fraction of cells with the
+category in each metacell.</p></td>
     </tr>
     </table>
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>if <code>categorical=FALSE</code> - a data frame with a column named "metacell" and
+    <p>A data frame with a column named "metacell" and
 the metadata columns from <code>cell_metadata</code> summarized for each metacell using
-<code>func</code>. If <code>categorical=TRUE</code> - a data frame with a column named "metacell"
-and a column for each category of the *single* categorical metadata variable in
-<code>cell_metadata</code>, where the values are the fraction of cells with the category
-in each metacell.</p>
+<code>func</code> for non-categorical variables, and a column for each category of the categorical metadata variables
+in<code>cell_metadata</code>, where the values are the fraction of cells with the category in each metacell.</p>
     <h2 class="hasAnchor" id="functions"><a class="anchor" href="#functions"></a>Functions</h2>
 
     
@@ -226,32 +224,27 @@ in each metacell.</p>
 <span class='va'>cell_metadata</span> <span class='op'>&lt;-</span> <span class='fu'>tibble</span><span class='op'>(</span>
     cell_id <span class='op'>=</span> <span class='fl'>1</span><span class='op'>:</span><span class='va'>n_cells</span>,
     md1 <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/sample.html'>sample</a></span><span class='op'>(</span><span class='fl'>1</span><span class='op'>:</span><span class='fl'>5</span>, size <span class='op'>=</span> <span class='va'>n_cells</span>, replace <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>,
-    md2 <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span><span class='op'>(</span>n <span class='op'>=</span> <span class='va'>n_cells</span><span class='op'>)</span>
+    md2 <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/Normal.html'>rnorm</a></span><span class='op'>(</span>n <span class='op'>=</span> <span class='va'>n_cells</span><span class='op'>)</span>,
+    md_categorical1 <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/sample.html'>sample</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/paste.html'>paste0</a></span><span class='op'>(</span><span class='st'>"batch"</span>, <span class='fl'>1</span><span class='op'>:</span><span class='fl'>5</span><span class='op'>)</span>, size <span class='op'>=</span> <span class='va'>n_cells</span>, replace <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>,
+    md_categorical2 <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/sample.html'>sample</a></span><span class='op'>(</span><span class='fl'>1</span><span class='op'>:</span><span class='fl'>5</span>, size <span class='op'>=</span> <span class='va'>n_cells</span>, replace <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
 <span class='op'>)</span>
-</div><div class='output co'>#&gt; <span class='error'>Error in tibble(cell_id = 1:n_cells, md1 = sample(1:5, size = n_cells,     replace = TRUE), md2 = rnorm(n = n_cells)): could not find function "tibble"</span></div><div class='input'><span class='va'>cell_To_metacell</span> <span class='op'>&lt;-</span> <span class='fu'>tibble</span><span class='op'>(</span>
+</div><div class='output co'>#&gt; <span class='error'>Error in tibble(cell_id = 1:n_cells, md1 = sample(1:5, size = n_cells,     replace = TRUE), md2 = rnorm(n = n_cells), md_categorical1 = sample(paste0("batch",     1:5), size = n_cells, replace = TRUE), md_categorical2 = sample(1:5,     size = n_cells, replace = TRUE)): could not find function "tibble"</span></div><div class='input'>
+<span class='va'>cell_to_metacell</span> <span class='op'>&lt;-</span> <span class='fu'>tibble</span><span class='op'>(</span>
     cell_id <span class='op'>=</span> <span class='fl'>1</span><span class='op'>:</span><span class='va'>n_cells</span>,
     metacell <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/sample.html'>sample</a></span><span class='op'>(</span><span class='fl'>0</span><span class='op'>:</span><span class='fl'>1535</span>, size <span class='op'>=</span> <span class='va'>n_cells</span>, replace <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
 <span class='op'>)</span>
-</div><div class='output co'>#&gt; <span class='error'>Error in tibble(cell_id = 1:n_cells, metacell = sample(0:1535, size = n_cells,     replace = TRUE)): could not find function "tibble"</span></div><div class='input'><span class='va'>metadata</span> <span class='op'>&lt;-</span> <span class='fu'>cell_metadata_to_metacell</span><span class='op'>(</span><span class='va'>cell_metadata</span>, <span class='va'>cell_To_metacell</span><span class='op'>)</span>
-</div><div class='output co'>#&gt; <span class='error'>Error in cell_metadata_to_metacell(cell_metadata, cell_To_metacell): object 'cell_metadata' not found</span></div><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span><span class='op'>(</span><span class='va'>metadata</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; <span class='error'>Error in tibble(cell_id = 1:n_cells, metacell = sample(0:1535, size = n_cells,     replace = TRUE)): could not find function "tibble"</span></div><div class='input'><span class='va'>metadata</span> <span class='op'>&lt;-</span> <span class='fu'>cell_metadata_to_metacell</span><span class='op'>(</span><span class='va'>cell_metadata</span><span class='op'>[</span>, <span class='fl'>1</span><span class='op'>:</span><span class='fl'>3</span><span class='op'>]</span>, <span class='va'>cell_to_metacell</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; <span class='error'>Error in cell_metadata_to_metacell(cell_metadata[, 1:3], cell_to_metacell): object 'cell_metadata' not found</span></div><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span><span class='op'>(</span><span class='va'>metadata</span><span class='op'>)</span>
 </div><div class='output co'>#&gt; <span class='error'>Error in head(metadata): object 'metadata' not found</span></div><div class='input'>
-<span class='va'>metadata1</span> <span class='op'>&lt;-</span> <span class='fu'>cell_metadata_to_metacell</span><span class='op'>(</span><span class='va'>cell_metadata</span>, <span class='va'>cell_To_metacell</span>, func<span class='op'>=</span><span class='kw'>function</span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span> <span class='va'>x</span> <span class='op'>*</span> <span class='fl'>2</span><span class='op'>)</span>
-</div><div class='output co'>#&gt; <span class='error'>Error in cell_metadata_to_metacell(cell_metadata, cell_To_metacell, func = function(x) x *     2): object 'cell_metadata' not found</span></div><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span><span class='op'>(</span><span class='va'>metadata1</span><span class='op'>)</span>
+<span class='va'>metadata1</span> <span class='op'>&lt;-</span> <span class='fu'>cell_metadata_to_metacell</span><span class='op'>(</span><span class='va'>cell_metadata</span><span class='op'>[</span>, <span class='fl'>11</span><span class='op'>:</span><span class='fl'>3</span><span class='op'>]</span>, <span class='va'>cell_to_metacell</span>, func <span class='op'>=</span> <span class='kw'>function</span><span class='op'>(</span><span class='va'>x</span><span class='op'>)</span> <span class='va'>x</span> <span class='op'>*</span> <span class='fl'>2</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; <span class='error'>Error in cell_metadata_to_metacell(cell_metadata[, 11:3], cell_to_metacell,     func = function(x) x * 2): object 'cell_metadata' not found</span></div><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span><span class='op'>(</span><span class='va'>metadata1</span><span class='op'>)</span>
 </div><div class='output co'>#&gt; <span class='error'>Error in head(metadata1): object 'metadata1' not found</span></div><div class='input'>
-<span class='va'>cell_metadata_categorical</span> <span class='op'>&lt;-</span> <span class='fu'>tibble</span><span class='op'>(</span>
-   cell_id <span class='op'>=</span> <span class='fl'>1</span><span class='op'>:</span><span class='va'>n_cells</span>,
-   md1 <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/sample.html'>sample</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/paste.html'>paste0</a></span><span class='op'>(</span><span class='st'>"batch"</span>, <span class='fl'>1</span><span class='op'>:</span><span class='fl'>5</span><span class='op'>)</span>, size <span class='op'>=</span> <span class='va'>n_cells</span>, replace <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
-<span class='op'>)</span>
-</div><div class='output co'>#&gt; <span class='error'>Error in tibble(cell_id = 1:n_cells, md1 = sample(paste0("batch", 1:5),     size = n_cells, replace = TRUE)): could not find function "tibble"</span></div><div class='input'>
-<span class='va'>metadata3</span> <span class='op'>&lt;-</span> <span class='fu'>cell_metadata_to_metacell</span><span class='op'>(</span><span class='va'>cell_metadata_categorical</span>, <span class='va'>cell_To_metacell</span>, categorical<span class='op'>=</span><span class='cn'>TRUE</span><span class='op'>)</span>
-</div><div class='output co'>#&gt; <span class='error'>Error in cell_metadata_to_metacell(cell_metadata_categorical, cell_To_metacell,     categorical = TRUE): object 'cell_metadata_categorical' not found</span></div><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span><span class='op'>(</span><span class='va'>metadata3</span><span class='op'>)</span>
-</div><div class='output co'>#&gt; <span class='error'>Error in head(metadata3): object 'metadata3' not found</span></div><div class='input'>
-<span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
-  <span class='fu'>cell_metadata_to_metacell_from_h5ad</span><span class='op'>(</span><span class='st'>"cells.h5ad"</span>, <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"pile"</span>, <span class='st'>"age"</span><span class='op'>)</span><span class='op'>)</span>
-  <span class='fu'>cell_metadata_to_metacell_from_h5ad</span><span class='op'>(</span><span class='st'>"cells.h5ad"</span>, <span class='st'>"batch"</span>, categorical<span class='op'>=</span><span class='cn'>TRUE</span><span class='op'>)</span>
+
+<span class='va'>metadata3</span> <span class='op'>&lt;-</span> <span class='fu'>cell_metadata_to_metacell</span><span class='op'>(</span><span class='va'>cell_metadata</span>, <span class='va'>cell_to_metacell</span>, categorical <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"md_categorical1"</span>, <span class='st'>"md_categorical2"</span><span class='op'>)</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; <span class='error'>Error in cell_metadata_to_metacell(cell_metadata, cell_to_metacell, categorical = c("md_categorical1",     "md_categorical2")): object 'cell_metadata' not found</span></div><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/head.html'>head</a></span><span class='op'>(</span><span class='va'>metadata3</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; <span class='error'>Error in head(metadata3): object 'metadata3' not found</span></div><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
+<span class='fu'>cell_metadata_to_metacell_from_h5ad</span><span class='op'>(</span><span class='st'>"cells.h5ad"</span>, <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"pile"</span>, <span class='st'>"age"</span>, <span class='st'>"batch"</span><span class='op'>)</span>, categorical <span class='op'>=</span> <span class='st'>"batch"</span><span class='op'>)</span>
 <span class='op'>}</span>
-
-
 
 </div></pre>
   </div>
