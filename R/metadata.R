@@ -32,6 +32,10 @@ update_metadata <- function(project,
     }
 
     cli_alert_info("Processing metadata")
+
+    init_config(project = project)
+    load_all_data(cache_dir = cache_dir)
+
     metacells <- get_metacell_ids(project, dataset)
     metadata <- load_metadata(metadata, metadata_fields, metacells, adata)
 
