@@ -7,7 +7,8 @@ test_that("import_dataset works", {
         project = project_dir,
         dataset = dataset,
         anndata_file = fs::path(raw_dir, "metacells.h5ad"),
-        cell_type_field = NULL
+        cell_type_field = NULL,
+        calc_gg_cor = FALSE
     )
     test_dataset(project_dir, dataset)
 })
@@ -22,7 +23,8 @@ test_that("import_dataset works when project was not created yet", {
         project = fs::path(test_dir, "PBMC1"),
         dataset = "PBMC163k",
         anndata_file = fs::path(raw_dir, "metacells.h5ad"),
-        cell_type_field = NULL
+        cell_type_field = NULL,
+        calc_gg_cor = FALSE
     )
 
     test_dataset(fs::path(test_dir, "PBMC1"), "PBMC163k")
@@ -34,7 +36,8 @@ test_that("import_dataset works with implicit cell type field", {
     MCView::import_dataset(
         project = project_dir,
         dataset = dataset,
-        anndata_file = fs::path(raw_dir, "metacells.h5ad")
+        anndata_file = fs::path(raw_dir, "metacells.h5ad"),
+        calc_gg_cor = FALSE
     )
     test_dataset(project_dir, dataset)
     withr::defer(unlink(fs::path(project_dir, "cache", dataset)))
@@ -48,7 +51,8 @@ test_that("import_dataset works with non existing cell type field", {
         project = project_dir,
         dataset = dataset,
         anndata_file = fs::path(raw_dir, "metacells.h5ad"),
-        cell_type_field = "savta"
+        cell_type_field = "savta",
+        calc_gg_cor = FALSE
     )
     test_dataset(project_dir, dataset)
     withr::defer(unlink(fs::path(project_dir, "cache", dataset)))
@@ -62,20 +66,21 @@ test_that("import_dataset works with cell type field and cell_type_colors file",
         project = project_dir,
         dataset = dataset,
         anndata_file = fs::path(raw_dir, "metacells.h5ad"),
-        cell_type_colors_file = fs::path(raw_dir, "cluster-colors.csv")
+        cell_type_colors_file = fs::path(raw_dir, "cluster-colors.csv"),
+        calc_gg_cor = FALSE
     )
     test_dataset(project_dir, dataset)
     withr::defer(unlink(fs::path(project_dir, "cache", dataset)))
     withr::defer(gc())
 })
 
-test_that("import_dataset works with calc_gg_cor=FALSE", {
+test_that("import_dataset works with calc_gg_cor=TRUE", {
     MCView::import_dataset(
         project = project_dir,
         dataset = "PBMC163k_gg_cor",
         anndata_file = fs::path(raw_dir, "metacells.h5ad"),
         cell_type_colors_file = fs::path(raw_dir, "cluster-colors.csv"),
-        calc_gg_cor = FALSE
+        calc_gg_cor = TRUE
     )
     test_dataset(
         project_dir,
@@ -85,7 +90,8 @@ test_that("import_dataset works with calc_gg_cor=FALSE", {
             "mc_sum.qs",
             "mc2d.qs",
             "metacell_types.tsv",
-            "cell_type_colors.tsv"
+            "cell_type_colors.tsv",
+            "gg_mc_top_cor.qs"
         )
     )
     withr::defer(unlink(fs::path(project_dir, "cache", "PBMC163k_ctf_ctcf")))
@@ -99,7 +105,8 @@ test_that("import_dataset works with metacell_types file", {
         project = project_dir,
         dataset = dataset,
         anndata_file = fs::path(raw_dir, "metacells.h5ad"),
-        metacell_types_file = fs::path(raw_dir, "metacell-types.csv")
+        metacell_types_file = fs::path(raw_dir, "metacell-types.csv"),
+        calc_gg_cor = FALSE
     )
     test_dataset(project_dir, dataset)
     withr::defer(unlink(fs::path(project_dir, "cache", dataset)))
@@ -117,7 +124,8 @@ test_that("import_dataset fails with non existing metacells in metacell types", 
             project = project_dir,
             dataset = "PBMC163k_mct",
             anndata_file = fs::path(raw_dir, "metacells.h5ad"),
-            metacell_types_file = mc_types_file
+            metacell_types_file = mc_types_file,
+            calc_gg_cor = FALSE
         )
     )
 
@@ -136,7 +144,8 @@ test_that("import_dataset warns about missing metacells in metacell types", {
             project = project_dir,
             dataset = "PBMC163k_mct",
             anndata_file = fs::path(raw_dir, "metacells.h5ad"),
-            metacell_types_file = mc_types_file
+            metacell_types_file = mc_types_file,
+            calc_gg_cor = FALSE
         )
     )
 
@@ -152,7 +161,8 @@ test_that("import_dataset works with metacell_types file and cell_type_colors fi
         dataset = dataset,
         anndata_file = fs::path(raw_dir, "metacells.h5ad"),
         metacell_types_file = fs::path(raw_dir, "metacell-types.csv"),
-        cell_type_colors_file = fs::path(raw_dir, "cluster-colors.csv")
+        cell_type_colors_file = fs::path(raw_dir, "cluster-colors.csv"),
+        calc_gg_cor = FALSE
     )
     test_dataset(project_dir, dataset)
     withr::defer(unlink(fs::path(project_dir, "cache", dataset)))
