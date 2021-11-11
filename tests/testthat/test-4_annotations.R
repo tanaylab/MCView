@@ -23,7 +23,7 @@ test_that("update_metacell_types works with missing cell types", {
     test_file <- fs::path(raw_dir, "metacell-types-test.csv")
     fwrite(metacell_types, test_file)
     withr::defer(unlink(test_file))
-    expect_warning(MCView::update_metacell_types(project_dir, "PBMC163k", test_file))
+    MCView::update_metacell_types(project_dir, "PBMC163k", test_file)
 
     init_config(project = project_dir)
     load_all_data(cache_dir = project_cache_dir(project_dir))
