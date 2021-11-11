@@ -95,7 +95,7 @@ mc2d_plot_metadata_ggp <- function(dataset,
         mutate(col_x = palette(.[[md]]))
 
     p <- mc2d_df %>%
-        ggplot(aes_string(x = "x", y = "y", label = "metacell", fill = "col_x", color = md, tooltip_text = "Metacell", customdata = "id"))
+        ggplot(aes(x = x, y = y, label = metacell, fill = col_x, color = !!sym(md), tooltip_text = Metacell, customdata = id))
 
     if (nrow(graph) > 0) {
         if (scale_edges) {
