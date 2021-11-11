@@ -113,7 +113,7 @@ parse_cell_type_colors <- function(file) {
 }
 
 
-parse_metacell_types <- function(file) {
+parse_metacell_types <- function(file, metacells = NULL) {
     metacell_types <- fread(file) %>% as_tibble()
 
     if (!has_name(metacell_types, "metacell")) {
@@ -139,6 +139,20 @@ parse_metacell_types <- function(file) {
 
     metacell_types <- metacell_types %>%
         mutate(metacell = as.character(metacell))
+
+    if (!is.null(metacells)) {
+        unknown_metacells <- metacell_types$metacell[!(metacell_types$metacell %in% metacells)]
+        if (length(unknown_metacells) > 0) {
+            mcs <- paste(unknown_metacells, collapse = ", ")
+            cli_abort("Metacell types contains metacells that are missing from the data: {.field {mcs}}")
+        }
+
+        missing_metacells <- metacells[!(metacells %in% metacell_types$metacell)]
+        if (length(missing_metacells) > 0) {
+            mcs <- paste(missing_metacells, collapse = ", ")
+            cli_warn("Some metacells are missing from metacell types: {.field {mcs}}")
+        }
+    }
 
     return(metacell_types)
 }

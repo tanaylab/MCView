@@ -40,7 +40,6 @@ test_dataset <- function(project_dir,
                              "mc_mat.qs",
                              "mc_sum.qs",
                              "mc2d.qs",
-                             "gg_mc_top_cor.qs",
                              "metacell_types.tsv",
                              "cell_type_colors.tsv",
                              "marker_genes.qs"

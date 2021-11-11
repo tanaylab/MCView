@@ -42,7 +42,9 @@ update_metadata <- function(project,
     prev_metadata_file <- fs::path(cache_dir, dataset, "metadata.tsv")
     if (fs::file_exists(prev_metadata_file) && !overwrite) {
         cli_alert_info("Merging with previous metadata")
-        prev_metadata <- fread(prev_metadata_file) %>% as_tibble()
+        prev_metadata <- fread(prev_metadata_file) %>%
+            mutate(metacell = as.character(metacell)) %>%
+            as_tibble()
         metadata <- prev_metadata %>%
             select(-any_of(colnames(metadata)[-1])) %>%
             left_join(metadata, by = "metacell")
