@@ -26,7 +26,7 @@ mod_markers_ui <- function(id) {
                         startOpen = FALSE,
                         width = 25,
                         id = ns("markers_heatmap_sidebar"),
-                        checkboxInput(ns("force_cell_type"), "Force cell type", value = FALSE),
+                        checkboxInput(ns("force_cell_type"), "Force cell type", value = TRUE),
                         shinyWidgets::numericRangeInput(ns("lfp_range"), "Fold change range", c(-3, 3), width = "80%", separator = " to "),
                         checkboxInput(ns("plot_legend"), "Plot legend", value = TRUE)
                     ),
@@ -76,10 +76,14 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
     observe({
         initial_markers <- choose_markers(get_markers(dataset()), 100)
         markers(initial_markers)
+        req(metacell_types())
 
         mat <- get_marker_matrix(
             dataset(),
-            initial_markers
+            initial_markers,
+            input$selected_cell_types,
+            metacell_types(),
+            force_cell_type = input$force_cell_type
         )
         markers_matrix(mat)
 
@@ -167,8 +171,9 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
     observeEvent(input$apply, {
         shinyjs::hide("markers_heatmap")
         selected_cell_types <- input$selected_cell_types %||% cell_type_colors()$cell_type
-        force_cell_type <- input$force_cell_type %||% FALSE
+        force_cell_type <- input$force_cell_type %||% TRUE
         req(markers())
+        req(metacell_types())
 
         mat <- get_marker_matrix(
             dataset(),
@@ -208,7 +213,7 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
     }) %>% bindCache(dataset(), markers_matrix(), metacell_types(), cell_type_colors(), lfp_range(), input$plot_legend, input$selected_md)
 }
 
-get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_types = NULL, force_cell_type = FALSE) {
+get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_types = NULL, force_cell_type = TRUE) {
     mc_fp <- get_mc_fp(dataset, markers)
 
     if (!is.null(cell_types)) {
