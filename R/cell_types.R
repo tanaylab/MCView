@@ -129,7 +129,7 @@ parse_metacell_types <- function(file, metacells = NULL) {
         cli_abort("{.field {file}} should have a column named {.field metacell}")
     }
 
-    if (!has_name(metacell_types, "cell_type") && !has_name(cell_type_colors, "cluster")) {
+    if (!has_name(metacell_types, "cell_type") && !has_name(metacell_types, "cluster")) {
         cli_abort("{.field {file}} should have a column named {.field cell_type} or {.field cluster}")
     }
 
