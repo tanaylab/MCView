@@ -95,7 +95,7 @@ get_top_marks <- function(feat) {
 #'
 #' @noRd
 #' @return named vector with metacell order
-order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers = FALSE, force_cell_type = FALSE, metacell_types = NULL) {
+order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers = FALSE, force_cell_type = FALSE, metacell_types = NULL, order_each_cell_type = FALSE) {
     if (filter_markers) {
         gene_folds <- filter_markers_mat(gene_folds)
     }
@@ -151,24 +151,23 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
             )
         }
 
-        ord <- ord_df %>%
-            group_by(cell_type) %>%
-            do(ord_inside_cell_type(.)) %>%
-            mutate(glob_ord = mean(glob_ord)) %>%
-            ungroup() %>%
-            arrange(glob_ord, ct_ord) %>%
-            pull(orig_ord)
-
-
-        # The commented strategy is faster - only order according to the
-        # global markers
-        # ord <- ord_df %>%
-        #     mutate(orig_ord = 1:n()) %>%
-        #     group_by(cell_type) %>%
-        #     mutate(ct_ord = mean(glob_ord)) %>%
-        #     ungroup() %>%
-        #     arrange(ct_ord, glob_ord) %>%
-        #     pull(orig_ord)
+        if (order_each_cell_type) {
+            ord <- ord_df %>%
+                group_by(cell_type) %>%
+                do(ord_inside_cell_type(.)) %>%
+                mutate(glob_ord = mean(glob_ord)) %>%
+                ungroup() %>%
+                arrange(glob_ord, ct_ord) %>%
+                pull(orig_ord)
+        } else { # only order according to the global markers
+            ord <- ord_df %>%
+                mutate(orig_ord = 1:n()) %>%
+                group_by(cell_type) %>%
+                mutate(ct_ord = mean(glob_ord)) %>%
+                ungroup() %>%
+                arrange(ct_ord, glob_ord) %>%
+                pull(orig_ord)
+        }
     }
 
     return(ord)
