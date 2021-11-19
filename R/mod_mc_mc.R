@@ -31,14 +31,7 @@ mod_mc_mc_ui <- function(id) {
                     shinycssloaders::withSpinner(
                         plotly::plotlyOutput(ns("plot_mc_proj_2d"))
                     ),
-                    shinyWidgets::prettyRadioButtons(
-                        inputId = ns("proj_select_main"),
-                        label = "Select on click:",
-                        choices = c("Metacell A", "Metacell B"),
-                        inline = TRUE,
-                        status = "danger",
-                        fill = TRUE
-                    )
+                    uiOutput(ns("projection_selectors"))
                 ),
                 uiOutput(ns("metacell_flow_box"))
             ),
@@ -79,6 +72,15 @@ mod_mc_mc_sidebar_ui <- function(id) {
         list(
             div(
                 id = ns("sidebar_select"),
+                shinyWidgets::radioGroupButtons(
+                    inputId = ns("mode"),
+                    label = "Compare:",
+                    choices = c(
+                        "Metacells",
+                        "Cell types"
+                    ),
+                    justified = TRUE
+                ),
                 uiOutput(ns("metacell1_select")),
                 uiOutput(ns("metacell2_select")),
                 shinyWidgets::actionGroupButtons(ns("switch_metacells"), labels = c("Switch"), size = "sm")
@@ -100,23 +102,61 @@ mod_mc_mc_server <- function(input, output, session, dataset, metacell_types, ce
 
     output$metacell1_select <- renderUI({
         req(dataset())
-        shinyWidgets::pickerInput(ns("metacell1"), "Metacell A",
-            choices = metacell_names(),
-            selected = config$selected_mc1, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
-        )
+        req(input$mode)
+        if (input$mode == "Metacells") {
+            shinyWidgets::pickerInput(ns("metacell1"), "Metacell A",
+                choices = metacell_names(),
+                selected = config$selected_mc1, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
+            )
+        } else {
+            req(cell_type_colors())
+            cell_types_hex <- col2hex(cell_type_colors()$color)
+            cell_types <- cell_type_colors()$cell_type
+            shinyWidgets::pickerInput(ns("metacell1"), "Cell type A",
+                choices = cell_types,
+                selected = cell_types[1],
+                multiple = FALSE,
+                options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith"),
+                choicesOpt = list(
+                    style = paste0("color: ", cell_types_hex, ";")
+                )
+            )
+        }
     })
 
     output$metacell2_select <- renderUI({
         req(dataset())
-        shinyWidgets::pickerInput(ns("metacell2"), "Metacell B",
-            choices = metacell_names(),
-            selected = config$selected_mc2, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
-        )
+        req(input$mode)
+        if (input$mode == "Metacells") {
+            shinyWidgets::pickerInput(ns("metacell2"), "Metacell B",
+                choices = metacell_names(),
+                selected = config$selected_mc2, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
+            )
+        } else {
+            req(cell_type_colors())
+            cell_types_hex <- col2hex(cell_type_colors()$color)
+            cell_types <- cell_type_colors()$cell_type
+            shinyWidgets::pickerInput(ns("metacell2"), "Cell type B",
+                choices = cell_types,
+                selected = cell_types[2],
+                options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith"),
+                choicesOpt = list(
+                    style = paste0("color: ", cell_types_hex, ";")
+                )
+            )
+        }
     })
 
-
     mc_mc_gene_scatter_df <- reactive({
-        calc_mc_mc_gene_df(dataset(), input$metacell1, input$metacell2)
+        req(input$mode)
+        if (input$mode == "Metacells") {
+            calc_mc_mc_gene_df(dataset(), input$metacell1, input$metacell2)
+        } else {
+            req(metacell_types())
+            req(input$metacell1 %in% cell_type_colors()$cell_type)
+            req(input$metacell2 %in% cell_type_colors()$cell_type)
+            calc_ct_ct_gene_df(dataset(), input$metacell1, input$metacell2, metacell_types())
+        }
     })
 
     observeEvent(input$switch_metacells, {
@@ -126,8 +166,25 @@ mod_mc_mc_server <- function(input, output, session, dataset, metacell_types, ce
         updateSelectInput(session, "metacell2", selected = mc1)
     })
 
+    output$projection_selectors <- renderUI({
+        req(input$mode)
+        if (input$mode == "Metacells") {
+            choices <- c("Metacell A", "Metacell B")
+        } else {
+            choices <- c("Cell type A", "Cell type B")
+        }
+        shinyWidgets::prettyRadioButtons(
+            inputId = ns("proj_select_main"),
+            label = "Select on click:",
+            choices = choices,
+            inline = TRUE,
+            status = "danger",
+            fill = TRUE
+        )
+    })
+
     # MC/MC plots
-    output$plot_mc_mc_gene_scatter <- render_mc_mc_gene_plotly(input, output, session, ns, dataset, mc_mc_gene_scatter_df)
+    output$plot_mc_mc_gene_scatter <- render_mc_mc_gene_plotly(input, output, session, ns, dataset, mc_mc_gene_scatter_df, metacell_names(), cell_type_colors())
 
     output$diff_expr_table <- render_mc_mc_gene_diff_table(input, output, session, ns, dataset, mc_mc_gene_scatter_df)
 
@@ -172,11 +229,15 @@ mod_mc_mc_server <- function(input, output, session, dataset, metacell_types, ce
         req(input$metacell1)
         req(input$metacell2)
 
-        highlight <- tibble::tibble(
-            metacell = c(input$metacell1, input$metacell2),
-            label = c("metacell1", "metacell2"),
-            color = c("darkred", "darkblue")
-        )
+        if (input$mode == "Metacells") {
+            highlight <- tibble::tibble(
+                metacell = c(input$metacell1, input$metacell2),
+                label = c("metacell1", "metacell2"),
+                color = c("darkred", "darkblue")
+            )
+        } else {
+            highlight <- NULL
+        }
 
         p_proj <- mc2d_plot_ggp(dataset(), metacell_types = metacell_types(), cell_type_colors = cell_type_colors(), point_size = input$point_size, min_d = input$min_edge_size, highlight = highlight)
 
@@ -195,6 +256,7 @@ mod_mc_mc_server <- function(input, output, session, dataset, metacell_types, ce
             fig <- plotly::subplot(
                 plotly::ggplotly(p_proj, tooltip = "tooltip_text") %>%
                     plotly::hide_legend() %>%
+                    rm_plotly_grid() %>%
                     plotly::layout(annotations = get_plotly_subplot_title("Projection")),
                 subfig %>%
                     plotly::layout(annotations = get_plotly_subplot_title("Time distribution")),
@@ -211,6 +273,7 @@ mod_mc_mc_server <- function(input, output, session, dataset, metacell_types, ce
         } else {
             fig <- plotly::ggplotly(p_proj, tooltip = "tooltip_text") %>%
                 plotly::hide_legend() %>%
+                rm_plotly_grid() %>%
                 plotly::layout(annotations = get_plotly_subplot_title("Projection")) %>%
                 sanitize_for_WebGL() %>%
                 plotly::toWebGL() %>%
@@ -222,18 +285,31 @@ mod_mc_mc_server <- function(input, output, session, dataset, metacell_types, ce
         return(fig)
     })
 
-    # Select metacell when clicking on it
+    # Select metacell / cell type when clicking on it
     observeEvent(plotly::event_data("plotly_click", source = "proj_mc_plot"), {
         el <- plotly::event_data("plotly_click", source = "proj_mc_plot")
-
         metacell <- el$customdata
 
-        if (input$proj_select_main == "Metacell A") {
-            updateSelectInput(session, "metacell1", selected = metacell)
-            showNotification(glue("Selected Metacell A #{metacell}"))
+        if (input$mode == "Metacells") {
+            if (input$proj_select_main == "Metacell A") {
+                updateSelectInput(session, "metacell1", selected = metacell)
+                showNotification(glue("Selected Metacell A: #{metacell}"))
+            } else {
+                updateSelectInput(session, "metacell2", selected = metacell)
+                showNotification(glue("Selected Metacell B: #{metacell}"))
+            }
         } else {
-            updateSelectInput(session, "metacell2", selected = metacell)
-            showNotification(glue("Selected Metacell B #{metacell}"))
+            cell_type <- metacell_types() %>%
+                filter(metacell == !!metacell) %>%
+                slice(1) %>%
+                pull(cell_type)
+            if (input$proj_select_main == "Cell type A") {
+                updateSelectInput(session, "metacell1", selected = cell_type)
+                showNotification(glue("Selected Cell type A: {cell_type}"))
+            } else {
+                updateSelectInput(session, "metacell2", selected = cell_type)
+                showNotification(glue("Selected Cell type B: {cell_type}"))
+            }
         }
     })
 
