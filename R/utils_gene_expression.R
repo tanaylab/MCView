@@ -49,6 +49,29 @@ get_metacells_egc <- function(metacells, dataset) {
     return(mc_egc)
 }
 
+get_cell_types_mat <- function(cell_types, metacell_types, dataset) {
+    mc_mat <- get_mc_data(dataset, "mc_mat")
+
+    mc_types <- metacell_types %>%
+        filter(cell_type %in% cell_types) %>%
+        select(metacell, cell_type) %>%
+        deframe()
+
+    mc_mat <- mc_mat[, names(mc_types)]
+
+    ct_mat <- t(tgs_matrix_tapply(mc_mat, mc_types, sum))
+
+    return(ct_mat)
+}
+
+get_cell_types_egc <- function(cell_types, metacell_types, dataset, mat = NULL) {
+    mat <- mat %||% get_cell_types_mat(cell_types, metacell_types)
+
+    ct_egc <- t(t(mat) / colSums(mat))
+
+    return(ct_egc)
+}
+
 get_markers <- function(dataset) {
     marker_genes <- get_mc_data(dataset, "marker_genes")
     if (!is.null(marker_genes)) {

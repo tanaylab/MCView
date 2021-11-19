@@ -716,7 +716,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         calc_mc_mc_gene_df(dataset(), input$metacell1, input$metacell2)
     })
 
-    output$plot_mc_mc_gene_scatter <- render_mc_mc_gene_plotly(input, output, session, ns, dataset, mc_mc_gene_scatter_df)
+    output$plot_mc_mc_gene_scatter <- render_mc_mc_gene_plotly(input, output, session, ns, dataset, mc_mc_gene_scatter_df, metacell_names())
 
     output$diff_expr_table <- render_mc_mc_gene_diff_table(input, output, session, ns, dataset, mc_mc_gene_scatter_df)
 
