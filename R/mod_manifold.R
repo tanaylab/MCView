@@ -65,7 +65,6 @@ mod_manifold_sidebar_ui <- function(id) {
     ns <- NS(id)
     tagList(
         list(
-            shinycssloaders::withSpinner(uiOutput(ns("toggle_gene_selectors_button"))),
             shinycssloaders::withSpinner(uiOutput(ns("gene_selectors"))),
             shinycssloaders::withSpinner(uiOutput(ns("top_correlated_select_gene1"))),
             shinycssloaders::withSpinner(uiOutput(ns("top_correlated_select_gene2"))),
@@ -82,7 +81,7 @@ mod_manifold_server <- function(input, output, session, dataset, metacell_types,
 
     # gene selectors
     values <- reactiveValues(gene1 = default_gene1, gene2 = default_gene2)
-    server_gene_selectors(input, output, session, values, dataset, ns, show_button = TRUE)
+    server_gene_selectors(input, output, session, values, dataset, ns, show_button = FALSE)
 
     # Expression range
     output$set_range_ui <- renderUI({
