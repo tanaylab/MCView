@@ -73,36 +73,6 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
     markers_matrix <- reactiveVal()
     lfp_range <- reactiveVal()
 
-    observe({
-        initial_markers <- choose_markers(get_markers(dataset()), 100)
-        markers(initial_markers)
-        req(metacell_types())
-
-        mat <- get_marker_matrix(
-            dataset(),
-            initial_markers,
-            input$selected_cell_types,
-            metacell_types(),
-            force_cell_type = input$force_cell_type
-        )
-        markers_matrix(mat)
-
-        lfp_range(c(-3, 3))
-    })
-
-    observeEvent(input$update_markers, {
-        req(metacell_types())
-        req(input$selected_cell_types)
-
-        markers_df <- metacell_types() %>%
-            filter(cell_type %in% input$selected_cell_types) %>%
-            select(metacell) %>%
-            inner_join(get_markers(dataset()), by = "metacell")
-        new_markers <- choose_markers(markers_df, 100)
-
-        markers(new_markers)
-    })
-
     output$cell_type_list <- renderUI({
         cell_types_hex <- col2hex(cell_type_colors()$color)
         cell_types <- cell_type_colors()$cell_type
@@ -143,6 +113,39 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
             shinyWidgets::actionGroupButtons(ns("remove_genes"), labels = "Remove selected genes", size = "sm")
         )
     })
+
+    observe({
+        initial_markers <- choose_markers(get_markers(dataset()), 100)
+        markers(initial_markers)
+        req(metacell_types())
+        req(all(input$selected_cell_types %in% metacell_types()$cell_type))
+
+        mat <- get_marker_matrix(
+            dataset(),
+            initial_markers,
+            input$selected_cell_types,
+            metacell_types(),
+            force_cell_type = input$force_cell_type
+        )
+        markers_matrix(mat)
+
+        lfp_range(c(-3, 3))
+    })
+
+    observeEvent(input$update_markers, {
+        req(metacell_types())
+        req(input$selected_cell_types)
+        req(all(input$selected_cell_types %in% metacell_types()$cell_type))
+
+        markers_df <- metacell_types() %>%
+            filter(cell_type %in% input$selected_cell_types) %>%
+            select(metacell) %>%
+            inner_join(get_markers(dataset()), by = "metacell")
+        new_markers <- choose_markers(markers_df, 100)
+
+        markers(new_markers)
+    })
+
 
     observeEvent(input$remove_genes, {
         new_markers <- markers()[!(markers() %in% input$selected_marker_genes)]
