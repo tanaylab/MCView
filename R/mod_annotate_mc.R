@@ -183,21 +183,6 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
     values <- reactiveValues(gene1 = default_gene1, gene2 = default_gene2, file_status = NULL)
     server_gene_selectors(input, output, session, values, dataset, ns)
 
-    observe({
-        initial_cell_type_colors <- get_mc_data(dataset(), "cell_type_colors")
-        initial_metacell_types <- get_mc_data(dataset(), "metacell_types")
-
-        # remove metacell color column if exists
-        initial_metacell_types$mc_col <- NULL
-
-        # add cell type color from initial cell type annotation
-        initial_metacell_types <- initial_metacell_types %>%
-            left_join(initial_cell_type_colors %>% select(cell_type, mc_col = color), by = "cell_type")
-
-        metacell_types(initial_metacell_types)
-        cell_type_colors(initial_cell_type_colors)
-    })
-
     observeEvent(input$metacell_types_fn, {
         values$file_status <- "uploaded"
     })
