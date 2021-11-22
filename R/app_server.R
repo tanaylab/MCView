@@ -17,12 +17,47 @@ app_server <- function(input, output, session) {
     metacell_types <- reactiveVal()
     cell_type_colors <- reactiveVal()
 
-    callModule(mod_manifold_server, "manifold_ui_1", dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors)
-    callModule(mod_gene_mc_server, "gene_mc_ui_1", dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors)
-    callModule(mod_markers_server, "markers_ui_1", dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors)
-    callModule(mod_mc_mc_server, "mc_mc_ui_1", dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors)
-    callModule(mod_annotate_mc_server, "annotate_ui_1", dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors)
-    callModule(mod_metadata_server, "metadata_ui_1", dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors)
+    observe({
+        initial_cell_type_colors <- get_mc_data(dataset(), "cell_type_colors")
+        initial_metacell_types <- get_mc_data(dataset(), "metacell_types")
+
+        # remove metacell color column if exists
+        initial_metacell_types$mc_col <- NULL
+
+        # add cell type color from initial cell type annotation
+        initial_metacell_types <- initial_metacell_types %>%
+            left_join(initial_cell_type_colors %>% select(cell_type, mc_col = color), by = "cell_type")
+
+        metacell_types(initial_metacell_types)
+        cell_type_colors(initial_cell_type_colors)
+    })
+
+    observeEvent(input$tab_sidebar, {
+        if (input$tab_sidebar == "manifold") {
+            callModule(mod_manifold_server, "manifold_ui_1", dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors)
+        }
+
+        if (input$tab_sidebar == "gene_mc") {
+            callModule(mod_gene_mc_server, "gene_mc_ui_1", dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors)
+        }
+
+        if (input$tab_sidebar == "markers") {
+            callModule(mod_markers_server, "markers_ui_1", dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors)
+        }
+
+        if (input$tab_sidebar == "mc_mc") {
+            callModule(mod_mc_mc_server, "mc_mc_ui_1", dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors)
+        }
+
+        if (input$tab_sidebar == "annotate") {
+            callModule(mod_annotate_mc_server, "annotate_ui_1", dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors)
+        }
+
+        if (input$tab_sidebar == "metadata") {
+            callModule(mod_metadata_server, "metadata_ui_1", dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors)
+        }
+    })
+
 
     show_help <- function(input, output, session) {
         if (input$tab_sidebar == "about") {

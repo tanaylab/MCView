@@ -274,10 +274,14 @@ render_2d_plotly <- function(input, output, session, dataset, values, metacell_t
         }
 
         if (input$color_proj == "Cell type") {
+            req(metacell_types())
+            req(cell_type_colors())
+
             if (refresh_on_gene_change) {
                 req(values$gene1)
                 req(values$gene2)
             }
+
             fig <- mc2d_plot_ggp(
                 dataset(),
                 metacell_types = metacell_types(),
