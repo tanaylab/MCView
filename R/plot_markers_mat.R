@@ -20,9 +20,16 @@ plot_markers_mat <- function(mc_fp,
     gene_ord <- order(apply(mc_fp, 1, which.max))
     mat <- log2(mc_fp[gene_ord, ])
 
+    col_names <- FALSE
+    if (ncol(mat) <= 100) {
+        col_names <- colnames(mat)
+        top_cell_type_bar <- FALSE
+    }
+
     p_mat <- tgutil::tgplot_heatmap(
         clip_vals(mat, min_lfp, max_lfp),
-        col_names = FALSE,
+        col_names = col_names,
+        col_names_orient = "slanted",
         interleave = TRUE
     ) +
         scale_fill_gradientn(name = "Fold change", colors = colors, values = scales::rescale(values))
