@@ -225,9 +225,10 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
         mat <- mc_fp
     }
 
-    mc_order <- order_mc_by_most_var_genes(mat, force_cell_type = force_cell_type, metacell_types = metacell_types)
-
-    mat <- mat[, mc_order]
+    if (ncol(mat) > 1) {
+        mc_order <- order_mc_by_most_var_genes(mat, force_cell_type = force_cell_type, metacell_types = metacell_types)
+        mat <- mat[, mc_order]
+    }
 
     return(mat)
 }

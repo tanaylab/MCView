@@ -17,8 +17,16 @@ plot_markers_mat <- function(mc_fp,
         seq(0, max_lfp, length.out = length(colors) - mid_color + 1)[-1]
     )
 
+    metacells <- colnames(mc_fp)
+
     gene_ord <- order(apply(mc_fp, 1, which.max))
     mat <- log2(mc_fp[gene_ord, ])
+
+    # matrix has only a single metacell
+    if (!is.matrix(mat)) {
+        mat <- as.matrix(mat)
+        colnames(mat) <- metacells
+    }
 
     col_names <- FALSE
     if (ncol(mat) <= 100) {
