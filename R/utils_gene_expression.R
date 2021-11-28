@@ -24,6 +24,13 @@ filter_mat_by_cell_types <- function(mat, cell_types, metacell_types) {
         pull(metacell)
 
     mat <- mat[, metacells]
+
+    # cell type has only a single metacell
+    if (!is.matrix(mat)) {
+        mat <- as.matrix(mat)
+        colnames(mat) <- metacells
+    }
+
     return(mat)
 }
 
