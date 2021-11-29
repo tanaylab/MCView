@@ -20,12 +20,23 @@ calc_marker_genes <- function(mc_egc,
     mc_egc_norm <- mc_egc + 1e-5
     mc_fp <- mc_egc_norm / apply(mc_egc_norm, 1, median, na.rm = TRUE)
 
-    mc_fp_f <- mc_fp[interesting_genes_mask, ] + fold_change_reg
-    mc_fp_f[mc_fp_f < minimal_relative_log_fraction] <- NA
+    mc_top_genes <- select_top_fold_genes(
+        mc_fp[interesting_genes_mask, ],
+        genes_per_metacell = genes_per_metacell,
+        minimal_relative_log_fraction = minimal_relative_log_fraction,
+        fold_change_reg = fold_change_reg
+    )
 
-    mc_top_genes <- apply(mc_fp_f, 2, function(fp) {
+    return(mc_top_genes)
+}
+
+select_top_fold_genes <- function(fold_matrix, genes_per_metacell = 2, minimal_relative_log_fraction = 2, fold_change_reg = 0.1) {
+    fold_matrix <- fold_matrix + fold_change_reg
+    fold_matrix[fold_matrix < minimal_relative_log_fraction] <- NA
+
+    mc_top_genes <- apply(fold_matrix, 2, function(fp) {
         top_ind <- order(-fp)[1:genes_per_metacell]
-        return(tibble(gene = rownames(mc_fp_f)[top_ind], rank = 1:length(top_ind), fp = fp[top_ind]))
+        return(tibble(gene = rownames(fold_matrix)[top_ind], rank = 1:length(top_ind), fp = fp[top_ind]))
     }) %>%
         purrr::imap_dfr(~ .x %>% mutate(metacell = .y)) %>%
         arrange(metacell, rank) %>%
@@ -95,12 +106,12 @@ get_top_marks <- function(feat) {
 #'
 #' @noRd
 #' @return named vector with metacell order
-order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers = FALSE, force_cell_type = FALSE, metacell_types = NULL, order_each_cell_type = FALSE) {
+order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers = FALSE, force_cell_type = FALSE, metacell_types = NULL, order_each_cell_type = FALSE, epsilon = 0) {
     if (filter_markers) {
         gene_folds <- filter_markers_mat(gene_folds)
     }
 
-    feat <- log2(gene_folds)
+    feat <- log2(gene_folds + epsilon)
 
     if (is.null(marks)) {
         marks <- get_top_marks(feat)
@@ -171,4 +182,18 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
     }
 
     return(ord)
+}
+
+
+
+get_markers <- function(dataset) {
+    marker_genes <- get_mc_data(dataset, "marker_genes")
+    if (!is.null(marker_genes)) {
+        return(marker_genes)
+    }
+
+    marker_genes <- calc_marker_genes(get_mc_egc(dataset), 20)
+    serialize_shiny_data(marker_genes, "marker_genes", dataset = dataset, cache_dir = cache_dir)
+
+    return(marker_genes)
 }

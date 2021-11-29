@@ -12,10 +12,10 @@ plot_markers_mat <- function(mc_fp,
     min_lfp <- min_lfp %||% -3
     max_lfp <- max_lfp %||% 3
 
-    values <- c(
+    values <- unique(c(
         seq(min_lfp, 0, length.out = mid_color),
         seq(0, max_lfp, length.out = length(colors) - mid_color + 1)[-1]
-    )
+    ))
 
     metacells <- colnames(mc_fp)
 

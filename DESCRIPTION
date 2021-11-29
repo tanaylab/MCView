@@ -69,7 +69,8 @@ Imports:
     vctrs,
     viridis,
     yaml,
-    zip
+    zip,
+    Matrix
 Suggests: 
     knitr,
     R.utils,

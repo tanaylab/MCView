@@ -57,6 +57,15 @@ mod_markers_sidebar_ui <- function(id) {
             uiOutput(ns("cell_type_list")),
             uiOutput(ns("metadata_list")),
             shinyWidgets::actionGroupButtons(ns("update_markers"), labels = "Update markers", size = "sm"),
+            shinyWidgets::radioGroupButtons(
+                inputId = ns("mode"),
+                label = "Mode:",
+                choices = c(
+                    "Markers",
+                    "Inner-folds"
+                ),
+                justified = TRUE
+            ),
             uiOutput(ns("marker_genes_list")),
             uiOutput(ns("add_genes_ui"))
         )
@@ -115,7 +124,7 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
     })
 
     observe({
-        initial_markers <- choose_markers(get_markers(dataset()), 100)
+        initial_markers <- choose_markers(get_marker_genes(dataset(), mode = input$mode), 100)
         markers(initial_markers)
         req(metacell_types())
         req(all(input$selected_cell_types %in% metacell_types()$cell_type))
@@ -125,11 +134,16 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
             initial_markers,
             input$selected_cell_types,
             metacell_types(),
-            force_cell_type = input$force_cell_type
+            force_cell_type = input$force_cell_type,
+            mode = input$mode
         )
         markers_matrix(mat)
 
-        lfp_range(c(-3, 3))
+        if (input$mode == "Inner-folds") {
+            lfp_range(c(0, 4))
+        } else {
+            lfp_range(c(-3, 3))
+        }
     })
 
     observeEvent(input$update_markers, {
@@ -140,7 +154,7 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
         markers_df <- metacell_types() %>%
             filter(cell_type %in% input$selected_cell_types) %>%
             select(metacell) %>%
-            inner_join(get_markers(dataset()), by = "metacell")
+            inner_join(get_marker_genes(dataset(), mode = input$mode), by = "metacell")
         new_markers <- choose_markers(markers_df, 100)
 
         markers(new_markers)
@@ -177,13 +191,15 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
         force_cell_type <- input$force_cell_type %||% TRUE
         req(markers())
         req(metacell_types())
+        req(input$mode)
 
         mat <- get_marker_matrix(
             dataset(),
             markers(),
             input$selected_cell_types,
             metacell_types(),
-            force_cell_type = input$force_cell_type
+            force_cell_type = input$force_cell_type,
+            mode = input$mode
         )
 
         markers_matrix(mat)
@@ -195,6 +211,19 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
     output$markers_heatmap <- renderPlot({
         req(dataset())
         req(markers_matrix())
+        req(input$mode)
+        req(lfp_range())
+        req(metacell_types())
+        req(cell_type_colors())
+        req(input$plot_legend)
+
+        if (input$mode == "Markers") {
+            colors <- c("darkblue", "blue", "lightblue", "white", "red", "darkred")
+            mid_color <- 4
+        } else {
+            colors <- c("white", "red", "darkred", "black")
+            mid_color <- 1
+        }
 
         if (!is.null(input$selected_md)) {
             metadata <- get_mc_data(dataset(), "metadata") %>%
@@ -211,13 +240,23 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
             min_lfp = lfp_range()[1],
             max_lfp = lfp_range()[2],
             plot_legend = input$plot_legend %||% TRUE,
+            colors = colors,
+            mid_color = mid_color,
             metadata = metadata
         )
     }) %>% bindCache(dataset(), markers_matrix(), metacell_types(), cell_type_colors(), lfp_range(), input$plot_legend, input$selected_md)
 }
 
-get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_types = NULL, force_cell_type = TRUE) {
-    mc_fp <- get_mc_fp(dataset, markers)
+get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_types = NULL, force_cell_type = TRUE, mode = "Markers") {
+    if (mode == "Inner-folds") {
+        mc_fp <- get_mc_data(dataset, "inner_fold_mat")
+        mc_fp <- as.matrix(mc_fp[Matrix::rowSums(mc_fp) > 0, ])
+        mc_fp <- mc_fp[intersect(markers, rownames(mc_fp)), ]
+        epsilon <- 1e-5
+    } else {
+        mc_fp <- get_mc_fp(dataset, markers)
+        epsilon <- 0
+    }
 
     if (!is.null(cell_types)) {
         mat <- filter_mat_by_cell_types(mc_fp, cell_types, metacell_types)
@@ -226,9 +265,17 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
     }
 
     if (ncol(mat) > 1) {
-        mc_order <- order_mc_by_most_var_genes(mat, force_cell_type = force_cell_type, metacell_types = metacell_types)
+        mc_order <- order_mc_by_most_var_genes(mat, force_cell_type = force_cell_type, metacell_types = metacell_types, epsilon = epsilon)
         mat <- mat[, mc_order]
     }
 
     return(mat)
+}
+
+get_marker_genes <- function(dataset, mode = "Markers") {
+    if (mode == "Inner-folds") {
+        return(get_mc_data(dataset, "marker_genes_inner_fold"))
+    } else {
+        return(get_markers(dataset))
+    }
 }

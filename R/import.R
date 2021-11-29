@@ -34,7 +34,8 @@
 #' @param metadata_fields names of fields in the anndata \code{object$obs} which contains metadata for each metacell.
 #' The fields should *always* be numeric - if you have cell categorical annotations use
 #' \code{cell_metadata_to_metacell} with \code{categorical=TRUE} to convert them to a
-#' numeric score (e.g. using fraction of the category).
+#' numeric score (e.g. using fraction of the category). You can use 'all' in order to import all the numeric fields
+#'  of the anndata object.
 #' @param metadata can be either a data frame with a column named "metacell" with the metacell id and other metadata columns
 #' or a name of a delimited file which contains such data frame.
 #' @param metadata_colors a named list with colors for each metadata column, or a name of a yaml file with such list.
@@ -134,6 +135,17 @@ import_dataset <- function(project,
     marker_genes <- calc_marker_genes(mc_egc[!forbidden, ], 20)
     serialize_shiny_data(marker_genes, "marker_genes", dataset = dataset, cache_dir = cache_dir)
 
+    # serialize the inner fold matrix (if exists)
+    if (!is.null(adata$layers[["inner_fold"]])) {
+        cli_alert_info("Processing inner-folds matrix")
+        inner_fold_mat <- Matrix::t(adata$layers[["inner_fold"]])
+        serialize_shiny_data(inner_fold_mat, "inner_fold_mat", dataset = dataset, cache_dir = cache_dir)
+
+        cli_alert_info("Calculating top inner-fold genes")
+        marker_genes_inner_fold <- select_top_fold_genes(inner_fold_mat[!forbidden, ])
+        serialize_shiny_data(marker_genes_inner_fold, "marker_genes_inner_fold", dataset = dataset, cache_dir = cache_dir)
+    }
+
     mc_genes_top2 <- marker_genes %>%
         group_by(metacell) %>%
         slice(1:2) %>%
@@ -158,7 +170,14 @@ import_dataset <- function(project,
         } else {
             cli_alert_info("Clustering in order to get initial annotation.")
             # we generate clustering as initial annotation
-            feat_mat <- mc_egc[adata$var$top_feature_gene, ]
+            if (rlang::has_name(adata$var, "top_feature_gene")) {
+                feat_mat <- mc_egc[adata$var$top_feature_gene, ]
+            } else if (rlang::has_name(adata$var, "feature_gene")) {
+                feat_mat <- mc_egc[adata$var$feature_gene, ]
+            } else {
+                cli_abort("{anndata_file} object doesn't have a 'var' field named 'top_feature_gene' or 'feature_gene'")
+            }
+
             km <- cluster_egc(feat_mat, verbose = verbose)
             metacell_types <- km$clusters %>%
                 rename(cell_type = cluster) %>%
@@ -171,7 +190,15 @@ import_dataset <- function(project,
         cell_type_colors <- parse_cell_type_colors(cell_type_colors_file)
     } else {
         cli_alert_info("Generating cell type colors using {.pkg chameleon} package.")
-        color_of_clusters <- chameleon::data_colors(t(mc_egc[adata$var$top_feature_gene, ]), groups = metacell_types$cell_type)
+        if (rlang::has_name(adata$var, "top_feature_gene")) {
+            feat_mat <- mc_egc[adata$var$top_feature_gene, ]
+        } else if (rlang::has_name(adata$var, "feature_gene")) {
+            feat_mat <- mc_egc[adata$var$feature_gene, ]
+        } else {
+            cli_abort("{anndata_file} object doesn't have a 'var' field named 'top_feature_gene' or 'feature_gene'")
+        }
+
+        color_of_clusters <- chameleon::data_colors(t(feat_mat), groups = metacell_types$cell_type)
 
         cell_type_colors <- enframe(color_of_clusters, name = "cell_type", value = "color") %>%
             mutate(order = 1:n())
