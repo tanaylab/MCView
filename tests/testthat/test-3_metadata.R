@@ -16,7 +16,7 @@ test_that("import_dataset works with metadata dataframe", {
     test_dataset(project_dir, dataset)
     test_cache_file_exists("metadata.tsv", project_dir, dataset)
 
-    saved_md <- fread(fs::path(project_dir, "cache", dataset, "metadata.tsv")) %>% as_tibble()
+    saved_md <- tgutil::fread(fs::path(project_dir, "cache", dataset, "metadata.tsv")) %>% tibble::as_tibble()
     expect_equivalent(metadata_df, saved_md)
 
     withr::defer(unlink(fs::path(project_dir, "cache", dataset)))
@@ -26,13 +26,13 @@ test_that("import_dataset works with metadata dataframe", {
 test_that("cell_metadata_to_metacell works", {
     set.seed(60427)
     n_cells <- 5e6
-    cell_metadata <- tibble(
+    cell_metadata <- tibble::tibble(
         cell_id = 1:n_cells,
         md1 = sample(1:5, size = n_cells, replace = TRUE),
         md2 = rnorm(n = n_cells)
     )
 
-    cell_To_metacell <- tibble(
+    cell_To_metacell <- tibble::tibble(
         cell_id = 1:n_cells,
         metacell = sample(0:1535, size = n_cells, replace = TRUE)
     )
@@ -54,12 +54,12 @@ test_that("cell_metadata_to_metacell works", {
 test_that("cell_metadata_to_metacell works with categorical variable", {
     set.seed(60427)
     n_cells <- 5e6
-    cell_metadata <- tibble(
+    cell_metadata <- tibble::tibble(
         cell_id = 1:n_cells,
         md1 = sample(paste0("batch", 1:5), size = n_cells, replace = TRUE)
     )
 
-    cell_To_metacell <- tibble(
+    cell_To_metacell <- tibble::tibble(
         cell_id = 1:n_cells,
         metacell = sample(0:1535, size = n_cells, replace = TRUE)
     )
@@ -85,31 +85,34 @@ test_that("cell_metadata_to_metacell works with categorical variable", {
 
 test_that("cell_metadata_to_metacell_from_h5ad works", {
     # Skip on ci
-    h5ad_file <- "/home/aviezerl/src/metacell.shiny/cells.h5ad"
+    h5ad_file <- "/home/aviezerl/src/MCView_data/cells.h5ad"
     skip_if(!fs::file_exists(h5ad_file))
 
     metadata <- cell_metadata_to_metacell_from_h5ad(h5ad_file, c("pile", "properly_sampled_cell"))
     expect_true(all(metadata$properly_sampled_cell == 1))
     expect_equal(metadata$pile[1:5], c(0, 0, 1, 1, 1))
-    expect_equal(metadata$metacell, 0:1535)
+    expect_equal(metadata$metacell, 0:1555)
     expect_equal(colnames(metadata), c("metacell", "pile", "properly_sampled_cell"))
 })
 
 test_that("cell_metadata_to_metacell_from_h5ad works with categorical=TRUE", {
     # Skip on ci
-    h5ad_file <- "/home/aviezerl/src/metacell.shiny/cells.h5ad"
+    h5ad_file <- "/home/aviezerl/src/MCView_data/cells.h5ad"
     skip_if(!fs::file_exists(h5ad_file))
 
     metadata <- cell_metadata_to_metacell_from_h5ad(h5ad_file, c("batch"), categorical = "batch")
 
     expect_setequal(
         colnames(metadata),
-        paste0(
-            "batch: ",
-            c(
-                "metacell", "8batchall", "b_cells", "cd14", "cd34",
-                "cd4_t_helper", "cd56_nk", "cyto_t", "memory_t", "naive_cyto",
-                "naive_t", "reg_t"
+        c(
+            "metacell",
+            paste0(
+                "batch: ",
+                c(
+                    "8batchall", "b_cells", "cd14", "cd34",
+                    "cd4_t_helper", "cd56_nk", "cyto_t", "memory_t", "naive_cyto",
+                    "naive_t", "reg_t"
+                )
             )
         )
     )
@@ -119,20 +122,20 @@ test_that("cell_metadata_to_metacell_from_h5ad works with categorical=TRUE", {
         as.matrix() %>%
         rowSums()
     expect_equivalent(sums, rep(1, length(sums)))
-    expect_equal(metadata$metacell, 0:1535)
-    expect_equal(metadata$cd34[1:5], c(1, 1, 1, 1, 0))
+    expect_equal(metadata$metacell, 0:1555)
+    expect_equal(metadata[["batch: cd34"]][1:4], c(1, 1, 0, 1))
 })
 
 
 test_that("cell_metadata_to_metacell_from_h5ad works with custom function", {
     # Skip on ci
-    h5ad_file <- "/home/aviezerl/src/metacell.shiny/cells.h5ad"
+    h5ad_file <- "/home/aviezerl/src/MCView_data/cells.h5ad"
     skip_if(!fs::file_exists(h5ad_file))
 
     metadata <- cell_metadata_to_metacell_from_h5ad(h5ad_file, c("pile", "properly_sampled_cell"), func = function(x) median(x) * 2)
     expect_true(all(metadata$properly_sampled_cell == 2))
     expect_equal(metadata$pile[1:5], c(0, 0, 2, 2, 2))
-    expect_equal(metadata$metacell, 0:1535)
+    expect_equal(metadata$metacell, 0:1555)
     expect_equal(colnames(metadata), c("metacell", "pile", "properly_sampled_cell"))
 })
 
@@ -152,8 +155,8 @@ test_that("import_dataset works with metadata fields", {
     test_dataset(project_dir, dataset)
     test_cache_file_exists("metadata.tsv", project_dir, dataset)
 
-    saved_md <- fread(fs::path(project_dir, "cache", dataset, "metadata.tsv")) %>%
-        as_tibble() %>%
+    saved_md <- tgutil::fread(fs::path(project_dir, "cache", dataset, "metadata.tsv")) %>%
+        tibble::as_tibble() %>%
         mutate(metacell = as.character(metacell))
 
     library(anndata)
@@ -206,7 +209,7 @@ test_that("import_dataset works with metadata without all metacells", {
     test_dataset(project_dir, dataset)
     test_cache_file_exists("metadata.tsv", project_dir, dataset)
 
-    saved_md <- fread(fs::path(project_dir, "cache", dataset, "metadata.tsv")) %>% as_tibble()
+    saved_md <- tgutil::fread(fs::path(project_dir, "cache", dataset, "metadata.tsv")) %>% tibble::as_tibble()
     expect_equivalent(metadata_df, saved_md)
 
     withr::defer(unlink(fs::path(project_dir, "cache", dataset)))
@@ -219,7 +222,7 @@ test_that("import_dataset fails with metadata with unknown metacells", {
     metadata_df <- get_test_metadata(raw_dir) %>% mutate(metacell = as.character(metacell))
     metadata_df <- bind_rows(
         metadata_df %>% mutate(metacell = as.character(metacell)),
-        tibble(metacell = "savta", md1 = 1, md2 = 2, md3 = 3, md4 = 2)
+        tibble::tibble(metacell = "savta", md1 = 1, md2 = 2, md3 = 3, md4 = 2)
     )
     expect_error(
         MCView::import_dataset(
@@ -286,7 +289,7 @@ test_that("import_dataset works with metadata colors", {
     test_dataset(project_dir, dataset)
     test_cache_file_exists("metadata.tsv", project_dir, dataset)
 
-    saved_md <- fread(fs::path(project_dir, "cache", dataset, "metadata.tsv")) %>% as_tibble()
+    saved_md <- tgutil::fread(fs::path(project_dir, "cache", dataset, "metadata.tsv")) %>% tibble::as_tibble()
     expect_equivalent(metadata_df, saved_md)
 
     saved_md_colors <- qs::qread(fs::path(project_dir, "cache", dataset, "metadata_colors.qs"))
@@ -331,7 +334,7 @@ test_that("import_dataset works with metadata colors file", {
     test_dataset(project_dir, dataset)
     test_cache_file_exists("metadata.tsv", project_dir, dataset)
 
-    saved_md <- fread(fs::path(project_dir, "cache", dataset, "metadata.tsv")) %>% as_tibble()
+    saved_md <- tgutil::fread(fs::path(project_dir, "cache", dataset, "metadata.tsv")) %>% tibble::as_tibble()
     expect_equivalent(metadata_df, saved_md)
 
     saved_md_colors <- qs::qread(fs::path(project_dir, "cache", dataset, "metadata_colors.qs"))
@@ -371,7 +374,7 @@ test_that("import_dataset works with metadata colors without breaks", {
     test_dataset(project_dir, dataset)
     test_cache_file_exists("metadata.tsv", project_dir, dataset)
 
-    saved_md <- fread(fs::path(project_dir, "cache", dataset, "metadata.tsv")) %>% as_tibble()
+    saved_md <- tgutil::fread(fs::path(project_dir, "cache", dataset, "metadata.tsv")) %>% tibble::as_tibble()
     expect_equivalent(metadata_df, saved_md)
 
     saved_md_colors <- qs::qread(fs::path(project_dir, "cache", dataset, "metadata_colors.qs"))
@@ -520,7 +523,7 @@ test_that("update_metadata works", {
     test_dataset(project_dir, dataset)
     test_cache_file_exists("metadata.tsv", project_dir, dataset)
 
-    saved_md <- fread(fs::path(project_dir, "cache", dataset, "metadata.tsv")) %>% as_tibble()
+    saved_md <- tgutil::fread(fs::path(project_dir, "cache", dataset, "metadata.tsv")) %>% tibble::as_tibble()
     expect_equal(saved_md$md1, metadata_modified$md1)
     expect_equivalent(saved_md, metadata_modified)
 
@@ -556,7 +559,7 @@ test_that("update_metadata works with overwrite=TRUE", {
     test_dataset(project_dir, dataset)
     test_cache_file_exists("metadata.tsv", project_dir, dataset)
 
-    saved_md <- fread(fs::path(project_dir, "cache", dataset, "metadata.tsv")) %>% as_tibble()
+    saved_md <- tgutil::fread(fs::path(project_dir, "cache", dataset, "metadata.tsv")) %>% tibble::as_tibble()
     expect_equivalent(saved_md, metadata_modified)
 
     withr::defer(unlink(fs::path(project_dir, "cache", dataset)))

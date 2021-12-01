@@ -3,7 +3,7 @@ test_that("update_metacell_types works", {
     metacell_types <- fread(fs::path(raw_dir, "metacell-types.csv"))
     metacell_types$cell_type[1:50] <- 1
     test_file <- fs::path(raw_dir, "metacell-types-test.csv")
-    fwrite(metacell_types, test_file)
+    tgutil::fwrite(metacell_types, test_file)
     withr::defer(unlink(test_file))
     MCView::update_metacell_types(project_dir, "PBMC163k", test_file)
 
@@ -21,7 +21,7 @@ test_that("update_metacell_types works with missing cell types", {
     metacell_types <- fread(fs::path(raw_dir, "metacell-types.csv"))
     metacell_types <- metacell_types %>% filter(!(metacell %in% 1:50))
     test_file <- fs::path(raw_dir, "metacell-types-test.csv")
-    fwrite(metacell_types, test_file)
+    tgutil::fwrite(metacell_types, test_file)
     withr::defer(unlink(test_file))
     MCView::update_metacell_types(project_dir, "PBMC163k", test_file)
 
@@ -42,7 +42,7 @@ test_that("update_cell_type_colors works", {
     cell_type_colors <- fread(fs::path(raw_dir, "cluster-colors.csv"))
     cell_type_colors$color[1:5] <- "black"
     test_file <- fs::path(raw_dir, "cluster-colors-test.csv")
-    fwrite(cell_type_colors, test_file)
+    tgutil::fwrite(cell_type_colors, test_file)
     withr::defer(unlink(test_file))
     MCView::update_cell_type_colors(project_dir, "PBMC163k", test_file)
 

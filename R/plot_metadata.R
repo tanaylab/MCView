@@ -11,7 +11,7 @@ get_md_attribute <- function(dataset, md, attr, default) {
 }
 
 
-get_metadata_colors <- function(dataset, md, colors = NULL, color_breaks = NULL, metadata = NULL, default_colors = c("white", "white", "white", "#F7F7F7", "#FDDBC7", "#F4A582", "#D6604D", "#B2182B", "#67001F", "black")) {
+get_metadata_colors <- function(dataset, md, colors = NULL, color_breaks = NULL, metadata = NULL, default_colors = c("white", "#F7F7F7", "#FDDBC7", "#F4A582", "#D6604D", "#B2182B", "#67001F", "black")) {
     colors <- colors %||% get_md_attribute(dataset, md, "colors", default_colors)
     color_breaks <- color_breaks %||% get_md_attribute(dataset, md, "breaks", NULL)
 
