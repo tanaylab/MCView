@@ -1,8 +1,11 @@
 # MCView 0.2.1.9000
 
-* Added metadata tab.
+* Added Metadata tab.
 * Added Markers tab.
+* Added inner-fold matrix to markers tab. 
+* Added an option to compare cell types on Metacell tab. 
 * Added a download button.
+* Added a busy spinner. 
 * `create_project` now only takes path (instead of path + project name)
 * implicitly create a project when importing
 * import cell type annotation using a single file which contains both metacell types and cell type colors. 
