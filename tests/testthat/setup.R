@@ -1,4 +1,7 @@
 set.seed(60427)
+library(dplyr, warn.conflicts = FALSE)
+library(purrr, warn.conflicts = FALSE)
+library(tibble, warn.conflicts = FALSE)
 
 test_dir <- tempdir()
 
