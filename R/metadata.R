@@ -116,7 +116,7 @@ update_metadata_colors <- function(project,
 #' name of a delimited file which contains such data frame.
 #' @param func summary function for the cell metadata for non categorical metadata columns
 #' (e.g. mean, median, sum)
-#' @param categorical_vars a vector with names of categorical variables. The returned data frame would have
+#' @param categorical a vector with names of categorical variables. The returned data frame would have
 #' a column for each category where the values are the fraction of cells with the
 #' category in each metacell.
 #' @param anndata_file path to \code{h5ad} file which contains the output of metacell2 pipeline (metacells python package).
@@ -132,7 +132,7 @@ update_metadata_colors <- function(project,
 #' @description
 #' Summarise cell metadata for each metacell. Metadata fields can be either numeric and then the summary function \code{func} is applied for the values of each field, or categorical metadata fields which are expanded to multiple
 #' metadata columns with the fraction of cells (in each metacell) for every category. Variables that are either character,
-#' factor or are explicitly set at \code{categorical_vars} are treated as categorical.
+#' factor or are explicitly set at \code{categorical} are treated as categorical.
 #'
 #'
 #' \code{cell_metadata_to_metacell} converts cell metadata to metacell metadata from data frames.
@@ -266,10 +266,6 @@ cell_metadata_to_metacell_from_h5ad <- function(anndata_file, metadata_fields, f
         }
     })
 
-    if (categorical && length(metadata_fields) > 1) {
-        cli_abort("{.code metadata_fields} should have a single field when {.code categorical=TRUE}")
-    }
-
     df <- adata$obs %>%
         rownames_to_column("cell_id")
 
@@ -298,7 +294,7 @@ load_metadata <- function(metadata, metadata_fields, metacells, adata = NULL) {
     }
 
     if (!is.null(metadata_fields)) {
-        if (metadata_fields == "all") {
+        if (length(metadata_fields) == 1 && metadata_fields == "all") {
             metadata_fields <- colnames(adata$obs)
             forbidden_fields <- c("metacell", "pile", "candidate", "grouped", "umap_x", "umap_y", "umap_u", "umap_v", "umap_w", "hidden", "type", "cell_type")
             metadata_fields <- metadata_fields[!(metadata_fields %in% forbidden_fields)]
