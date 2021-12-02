@@ -32,32 +32,16 @@ app_server <- function(input, output, session) {
         cell_type_colors(initial_cell_type_colors)
     })
 
-    observeEvent(input$tab_sidebar, {
-        if (input$tab_sidebar == "manifold") {
-            callModule(mod_manifold_server, "manifold_ui_1", dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors)
-        }
+    load_tab <- function(tab_name, module) {
+        callModule(module, glue("{tab_name}_ui_1"), dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors)
+    }
 
-        if (input$tab_sidebar == "gene_mc") {
-            callModule(mod_gene_mc_server, "gene_mc_ui_1", dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors)
-        }
-
-        if (input$tab_sidebar == "markers") {
-            callModule(mod_markers_server, "markers_ui_1", dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors)
-        }
-
-        if (input$tab_sidebar == "mc_mc") {
-            callModule(mod_mc_mc_server, "mc_mc_ui_1", dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors)
-        }
-
-        if (input$tab_sidebar == "annotate") {
-            callModule(mod_annotate_mc_server, "annotate_ui_1", dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors)
-        }
-
-        if (input$tab_sidebar == "metadata") {
-            callModule(mod_metadata_server, "metadata_ui_1", dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors)
-        }
-    })
-
+    load_tab("manifold", mod_manifold_server)
+    load_tab("gene_mc", mod_gene_mc_server)
+    load_tab("markers", mod_markers_server)
+    load_tab("mc_mc", mod_mc_mc_server)
+    load_tab("annotate", mod_annotate_mc_server)
+    load_tab("metadata", mod_metadata_server)
 
     show_help <- function(input, output, session) {
         if (input$tab_sidebar == "about") {

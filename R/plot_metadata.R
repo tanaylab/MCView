@@ -208,7 +208,7 @@ plot_mc_scatter <- function(dataset,
         df$color_values <- df$expression
 
         df <- df %>%
-            mutate(color_str = glue("{color_name}: {color_values}\nCell type: {`Cell type`}", color_values = round(expression, digits = 3)))
+            mutate(color_str = glue("{color_name}: {color_values}\nCell type: {`Cell type`}\n", color_values = round(expression, digits = 3)))
     }
 
     # set tooltip

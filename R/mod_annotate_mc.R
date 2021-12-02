@@ -299,7 +299,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
                     label = "",
                     choices = c(
                         "Change all",
-                        "Change one by one"
+                        "Change selected"
                     ),
                     justified = TRUE
                 )
@@ -311,9 +311,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
     output$please_select_metacells <- renderPrint(glue("Please select metacells"))
 
     output$update_all_selectors <- renderUI({
-        req(input$update_option)
         req(nrow(selected_metacell_types()) > 0)
-        req(input$update_option == "Change all")
         shinyWidgets::pickerInput(ns("selected_cell_type_update_all"), "Cell type", choices = c("(Missing)", cell_type_colors() %>% pull(cell_type) %>% as.character() %>% unique() %>% sort()), multiple = FALSE, selected = last_chosen_cell_type())
     })
 
@@ -322,30 +320,29 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         new_metacell_types <- metacell_types()
         changed <- FALSE
 
-        if (!is.null(input$update_option) && input$update_option == "Change all") {
-            req(input$selected_cell_type_update_all)
-            metacells <- selected_metacell_types() %>% pull(metacell)
-            new_metacell_types <- new_metacell_types %>% mutate(
-                cell_type = ifelse(metacell %in% metacells, input$selected_cell_type_update_all, cell_type)
-            )
-            new_selected_annot <- selected_metacell_types()
-            new_selected_annot <- new_selected_annot %>% mutate(
-                cell_type = ifelse(metacell %in% metacells, input$selected_cell_type_update_all, cell_type),
-            )
-            selected_metacell_types(new_selected_annot)
-            last_chosen_cell_type(input$selected_cell_type_update_all)
-            changed <- TRUE
+        req(input$update_option)
+        req(input$selected_cell_type_update_all)
+        req(selected_metacell_types())
+
+        if (input$update_option == "Change all") {
+            req(input$mc_type_table_rows_all)
+            metacells <- selected_metacell_types()[input$mc_type_table_rows_all, ] %>% pull(metacell)
         } else {
-            for (i in 1:nrow(new_metacell_types)) {
-                cur_input <- input[[glue("select_type_{metacell}", metacell = new_metacell_types$metacell[i])]]
-                if (!is.null(cur_input)) {
-                    if (cur_input != new_metacell_types[i, ]$metacell) {
-                        new_metacell_types[i, ]$cell_type <- cur_input
-                        changed <- TRUE
-                    }
-                }
-            }
+            req(input$mc_type_table_rows_selected)
+            metacells <- selected_metacell_types()[input$mc_type_table_rows_selected, ] %>% pull(metacell)
         }
+
+        new_metacell_types <- new_metacell_types %>% mutate(
+            cell_type = ifelse(metacell %in% metacells, input$selected_cell_type_update_all, cell_type)
+        )
+        new_selected_annot <- selected_metacell_types()
+        new_selected_annot <- new_selected_annot %>% mutate(
+            cell_type = ifelse(metacell %in% metacells, input$selected_cell_type_update_all, cell_type),
+        )
+        selected_metacell_types(new_selected_annot)
+        last_chosen_cell_type(input$selected_cell_type_update_all)
+        changed <- TRUE
+
         if (changed) {
             metacell_types(new_metacell_types)
         }
@@ -368,15 +365,6 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
             select(metacell, cell_type) %>%
             filter(metacell %in% selected_metacell_types()$metacell)
 
-        if ((!is.null(input$update_option) && input$update_option != "Change all")) {
-            to_show_new <- dt_selector_column(
-                to_show_new,
-                "select_type",
-                ns,
-                c("(Missing)", sort(as.character(unique(cell_type_colors()$cell_type))))
-            )
-        }
-
         to_show(to_show_new)
     })
 
@@ -390,14 +378,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
             dom = "t",
             paging = FALSE,
             language = list(emptyTable = "Please select metacells")
-        ),
-        callback = DT::JS("table.rows().every(function(i, tab, row) {
-                        var $this = $(this.node());
-                        $this.attr('id', this.data()[0]);
-                        $this.addClass('shiny-input-container');
-                    });
-                    Shiny.unbindAll(table.table().node());
-                    Shiny.bindAll(table.table().node());")
+        )
     )
 
     output$cell_type_table <- DT::renderDataTable(
