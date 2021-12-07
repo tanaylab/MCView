@@ -104,6 +104,7 @@ init_tab_defs <- function() {
 
     if (!is.null(config$tabs)) {
         config$tabs[config$tabs == "Metacells"] <- "Diff. Expression" # here for backward compatibility
+        config$tabs <- config$tabs[config$tabs != "Metadata"] # ignore "Metadata" for backward compatibility
         purrr::walk(config$tabs, ~ {
             if (!(.x %in% names(tab_defs))) {
                 cli_abort("{.x} is not a valid tab name. Update `tabs` in your configuration file.")
