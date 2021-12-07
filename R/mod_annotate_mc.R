@@ -15,7 +15,7 @@ mod_annotate_mc_ui <- function(id) {
                 width = 8,
                 shinydashboardPlus::box(
                     id = ns("gene_projection"),
-                    title = "Gene projections",
+                    title = "2D Projection",
                     status = "primary",
                     solidHeader = TRUE,
                     collapsible = TRUE,

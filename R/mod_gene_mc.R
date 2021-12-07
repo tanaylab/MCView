@@ -361,9 +361,9 @@ mod_gene_mc_plotly_observers <- function(input, session) {
         el <- plotly::event_data("plotly_click", source = "mc_mc_plot")
 
         gene <- el$customdata
-        if (input$x_axis_type == "Gene"){
+        if (input$x_axis_type == "Gene") {
             shinyWidgets::updatePickerInput(session, "x_axis_var", selected = gene)
-        }        
+        }
         showNotification(glue("Selected {gene} in \"Genes\" tab"))
     })
 }
