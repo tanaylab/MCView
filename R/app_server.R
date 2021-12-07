@@ -41,7 +41,6 @@ app_server <- function(input, output, session) {
     load_tab("markers", mod_markers_server)
     load_tab("mc_mc", mod_mc_mc_server)
     load_tab("annotate", mod_annotate_mc_server)
-    load_tab("metadata", mod_metadata_server)
 
     show_help <- function(input, output, session) {
         if (input$tab_sidebar == "about") {
@@ -92,16 +91,6 @@ app_server <- function(input, output, session) {
                     "nextLabel" = "next",
                     "prevLabel" = "back",
                     steps = get_tab_steps("metacells", "annotate_ui_1")
-                )
-            )
-        } else if (input$tab_sidebar == "metadata") {
-            rintrojs::introjs(session,
-                options = list(
-                    "showProgress" = TRUE,
-                    "showBullets" = FALSE,
-                    "nextLabel" = "next",
-                    "prevLabel" = "back",
-                    steps = get_tab_steps("metadata", "metadata_ui_1")
                 )
             )
         }

@@ -32,15 +32,15 @@ name of a delimited file which contains such data frame.}
 \item{func}{summary function for the cell metadata for non categorical metadata columns
 (e.g. mean, median, sum)}
 
+\item{categorical}{a vector with names of categorical variables. The returned data frame would have
+a column for each category where the values are the fraction of cells with the
+category in each metacell.}
+
 \item{anndata_file}{path to \code{h5ad} file which contains the output of metacell2 pipeline (metacells python package).}
 
 \item{metadata_fields}{names of fields in the anndata \code{object$obs} which contains metadata for each cell.}
 
 \item{rm_outliers}{do not calculate statistics for cells that are marked as outliers (\code{outiler=TRUE} in \code{object$obs}) (only relevant when running \code{cell_metadata_to_metacell_from_h5ad})}
-
-\item{categorical_vars}{a vector with names of categorical variables. The returned data frame would have
-a column for each category where the values are the fraction of cells with the
-category in each metacell.}
 }
 \value{
 A data frame with a column named "metacell" and
@@ -51,7 +51,7 @@ in\code{cell_metadata}, where the values are the fraction of cells with the cate
 \description{
 Summarise cell metadata for each metacell. Metadata fields can be either numeric and then the summary function \code{func} is applied for the values of each field, or categorical metadata fields which are expanded to multiple
 metadata columns with the fraction of cells (in each metacell) for every category. Variables that are either character,
-factor or are explicitly set at \code{categorical_vars} are treated as categorical.
+factor or are explicitly set at \code{categorical} are treated as categorical.
 
 
 \code{cell_metadata_to_metacell} converts cell metadata to metacell metadata from data frames.
