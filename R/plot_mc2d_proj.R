@@ -301,8 +301,12 @@ render_2d_plotly <- function(input, output, session, dataset, values, metacell_t
         } else if (input$color_proj == "Gene B") {
             req(values$gene2)
             fig <- plot_2d_gene(values$gene2)
-        } else {
-            fig <- plot_2d_metadata(input$color_proj)
+        } else if (input$color_proj == "Metadata") {
+            req(input$color_proj_metadata)
+            fig <- plot_2d_metadata(input$color_proj_metadata)
+        } else if (input$color_proj == "Gene") {
+            req(input$color_proj_gene)
+            fig <- plot_2d_gene(input$color_proj_gene)
         }
 
         fig <- fig %>% plotly::event_register("plotly_restyle")

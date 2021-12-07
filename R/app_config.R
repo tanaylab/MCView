@@ -88,15 +88,10 @@ init_tab_defs <- function() {
             module_name = "gene_mc",
             icon = "wind"
         ),
-        "Metacells" = list(
-            title = "Metacells",
+        "Diff. Expression" = list(
+            title = "Diff. Expression",
             module_name = "mc_mc",
             icon = "chart-bar"
-        ),
-        "Metadata" = list(
-            title = "Metadata",
-            module_name = "metadata",
-            icon = "sticky-note"
         ),
         "Annotate" = list(
             title = "Annotate",
@@ -105,9 +100,10 @@ init_tab_defs <- function() {
         )
     )
 
-    default_tabs <- c("About", "Genes", "Metacells")
+    default_tabs <- c("About", "Genes", "Diff. Expression")
 
     if (!is.null(config$tabs)) {
+        config$tabs[config$tabs == "Metacells"] <- "Diff. Expression" # here for backward compatibility
         purrr::walk(config$tabs, ~ {
             if (!(.x %in% names(tab_defs))) {
                 cli_abort("{.x} is not a valid tab name. Update `tabs` in your configuration file.")

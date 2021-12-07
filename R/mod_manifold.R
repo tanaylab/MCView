@@ -15,7 +15,7 @@ mod_manifold_ui <- function(id) {
                 width = 12,
                 shinydashboardPlus::box(
                     id = ns("gene_projection"),
-                    title = "Manifold",
+                    title = "2D Projection",
                     status = "primary",
                     solidHeader = TRUE,
                     collapsible = TRUE,

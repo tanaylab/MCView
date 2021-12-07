@@ -45,7 +45,8 @@ If this is missing, MCView would use the \code{chameleon} package to assign a co
 \item{metadata_fields}{names of fields in the anndata \code{object$obs} which contains metadata for each metacell.
 The fields should *always* be numeric - if you have cell categorical annotations use
 \code{cell_metadata_to_metacell} with \code{categorical=TRUE} to convert them to a
-numeric score (e.g. using fraction of the category).}
+numeric score (e.g. using fraction of the category). You can use 'all' in order to import all the numeric fields
+ of the anndata object.}
 
 \item{metadata}{can be either a data frame with a column named "metacell" with the metacell id and other metadata columns
 or a name of a delimited file which contains such data frame.}
