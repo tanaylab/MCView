@@ -26,6 +26,8 @@
 <![endif]-->
 </head>
 <body data-spy="scroll" data-target="#toc">
+    
+
     <div class="container template-home">
       <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -38,18 +40,12 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">MCView</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.2.1.9000</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.1.9000</span>
       </span>
     </div>
 
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
-<li>
-  <a href="index.html">
-    <span class="fas fa-home fa-lg"></span>
-     
-  </a>
-</li>
 <li>
   <a href="articles/MCView.html">Get started</a>
 </li>
@@ -77,7 +73,7 @@
       </ul>
 <ul class="nav navbar-nav navbar-right">
 <li>
-  <a href="https://github.com/tanaylab/MCView/">
+  <a href="https://github.com/tanaylab/MCView/" class="external-link">
     <span class="fab fa-github fa-lg"></span>
      
   </a>
@@ -94,44 +90,44 @@
 
       </header><div class="row">
   <div class="contents col-md-9">
-<div id="mcview" class="section level1">
-<div class="page-header"><h1 class="hasAnchor">
-<a href="#mcview" class="anchor"></a>MCView</h1></div>
+<div class="section level1">
+<div class="page-header"><h1 id="mcview">MCView<a class="anchor" aria-label="anchor" href="#mcview"></a>
+</h1></div>
 <!-- badges: start -->
 <!-- badges: end -->
-<p>MCView creates a shiny-app facilitating interactive exploration and annotation of metacell models. Metacell itself is described <a href="https://pypi.org/project/metacells/">here</a>. You can also explore examples of MCV output for <a href="https://tanaylab.weizmann.ac.il/MCV/PBMC">PBMC</a> and <a href="https://tanaylab.weizmann.ac.il/MCV/MOCA">Mouse organogenesis</a> on the Tanay group server.</p>
-<div id="installation" class="section level2">
-<h2 class="hasAnchor">
-<a href="#installation" class="anchor"></a>Installation</h2>
+<p>MCView creates a shiny-app facilitating interactive exploration and annotation of metacell models. Metacell itself is described <a href="https://pypi.org/project/metacells/" class="external-link">here</a>. You can also explore examples of MCV output for <a href="https://tanaylab.weizmann.ac.il/MCV/PBMC" class="external-link">PBMC</a> and <a href="https://tanaylab.weizmann.ac.il/MCV/MOCA" class="external-link">Mouse organogenesis</a> on the Tanay group server.</p>
+<div class="section level2">
+<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
+</h2>
 <p>Install the latest github release:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html">install_github</a></span><span class="op">(</span><span class="st">"tanaylab/MCView"</span>, ref <span class="op">=</span> <span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/github_refs.html">github_release</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"tanaylab/MCView"</span>, ref <span class="op">=</span> <span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/github_refs.html" class="external-link">github_release</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></code></pre></div>
 <p>Or install the development version:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html">install_github</a></span><span class="op">(</span><span class="st">"tanaylab/MCView"</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"tanaylab/MCView"</span><span class="op">)</span></code></pre></div>
 </div>
-<div id="usage" class="section level2">
-<h2 class="hasAnchor">
-<a href="#usage" class="anchor"></a>Usage</h2>
-<p>See the <a href="https://tanaylab.github.io/MCView/articles/MCView.html">vignette</a>.</p>
+<div class="section level2">
+<h2 id="usage">Usage<a class="anchor" aria-label="anchor" href="#usage"></a>
+</h2>
+<p>See the <a href="https://tanaylab.github.io/MCView/articles/MCView.html" class="external-link">vignette</a>.</p>
 <p>Tl;dr:</p>
-<div id="initialize-a-new-project" class="section level4">
-<h4 class="hasAnchor">
-<a href="#initialize-a-new-project" class="anchor"></a>Initialize a new project:</h4>
+<div class="section level4">
+<h4 id="initialize-a-new-project">Initialize a new project:<a class="anchor" aria-label="anchor" href="#initialize-a-new-project"></a>
+</h4>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu">MCView</span><span class="fu">::</span><span class="fu"><a href="reference/create_project.html">create_project</a></span><span class="op">(</span><span class="st">"PBMC"</span><span class="op">)</span></code></pre></div>
 </div>
-<div id="import-a-dataset" class="section level4">
-<h4 class="hasAnchor">
-<a href="#import-a-dataset" class="anchor"></a>Import a dataset:</h4>
+<div class="section level4">
+<h4 id="import-a-dataset">Import a dataset:<a class="anchor" aria-label="anchor" href="#import-a-dataset"></a>
+</h4>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu">MCView</span><span class="fu">::</span><span class="fu"><a href="reference/import_dataset.html">import_dataset</a></span><span class="op">(</span>project <span class="op">=</span> <span class="st">"PBMC"</span>, 
                dataset <span class="op">=</span> <span class="st">"PBMC163k"</span>, 
                anndata_file <span class="op">=</span> <span class="st">"raw/metacells.h5ad"</span><span class="op">)</span></code></pre></div>
 </div>
-<div id="run-the-app" class="section level4">
-<h4 class="hasAnchor">
-<a href="#run-the-app" class="anchor"></a>Run the app:</h4>
+<div class="section level4">
+<h4 id="run-the-app">Run the app:<a class="anchor" aria-label="anchor" href="#run-the-app"></a>
+</h4>
 <p>You can run the app from R using:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu">MCView</span><span class="fu">::</span><span class="fu"><a href="reference/run_app.html">run_app</a></span><span class="op">(</span><span class="st">"PBMC"</span>, launch.browser <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></code></pre></div>
@@ -144,38 +140,50 @@
 
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <div class="links">
-<h2>Links</h2>
+<h2 data-toc-skip>Links</h2>
 <ul class="list-unstyled">
-<li>Browse source code at <br><a href="https://github.com/tanaylab/MCView/">https://​github.com/​tanaylab/​MCView/​</a>
-</li>
-<li>Report a bug at <br><a href="https://github.com/tanaylab/MCView/issues">https://​github.com/​tanaylab/​MCView/​issues</a>
-</li>
+<li><a href="https://github.com/tanaylab/MCView/" class="external-link">Browse source code</a></li>
+<li><a href="https://github.com/tanaylab/MCView/issues" class="external-link">Report a bug</a></li>
 </ul>
 </div>
+
 <div class="license">
-<h2>License</h2>
+<h2 data-toc-skip>License</h2>
 <ul class="list-unstyled">
 <li><a href="LICENSE.html">Full license</a></li>
-<li><small><a href="https://opensource.org/licenses/mit-license.php">MIT</a> + file <a href="LICENSE-text.html">LICENSE</a></small></li>
+<li><small><a href="https://opensource.org/licenses/mit-license.php" class="external-link">MIT</a> + file <a href="LICENSE-text.html">LICENSE</a></small></li>
 </ul>
 </div>
+
+
+<div class="citation">
+<h2 data-toc-skip>Citation</h2>
+<ul class="list-unstyled">
+<li><a href="authors.html#citation">Citing MCView</a></li>
+</ul>
+</div>
+
 <div class="developers">
-<h2>Developers</h2>
+<h2 data-toc-skip>Developers</h2>
 <ul class="list-unstyled">
 <li>Aviezer Lifshitz <br><small class="roles"> Author, maintainer </small>  </li>
 </ul>
 </div>
+
+
 
   </div>
 </div>
 
 
       <footer><div class="copyright">
-  <p>Developed by Aviezer Lifshitz.</p>
+  <p></p>
+<p>Developed by Aviezer Lifshitz.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
+  <p></p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.1.</p>
 </div>
 
       </footer>
@@ -183,6 +191,8 @@
 
   
 
+
+  
 
   </body>
 </html>
