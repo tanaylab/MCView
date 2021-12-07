@@ -14,15 +14,16 @@ calc_mc_mc_gene_df <- function(dataset, metacell1, metacell2, diff_thresh = 1.5,
         as.data.frame()
 
     df$diff <- log2(df[, 1]) - log2(df[, 2])
+    df$pval <- NA
 
     f <- rownames(df)[abs(df$diff) >= diff_thresh]
-
     m <- mc_mat[f, c(metacell1, metacell2)]
-    tots <- colSums(m)
-    pvals <- apply(m, 1, function(x) suppressWarnings(chisq.test(matrix(c(x, tots), nrow = 2))$p.value))
 
-    df$pval <- NA
-    df[f, ]$pval <- pvals
+    if (nrow(m) > 0) {
+        tots <- colSums(m)
+        pvals <- apply(m, 1, function(x) suppressWarnings(chisq.test(matrix(c(x, tots), nrow = 2))$p.value))
+        df[f, ]$pval <- pvals
+    }
 
     df <- df %>%
         rownames_to_column("gene") %>%
@@ -54,14 +55,19 @@ calc_ct_ct_gene_df <- function(dataset, cell_type1, cell_type2, metacell_types, 
 
     df$diff <- log2(df[, 1]) - log2(df[, 2])
 
+    df$pval <- NA
+
     f <- rownames(df)[abs(df$diff) >= diff_thresh]
 
     m <- mat[f, c(cell_type1, cell_type2)]
-    tots <- colSums(m)
-    pvals <- apply(m, 1, function(x) suppressWarnings(chisq.test(matrix(c(x, tots), nrow = 2))$p.value))
 
-    df$pval <- NA
-    df[f, ]$pval <- pvals
+    if (nrow(m) > 0) {
+        tots <- colSums(m)
+
+        pvals <- apply(m, 1, function(x) suppressWarnings(chisq.test(matrix(c(x, tots), nrow = 2))$p.value))
+
+        df[f, ]$pval <- pvals
+    }
 
     df <- df %>%
         rownames_to_column("gene") %>%
@@ -143,25 +149,34 @@ render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, mc_mc_
             gene <- NULL
         }
 
-        if (is.null(input$mode) || input$mode == "Metacells") {
+        if (is.null(input$mode) || input$mode == "MCs") {
             req(metacell_names)
             req(input$metacell1 %in% metacell_names)
             req(input$metacell2 %in% metacell_names)
+            xlab <- input$metacell1
+            ylab <- input$metacell2
             label_prefix <- "MC #"
             source <- "mc_mc_plot"
-        } else {
+        } else if (input$mode == "Types") {
             req(cell_type_colors)
             req(input$metacell1 %in% cell_type_colors$cell_type)
             req(input$metacell2 %in% cell_type_colors$cell_type)
+            xlab <- input$metacell1
+            ylab <- input$metacell2
             label_prefix <- ""
             source <- "ct_ct_plot"
+        } else if (input$mode == "Groups") {
+            label_prefix <- ""
+            xlab <- "Group A"
+            ylab <- "Group B"
+            source <- "grp_grp_plot"
         }
 
-        plotly::ggplotly(
+        fig <- plotly::ggplotly(
             plot_mc_mc_gene(
                 mc_mc_gene_scatter_df(),
-                input$metacell1,
-                input$metacell2,
+                xlab,
+                ylab,
                 highlight = gene,
                 label_prefix = label_prefix
             ) +
@@ -173,6 +188,8 @@ render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, mc_mc_
             sanitize_for_WebGL() %>%
             plotly::toWebGL() %>%
             sanitize_plotly_buttons()
+
+        return(fig)
     })
 }
 

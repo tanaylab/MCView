@@ -15,7 +15,7 @@ about:
     <b>Genes</b> tab lets you compare genes over the manifold.
     </li>
     <li>    
-    <b>Metacells</b> tab lets you examine and compare metacells.
+    <b>Diff. Expression</b> tab lets you examine and compare metacells.
     </li>
     <li>    
     <b>Annotate</b> tab lets you assign cell types and colors to metacells. 
@@ -28,7 +28,7 @@ about:
     In each tab - click on the help button to start a guided tour.
     <br>
   NA:
-    You can now go to the <b>Genes</b> or <b>Metacells</b> tab and explore them. 
+    You can now go to the <b>Genes</b> or <b>Diff. Expression</b> tab and explore them. 
 manifold:  
   tab_sidebar_help: > 
     <ul>
@@ -39,7 +39,7 @@ manifold:
     <b>Genes</b> tab lets you compare genes over the manifold.
     </li>
     <li>    
-    <b>Metacells</b> tab lets you examine and compare metacells.
+    <b>Diff. Expression</b> tab lets you examine and compare metacells.
     </li>
     <li>    
     <b>Annotate</b> tab lets you assign cell types and colors to metacells. 

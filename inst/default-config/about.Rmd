@@ -14,15 +14,11 @@
 -   Two genes can be compared over the manifold.
 
 Clicking on any metacell will select it for further examination in the
-Metacells tab.
+Diff. Expression tab.
 
-### Metacells tab
+### Diff. Expression tab
 
--   Two metacells can be specifically examined, and compared.
-
-Choose a metacell by entering its number, or by selecting directly from
-the 2D-projection.
-
+Two metacells / groups of metacells / cell types can be compared for differential expression. 
 ### Annotate tab 
 
 - Assign cell types and colors to metacells

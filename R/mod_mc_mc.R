@@ -15,7 +15,7 @@ mod_mc_mc_ui <- function(id) {
                 width = 7,
                 shinydashboardPlus::box(
                     id = ns("metacell_projection"),
-                    title = "Metacells",
+                    title = "2D Projection",
                     status = "primary",
                     solidHeader = TRUE,
                     collapsible = TRUE,
@@ -38,7 +38,7 @@ mod_mc_mc_ui <- function(id) {
             column(
                 width = 5,
                 shinydashboardPlus::box(
-                    title = "Gene expression",
+                    title = "Diff. Expression",
                     status = "primary",
                     solidHeader = TRUE,
                     collapsible = TRUE,
@@ -51,6 +51,16 @@ mod_mc_mc_ui <- function(id) {
                     DT::DTOutput(ns("diff_expr_table"))
                 ),
                 uiOutput(ns("traj_genes_box"))
+            )
+        ),
+        fluidRow(
+            column(
+                width = 3,
+                uiOutput(ns("groupA_box"))
+            ),
+            column(
+                width = 3,
+                uiOutput(ns("groupB_box"))
             )
         )
     )
@@ -76,8 +86,9 @@ mod_mc_mc_sidebar_ui <- function(id) {
                     inputId = ns("mode"),
                     label = "Compare:",
                     choices = c(
-                        "Metacells",
-                        "Cell types"
+                        "MCs",
+                        "Types",
+                        "Groups"
                     ),
                     justified = TRUE
                 ),
@@ -95,87 +106,67 @@ mod_mc_mc_sidebar_ui <- function(id) {
 mod_mc_mc_server <- function(input, output, session, dataset, metacell_types, cell_type_colors) {
     ns <- session$ns
 
+    groupA <- reactiveVal()
+    groupB <- reactiveVal()
+
     metacell_names <- reactive({
         req(dataset())
         colnames(get_mc_data(dataset(), "mc_mat"))
     })
 
-    output$metacell1_select <- renderUI({
-        req(dataset())
-        req(input$mode)
-        if (input$mode == "Metacells") {
-            shinyWidgets::pickerInput(ns("metacell1"), "Metacell A",
-                choices = metacell_names(),
-                selected = config$selected_mc1, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
-            )
-        } else {
-            req(cell_type_colors())
-            cell_types_hex <- col2hex(cell_type_colors()$color)
-            cell_types <- cell_type_colors()$cell_type
-            shinyWidgets::pickerInput(ns("metacell1"), "Cell type A",
-                choices = cell_types,
-                selected = cell_types[1],
-                multiple = FALSE,
-                options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith"),
-                choicesOpt = list(
-                    style = paste0("color: ", cell_types_hex, ";")
-                )
-            )
-        }
-    })
-
-    output$metacell2_select <- renderUI({
-        req(dataset())
-        req(input$mode)
-        if (input$mode == "Metacells") {
-            shinyWidgets::pickerInput(ns("metacell2"), "Metacell B",
-                choices = metacell_names(),
-                selected = config$selected_mc2, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
-            )
-        } else {
-            req(cell_type_colors())
-            cell_types_hex <- col2hex(cell_type_colors()$color)
-            cell_types <- cell_type_colors()$cell_type
-            shinyWidgets::pickerInput(ns("metacell2"), "Cell type B",
-                choices = cell_types,
-                selected = cell_types[2],
-                options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith"),
-                choicesOpt = list(
-                    style = paste0("color: ", cell_types_hex, ";")
-                )
-            )
-        }
-    })
+    group_selectors(input, output, session, dataset, ns, groupA, groupB)
+    metacell_selectors(input, output, session, dataset, ns, metacell_names, metacell_types, cell_type_colors, groupA, groupB)
 
     mc_mc_gene_scatter_df <- reactive({
         req(input$mode)
-        if (input$mode == "Metacells") {
+        if (input$mode == "MCs") {
             calc_mc_mc_gene_df(dataset(), input$metacell1, input$metacell2)
-        } else {
+        } else if (input$mode == "Types") {
             req(metacell_types())
             req(input$metacell1 %in% cell_type_colors()$cell_type)
             req(input$metacell2 %in% cell_type_colors()$cell_type)
             calc_ct_ct_gene_df(dataset(), input$metacell1, input$metacell2, metacell_types())
+        } else if (input$mode == "Groups") {
+            req(groupA())
+            req(groupB())
+            group_types_df <- bind_rows(
+                tibble(metacell = groupA(), cell_type = "Group A"),
+                tibble(metacell = groupB(), cell_type = "Group B")
+            )
+
+            calc_ct_ct_gene_df(dataset(), "Group A", "Group B", group_types_df)
         }
     })
 
     observeEvent(input$switch_metacells, {
-        mc1 <- input$metacell1
-        mc2 <- input$metacell2
-        updateSelectInput(session, "metacell1", selected = mc2)
-        updateSelectInput(session, "metacell2", selected = mc1)
+        if (input$mode == "Groups") {
+            temp <- groupA()
+            groupA(groupB())
+            groupB(temp)
+        } else {
+            mc1 <- input$metacell1
+            mc2 <- input$metacell2
+            updateSelectInput(session, "metacell1", selected = mc2)
+            updateSelectInput(session, "metacell2", selected = mc1)
+        }
     })
 
     output$projection_selectors <- renderUI({
         req(input$mode)
-        if (input$mode == "Metacells") {
+        if (input$mode == "MCs") {
             choices <- c("Metacell A", "Metacell B")
-        } else {
+            label <- "Select on click:"
+        } else if (input$mode == "Types") {
             choices <- c("Cell type A", "Cell type B")
+            label <- "Select on click:"
+        } else {
+            choices <- c("Group A", "Group B")
+            label <- "Select:"
         }
+
         shinyWidgets::prettyRadioButtons(
             inputId = ns("proj_select_main"),
-            label = "Select on click:",
+            label = label,
             choices = choices,
             inline = TRUE,
             status = "danger",
@@ -229,7 +220,7 @@ mod_mc_mc_server <- function(input, output, session, dataset, metacell_types, ce
         req(input$metacell1)
         req(input$metacell2)
 
-        if (input$mode == "Metacells") {
+        if (input$mode == "MCs") {
             highlight <- tibble::tibble(
                 metacell = c(input$metacell1, input$metacell2),
                 label = c("metacell1", "metacell2"),
@@ -279,38 +270,14 @@ mod_mc_mc_server <- function(input, output, session, dataset, metacell_types, ce
                 plotly::toWebGL() %>%
                 sanitize_plotly_buttons() %>%
                 arrange_2d_proj_tooltip()
+            if (input$mode == "Groups") {
+                fig <- fig %>% plotly::layout(dragmode = "select")
+            }
+            fig
         }
 
         fig$x$source <- "proj_mc_plot"
         return(fig)
-    })
-
-    # Select metacell / cell type when clicking on it
-    observeEvent(plotly::event_data("plotly_click", source = "proj_mc_plot"), {
-        el <- plotly::event_data("plotly_click", source = "proj_mc_plot")
-        metacell <- el$customdata
-
-        if (input$mode == "Metacells") {
-            if (input$proj_select_main == "Metacell A") {
-                updateSelectInput(session, "metacell1", selected = metacell)
-                showNotification(glue("Selected Metacell A: #{metacell}"))
-            } else {
-                updateSelectInput(session, "metacell2", selected = metacell)
-                showNotification(glue("Selected Metacell B: #{metacell}"))
-            }
-        } else {
-            cell_type <- metacell_types() %>%
-                filter(metacell == !!metacell) %>%
-                slice(1) %>%
-                pull(cell_type)
-            if (input$proj_select_main == "Cell type A") {
-                updateSelectInput(session, "metacell1", selected = cell_type)
-                showNotification(glue("Selected Cell type A: {cell_type}"))
-            } else {
-                updateSelectInput(session, "metacell2", selected = cell_type)
-                showNotification(glue("Selected Cell type B: {cell_type}"))
-            }
-        }
     })
 
     output$metacell_flow_box <- renderUI({
@@ -440,5 +407,219 @@ metacell_click_observer <- function(source_id, session) {
         metacell <- el$customdata
         updateSelectInput(session, "metacell1", selected = metacell)
         showNotification(glue("Selected Metacell A #{metacell}"))
+    })
+}
+
+metacell_selectors <- function(input, output, session, dataset, ns, metacell_names, metacell_types, cell_type_colors, groupA, groupB) {
+    output$metacell1_select <- renderUI({
+        req(dataset())
+        req(input$mode)
+        if (input$mode == "MCs") {
+            shinyWidgets::pickerInput(ns("metacell1"), "Metacell A",
+                choices = metacell_names(),
+                selected = config$selected_mc1, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
+            )
+        } else if (input$mode == "Types") {
+            req(cell_type_colors())
+            cell_types_hex <- col2hex(cell_type_colors()$color)
+            cell_types <- cell_type_colors()$cell_type
+            shinyWidgets::pickerInput(ns("metacell1"), "Cell type A",
+                choices = cell_types,
+                selected = cell_types[1],
+                multiple = FALSE,
+                options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith"),
+                choicesOpt = list(
+                    style = paste0("color: ", cell_types_hex, ";")
+                )
+            )
+        } else if (input$mode == "Groups") {
+            tagList(
+                shinyWidgets::pickerInput(ns("metacell"), "Metacell",
+                    choices = metacell_names(),
+                    selected = config$selected_mc1, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
+                ),
+                shinyWidgets::actionGroupButtons(
+                    c(ns("add_metacell_to_groupA"), ns("add_metacell_to_groupB")),
+                    labels = c("Add to group A", "Add to group B"),
+                    size = "sm"
+                )
+            )
+        }
+    })
+
+    output$metacell2_select <- renderUI({
+        req(dataset())
+        req(input$mode)
+        if (input$mode == "MCs") {
+            shinyWidgets::pickerInput(ns("metacell2"), "Metacell B",
+                choices = metacell_names(),
+                selected = config$selected_mc2, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
+            )
+        } else if (input$mode == "Types") {
+            req(cell_type_colors())
+            cell_types_hex <- col2hex(cell_type_colors()$color)
+            cell_types <- cell_type_colors()$cell_type
+            shinyWidgets::pickerInput(ns("metacell2"), "Cell type B",
+                choices = cell_types,
+                selected = cell_types[2],
+                options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith"),
+                choicesOpt = list(
+                    style = paste0("color: ", cell_types_hex, ";")
+                )
+            )
+        }
+    })
+
+    # Select metacell / cell type when clicking on it
+    observeEvent(plotly::event_data("plotly_click", source = "proj_mc_plot"), {
+        el <- plotly::event_data("plotly_click", source = "proj_mc_plot")
+        metacell <- el$customdata
+
+        if (input$mode == "MCs") {
+            if (input$proj_select_main == "Metacell A") {
+                updateSelectInput(session, "metacell1", selected = metacell)
+                showNotification(glue("Selected Metacell A: #{metacell}"))
+            } else {
+                updateSelectInput(session, "metacell2", selected = metacell)
+                showNotification(glue("Selected Metacell B: #{metacell}"))
+            }
+        } else if (input$mode == "Types") {
+            cell_type <- metacell_types() %>%
+                filter(metacell == !!metacell) %>%
+                slice(1) %>%
+                pull(cell_type)
+            if (input$proj_select_main == "Cell type A") {
+                updateSelectInput(session, "metacell1", selected = cell_type)
+                showNotification(glue("Selected Cell type A: {cell_type}"))
+            } else {
+                updateSelectInput(session, "metacell2", selected = cell_type)
+                showNotification(glue("Selected Cell type B: {cell_type}"))
+            }
+        } else if (input$mode == "Groups") {
+            if (input$proj_select_main == "Group A") {
+                if (is.null(groupA)) {
+                    groupA(metacell)
+                } else {
+                    groupA(unique(c(groupA(), metacell)))
+                }
+            }
+
+            if (input$proj_select_main == "Group B") {
+                if (is.null(groupB)) {
+                    groupB(metacell)
+                } else {
+                    groupB(unique(c(groupB(), metacell)))
+                }
+            }
+        }
+    })
+}
+
+group_selectors <- function(input, output, session, dataset, ns, groupA, groupB) {
+    output$groupA_box <- renderUI({
+        req(input$mode == "Groups")
+        shinydashboardPlus::box(
+            id = ns("groupA_box_1"),
+            title = "Group A metacells",
+            status = "primary",
+            solidHeader = TRUE,
+            collapsible = TRUE,
+            closable = FALSE,
+            width = 12,
+            actionButton(ns("reset_groupA"), "Reset"),
+            shinycssloaders::withSpinner(
+                DT::dataTableOutput(ns("groupA_table"))
+            )
+        )
+    })
+
+    output$groupB_box <- renderUI({
+        req(input$mode == "Groups")
+        shinydashboardPlus::box(
+            id = ns("groupB_box_1"),
+            title = "Group B metacells",
+            status = "primary",
+            solidHeader = TRUE,
+            collapsible = TRUE,
+            closable = FALSE,
+            width = 12,
+            actionButton(ns("reset_groupB"), "Reset"),
+            shinycssloaders::withSpinner(
+                DT::dataTableOutput(ns("groupB_table"))
+            )
+        )
+    })
+
+    output$groupA_table <- DT::renderDataTable(
+        tibble(metacell = groupA()),
+        escape = FALSE,
+        server = FALSE,
+        rownames = FALSE,
+        filter = "none",
+        options = list(
+            dom = "t",
+            paging = FALSE,
+            language = list(emptyTable = "Please select metacells")
+        )
+    )
+
+    output$groupB_table <- DT::renderDataTable(
+        tibble(metacell = groupB()),
+        escape = FALSE,
+        server = FALSE,
+        rownames = FALSE,
+        filter = "none",
+        options = list(
+            dom = "t",
+            paging = FALSE,
+            language = list(emptyTable = "Please select metacells")
+        )
+    )
+
+    observeEvent(input$add_metacell_to_groupA, {
+        if (is.null(groupA())) {
+            groupA(input$metacell)
+        } else {
+            groupA(unique(c(groupA(), input$metacell)))
+        }
+    })
+
+    observeEvent(input$add_metacell_to_groupB, {
+        if (is.null(groupB())) {
+            groupB(input$metacell)
+        } else {
+            groupB(unique(c(groupB(), input$metacell)))
+        }
+    })
+
+    observeEvent(input$reset_groupA, {
+        groupA(NULL)
+    })
+
+    observeEvent(input$reset_groupB, {
+        groupB(NULL)
+    })
+
+    observeEvent(plotly::event_data("plotly_selected", source = "proj_mc_plot"), {
+        el <- plotly::event_data("plotly_selected", source = "proj_mc_plot")
+
+        selected_metacells <- el$customdata
+        req(input$mode == "Groups")
+
+        if (input$proj_select_main == "Group A") {
+            if (is.null(groupA())) {
+                groupA(selected_metacells)
+            } else {
+                groupA(unique(c(groupA(), selected_metacells)))
+            }
+        }
+
+        if (input$proj_select_main == "Group B") {
+            if (is.null(groupB())) {
+                groupB(selected_metacells)
+            } else {
+                groupB(c(unique(groupB(), selected_metacells)))
+            }
+        }
     })
 }
