@@ -123,12 +123,6 @@ init_tab_defs <- function() {
 
 get_gene_names <- function() {
     gene_names <- rownames(get_mc_data(dataset_ls(project)[1], "mc_mat"))
-    # We remove gene names that are too long in order to reduce pickerInput search bar width
-    long_genes <- stringr::str_length(gene_names) > 30
-    if (sum(long_genes) > 0) {
-        warning("Some genes were longer than 30 characters and were removed")
-        gene_names <- gene_names[!long_genes]
-    }
     return(gene_names)
 }
 
