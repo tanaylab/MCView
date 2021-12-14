@@ -78,3 +78,24 @@ get_cell_types_egc <- function(cell_types, metacell_types, dataset, mat = NULL) 
 
     return(ct_egc)
 }
+
+get_samples_gene_egc <- function(gene, dataset, samp_mc_frac = NULL){    
+    mc_mat <- get_mc_data(dataset, "mc_mat")
+    mc_sum <- get_mc_data(dataset, "mc_sum")    
+    
+    samp_mc_frac <- samp_mc_frac %||% get_samp_mc_frac(dataset)
+    samp_mc_frac <- samp_mc_frac[, colnames(samp_mc_frac) != "-1"]
+    
+    g <- mc_mat[gene, colnames(samp_mc_frac)]
+
+    samp_m <- samp_mc_frac %*% g
+    samp_sum <- samp_mc_frac %*% mc_sum[colnames(samp_mc_frac)]
+
+    zero_inds <- samp_m[, 1] == 0 & samp_sum[, 1] == 0
+    samp_egc <- samp_m / samp_sum    
+    
+    samp_egc <- setNames(samp_egc[, 1], rownames(samp_egc))
+    samp_egc[zero_inds] <- 0    
+
+    return(samp_egc)
+}

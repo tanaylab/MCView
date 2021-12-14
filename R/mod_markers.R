@@ -82,31 +82,9 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
     markers_matrix <- reactiveVal()
     lfp_range <- reactiveVal()
 
-    output$cell_type_list <- renderUI({
-        cell_types_hex <- col2hex(get_cell_type_colors(dataset()))
-        cell_types <- names(get_cell_type_colors(dataset()))
-        shinyWidgets::pickerInput(ns("selected_cell_types"), "Cell types",
-            choices = cell_types,
-            selected = cell_types,
-            multiple = TRUE,
-            options = list(`actions-box` = TRUE, `dropup-auto` = FALSE),
-            choicesOpt = list(
-                style = paste0("color: ", cell_types_hex, ";")
-            )
-        )
-    })
+    output$cell_type_list <- cell_type_selector(dataset, ns, id = "selected_cell_types", label = "Cell types", selected = "all")
 
-    output$metadata_list <- renderUI({
-        metadata <- get_mc_data(dataset(), "metadata")
-        req(metadata)
-        metadata_fields <- colnames(metadata)[-1]
-        shinyWidgets::pickerInput(ns("selected_md"), "Metadata",
-            choices = metadata_fields,
-            selected = NULL,
-            multiple = TRUE,
-            options = list(`actions-box` = TRUE, `dropup-auto` = FALSE)
-        )
-    })
+    output$metadata_list <- metadata_selector(dataset, ns, id = "selected_md", label = "Metadata", metadata_id = "metadata")
 
     output$marker_genes_list <- renderUI({
         tagList(

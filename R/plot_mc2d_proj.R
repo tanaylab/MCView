@@ -307,6 +307,9 @@ render_2d_plotly <- function(input, output, session, dataset, values, metacell_t
         } else if (input$color_proj == "Gene") {
             req(input$color_proj_gene)
             fig <- plot_2d_gene(input$color_proj_gene)
+        } else if (input$color_proj == "Sample"){
+            req(input$color_proj_sample)
+            fig <- plot_2d_metadata(paste0("samp_id: ", input$color_proj_sample))
         }
 
         fig <- fig %>% plotly::event_register("plotly_restyle")

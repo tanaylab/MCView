@@ -512,45 +512,9 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
     observer_mc_deselect_event("gene_time_mc_plot1_annot", selected_metacell_types)
     observer_mc_deselect_event("gene_time_mc_plot2_annot", selected_metacell_types)
 
-    # Expression range
-    output$set_range_ui <- renderUI({
-        req(input$proj_stat == "expression")
-        checkboxInput(ns("set_range"), "Manual range", value = FALSE)
-    })
+    projection_selectors(ns, dataset, output, input)
+    scatter_selectors(ns, dataset, output)    
 
-    output$expr_range_ui <- renderUI({
-        req(input$proj_stat == "expression")
-        req(input$set_range)
-        shinyWidgets::numericRangeInput(ns("expr_range"), "Expression range", c(-18, -5), width = "80%", separator = " to ")
-    })
-
-    # Enrichment range
-    output$enrich_range_ui <- renderUI({
-        req(input$proj_stat == "enrichment")
-        shinyWidgets::numericRangeInput(ns("lfp"), "Enrichment range", c(-3, 3), width = "80%", separator = " to ")
-    })
-
-    # Point size selectors
-    output$point_size_ui <- renderUI({
-        numericInput(ns("point_size"), label = "Point size", value = initial_proj_point_size(dataset()), min = 0.1, max = 3, step = 0.1)
-    })
-
-    output$gene_gene_point_size_ui <- renderUI({
-        numericInput(ns("gene_gene_point_size"), label = "Point size", value = initial_scatters_point_size(dataset()), min = 0.05, max = 3, step = 0.1)
-    })
-
-    output$gene_gene_stroke_ui <- renderUI({
-        numericInput(ns("gene_gene_stroke"), label = "Stroke width", value = initial_scatters_stroke(dataset()), min = 0, max = 3, step = 0.01)
-    })
-
-    output$stroke_ui <- renderUI({
-        numericInput(ns("stroke"), label = "Stroke width", value = initial_proj_stroke(dataset()), min = 0, max = 3, step = 0.01)
-    })
-
-    # Minimal edge length selector
-    output$edge_distance_ui <- renderUI({
-        sliderInput(ns("min_edge_size"), label = "Min edge length", min = 0, max = 0.3, value = min_edge_length(dataset()), step = 0.001)
-    })
     # Projection plots
     output$plot_gene_proj_2d <- render_2d_plotly(
         input,

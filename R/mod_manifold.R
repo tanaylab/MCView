@@ -83,39 +83,10 @@ mod_manifold_server <- function(input, output, session, dataset, metacell_types,
     values <- reactiveValues(gene1 = default_gene1, gene2 = default_gene2)
     server_gene_selectors(input, output, session, values, dataset, ns, show_button = FALSE)
 
-    # Expression range
-    output$set_range_ui <- renderUI({
-        req(input$proj_stat == "expression")
-        checkboxInput(ns("set_range"), "Manual range", value = FALSE)
-    })
-
-    output$expr_range_ui <- renderUI({
-        req(input$proj_stat == "expression")
-        req(input$set_range)
-        shinyWidgets::numericRangeInput(ns("expr_range"), "Expression range", c(-18, -5), width = "80%", separator = " to ")
-    })
-
-    # Enrichment range
-    output$enrich_range_ui <- renderUI({
-        req(input$proj_stat == "enrichment")
-        shinyWidgets::numericRangeInput(ns("lfp"), "Enrichment range", c(-3, 3), width = "80%", separator = " to ")
-    })
-
-    # Point size selector
-    output$point_size_ui <- renderUI({
-        numericInput(ns("point_size"), label = "Point size", value = initial_proj_point_size(dataset()), min = 0.1, max = 3, step = 0.1)
-    })
-
-    output$stroke_ui <- renderUI({
-        numericInput(ns("stroke"), label = "Stroke width", value = initial_proj_stroke(dataset()), min = 0, max = 3, step = 0.01)
-    })
-
-    # Minimal edge length selector
-    output$edge_distance_ui <- renderUI({
-        sliderInput(ns("min_edge_size"), label = "Min edge length", min = 0, max = 0.3, value = min_edge_length(dataset()), step = 0.001)
-    })
+    projection_selectors(ns, dataset, output, input)   
 
     # Projection plots
     output$plot_manifold_proj_2d <- render_2d_plotly(input, output, session, dataset, values, metacell_types, cell_type_colors, source = "proj_manifold_plot") %>%
-        bindCache(dataset(), values$gene1, values$gene2, input$color_proj, metacell_types(), cell_type_colors(), input$point_size, input$stroke, input$min_edge_size, input$show_selected_metacells, input$metacell1, input$metacell2)
+        bindCache(dataset(), values$gene1, values$gene2, input$color_proj, metacell_types(), cell_type_colors(), input$point_size, input$stroke, input$min_edge_size, input$show_selected_metacells, input$metacell1, input$metacell2, input$proj_stat, input$expr_range, input$lfp)
 }
+

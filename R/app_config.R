@@ -93,6 +93,11 @@ init_tab_defs <- function() {
             module_name = "mc_mc",
             icon = "chart-bar"
         ),
+        "Samples" = list(
+            title = "Samples",
+            module_name = "samples",
+            icon = "vials"
+        ),
         "Annotate" = list(
             title = "Annotate",
             module_name = "annotate",
@@ -110,6 +115,7 @@ init_tab_defs <- function() {
                 cli_abort("{.x} is not a valid tab name. Update `tabs` in your configuration file.")
             }
         })
+
         tab_defs <<- tab_defs[config$tabs]
     } else {
         tab_defs <<- tab_defs[default_tabs]
