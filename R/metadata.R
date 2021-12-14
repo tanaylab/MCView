@@ -105,20 +105,20 @@ update_metadata_colors <- function(project,
 }
 
 #' Import cell metadata to an MCView dataset
-#'  
-#' 
+#'
+#'
 #' @param cell_metadata data frame with a column named "cell_id" with
 #' the cell id and other metadata columns, or a name of a delimited file which
 #' contains such data frame.
 #' @param cell_to_metacell data frame with a column named "cell_id" with cell id and
 #' another column named "metacell" with the metacell the cell is part of, or a
 #' name of a delimited file which contains such data frame.
-#' @param summarise_md summarise cell metadata to the metacell level. 
-#' 
+#' @param summarise_md summarise cell metadata to the metacell level.
+#'
 #' @inheritParams cell_metadata_to_metacell
-#' 
+#'
 #' @export
-import_cell_metadata <- function(project, dataset, cell_metadata, cell_to_metacell, summarise_md = FALSE, ...){
+import_cell_metadata <- function(project, dataset, cell_metadata, cell_to_metacell, summarise_md = FALSE, ...) {
     if (is.character(cell_metadata)) {
         cell_metadata <- tgutil::fread(cell_metadata) %>% as_tibble()
     }
@@ -128,15 +128,15 @@ import_cell_metadata <- function(project, dataset, cell_metadata, cell_to_metace
     }
 
     if (colnames(cell_metadata)[1] != "cell_id") {
-       cli_abort("First column of {.code cell_metadata} is not named {.field cell_id} (it is named {.field {colnames(cell_metadata)[1]}})")
+        cli_abort("First column of {.code cell_metadata} is not named {.field cell_id} (it is named {.field {colnames(cell_metadata)[1]}})")
     }
 
     if (colnames(cell_to_metacell)[2] != "metacell") {
-       cli_abort("Second column of {.code cell_to_metacell} is not named {.field metacell} (it is named {.field {colnames(cell_to_metacell)[2]}})")
+        cli_abort("Second column of {.code cell_to_metacell} is not named {.field metacell} (it is named {.field {colnames(cell_to_metacell)[2]}})")
     }
 
-    cache_dir <- project_cache_dir(project)    
-   
+    cache_dir <- project_cache_dir(project)
+
     cell_metadata <- cell_metadata %>%
         left_join(cell_to_metacell, by = "cell_id")
 
@@ -144,9 +144,9 @@ import_cell_metadata <- function(project, dataset, cell_metadata, cell_to_metace
 
     cli_alert_info("imported cell metadata")
 
-    if (summarise_md){
-        md <- cell_metadata %>% 
-            select(-any_of(colnames(cell_to_metacell)[-1])) %>% 
+    if (summarise_md) {
+        md <- cell_metadata %>%
+            select(-any_of(colnames(cell_to_metacell)[-1])) %>%
             select(cell_id, everything())
 
         md <- cell_metadata_to_metacell(md, cell_to_metacell, ...)

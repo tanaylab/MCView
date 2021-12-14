@@ -83,10 +83,9 @@ mod_manifold_server <- function(input, output, session, dataset, metacell_types,
     values <- reactiveValues(gene1 = default_gene1, gene2 = default_gene2)
     server_gene_selectors(input, output, session, values, dataset, ns, show_button = FALSE)
 
-    projection_selectors(ns, dataset, output, input)   
+    projection_selectors(ns, dataset, output, input)
 
     # Projection plots
     output$plot_manifold_proj_2d <- render_2d_plotly(input, output, session, dataset, values, metacell_types, cell_type_colors, source = "proj_manifold_plot") %>%
         bindCache(dataset(), values$gene1, values$gene2, input$color_proj, metacell_types(), cell_type_colors(), input$point_size, input$stroke, input$min_edge_size, input$show_selected_metacells, input$metacell1, input$metacell2, input$proj_stat, input$expr_range, input$lfp)
 }
-

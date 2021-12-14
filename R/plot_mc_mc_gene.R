@@ -1,90 +1,3 @@
-#' calculate mc mc gene expression dataframe
-#'
-#' @param dataset name of metacell object
-#' @param metacell1 id of the first metacell
-#' @param metacell2 id of the second metacell
-#'
-#' @noRd
-calc_mc_mc_gene_df <- function(dataset, metacell1, metacell2, diff_thresh = 1.5, pval_thresh = 0.01) {
-    mc_mat <- get_mc_data(dataset, "mc_mat")
-
-    egc <- get_metacells_egc(c(metacell1, metacell2), dataset) + egc_epsilon
-
-    df <- egc %>%
-        as.data.frame()
-
-    df$diff <- log2(df[, 1]) - log2(df[, 2])
-    df$pval <- NA
-
-    f <- rownames(df)[abs(df$diff) >= diff_thresh]
-    m <- mc_mat[f, c(metacell1, metacell2)]
-
-    if (nrow(m) > 0) {
-        tots <- colSums(m)
-        pvals <- apply(m, 1, function(x) suppressWarnings(chisq.test(matrix(c(x, tots), nrow = 2))$p.value))
-        df[f, ]$pval <- pvals
-    }
-
-    df <- df %>%
-        rownames_to_column("gene") %>%
-        as_tibble()
-
-    df <- df %>%
-        mutate(col = case_when(
-            diff >= 1.5 & pval <= pval_thresh ~ "darkred",
-            diff <= -1.5 & pval <= pval_thresh ~ "darkblue",
-            TRUE ~ "gray"
-        ))
-
-    return(df)
-}
-
-#' calculate cell type / cell type gene expression dataframe
-#'
-#' @param dataset name of metacell object
-#' @param cell_type1 id of the first cell type
-#' @param cell_type2 id of the second cell type
-#'
-#' @noRd
-calc_ct_ct_gene_df <- function(dataset, cell_type1, cell_type2, metacell_types, diff_thresh = 1.5, pval_thresh = 0.01) {
-    mat <- get_cell_types_mat(c(cell_type1, cell_type2), metacell_types, dataset)
-    egc <- get_cell_types_egc(c(cell_type1, cell_type2), metacell_types, dataset, mat) + egc_epsilon
-
-    df <- egc %>%
-        as.data.frame()
-
-    df$diff <- log2(df[, 1]) - log2(df[, 2])
-
-    df$pval <- NA
-
-    f <- rownames(df)[abs(df$diff) >= diff_thresh]
-
-    m <- mat[f, c(cell_type1, cell_type2)]
-
-    if (nrow(m) > 0) {
-        tots <- colSums(m)
-
-        pvals <- apply(m, 1, function(x) suppressWarnings(chisq.test(matrix(c(x, tots), nrow = 2))$p.value))
-
-        df[f, ]$pval <- pvals
-    }
-
-    df <- df %>%
-        rownames_to_column("gene") %>%
-        as_tibble()
-
-    df <- df %>%
-        mutate(col = case_when(
-            diff >= 1.5 & pval <= pval_thresh ~ "darkred",
-            diff <= -1.5 & pval <= pval_thresh ~ "darkblue",
-            TRUE ~ "gray"
-        ))
-
-    return(df)
-}
-
-
-
 #' Plot mc mc scatter of gene expression
 #'
 #' @param df output of calc_mc_mc_gene_df
@@ -132,10 +45,8 @@ plot_mc_mc_gene <- function(df, metacell1, metacell2, highlight = NULL, label_pr
     return(p)
 }
 
-render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, mc_mc_gene_scatter_df = NULL, metacell_names = NULL, cell_type_colors = NULL) {
+render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, mc_mc_gene_scatter_df = NULL, metacell_names = NULL, cell_type_colors = NULL, mode = NULL) {
     plotly::renderPlotly({
-        req(input$metacell1)
-        req(input$metacell2)
         req(mc_mc_gene_scatter_df)
 
         if (!is.null(input$diff_expr_table_rows_selected)) {
@@ -149,15 +60,19 @@ render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, mc_mc_
             gene <- NULL
         }
 
-        if (is.null(input$mode) || input$mode == "MCs") {
+        mode <- input$mode %||% mode
+
+        if (is.null(mode) || mode == "MCs") {
             req(metacell_names)
+            req(input$metacell1)
+            req(input$metacell2)
             req(input$metacell1 %in% metacell_names)
             req(input$metacell2 %in% metacell_names)
             xlab <- input$metacell1
             ylab <- input$metacell2
             label_prefix <- "MC #"
             source <- "mc_mc_plot"
-        } else if (input$mode == "Types") {
+        } else if (mode == "Types") {
             req(cell_type_colors)
             req(input$metacell1 %in% cell_type_colors$cell_type)
             req(input$metacell2 %in% cell_type_colors$cell_type)
@@ -165,11 +80,18 @@ render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, mc_mc_
             ylab <- input$metacell2
             label_prefix <- ""
             source <- "ct_ct_plot"
-        } else if (input$mode == "Groups") {
+        } else if (mode == "Groups") {
             label_prefix <- ""
             xlab <- "Group A"
             ylab <- "Group B"
             source <- "grp_grp_plot"
+        } else if (mode == "Samples") {
+            req(input$samp1)
+            req(input$samp2)
+            xlab <- input$samp1
+            ylab <- input$samp2
+            label_prefix <- "Sample "
+            source <- "samp_samp_diff_expr_plot"
         }
 
         fig <- plotly::ggplotly(
@@ -195,8 +117,11 @@ render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, mc_mc_
 
 render_mc_mc_gene_diff_table <- function(input, output, session, ns, dataset, mc_mc_gene_scatter_df) {
     DT::renderDT({
-        req(input$metacell1)
-        req(input$metacell2)
+        if (!is.null(input$mode) && input$mode == "MCs") {
+            req(input$metacell1)
+            req(input$metacell2)
+        }
+
         if (input$show_diff_expr_table) {
             DT::datatable(
                 mc_mc_gene_scatter_df() %>%

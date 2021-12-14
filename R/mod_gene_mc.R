@@ -24,7 +24,7 @@ mod_gene_mc_ui <- function(id) {
                     sidebar = shinydashboardPlus::boxSidebar(
                         startOpen = FALSE,
                         width = 25,
-                        id = ns("gene_projection_sidebar"),                        
+                        id = ns("gene_projection_sidebar"),
                         uiOutput(ns("proj_stat_ui")),
                         uiOutput(ns("set_range_ui")),
                         uiOutput(ns("expr_range_ui")),
@@ -141,7 +141,7 @@ mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, 
 
     scatter_selectors(ns, dataset, output)
     projection_selectors(ns, dataset, output, input)
-    
+
     # Projection plots
     output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, values, metacell_types, cell_type_colors, source = "proj_mc_plot_gene_tab")
 

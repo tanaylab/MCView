@@ -1,10 +1,10 @@
-cell_type_selector <- function(dataset, ns, id = "selected_cell_types", label = "Cell types", selected = NULL){
+cell_type_selector <- function(dataset, ns, id = "selected_cell_types", label = "Cell types", selected = NULL) {
     renderUI({
         cell_types_hex <- col2hex(get_cell_type_colors(dataset()))
         cell_types <- names(get_cell_type_colors(dataset()))
-        if (!is.null(selected) && selected == "all"){
+        if (!is.null(selected) && selected == "all") {
             selected <- cell_types
-        } 
+        }
         shinyWidgets::pickerInput(ns(id), label,
             choices = cell_types,
             selected = selected,
@@ -17,7 +17,7 @@ cell_type_selector <- function(dataset, ns, id = "selected_cell_types", label = 
     })
 }
 
-metadata_selector <- function(dataset, ns, id = "selected_md", label = "Metadata", metadata_id = "metadata", selected = NULL, multiple = TRUE){
+metadata_selector <- function(dataset, ns, id = "selected_md", label = "Metadata", metadata_id = "metadata", selected = NULL, multiple = TRUE) {
     renderUI({
         metadata <- get_mc_data(dataset(), metadata_id)
         req(metadata)
@@ -137,10 +137,10 @@ top_correlated_selector <- function(gene_id, id, type_id, input, output, session
 }
 
 top_correlated_selectors <- function(input, output, session, dataset, ns, button_labels = c("X", "Y", "Color", "2D")) {
-    top_correlated_selector("x_axis_var", "x_axis", "x_axis_type", input, output, session, dataset, ns, button_labels =  button_labels)
-    top_correlated_selector("y_axis_var", "y_axis", "y_axis_type", input, output, session, dataset, ns, button_labels =  button_labels)
-    top_correlated_selector("color_by_var", "color_by", "color_by_type", input, output, session, dataset, ns, button_labels =  button_labels)
-    top_correlated_selector("color_proj_gene", "color_proj", "color_proj", input, output, session, dataset, ns, button_labels =  button_labels)
+    top_correlated_selector("x_axis_var", "x_axis", "x_axis_type", input, output, session, dataset, ns, button_labels = button_labels)
+    top_correlated_selector("y_axis_var", "y_axis", "y_axis_type", input, output, session, dataset, ns, button_labels = button_labels)
+    top_correlated_selector("color_by_var", "color_by", "color_by_type", input, output, session, dataset, ns, button_labels = button_labels)
+    top_correlated_selector("color_proj_gene", "color_proj", "color_proj", input, output, session, dataset, ns, button_labels = button_labels)
 }
 
 axis_vars_ok <- function(dataset, input) {
@@ -154,14 +154,14 @@ axis_vars_ok <- function(dataset, input) {
             return(TRUE)
         } else if (type == "Cell type" && (var %in% names(get_cell_type_colors(dataset)))) {
             return(TRUE)
-        } else {            
+        } else {
             return(FALSE)
         }
     })
     return(all(vars_ok))
 }
 
-scatter_selectors <- function(ns, dataset, output){
+scatter_selectors <- function(ns, dataset, output) {
     output$gene_gene_point_size_ui <- renderUI({
         numericInput(ns("gene_gene_point_size"), label = "Point size", value = initial_scatters_point_size(dataset()), min = 0.05, max = 3, step = 0.1)
     })
@@ -171,7 +171,7 @@ scatter_selectors <- function(ns, dataset, output){
     })
 }
 
-projection_selectors <- function(ns, dataset, output, input){
+projection_selectors <- function(ns, dataset, output, input) {
     output$proj_stat_ui <- renderUI({
         req(input$color_proj == "Gene" || input$color_proj == "Gene A" || input$color_proj == "Gene B")
         selectInput(ns("proj_stat"), label = "Statistic", choices = c("Expression" = "expression", "Enrichment" = "enrichment"), selected = "Expression", multiple = FALSE, selectize = FALSE)
@@ -211,5 +211,4 @@ projection_selectors <- function(ns, dataset, output, input){
     output$edge_distance_ui <- renderUI({
         sliderInput(ns("min_edge_size"), label = "Min edge length", min = 0, max = 0.3, value = min_edge_length(dataset()), step = 0.001)
     })
-
 }

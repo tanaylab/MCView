@@ -141,57 +141,67 @@ has_cell_metadata <- function(dataset) {
     !is.null(get_mc_data(dataset, "cell_metadata"))
 }
 
-calc_samp_mc_frac <- function(dataset){
+calc_samp_mc_count <- function(dataset) {
     metadata <- get_mc_data(dataset, "cell_metadata")
-    samp_mc_frac <- metadata %>%
-        add_count(metacell, name = "n_mc") %>%
-        group_by(samp_id, metacell) %>%
-        summarise(frac = n() / n_mc[1], .groups = "drop")
-    samp_mc_frac <- samp_mc_frac %>%
-        spread("metacell", "frac", fill = 0) %>%
+    samp_mc_count <- metadata %>%
+        filter(metacell != -1) %>%
+        count(samp_id, metacell) %>%
+        spread(metacell, n, fill = 0) %>%
         column_to_rownames("samp_id") %>%
         as.matrix()
+    mc_data[[dataset]][["samp_mc_count"]] <<- samp_mc_count
+    return(samp_mc_count)
+}
+
+get_samp_mc_count <- function(dataset) {
+    return(get_mc_data(dataset, "samp_mc_count") %||% calc_samp_mc_count(dataset))
+}
+
+calc_samp_mc_frac <- function(dataset) {
+    metadata <- get_mc_data(dataset, "cell_metadata")
+    samp_mc_count <- get_samp_mc_count(dataset)
+    samp_mc_frac <- samp_mc_count / rowSums(samp_mc_count)
     mc_data[[dataset]][["samp_mc_frac"]] <<- samp_mc_frac
     return(samp_mc_frac)
 }
 
-get_samp_mc_frac <- function(dataset){
+get_samp_mc_frac <- function(dataset) {
     return(get_mc_data(dataset, "samp_mc_frac") %||% calc_samp_mc_frac(dataset))
 }
 
-calc_samp_metadata <- function(dataset){    
+calc_samp_metadata <- function(dataset) {
     metadata <- get_mc_data(dataset, "cell_metadata") %>% select(-any_of(c("metacell", "cell_id", "outlier")))
     samp_columns <- metadata %>%
         group_by(samp_id) %>%
         summarise_all(n_distinct)
     samp_columns <- colnames(samp_columns)[purrr::map_lgl(colnames(samp_columns), ~ all(samp_columns[[.x]] == 1))]
     samp_md <- metadata %>%
-        select(samp_id, samp_columns) %>% 
+        select(samp_id, samp_columns) %>%
         arrange(samp_id) %>%
-        distinct(samp_id, .keep_all = TRUE) 
-        
+        distinct(samp_id, .keep_all = TRUE)
+
     mc_data[[dataset]][["samp_metadata"]] <<- samp_md
     return(samp_md)
 }
 
-get_samp_metadata <- function(dataset){
-    if (!has_cell_metadata(dataset)){
-        return(NULL)
-    }    
-    return(get_mc_data(dataset, "samp_metadata") %||% calc_samp_metadata(dataset))
-}
-
-calc_samples_list <- function(dataset){    
+get_samp_metadata <- function(dataset) {
     if (!has_cell_metadata(dataset)) {
         return(NULL)
     }
-    samp_md <- get_samp_metadata(dataset)    
+    return(get_mc_data(dataset, "samp_metadata") %||% calc_samp_metadata(dataset))
+}
+
+calc_samples_list <- function(dataset) {
+    if (!has_cell_metadata(dataset)) {
+        return(NULL)
+    }
+    samp_md <- get_samp_metadata(dataset)
     samp_list <- sort(unique(samp_md$samp_id))
     mc_data[[dataset]][["samp_list"]] <<- samp_list
     return(samp_list)
 }
 
-get_samples_list <- function(dataset){
+get_samples_list <- function(dataset) {
     get_mc_data(dataset, "samp_list") %||% calc_samples_list(dataset)
 }
 
@@ -213,13 +223,13 @@ dataset_cell_metadata_fields <- function(dataset) {
         return(c())
     }
     fields <- colnames(metadata)
-    fields <- fields[!(fields %in% c("samp_id", "cell_id"))] 
+    fields <- fields[!(fields %in% c("samp_id", "cell_id"))]
     fields <- fields[!grepl("samp_id: ", fields)]
-    
+
     return(fields)
 }
 
-dataset_cell_metadata_fields_numeric <- function(dataset){
+dataset_cell_metadata_fields_numeric <- function(dataset) {
     fields <- dataset_cell_metadata_fields(dataset)
     df <- get_mc_data(dataset, "cell_metadata")
     numeric_f <- purrr::map_lgl(fields, ~ is_numeric_field(df, .x))
@@ -237,7 +247,7 @@ is_numeric_field <- function(df, field) {
     if (is.null(df)) {
         return(FALSE)
     }
-    
+
     if (is.null(field)) {
         return(FALSE)
     }

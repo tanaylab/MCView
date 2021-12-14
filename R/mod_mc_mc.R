@@ -174,7 +174,7 @@ mod_mc_mc_server <- function(input, output, session, dataset, metacell_types, ce
         )
     })
 
-    # MC/MC plots
+    # Differential expression
     output$plot_mc_mc_gene_scatter <- render_mc_mc_gene_plotly(input, output, session, ns, dataset, mc_mc_gene_scatter_df, metacell_names(), cell_type_colors())
 
     output$diff_expr_table <- render_mc_mc_gene_diff_table(input, output, session, ns, dataset, mc_mc_gene_scatter_df)

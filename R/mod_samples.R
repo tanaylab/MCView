@@ -35,6 +35,19 @@ mod_samples_ui <- function(id) {
                     shinycssloaders::withSpinner(
                         plotly::plotlyOutput(ns("plot_gene_gene_mc"))
                     )
+                ),
+                shinydashboardPlus::box(
+                    title = "Diff. Expression",
+                    status = "primary",
+                    solidHeader = TRUE,
+                    collapsible = TRUE,
+                    closable = FALSE,
+                    width = 12,
+                    shinycssloaders::withSpinner(
+                        plotly::plotlyOutput(ns("plot_samp_samp_gene_scatter"))
+                    ),
+                    shinyWidgets::prettySwitch(inputId = ns("show_diff_expr_table"), value = FALSE, label = "Show table"),
+                    DT::DTOutput(ns("diff_expr_table"))
                 )
             ),
             column(
@@ -58,7 +71,7 @@ mod_samples_ui <- function(id) {
                         uiOutput(ns("point_size_ui")),
                         uiOutput(ns("stroke_ui")),
                         uiOutput(ns("edge_distance_ui"))
-                    ),                    
+                    ),
                     shinycssloaders::withSpinner(
                         plotly::plotlyOutput(ns("plot_gene_proj_2d"))
                     ),
@@ -92,11 +105,11 @@ mod_samples_sidebar_ui <- function(id) {
     ns <- NS(id)
     tagList(
         list(
-            uiOutput(ns("cell_type_list")),       
-            uiOutput(ns("sample_select_ui")),     
+            uiOutput(ns("cell_type_list")),
+            uiOutput(ns("sample_select_ui")),
             uiOutput(ns("top_correlated_select_x_axis")),
             uiOutput(ns("top_correlated_select_y_axis")),
-            uiOutput(ns("top_correlated_select_color_by"))            
+            uiOutput(ns("top_correlated_select_color_by"))
         )
     )
 }
@@ -108,7 +121,7 @@ mod_samples_server <- function(input, output, session, dataset, metacell_types, 
     ns <- session$ns
     top_correlated_selectors(input, output, session, dataset, ns, button_labels = c("X", "Y", "Color"))
 
-    output$cell_type_list <- cell_type_selector(dataset, ns, id = "selected_cell_types", label = "Cell types")    
+    output$cell_type_list <- cell_type_selector(dataset, ns, id = "selected_cell_types", label = "Cell types")
 
     scatter_selectors(ns, dataset, output)
     projection_selectors(ns, dataset, output, input)
@@ -116,23 +129,42 @@ mod_samples_server <- function(input, output, session, dataset, metacell_types, 
     output$sample_select_ui <- renderUI({
         req(dataset())
         req(input$color_proj)
-        picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")               
-        shinyWidgets::pickerInput(
-                ns("color_proj_sample"),
-                label = "Sample:",
-                choices = get_samples_list(dataset()),
-                selected = get_samples_list(dataset())[1],
+        samp_list <- get_samples_list(dataset())
+        if (length(samp_list) > 1) {
+            selected2 <- samp_list[2]
+        } else {
+            selected2 <- samp_list[1]
+        }
+
+        picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
+        tagList(
+            shinyWidgets::pickerInput(
+                ns("samp1"),
+                label = "Sample A:",
+                choices = samp_list,
+                selected = samp_list[1],
                 width = "70%",
                 multiple = FALSE,
                 options = picker_options
-        )                    
+            ),
+            shinyWidgets::pickerInput(
+                ns("samp2"),
+                label = "Sample B:",
+                choices = samp_list,
+                selected = selected2,
+                width = "70%",
+                multiple = FALSE,
+                options = picker_options
+            )
+        )
     })
 
     # Projection plots
     output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, values, metacell_types, cell_type_colors, source = "proj_mc_plot_gene_tab")
 
+    # Info box
     output$sample_info_box <- renderUI({
-        req(input$color_proj_sample)
+        req(input$samp1)
         shinydashboardPlus::box(
             id = ns("sample_info_box_1"),
             title = "Sample information",
@@ -140,7 +172,7 @@ mod_samples_server <- function(input, output, session, dataset, metacell_types, 
             solidHeader = TRUE,
             collapsible = TRUE,
             closable = FALSE,
-            width = 12,            
+            width = 12,
             shinycssloaders::withSpinner(
                 DT::dataTableOutput(ns("sample_info_table"))
             )
@@ -148,22 +180,21 @@ mod_samples_server <- function(input, output, session, dataset, metacell_types, 
     })
 
     sample_info <- reactive({
-        req(input$color_proj_sample)
+        req(input$samp1)
         samp_md <- get_samp_metadata(dataset())
-        req(samp_md)        
+        req(samp_md)
         samp_md %>%
-            filter(samp_id == input$color_proj_sample) %>%
-            select(-samp_id) %>% 
+            filter(samp_id == input$samp1) %>%
+            select(-samp_id) %>%
             gather("variable", "value")
     })
 
-    # Sample information 
     output$sample_info_table <- DT::renderDataTable(
         sample_info(),
         escape = FALSE,
         server = FALSE,
         rownames = FALSE,
-        caption = paste0("Sample ", input$color_proj_sample),
+        caption = paste0("Sample ", input$samp1),
         filter = "none",
         options = list(
             dom = "t",
@@ -171,6 +202,18 @@ mod_samples_server <- function(input, output, session, dataset, metacell_types, 
             language = list(emptyTable = "Please select metacells")
         )
     )
+
+    # Differential expression
+    samp_samp_scatter_df <- reactive({
+        req(input$selected_cell_types)
+        req(input$samp1)
+        req(input$samp2)
+        calc_samp_samp_gene_df(dataset(), input$samp1, input$samp2, metacell_types(), cell_types = input$selected_cell_types)
+    })
+
+    output$plot_samp_samp_gene_scatter <- render_mc_mc_gene_plotly(input, output, session, ns, dataset, samp_samp_scatter_df, metacell_names(), cell_type_colors(), mode = "Samples")
+
+    output$diff_expr_table <- render_mc_mc_gene_diff_table(input, output, session, ns, dataset, samp_samp_scatter_df)
 
     # Metadata/Metadata plots
     output$x_axis_select <- render_axis_select_ui("x_axis", "X axis", md_choices = dataset_cell_metadata_fields_numeric(dataset()), md_selected = dataset_cell_metadata_fields_numeric(dataset())[1], selected_gene = default_gene1, input = input, ns = ns, dataset = dataset, cell_types = sort(names(get_cell_type_colors(dataset())), decreasing = TRUE))
@@ -180,16 +223,16 @@ mod_samples_server <- function(input, output, session, dataset, metacell_types, 
     output$color_by_select <- render_axis_select_ui("color_by", "Color", md_choices = c("None", dataset_cell_metadata_fields(dataset())), md_selected = "None", selected_gene = default_gene1, input = input, ns = ns, dataset = dataset, cell_types = sort(names(get_cell_type_colors(dataset())), decreasing = TRUE))
 
     output$please_select_cell_types <- renderPrint({
-        if (input$x_axis_type == "Gene" || input$y_axis_type == "Gene" || input$color_by_type == "Gene" ){
-            if (is.null(input$selected_cell_types) || length(input$selected_cell_types) == 0){
+        if (input$x_axis_type == "Gene" || input$y_axis_type == "Gene" || input$color_by_type == "Gene") {
+            if (is.null(input$selected_cell_types) || length(input$selected_cell_types) == 0) {
                 glue("Please select at least one cell type")
             }
         } else {
             req(FALSE)
-        }        
+        }
     })
 
-    output$plot_gene_gene_mc <- plotly::renderPlotly({        
+    output$plot_gene_gene_mc <- plotly::renderPlotly({
         req(input$x_axis_var)
         req(input$y_axis_var)
         req(input$color_by_var)
@@ -241,13 +284,5 @@ mod_samples_server <- function(input, output, session, dataset, metacell_types, 
         return(fig)
     })
 
-    sample_click_observer("samp_samp_plot", session, "color_proj_sample")
-
+    sample_click_observer("samp_samp_plot", session, "samp1")
 }
-
-
-
-
-
-
-

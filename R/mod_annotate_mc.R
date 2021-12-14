@@ -513,7 +513,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
     observer_mc_deselect_event("gene_time_mc_plot2_annot", selected_metacell_types)
 
     projection_selectors(ns, dataset, output, input)
-    scatter_selectors(ns, dataset, output)    
+    scatter_selectors(ns, dataset, output)
 
     # Projection plots
     output$plot_gene_proj_2d <- render_2d_plotly(
