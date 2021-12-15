@@ -4,96 +4,79 @@
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="description" content="MCView">
 <title>Architecture • MCView</title>
-<!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script><!-- Bootstrap --><link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.4.0/flatly/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script><!-- bootstrap-toc --><link rel="stylesheet" href="../bootstrap-toc.css">
-<script src="../bootstrap-toc.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
+<script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<link href="../deps/bootstrap-5.1.3/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.1.3/bootstrap.bundle.min.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
-<!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
-<script src="../pkgdown.js"></script><meta property="og:title" content="Architecture">
+<!-- bootstrap-toc --><script src="https://cdn.rawgit.com/afeld/bootstrap-toc/v1.0.1/dist/bootstrap-toc.min.js"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- search --><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/autocomplete.js/0.38.0/autocomplete.jquery.min.js" integrity="sha512-GU9ayf+66Xx2TmpxqJpliWbT5PiGYxpaG8rfnBEk1LL8l1KGkRShhngwdXK1UgqhAzWpZHSiYPc09/NwDQIGyg==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js" integrity="sha512-5CYOlHXGh6QpOFA/TeTylKLWfB3ftPsde7AnmhuitiTX4K5SqCLBeKro6sPS8ilsz1Q4NRx3v8Ko2IBiszzdww==" crossorigin="anonymous"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Architecture">
 <meta property="og:description" content="MCView">
 <!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
 <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
 <![endif]-->
 </head>
-<body data-spy="scroll" data-target="#toc">
-    <div class="container template-article">
-      <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
-  <div class="container">
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false">
-        <span class="sr-only">Toggle navigation</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <span class="navbar-brand">
-        <a class="navbar-link" href="../index.html">MCView</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.2.1</span>
-      </span>
-    </div>
+<body>
+    <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
+    
 
-    <div id="navbar" class="navbar-collapse collapse">
-      <ul class="nav navbar-nav">
-<li>
-  <a href="../index.html">
-    <span class="fas fa-home fa-lg"></span>
-     
-  </a>
+    <nav class="navbar fixed-top navbar-dark navbar-expand-lg bg-primary"><div class="container">
+    
+    <a class="navbar-brand me-2" href="../index.html">MCView</a>
+
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1.9000</small>
+
+    
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div id="navbar" class="collapse navbar-collapse ms-2">
+      <ul class="navbar-nav me-auto">
+<li class="nav-item">
+  <a class="nav-link" href="../articles/MCView.html">Get started</a>
 </li>
-<li>
-  <a href="../articles/MCView.html">Get started</a>
+<li class="nav-item">
+  <a class="nav-link" href="../reference/index.html">Reference</a>
 </li>
-<li>
-  <a href="../reference/index.html">Reference</a>
-</li>
-<li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
-    Articles
-     
-    <span class="caret"></span>
-  </a>
-  <ul class="dropdown-menu" role="menu">
-<li>
-      <a href="../articles/Architecture.html">Architecture</a>
-    </li>
-    <li>
-      <a href="../articles/Docker.html">Docker</a>
-    </li>
-  </ul>
-</li>
-<li>
-  <a href="../news/index.html">Changelog</a>
-</li>
-      </ul>
-<ul class="nav navbar-nav navbar-right">
-<li>
-  <a href="https://github.com/tanaylab/MCView/">
-    <span class="fab fa-github fa-lg"></span>
-     
-  </a>
-</li>
-      </ul>
-</div>
-<!--/.nav-collapse -->
+<li class="active nav-item dropdown">
+  <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
+  <div class="dropdown-menu" aria-labelledby="dropdown-articles">
+    <a class="dropdown-item" href="../articles/Architecture.html">Architecture</a>
+    <a class="dropdown-item" href="../articles/Docker.html">Docker</a>
   </div>
-<!--/.container -->
+</li>
+<li class="nav-item">
+  <a class="nav-link" href="../news/index.html">Changelog</a>
+</li>
+      </ul>
+<form class="form-inline my-2 my-lg-0" role="search">
+        <input type="search" class="form-control me-sm-2" aria-label="Toggle navigation" name="search-input" data-search-index="../search.json" id="search-input" placeholder="Search for" autocomplete="off">
+</form>
+
+      <ul class="navbar-nav">
+<li class="nav-item">
+  <a class="external-link nav-link" href="https://github.com/tanaylab/MCView/" aria-label="github">
+    <span class="fab fa fab fa-github fa-lg"></span>
+     
+  </a>
+</li>
+      </ul>
 </div>
-<!--/.navbar -->
 
-      
+    
+  </div>
+</nav><div class="container template-article">
 
-      </header><div class="row">
-  <div class="col-md-9 contents">
-    <div class="page-header toc-ignore">
-      <h1 data-toc-skip>Architecture</h1>
+<div class="row">
+  <main id="main"><div class="page-header">
+      <img src="" class="logo" alt=""><h1>Architecture</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/tanaylab/MCView/blob/master/vignettes/Architecture.Rmd"><code>vignettes/Architecture.Rmd</code></a></small>
-      <div class="hidden name"><code>Architecture.Rmd</code></div>
-
+      <small class="dont-index">Source: <a href="https://github.com/tanaylab/MCView/blob/HEAD/vignettes/Architecture.Rmd" class="external-link"><code>vignettes/Architecture.Rmd</code></a></small>
+      <div class="d-none name"><code>Architecture.Rmd</code></div>
     </div>
 
     
@@ -111,9 +94,9 @@
 <code>about.Rmd</code> - custom "About" page.</li>
 </ol>
 <p>In order to bundle together the configuration and cached data, <strong>MCView</strong> supports a concept of a 'project'.</p>
-<div id="projects" class="section level2">
-<h2 class="hasAnchor">
-<a href="#projects" class="anchor"></a>Projects</h2>
+<div class="section level2">
+<h2 id="projects">Projects<a class="anchor" aria-label="anchor" href="#projects"></a>
+</h2>
 <p>A project is a standard library structure that binds config and cache, e.g.:</p>
 <div class="sourceCode"><pre class="sourceCode md"><code class="sourceCode markdown">my_project
 ├── config
@@ -129,9 +112,9 @@
 <code class="sourceCode R"><span class="fu">MCView</span><span class="fu">::</span><span class="fu"><a href="../reference/create_project.html">create_project</a></span><span class="op">(</span><span class="st">"my_project"</span><span class="op">)</span></code></pre></div>
 <p>Which would open a text editor in order to edit the configuration file.</p>
 </div>
-<div id="configuration-files" class="section level2">
-<h2 class="hasAnchor">
-<a href="#configuration-files" class="anchor"></a>Configuration files</h2>
+<div class="section level2">
+<h2 id="configuration-files">Configuration files<a class="anchor" aria-label="anchor" href="#configuration-files"></a>
+</h2>
 <p>An <strong>MCView</strong> project can have 3 configuration files:</p>
 <ol style="list-style-type: decimal">
 <li>config.yaml - main configuration file (required)</li>
@@ -140,7 +123,7 @@
 </ol>
 <p>The main configuration file (<code>config/config.yaml</code>) contains the parameters:</p>
 <div class="sourceCode"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">title:</span><span class="at"> MCView</span>
-<span class="fu">tabs:</span><span class="at"> </span><span class="kw">[</span><span class="st">"Manifold"</span><span class="kw">,</span> <span class="st">"Genes"</span><span class="kw">,</span> <span class="st">"Metacells"</span><span class="kw">,</span> <span class="st">"Annotate"</span><span class="kw">,</span> <span class="st">"About"</span><span class="kw">]</span><span class="at"> </span><span class="co"># which tabs to show</span>
+<span class="fu">tabs:</span><span class="at"> </span><span class="kw">[</span><span class="st">"Manifold"</span><span class="kw">,</span> <span class="st">"Genes"</span><span class="kw">,</span> <span class="st">"Markers"</span><span class="kw">,</span> <span class="st">"Diff. Expression"</span><span class="kw">,</span> <span class="st">"Annotate"</span><span class="kw">,</span> <span class="st">"About"</span><span class="kw">]</span><span class="at"> </span><span class="co"># which tabs to show</span>
 <span class="fu">help:</span><span class="at"> false </span><span class="co"># set to true to show introjs help on start</span>
 <span class="fu">selected_gene1:</span><span class="at"> Foxc1 </span><span class="co"># Default selected gene1 (optional)</span>
 <span class="fu">selected_gene2:</span><span class="at"> Twist1 </span><span class="co"># Default selected gene2 (optional)</span>
@@ -153,53 +136,53 @@
     <span class="co"># projection_stroke: 0.1 # Default line stroke for projection points</span>
     <span class="co"># scatters_point_size: 2 # Default size for scatter plot (such as gene gene plots)</span>
     <span class="co"># scatters_stroke_size: 0.1 # Default line stroke for scatter plot (such as gene gene plots)</span></code></pre></div>
-<div id="title" class="section level3">
-<h3 class="hasAnchor">
-<a href="#title" class="anchor"></a>title</h3>
+<div class="section level3">
+<h3 id="title">title<a class="anchor" aria-label="anchor" href="#title"></a>
+</h3>
 <p>The title of the app. This would be shown on the top left of the screen.</p>
 </div>
-<div id="tabs" class="section level3">
-<h3 class="hasAnchor">
-<a href="#tabs" class="anchor"></a>tabs</h3>
+<div class="section level3">
+<h3 id="tabs">tabs<a class="anchor" aria-label="anchor" href="#tabs"></a>
+</h3>
 <p>Controls which tabs to show in the left sidebar and their order. Options are:</p>
-<div class="sourceCode"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span class="kw">[</span><span class="st">"Manifold"</span><span class="kw">,</span> <span class="st">"Genes"</span><span class="kw">,</span> <span class="st">"Metacells"</span><span class="kw">,</span> <span class="st">"Annotate"</span><span class="kw">,</span> <span class="st">"About"</span><span class="kw">]</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span class="kw">[</span><span class="st">"Manifold"</span><span class="kw">,</span> <span class="st">"Genes"</span><span class="kw">,</span> <span class="st">"Markers"</span><span class="kw">,</span> <span class="st">"Diff. Expression"</span><span class="kw">,</span> <span class="st">"Annotate"</span><span class="kw">,</span> <span class="st">"About"</span><span class="kw">]</span></code></pre></div>
 <p>Why would you want to remove tabs?</p>
 <p>Many times we would want to separate between a the 'development' version of an <strong>MCView</strong> app which allows users to re-annotate the data and a 'production' version which only contains data analysis tabs. This can be done by removing "Annotate" from the <code>tabs</code> field. In addition, you might want to always start the app from the "Genes" tab instead of the "Manifold", which can be done by changing the order in the <code>tabs</code> field.</p>
 </div>
-<div id="help" class="section level3">
-<h3 class="hasAnchor">
-<a href="#help" class="anchor"></a>help</h3>
+<div class="section level3">
+<h3 id="help">help<a class="anchor" aria-label="anchor" href="#help"></a>
+</h3>
 <p>Controls wether to start the app with a help modal (from introjs). Help messages can be edited in <code>help.yaml</code> file (see below).</p>
 </div>
-<div id="selected_gene1selected_gene2-optional" class="section level3">
-<h3 class="hasAnchor">
-<a href="#selected_gene1selected_gene2-optional" class="anchor"></a>selected_gene1/selected_gene2 (optional)</h3>
+<div class="section level3">
+<h3 id="selected_gene1selected_gene2-optional">selected_gene1/selected_gene2 (optional)<a class="anchor" aria-label="anchor" href="#selected_gene1selected_gene2-optional"></a>
+</h3>
 <p>The default genes that would be selected (in any screen with gene selection). If this parameter is missing, the 2 genes with highest max(expr)-min(expr) in the first dataset would be chosen.</p>
 </div>
-<div id="selected_mc1selected_mc2" class="section level3">
-<h3 class="hasAnchor">
-<a href="#selected_mc1selected_mc2" class="anchor"></a>selected_mc1/selected_mc2</h3>
-<p>The default metacells that would be selected in the Metacells tab.</p>
+<div class="section level3">
+<h3 id="selected_mc1selected_mc2">selected_mc1/selected_mc2<a class="anchor" aria-label="anchor" href="#selected_mc1selected_mc2"></a>
+</h3>
+<p>The default metacells that would be selected in the Diff. Expression tab.</p>
 </div>
-<div id="datasets-optional" class="section level3">
-<h3 class="hasAnchor">
-<a href="#datasets-optional" class="anchor"></a>datasets (optional)</h3>
+<div class="section level3">
+<h3 id="datasets-optional">datasets (optional)<a class="anchor" aria-label="anchor" href="#datasets-optional"></a>
+</h3>
 <p>Additional per-dataset parameters. Current parameters include default visualization properties of projection and scatter plots.</p>
 </div>
-<div id="help-yaml" class="section level3">
-<h3 class="hasAnchor">
-<a href="#help-yaml" class="anchor"></a>help.yaml</h3>
+<div class="section level3">
+<h3 id="help-yaml">help.yaml<a class="anchor" aria-label="anchor" href="#help-yaml"></a>
+</h3>
 <p>This file contains the help messages used by introjs. It shouldn't be changed in general, except maybe the introduction message. Note that the messages refer to shiny elements, so you would have to look at the code itself in order to identify the element of each message.</p>
 </div>
-<div id="about-rmd" class="section level3">
-<h3 class="hasAnchor">
-<a href="#about-rmd" class="anchor"></a>about.Rmd</h3>
+<div class="section level3">
+<h3 id="about-rmd">about.Rmd<a class="anchor" aria-label="anchor" href="#about-rmd"></a>
+</h3>
 <p>This Rmarkdown file contains the contents of the about page. Edit it as you wish, and remember that you can remove the "About" tab altogether using the <code>tabs</code> parameter in <code>config.yaml</code>.</p>
 </div>
 </div>
-<div id="cached-data" class="section level2">
-<h2 class="hasAnchor">
-<a href="#cached-data" class="anchor"></a>Cached data</h2>
+<div class="section level2">
+<h2 id="cached-data">Cached data<a class="anchor" aria-label="anchor" href="#cached-data"></a>
+</h2>
 <p>In order to run, <strong>MCView</strong> needs to pre-process the metacell matrix and cluster annotations. This can be done by the <code><a href="../reference/import_dataset.html">MCView::import_dataset</a></code> function which accepts a project path, dataset name and path to the <code>h5ad</code> file that was generated from metacell1.</p>
 <p>The cached files would be saved under the cache section in the project folder, in a separate folder for each dataset. In the above example:</p>
 <div class="sourceCode"><pre class="sourceCode md"><code class="sourceCode markdown">└── cache
@@ -212,16 +195,16 @@
 <div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu">MCView</span><span class="fu">::</span><span class="fu"><a href="../reference/dataset_rm.html">dataset_rm</a></span><span class="op">(</span><span class="st">"my_project"</span>, <span class="st">"dataset"</span><span class="op">)</span></code></pre></div>
 </div>
-<div id="running-the-app" class="section level2">
-<h2 class="hasAnchor">
-<a href="#running-the-app" class="anchor"></a>Running the app</h2>
+<div class="section level2">
+<h2 id="running-the-app">Running the app<a class="anchor" aria-label="anchor" href="#running-the-app"></a>
+</h2>
 <p>Running the app can be done by running:</p>
 <div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu">MCView</span><span class="fu">::</span><span class="fu"><a href="../reference/run_app.html">run_app</a></span><span class="op">(</span>project <span class="op">=</span> <span class="st">"/path/to/my/project"</span><span class="op">)</span></code></pre></div>
 </div>
-<div id="deployment" class="section level2">
-<h2 class="hasAnchor">
-<a href="#deployment" class="anchor"></a>Deployment</h2>
+<div class="section level2">
+<h2 id="deployment">Deployment<a class="anchor" aria-label="anchor" href="#deployment"></a>
+</h2>
 <p><strong>MCView</strong> can generate a 'deployment ready' version of the app by running:</p>
 <div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu">MCView</span><span class="fu">::</span><span class="fu"><a href="../reference/create_bundle.html">create_bundle</a></span><span class="op">(</span>project <span class="op">=</span> <span class="st">"/path/to/my/project"</span>, path <span class="op">=</span> <span class="st">"/path/to/the/bundle"</span>, name <span class="op">=</span> <span class="st">"my_project"</span><span class="op">)</span></code></pre></div>
@@ -232,35 +215,32 @@
 </ol>
 <p>The bundle can then be deployed in shiny-server by running:</p>
 <div class="sourceCode"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu">rsconnect</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/rsconnect/man/deployApp.html">deployApp</a></span><span class="op">(</span>appDir <span class="op">=</span> <span class="st">"/path/to/the/bundle/my_project"</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span class="fu">rsconnect</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/rsconnect/man/deployApp.html" class="external-link">deployApp</a></span><span class="op">(</span>appDir <span class="op">=</span> <span class="st">"/path/to/the/bundle/my_project"</span><span class="op">)</span></code></pre></div>
 <p>or any other environment that supports serving shiny apps.</p>
 <p>Note that when deploying to these services make sure you have the <strong>MCView</strong> package installed.</p>
 </div>
-  </div>
-
-  <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
-
-        <nav id="toc" data-toggle="toc"><h2 data-toc-skip>Contents</h2>
-    </nav>
-</div>
-
+  </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
+    </nav></aside>
 </div>
 
 
 
-      <footer><div class="copyright">
-  <p>Developed by Aviezer Lifshitz.</p>
+    <footer><div class="pkgdown-footer-left">
+  <p></p>
+<p>Developed by Aviezer Lifshitz.</p>
 </div>
 
-<div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
+<div class="pkgdown-footer-right">
+  <p></p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.1.</p>
 </div>
 
-      </footer>
+    </footer>
 </div>
 
   
 
+  
 
   </body>
 </html>
