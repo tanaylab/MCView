@@ -140,7 +140,7 @@ plot_mc_scatter <- function(dataset,
                             expr_colors = c("#053061", "#2166AC", "#4393C3", "#92C5DE", "#D1E5F0", "#F7F7F7", "#FDDBC7", "#F4A582", "#D6604D", "#B2182B", "#67001F"),
                             plot_text = TRUE) {
     metadata <- get_mc_data(dataset, "metadata")
-    if (!is.null(metadata)){
+    if (!is.null(metadata)) {
         metadata <- metadata %>% mutate(metacell = as.character(metacell))
     }
     metadata_colors <- get_mc_data(dataset, "metadata_colors")
