@@ -82,7 +82,7 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
     markers_matrix <- reactiveVal()
     lfp_range <- reactiveVal()
 
-    output$cell_type_list <- cell_type_selector(dataset, ns, id = "selected_cell_types", label = "Cell types", selected = "all")
+    output$cell_type_list <- cell_type_selector(dataset, ns, id = "selected_cell_types", label = "Cell types", selected = "all", cell_type_colors = cell_type_colors())
 
     output$metadata_list <- metadata_selector(dataset, ns, id = "selected_md", label = "Metadata", metadata_id = "metadata")
 
@@ -148,7 +148,7 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
     output$add_genes_ui <- renderUI({
         tagList(
             shinyWidgets::pickerInput(ns("genes_to_add"), "",
-                choices = gene_names,
+                choices = gene_names(dataset()),
                 selected = c(),
                 multiple = TRUE,
                 options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
