@@ -1,7 +1,7 @@
-cell_type_selector <- function(dataset, ns, id = "selected_cell_types", label = "Cell types", selected = NULL) {
+cell_type_selector <- function(dataset, ns, id = "selected_cell_types", label = "Cell types", selected = NULL, cell_type_colors = NULL) {
     renderUI({
-        cell_types_hex <- col2hex(get_cell_type_colors(dataset()))
-        cell_types <- names(get_cell_type_colors(dataset()))
+        cell_types_hex <- col2hex(get_cell_type_colors(dataset(), cell_type_colors))
+        cell_types <- names(get_cell_type_colors(dataset(), cell_type_colors))
         if (!is.null(selected) && selected == "all") {
             selected <- cell_types
         }

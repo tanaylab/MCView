@@ -20,6 +20,7 @@ get_top_cor_gene <- function(dataset, gene, type = "pos") {
             filter(gene1 != gene2)
     } else {
         mc_egc <- get_mc_egc(dataset)
+        req(gene %in% rownames(mc_egc))
         lfp <- log2(mc_egc + egc_epsilon)
         cors <- tgs_cor(as.matrix(lfp[gene, ]), t(lfp), pairwise.complete.obs = TRUE, spearman = FALSE)[1, ]
         if (type == "pos") {
