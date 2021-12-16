@@ -250,6 +250,7 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
 get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_types = NULL, force_cell_type = TRUE, mode = "Markers") {
     if (mode == "Inner-folds") {
         mc_fp <- get_mc_data(dataset, "inner_fold_mat")
+        req(mc_fp)
         mc_fp <- as.matrix(mc_fp[Matrix::rowSums(mc_fp) > 0, ])
         mc_fp <- mc_fp[intersect(markers, rownames(mc_fp)), ]
         epsilon <- 1e-5
@@ -274,6 +275,10 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
 
 get_marker_genes <- function(dataset, mode = "Markers") {
     if (mode == "Inner-folds") {
+        if (is.null(get_mc_data(dataset, "inner_fold_mat"))){
+            showNotification(glue("Inner-fold matrix was not computed. Please compute it in python using the metacells package and rerun the import"), type = "error")
+            req(FALSE)
+        }
         return(get_mc_data(dataset, "marker_genes_inner_fold"))
     } else {
         return(get_markers(dataset))
