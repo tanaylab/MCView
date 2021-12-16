@@ -34,13 +34,13 @@ server_gene_selectors <- function(input, output, session, values, dataset, ns, s
         div(
             id = ns("sidebar_select"),
             shinyWidgets::pickerInput(ns("gene1"), "Gene A",
-                choices = gene_names,
+                choices = gene_names(dataset()),
                 selected = values$gene1,
                 multiple = FALSE,
                 options = picker_options
             ),
             shinyWidgets::pickerInput(ns("gene2"), "Gene B",
-                choices = gene_names,
+                choices = gene_names(dataset()),
                 selected = values$gene2,
                 multiple = FALSE,
                 options = picker_options

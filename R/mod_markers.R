@@ -170,7 +170,7 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
     output$add_genes_ui <- renderUI({
         tagList(
             shinyWidgets::pickerInput(ns("genes_to_add"), "",
-                choices = gene_names,
+                choices = gene_names(dataset()),
                 selected = c(),
                 multiple = TRUE,
                 options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")

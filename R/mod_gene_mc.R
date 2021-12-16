@@ -130,7 +130,7 @@ mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, 
             shinyWidgets::pickerInput(
                 ns("color_proj_gene"),
                 label = "Color by:",
-                choices = gene_names,
+                choices = gene_names(dataset()),
                 selected = default_gene1,
                 width = "70%",
                 multiple = FALSE,
@@ -196,7 +196,7 @@ mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, 
             var <- input[[glue("{v}_var")]]
             if (type == "Metadata" && (var %in% c(colnames(metadata), "Cell type"))) {
                 return(TRUE)
-            } else if (type == "Gene" && var %in% gene_names) {
+            } else if (type == "Gene" && var %in% gene_names(dataset())) {
                 return(TRUE)
             } else {
                 return(FALSE)
@@ -296,7 +296,7 @@ render_axis_select_ui <- function(axis, title, md_choices, md_selected, selected
             shinyWidgets::pickerInput(
                 ns(glue("{axis}_var")),
                 title,
-                choices = gene_names,
+                choices = gene_names(dataset()),
                 selected = selected_gene,
                 multiple = FALSE,
                 options = picker_options
@@ -311,7 +311,7 @@ top_correlated_selector <- function(gene_id, id, type_id, input, output, session
         req(input[[type_id]] == "Gene")
         req(input[[gene_id]])
         gene <- input[[gene_id]]
-        req(gene %in% gene_names)
+        req(gene %in% gene_names(dataset()))
         tagList(
             selectInput(
                 ns(glue("selected_top_{id}")),
