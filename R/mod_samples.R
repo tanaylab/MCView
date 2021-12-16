@@ -32,23 +32,12 @@ mod_samples_ui <- function(id) {
                     axis_selector("y_axis", "Metadata", ns, choices = c("Metadata", "Gene", "Cell type")),
                     axis_selector("color_by", "Metadata", ns, choices = c("Metadata", "Gene", "Cell type")),
                     textOutput(ns("please_select_cell_types")),
+                    textOutput(ns("no_samples1")),
                     shinycssloaders::withSpinner(
                         plotly::plotlyOutput(ns("plot_gene_gene_mc"))
                     )
                 ),
-                shinydashboardPlus::box(
-                    title = "Diff. Expression",
-                    status = "primary",
-                    solidHeader = TRUE,
-                    collapsible = TRUE,
-                    closable = FALSE,
-                    width = 12,
-                    shinycssloaders::withSpinner(
-                        plotly::plotlyOutput(ns("plot_samp_samp_gene_scatter"))
-                    ),
-                    shinyWidgets::prettySwitch(inputId = ns("show_diff_expr_table"), value = FALSE, label = "Show table"),
-                    DT::DTOutput(ns("diff_expr_table"))
-                )
+                uiOutput(ns("diff_expr_box"))
             ),
             column(
                 width = 7,
@@ -72,6 +61,7 @@ mod_samples_ui <- function(id) {
                         uiOutput(ns("stroke_ui")),
                         uiOutput(ns("edge_distance_ui"))
                     ),
+                    textOutput(ns("no_samples2")),
                     shinycssloaders::withSpinner(
                         plotly::plotlyOutput(ns("plot_gene_proj_2d"))
                     ),
@@ -204,6 +194,24 @@ mod_samples_server <- function(input, output, session, dataset, metacell_types, 
     )
 
     # Differential expression
+    output$diff_expr_box <- renderUI({
+        req(input$selected_cell_types)
+
+        shinydashboardPlus::box(
+            title = "Diff. Expression",
+            status = "primary",
+            solidHeader = TRUE,
+            collapsible = TRUE,
+            closable = FALSE,
+            width = 12,
+            shinycssloaders::withSpinner(
+                plotly::plotlyOutput(ns("plot_samp_samp_gene_scatter"))
+            ),
+            shinyWidgets::prettySwitch(inputId = ns("show_diff_expr_table"), value = FALSE, label = "Show table"),
+            DT::DTOutput(ns("diff_expr_table"))
+        )
+    })
+
     samp_samp_scatter_df <- reactive({
         req(input$selected_cell_types)
         req(input$samp1)
@@ -231,6 +239,16 @@ mod_samples_server <- function(input, output, session, dataset, metacell_types, 
             req(FALSE)
         }
     })
+
+    for (out in c("no_samples1", "no_samples2")) {
+        output[[out]] <- renderPrint({
+            if (!has_samples(dataset())) {
+                glue("No samples were loaded to MCView.\nPlease make sure your cell metadata has a field called 'samp_id' and run 'import_cell_metadata' again.")
+            } else {
+                req(FALSE)
+            }
+        })
+    }
 
     output$plot_gene_gene_mc <- plotly::renderPlotly({
         req(input$x_axis_var)
@@ -285,4 +303,11 @@ mod_samples_server <- function(input, output, session, dataset, metacell_types, 
     })
 
     sample_click_observer("samp_samp_plot", session, "samp1")
+    observeEvent(plotly::event_data("plotly_click", source = "samp_samp_diff_expr_plot"), {
+        req(input$x_axis_type == "Gene")
+        el <- plotly::event_data("plotly_click", source = "samp_samp_diff_expr_plot")
+        selected <- el$customdata
+        shinyWidgets::updatePickerInput(session, "x_axis_var", selected = selected)
+        showNotification(glue("Selected gene {selected}"))
+    })
 }

@@ -141,6 +141,14 @@ has_cell_metadata <- function(dataset) {
     !is.null(get_mc_data(dataset, "cell_metadata"))
 }
 
+has_samples <- function(dataset) {
+    if (!has_cell_metadata(dataset)) {
+        return(FALSE)
+    }
+    cell_md <- get_mc_data(dataset, "cell_metadata")
+    return(rlang::has_name(cell_md, "samp_id"))
+}
+
 calc_samp_mc_count <- function(dataset) {
     metadata <- get_mc_data(dataset, "cell_metadata")
     samp_mc_count <- metadata %>%

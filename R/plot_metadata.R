@@ -317,6 +317,8 @@ plot_sample_scatter <- function(dataset,
             select(metacell, cell_type) %>%
             filter(cell_type %in% cell_types) %>%
             pull(metacell)
+    } else {
+        selected_mc <- metacell_types$metacell
     }
 
     df <- metadata %>%

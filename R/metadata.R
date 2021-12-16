@@ -109,11 +109,18 @@ update_metadata_colors <- function(project,
 #'
 #' @param cell_metadata data frame with a column named "cell_id" with
 #' the cell id and other metadata columns, or a name of a delimited file which
-#' contains such data frame.
+#' contains such data frame. For activating the "Samples" tab, the data frame should have an additional
+#' column named "samp_id" with a sample identifier per cell (e.g., batch id, patient etc.)
 #' @param cell_to_metacell data frame with a column named "cell_id" with cell id and
 #' another column named "metacell" with the metacell the cell is part of, or a
 #' name of a delimited file which contains such data frame.
 #' @param summarise_md summarise cell metadata to the metacell level.
+#'
+#' @description
+#' Import metadata which is at the cell level to MCView. The metadata can be summarised to the metacell level
+#' by setting \code{summarise_md} to TRUE, in which case it could be shown at the "Genes" and "Markers" tabs.
+#' In order to view data at the samples level, an additional sample identifier shuold be given as a column named
+#' "samp_id" in the \code{cell_metadata} data frame.
 #'
 #' @inheritParams cell_metadata_to_metacell
 #'

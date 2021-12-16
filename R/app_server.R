@@ -171,4 +171,13 @@ app_server <- function(input, output, session) {
             download_project(file, project)
         }
     )
+
+    # Rprof(strftime(Sys.time(), "%Y-%m-%d-%H-%M-%S.Rprof"),
+    #     interval = 0.01, line.profiling = TRUE,
+    #     gc.profiling = FALSE, memory.profiling = FALSE
+    # )
+
+    # onStop(function() {
+    #     Rprof(NULL)
+    # })
 }
