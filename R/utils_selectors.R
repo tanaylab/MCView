@@ -2,6 +2,7 @@ cell_type_selector <- function(dataset, ns, id = "selected_cell_types", label = 
     renderUI({
         cell_types_hex <- col2hex(get_cell_type_colors(dataset(), cell_type_colors))
         cell_types <- names(get_cell_type_colors(dataset(), cell_type_colors))
+
         if (!is.null(selected) && selected == "all") {
             selected <- cell_types
         }
@@ -72,7 +73,7 @@ render_axis_select_ui <- function(axis, title, md_choices, md_selected, selected
             shinyWidgets::pickerInput(
                 ns(glue("{axis}_var")),
                 title,
-                choices = gene_names,
+                choices = gene_names(dataset()),
                 selected = selected_gene,
                 multiple = FALSE,
                 options = picker_options
@@ -97,7 +98,7 @@ top_correlated_selector <- function(gene_id, id, type_id, input, output, session
         req(input[[type_id]] == "Gene")
         req(input[[gene_id]])
         gene <- input[[gene_id]]
-        req(gene %in% gene_names)
+        req(gene %in% gene_names(dataset()))
         input_ids <- c(ns(glue("select_top_cor_{id}_x")), ns(glue("select_top_cor_{id}_y")), ns(glue("select_top_cor_{id}_color")), ns(glue("select_top_cor_{id}_proj2d")))
         tagList(
             selectInput(
@@ -150,7 +151,7 @@ axis_vars_ok <- function(dataset, input) {
         var <- input[[glue("{v}_var")]]
         if (type == "Metadata" && (var %in% c(colnames(metadata), "None", "Cell type"))) {
             return(TRUE)
-        } else if (type == "Gene" && var %in% gene_names) {
+        } else if (type == "Gene" && var %in% gene_names(dataset)) {
             return(TRUE)
         } else if (type == "Cell type" && (var %in% names(get_cell_type_colors(dataset)))) {
             return(TRUE)

@@ -364,7 +364,7 @@ plot_sample_scatter <- function(dataset,
             select(-any_of(x_var)) %>%
             left_join(get_var_md(x_var, x_name, "x_str"), by = "samp_id")
     } else if (x_type == "Gene") {
-        req(x_var %in% gene_names)
+        req(x_var %in% gene_names(dataset))
         egc_x <- get_samples_gene_egc(x_var, dataset, selected_mc) + egc_epsilon
         df <- df %>%
             mutate(!!x_var := egc_x[df$samp_id]) %>%
@@ -385,7 +385,7 @@ plot_sample_scatter <- function(dataset,
             select(-any_of(y_var)) %>%
             left_join(get_var_md(y_var, y_name, "y_str"), by = "samp_id")
     } else if (y_type == "Gene") {
-        req(y_var %in% gene_names)
+        req(y_var %in% gene_names(dataset))
         egc_y <- get_samples_gene_egc(y_var, dataset, selected_mc) + egc_epsilon
         df <- df %>%
             mutate(!!y_var := egc_y[df$samp_id]) %>%
@@ -433,7 +433,7 @@ plot_sample_scatter <- function(dataset,
                 color_var_type <- "discrete"
             }
         } else if (color_type == "Gene") {
-            req(color_var %in% gene_names)
+            req(color_var %in% gene_names(dataset))
             egc_color <- get_samples_gene_egc(color_var, dataset, selected_mc) + egc_epsilon
             df <- df %>%
                 mutate(expression = log2(egc_color[df$samp_id]))

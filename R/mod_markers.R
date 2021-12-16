@@ -113,7 +113,8 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
             input$selected_cell_types,
             metacell_types(),
             force_cell_type = input$force_cell_type,
-            mode = input$mode
+            mode = input$mode,
+            notify_var_genes = TRUE
         )
         markers_matrix(mat)
 
@@ -177,7 +178,8 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
             input$selected_cell_types,
             metacell_types(),
             force_cell_type = input$force_cell_type,
-            mode = input$mode
+            mode = input$mode,
+            notify_var_genes = TRUE
         )
 
         markers_matrix(mat)
@@ -225,9 +227,10 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
     }) %>% bindCache(dataset(), markers_matrix(), metacell_types(), cell_type_colors(), lfp_range(), input$plot_legend, input$selected_md)
 }
 
-get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_types = NULL, force_cell_type = TRUE, mode = "Markers") {
+get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_types = NULL, force_cell_type = TRUE, mode = "Markers", notify_var_genes = FALSE) {
     if (mode == "Inner-folds") {
         mc_fp <- get_mc_data(dataset, "inner_fold_mat")
+        req(mc_fp)
         mc_fp <- as.matrix(mc_fp[Matrix::rowSums(mc_fp) > 0, ])
         mc_fp <- mc_fp[intersect(markers, rownames(mc_fp)), ]
         epsilon <- 1e-5
@@ -243,7 +246,7 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
     }
 
     if (ncol(mat) > 1) {
-        mc_order <- order_mc_by_most_var_genes(mat, force_cell_type = force_cell_type, metacell_types = metacell_types, epsilon = epsilon)
+        mc_order <- order_mc_by_most_var_genes(mat, force_cell_type = force_cell_type, metacell_types = metacell_types, epsilon = epsilon, notify_var_genes = notify_var_genes)
         mat <- mat[, mc_order]
     }
 
@@ -252,6 +255,10 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
 
 get_marker_genes <- function(dataset, mode = "Markers") {
     if (mode == "Inner-folds") {
+        if (is.null(get_mc_data(dataset, "inner_fold_mat"))) {
+            showNotification(glue("Inner-fold matrix was not computed. Please compute it in python using the metacells package and rerun the import"), type = "error")
+            req(FALSE)
+        }
         return(get_mc_data(dataset, "marker_genes_inner_fold"))
     } else {
         return(get_markers(dataset))
