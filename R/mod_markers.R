@@ -83,8 +83,8 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
     lfp_range <- reactiveVal()
 
     output$cell_type_list <- renderUI({
-        cell_types_hex <- col2hex(get_cell_type_colors(dataset()))
-        cell_types <- names(get_cell_type_colors(dataset()))
+        cell_types_hex <- col2hex(get_cell_type_colors(dataset(), cell_type_colors()))
+        cell_types <- names(get_cell_type_colors(dataset(), cell_type_colors()))
         shinyWidgets::pickerInput(ns("selected_cell_types"), "Cell types",
             choices = cell_types,
             selected = cell_types,
