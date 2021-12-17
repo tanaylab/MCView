@@ -150,7 +150,8 @@ mod_samples_server <- function(input, output, session, dataset, metacell_types, 
     })
 
     # Projection plots
-    output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, values, metacell_types, cell_type_colors, source = "proj_mc_plot_gene_tab")
+    output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, values, metacell_types, cell_type_colors, source = "proj_mc_plot_gene_tab") %>%
+        bindCache(dataset(), input$color_proj, metacell_types(), cell_type_colors(), input$point_size, input$stroke, input$min_edge_size, input$set_range, input$show_selected_metacells, input$metacell1, input$metacell2, input$proj_stat, input$expr_range, input$lfp, input$samp1)
 
     # Info box
     output$sample_info_box <- renderUI({
@@ -217,18 +218,18 @@ mod_samples_server <- function(input, output, session, dataset, metacell_types, 
         req(input$samp1)
         req(input$samp2)
         calc_samp_samp_gene_df(dataset(), input$samp1, input$samp2, metacell_types(), cell_types = input$selected_cell_types)
-    })
+    }) %>% bindCache(dataset(), input$selected_cell_type, input$samp1, input$samp2, metacell_types())
 
     output$plot_samp_samp_gene_scatter <- render_mc_mc_gene_plotly(input, output, session, ns, dataset, samp_samp_scatter_df, metacell_names(), cell_type_colors(), mode = "Samples")
 
     output$diff_expr_table <- render_mc_mc_gene_diff_table(input, output, session, ns, dataset, samp_samp_scatter_df)
 
     # Metadata/Metadata plots
-    output$x_axis_select <- render_axis_select_ui("x_axis", "X axis", md_choices = dataset_cell_metadata_fields_numeric(dataset()), md_selected = dataset_cell_metadata_fields_numeric(dataset())[1], selected_gene = default_gene1, input = input, ns = ns, dataset = dataset, cell_types = sort(names(get_cell_type_colors(dataset())), decreasing = TRUE))
+    output$x_axis_select <- render_axis_select_ui("x_axis", "X axis", md_choices = dataset_cell_metadata_fields_numeric(dataset()), md_selected = dataset_cell_metadata_fields_numeric(dataset())[1], selected_gene = default_gene1, input = input, ns = ns, dataset = dataset, cell_types = sort(names(get_cell_type_colors(dataset())), decreasing = TRUE)) %>% bindCache(dataset(), ns, ns("x_axis"), input$x_axis_type)
 
-    output$y_axis_select <- render_axis_select_ui("y_axis", "Y axis", md_choices = dataset_cell_metadata_fields_numeric(dataset()), md_selected = dataset_cell_metadata_fields_numeric(dataset())[2], selected_gene = default_gene2, input = input, ns = ns, dataset = dataset, cell_types = sort(names(get_cell_type_colors(dataset())), decreasing = TRUE))
+    output$y_axis_select <- render_axis_select_ui("y_axis", "Y axis", md_choices = dataset_cell_metadata_fields_numeric(dataset()), md_selected = dataset_cell_metadata_fields_numeric(dataset())[2], selected_gene = default_gene2, input = input, ns = ns, dataset = dataset, cell_types = sort(names(get_cell_type_colors(dataset())), decreasing = TRUE)) %>% bindCache(dataset(), ns, ns("y_axis"), input$y_axis_type)
 
-    output$color_by_select <- render_axis_select_ui("color_by", "Color", md_choices = c("None", dataset_cell_metadata_fields(dataset())), md_selected = "None", selected_gene = default_gene1, input = input, ns = ns, dataset = dataset, cell_types = sort(names(get_cell_type_colors(dataset())), decreasing = TRUE))
+    output$color_by_select <- render_axis_select_ui("color_by", "Color", md_choices = c("None", dataset_cell_metadata_fields(dataset())), md_selected = "None", selected_gene = default_gene1, input = input, ns = ns, dataset = dataset, cell_types = sort(names(get_cell_type_colors(dataset())), decreasing = TRUE)) %>% bindCache(dataset(), ns, ns("color_by"), input$color_by_type)
 
     output$please_select_cell_types <- renderPrint({
         if (input$x_axis_type == "Gene" || input$y_axis_type == "Gene" || input$color_by_type == "Gene") {
@@ -261,7 +262,7 @@ mod_samples_server <- function(input, output, session, dataset, metacell_types, 
         req(input$gene_gene_stroke)
         get_samp_metadata(dataset())
 
-        req(axis_vars_ok(dataset(), input))
+        req(axis_vars_ok(dataset(), input, "cell_metadata"))
 
         color_var <- input$color_by_var
         if (input$color_by_var == "Cell type") {
@@ -300,7 +301,7 @@ mod_samples_server <- function(input, output, session, dataset, metacell_types, 
         }
 
         return(fig)
-    })
+    }) %>% bindCache(dataset(), input$x_axis_var, input$x_axis_type, input$y_axis_var, input$y_axis_type, input$color_by_type, input$color_by_var, metacell_types(), cell_type_colors(), input$gene_gene_point_size, input$gene_gene_stroke, input$selected_cell_types)
 
     sample_click_observer("samp_samp_plot", session, "samp1")
     observeEvent(plotly::event_data("plotly_click", source = "samp_samp_diff_expr_plot"), {

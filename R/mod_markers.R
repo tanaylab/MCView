@@ -224,7 +224,7 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
             mid_color = mid_color,
             metadata = metadata
         )
-    }) %>% bindCache(dataset(), markers_matrix(), metacell_types(), cell_type_colors(), lfp_range(), input$plot_legend, input$selected_md)
+    }) %>% bindCache(dataset(), markers_matrix(), metacell_types(), cell_type_colors(), lfp_range(), input$plot_legend, input$selected_md, input$mode)
 }
 
 get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_types = NULL, force_cell_type = TRUE, mode = "Markers", notify_var_genes = FALSE) {

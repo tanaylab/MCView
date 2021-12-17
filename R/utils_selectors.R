@@ -144,8 +144,8 @@ top_correlated_selectors <- function(input, output, session, dataset, ns, button
     top_correlated_selector("color_proj_gene", "color_proj", "color_proj", input, output, session, dataset, ns, button_labels = button_labels)
 }
 
-axis_vars_ok <- function(dataset, input) {
-    metadata <- get_mc_data(dataset, "cell_metadata")
+axis_vars_ok <- function(dataset, input, md_id) {
+    metadata <- get_mc_data(dataset, md_id)
     vars_ok <- purrr::map_lgl(c("x_axis", "y_axis", "color_by"), function(v) {
         type <- input[[glue("{v}_type")]]
         var <- input[[glue("{v}_var")]]

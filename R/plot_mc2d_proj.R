@@ -221,7 +221,7 @@ render_2d_plotly <- function(input, output, session, dataset, values, metacell_t
             if (input$proj_stat == "enrichment") {
                 req(input$lfp)
             }
-            if (input$set_range) {
+            if (!is.null(input$set_range) && input$set_range) {
                 min_expr <- input$expr_range[1]
                 max_expr <- input$expr_range[2]
             } else {

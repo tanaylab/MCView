@@ -119,7 +119,7 @@ mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, 
                 shinyWidgets::pickerInput(
                     ns("color_proj_metadata"),
                     label = "Color by:",
-                    choices = c("Cell type", dataset_metadata_fields(dataset())),
+                    choices = dataset_metadata_fields(dataset()),
                     selected = dataset_metadata_fields(dataset())[1],
                     width = "70%",
                     multiple = FALSE,
@@ -143,7 +143,8 @@ mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, 
     projection_selectors(ns, dataset, output, input)
 
     # Projection plots
-    output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, values, metacell_types, cell_type_colors, source = "proj_mc_plot_gene_tab")
+    output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, values, metacell_types, cell_type_colors, source = "proj_mc_plot_gene_tab") %>%
+        bindCache(dataset(), input$color_proj, metacell_types(), cell_type_colors(), input$point_size, input$stroke, input$min_edge_size, input$set_range, input$show_selected_metacells, input$metacell1, input$metacell2, input$proj_stat, input$expr_range, input$lfp, input$color_proj_gene, input$color_proj_metadata)
 
     plot_gene_gene_mc_proxy <- plotly::plotlyProxy(ns("md_md_plot"), session)
 
@@ -157,11 +158,11 @@ mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, 
     connect_gene_plots(input, output, session, ns, source = "proj_mc_plot_gene_tab")
 
     # Metadata/Metadata plots
-    output$x_axis_select <- render_axis_select_ui("x_axis", "X axis", md_choices = dataset_metadata_fields(dataset()), md_selected = dataset_metadata_fields(dataset())[1], selected_gene = default_gene1, input = input, ns = ns, dataset = dataset)
+    output$x_axis_select <- render_axis_select_ui("x_axis", "X axis", md_choices = dataset_metadata_fields(dataset()), md_selected = dataset_metadata_fields(dataset())[1], selected_gene = default_gene1, input = input, ns = ns, dataset = dataset) %>% bindCache(dataset(), ns, ns("x_axis"), input$x_axis_type)
 
-    output$y_axis_select <- render_axis_select_ui("y_axis", "Y axis", md_choices = dataset_metadata_fields(dataset()), md_selected = dataset_metadata_fields(dataset())[2], selected_gene = default_gene2, input = input, ns = ns, dataset = dataset)
+    output$y_axis_select <- render_axis_select_ui("y_axis", "Y axis", md_choices = dataset_metadata_fields(dataset()), md_selected = dataset_metadata_fields(dataset())[2], selected_gene = default_gene2, input = input, ns = ns, dataset = dataset) %>% bindCache(dataset(), ns, ns("y_axis"), input$y_axis_type)
 
-    output$color_by_select <- render_axis_select_ui("color_by", "Color", md_choices = c("Cell type", dataset_metadata_fields(dataset())), md_selected = "Cell type", selected_gene = default_gene1, input = input, ns = ns, dataset = dataset)
+    output$color_by_select <- render_axis_select_ui("color_by", "Color", md_choices = c("Cell type", dataset_metadata_fields(dataset())), md_selected = "Cell type", selected_gene = default_gene1, input = input, ns = ns, dataset = dataset) %>% bindCache(dataset(), ns, ns("color_by"), input$color_by_type)
 
     output$plot_gene_gene_mc <- plotly::renderPlotly({
         req(input$x_axis_var)
@@ -172,8 +173,7 @@ mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, 
         req(input$color_by_type)
         req(input$gene_gene_point_size)
         req(input$gene_gene_stroke)
-
-        req(axis_vars_ok(dataset(), input))
+        req(axis_vars_ok(dataset(), input, "metadata"))
 
         color_var <- input$color_by_var
         if (input$color_by_var == "Cell type") {
@@ -211,7 +211,7 @@ mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, 
         }
 
         return(fig)
-    })
+    }) %>% bindCache(dataset(), input$x_axis_var, input$x_axis_type, input$y_axis_var, input$y_axis_type, input$color_by_type, input$color_by_var, metacell_types(), cell_type_colors(), input$gene_gene_point_size, input$gene_gene_stroke)
 }
 
 
