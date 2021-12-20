@@ -106,7 +106,7 @@ get_top_marks <- function(feat) {
 #'
 #' @noRd
 #' @return named vector with metacell order
-order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers = FALSE, force_cell_type = FALSE, metacell_types = NULL, order_each_cell_type = FALSE, epsilon = 0) {
+order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers = FALSE, force_cell_type = FALSE, metacell_types = NULL, order_each_cell_type = FALSE, epsilon = 0, notify_var_genes = FALSE) {
     if (filter_markers) {
         gene_folds <- filter_markers_mat(gene_folds)
     }
@@ -120,6 +120,10 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
     } else {
         main_mark <- marks[1]
         second_mark <- marks[2]
+    }
+
+    if (notify_var_genes) {
+        showNotification(glue("Ordering metacells based on {main_mark} vs {second_mark}"))
     }
 
     if (ncol(feat) == 1) {

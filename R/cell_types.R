@@ -146,6 +146,9 @@ parse_metacell_types <- function(file, metacells = NULL) {
             rename(mc_age = age)
     }
 
+    # metacell_types <- metacell_types %>%
+    #     mutate(cell_type = forcats::fct_explicit_na(cell_type))
+
     metacell_types <- metacell_types %>%
         mutate(metacell = as.character(metacell))
 

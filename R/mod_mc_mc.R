@@ -174,7 +174,7 @@ mod_mc_mc_server <- function(input, output, session, dataset, metacell_types, ce
         )
     })
 
-    # MC/MC plots
+    # Differential expression
     output$plot_mc_mc_gene_scatter <- render_mc_mc_gene_plotly(input, output, session, ns, dataset, mc_mc_gene_scatter_df, metacell_names(), cell_type_colors())
 
     output$diff_expr_table <- render_mc_mc_gene_diff_table(input, output, session, ns, dataset, mc_mc_gene_scatter_df)
@@ -399,15 +399,6 @@ mod_mc_mc_server <- function(input, output, session, dataset, metacell_types, ce
     outputOptions(output, "plot_mc_mc_gene_scatter", priority = 5)
     outputOptions(output, "plot_metacell1_flow", priority = 4)
     outputOptions(output, "plot_mc_traj", priority = 3)
-}
-
-metacell_click_observer <- function(source_id, session) {
-    observeEvent(plotly::event_data("plotly_click", source = source_id), {
-        el <- plotly::event_data("plotly_click", source = source_id)
-        metacell <- el$customdata
-        updateSelectInput(session, "metacell1", selected = metacell)
-        showNotification(glue("Selected Metacell A #{metacell}"))
-    })
 }
 
 metacell_selectors <- function(input, output, session, dataset, ns, metacell_names, metacell_types, cell_type_colors, groupA, groupB) {

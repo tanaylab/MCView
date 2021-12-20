@@ -82,31 +82,9 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
     markers_matrix <- reactiveVal()
     lfp_range <- reactiveVal()
 
-    output$cell_type_list <- renderUI({
-        cell_types_hex <- col2hex(get_cell_type_colors(dataset(), cell_type_colors()))
-        cell_types <- names(get_cell_type_colors(dataset(), cell_type_colors()))
-        shinyWidgets::pickerInput(ns("selected_cell_types"), "Cell types",
-            choices = cell_types,
-            selected = cell_types,
-            multiple = TRUE,
-            options = list(`actions-box` = TRUE, `dropup-auto` = FALSE),
-            choicesOpt = list(
-                style = paste0("color: ", cell_types_hex, ";")
-            )
-        )
-    })
+    output$cell_type_list <- cell_type_selector(dataset, ns, id = "selected_cell_types", label = "Cell types", selected = "all", cell_type_colors = cell_type_colors())
 
-    output$metadata_list <- renderUI({
-        metadata <- get_mc_data(dataset(), "metadata")
-        req(metadata)
-        metadata_fields <- colnames(metadata)[-1]
-        shinyWidgets::pickerInput(ns("selected_md"), "Metadata",
-            choices = metadata_fields,
-            selected = NULL,
-            multiple = TRUE,
-            options = list(`actions-box` = TRUE, `dropup-auto` = FALSE)
-        )
-    })
+    output$metadata_list <- metadata_selector(dataset, ns, id = "selected_md", label = "Metadata", metadata_id = "metadata")
 
     output$marker_genes_list <- renderUI({
         tagList(
@@ -135,7 +113,8 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
             input$selected_cell_types,
             metacell_types(),
             force_cell_type = input$force_cell_type,
-            mode = input$mode
+            mode = input$mode,
+            notify_var_genes = TRUE
         )
         markers_matrix(mat)
 
@@ -199,7 +178,8 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
             input$selected_cell_types,
             metacell_types(),
             force_cell_type = input$force_cell_type,
-            mode = input$mode
+            mode = input$mode,
+            notify_var_genes = TRUE
         )
 
         markers_matrix(mat)
@@ -244,10 +224,10 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
             mid_color = mid_color,
             metadata = metadata
         )
-    }) %>% bindCache(dataset(), markers_matrix(), metacell_types(), cell_type_colors(), lfp_range(), input$plot_legend, input$selected_md)
+    }) %>% bindCache(dataset(), markers_matrix(), metacell_types(), cell_type_colors(), lfp_range(), input$plot_legend, input$selected_md, input$mode)
 }
 
-get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_types = NULL, force_cell_type = TRUE, mode = "Markers") {
+get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_types = NULL, force_cell_type = TRUE, mode = "Markers", notify_var_genes = FALSE) {
     if (mode == "Inner-folds") {
         mc_fp <- get_mc_data(dataset, "inner_fold_mat")
         req(mc_fp)
@@ -266,7 +246,7 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
     }
 
     if (ncol(mat) > 1) {
-        mc_order <- order_mc_by_most_var_genes(mat, force_cell_type = force_cell_type, metacell_types = metacell_types, epsilon = epsilon)
+        mc_order <- order_mc_by_most_var_genes(mat, force_cell_type = force_cell_type, metacell_types = metacell_types, epsilon = epsilon, notify_var_genes = notify_var_genes)
         mat <- mat[, mc_order]
     }
 
@@ -275,7 +255,7 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
 
 get_marker_genes <- function(dataset, mode = "Markers") {
     if (mode == "Inner-folds") {
-        if (is.null(get_mc_data(dataset, "inner_fold_mat"))){
+        if (is.null(get_mc_data(dataset, "inner_fold_mat"))) {
             showNotification(glue("Inner-fold matrix was not computed. Please compute it in python using the metacells package and rerun the import"), type = "error")
             req(FALSE)
         }

@@ -78,3 +78,63 @@ get_cell_types_egc <- function(cell_types, metacell_types, dataset, mat = NULL) 
 
     return(ct_egc)
 }
+
+get_samples_mat <- function(cell_types, metacell_types, dataset) {
+    mc_mat <- get_mc_data(dataset, "mc_mat")
+
+    # samp_mc_count <- get_samp_mc_count(dataset)
+    # samp_mc_count <- samp_mc_count[, colnames(samp_mc_count) != "-1"]
+
+    mc_types <- metacell_types %>%
+        filter(cell_type %in% cell_types) %>%
+        select(metacell, cell_type) %>%
+        deframe()
+
+    mc_mat <- mc_mat[, names(mc_types)]
+    samp_mc_frac <- get_samp_mc_frac(dataset)[, names(mc_types)]
+    samp_mc_frac <- samp_mc_frac / rowSums(samp_mc_frac)
+
+    samp_mat <- mc_mat %*% t(samp_mc_frac)
+
+    # samp_egc <- mc_egc %*% t(samp_mc_frac)
+    # samp_mc_count <- samp_mc_count[, names(mc_types)]
+    # mc_samp_frac <- t(t(samp_mc_count) / colSums(samp_mc_count))
+
+    # samp_mat <- mc_mat %*% t(mc_samp_frac)
+
+    return(samp_mat)
+}
+
+get_samples_egc <- function(cell_types, metacell_types, dataset) {
+    mc_egc <- get_mc_egc(dataset)
+
+    mc_types <- metacell_types %>%
+        filter(cell_type %in% cell_types) %>%
+        select(metacell, cell_type) %>%
+        deframe()
+
+    mc_egc <- mc_egc[, names(mc_types)]
+    samp_mc_frac <- get_samp_mc_frac(dataset)[, names(mc_types)]
+    samp_mc_frac <- samp_mc_frac / rowSums(samp_mc_frac)
+
+    samp_egc <- mc_egc %*% t(samp_mc_frac)
+
+    return(samp_egc)
+}
+
+get_samples_gene_egc <- function(gene, dataset, metacells = NULL) {
+    g <- get_gene_egc(gene, dataset)
+
+    samp_mc_frac <- get_samp_mc_frac(dataset)
+    if (!is.null(metacells)) {
+        g <- g[metacells]
+        samp_mc_frac <- samp_mc_frac[, metacells]
+        samp_mc_frac <- samp_mc_frac / rowSums(samp_mc_frac)
+        samp_mc_frac[is.na(samp_mc_frac)] <- 0
+    }
+
+    samp_egc <- samp_mc_frac %*% g
+    samp_egc <- setNames(samp_egc[, 1], rownames(samp_egc))
+
+    return(samp_egc)
+}

@@ -221,7 +221,7 @@ render_2d_plotly <- function(input, output, session, dataset, values, metacell_t
             if (input$proj_stat == "enrichment") {
                 req(input$lfp)
             }
-            if (input$set_range) {
+            if (!is.null(input$set_range) && input$set_range) {
                 min_expr <- input$expr_range[1]
                 max_expr <- input$expr_range[2]
             } else {
@@ -307,6 +307,9 @@ render_2d_plotly <- function(input, output, session, dataset, values, metacell_t
         } else if (input$color_proj == "Gene") {
             req(input$color_proj_gene)
             fig <- plot_2d_gene(input$color_proj_gene)
+        } else if (input$color_proj == "Sample") {
+            req(input$samp1)
+            fig <- plot_2d_metadata(paste0("samp_id: ", input$samp1))
         }
 
         fig <- fig %>% plotly::event_register("plotly_restyle")

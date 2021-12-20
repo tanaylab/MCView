@@ -23,3 +23,4 @@ tests/testthat/PBMC/*
 tests/testthat/tmp/*
 check/
 settings.json
+atlas_proj/*

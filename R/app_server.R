@@ -39,6 +39,7 @@ app_server <- function(input, output, session) {
     load_tab("manifold", mod_manifold_server)
     load_tab("gene_mc", mod_gene_mc_server)
     load_tab("markers", mod_markers_server)
+    load_tab("samples", mod_samples_server)
     load_tab("mc_mc", mod_mc_mc_server)
     load_tab("annotate", mod_annotate_mc_server)
 
@@ -81,6 +82,16 @@ app_server <- function(input, output, session) {
                     "nextLabel" = "next",
                     "prevLabel" = "back",
                     steps = get_tab_steps("metacells", "mc_mc_ui_1")
+                )
+            )
+        } else if (input$tab_sidebar == "mc_mc") {
+            rintrojs::introjs(session,
+                options = list(
+                    "showProgress" = TRUE,
+                    "showBullets" = FALSE,
+                    "nextLabel" = "next",
+                    "prevLabel" = "back",
+                    steps = get_tab_steps("samples", "samples_ui_1")
                 )
             )
         } else if (input$tab_sidebar == "annotate") {
@@ -160,4 +171,13 @@ app_server <- function(input, output, session) {
             download_project(file, project)
         }
     )
+
+    # Rprof(strftime(Sys.time(), "%Y-%m-%d-%H-%M-%S.Rprof"),
+    #     interval = 0.01, line.profiling = TRUE,
+    #     gc.profiling = FALSE, memory.profiling = FALSE
+    # )
+
+    # onStop(function() {
+    #     Rprof(NULL)
+    # })
 }

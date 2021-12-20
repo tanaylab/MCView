@@ -25,7 +25,7 @@ mod_gene_mc_ui <- function(id) {
                         startOpen = FALSE,
                         width = 25,
                         id = ns("gene_projection_sidebar"),
-                        selectInput(ns("proj_stat"), label = "Statistic", choices = c("Expression" = "expression", "Enrichment" = "enrichment"), selected = "Expression", multiple = FALSE, selectize = FALSE),
+                        uiOutput(ns("proj_stat_ui")),
                         uiOutput(ns("set_range_ui")),
                         uiOutput(ns("expr_range_ui")),
                         uiOutput(ns("enrich_range_ui")),
@@ -119,7 +119,7 @@ mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, 
                 shinyWidgets::pickerInput(
                     ns("color_proj_metadata"),
                     label = "Color by:",
-                    choices = c("Cell type", dataset_metadata_fields(dataset())),
+                    choices = dataset_metadata_fields(dataset()),
                     selected = dataset_metadata_fields(dataset())[1],
                     width = "70%",
                     multiple = FALSE,
@@ -139,48 +139,12 @@ mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, 
         }
     })
 
-    # Expression range
-    output$set_range_ui <- renderUI({
-        req(input$proj_stat == "expression")
-        checkboxInput(ns("set_range"), "Manual range", value = FALSE)
-    })
-
-    output$expr_range_ui <- renderUI({
-        req(input$proj_stat == "expression")
-        req(input$set_range)
-        shinyWidgets::numericRangeInput(ns("expr_range"), "Expression range", c(-18, -5), width = "80%", separator = " to ")
-    })
-
-    # Enrichment range
-    output$enrich_range_ui <- renderUI({
-        req(input$proj_stat == "enrichment")
-        shinyWidgets::numericRangeInput(ns("lfp"), "Enrichment range", c(-3, 3), width = "80%", separator = " to ")
-    })
-
-    # Point size selectors
-    output$point_size_ui <- renderUI({
-        numericInput(ns("point_size"), label = "Point size", value = initial_proj_point_size(dataset()), min = 0.1, max = 3, step = 0.1)
-    })
-
-    output$gene_gene_point_size_ui <- renderUI({
-        numericInput(ns("gene_gene_point_size"), label = "Point size", value = initial_scatters_point_size(dataset()), min = 0.05, max = 3, step = 0.1)
-    })
-
-    output$gene_gene_stroke_ui <- renderUI({
-        numericInput(ns("gene_gene_stroke"), label = "Stroke width", value = initial_scatters_stroke(dataset()), min = 0, max = 3, step = 0.01)
-    })
-
-    output$stroke_ui <- renderUI({
-        numericInput(ns("stroke"), label = "Stroke width", value = initial_proj_stroke(dataset()), min = 0, max = 3, step = 0.01)
-    })
-
-    # Minimal edge length selector
-    output$edge_distance_ui <- renderUI({
-        sliderInput(ns("min_edge_size"), label = "Min edge length", min = 0, max = 0.3, value = min_edge_length(dataset()), step = 0.001)
-    })
+    scatter_selectors(ns, dataset, output)
+    projection_selectors(ns, dataset, output, input)
 
     # Projection plots
-    output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, values, metacell_types, cell_type_colors, source = "proj_mc_plot_gene_tab")
+    output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, values, metacell_types, cell_type_colors, source = "proj_mc_plot_gene_tab") %>%
+        bindCache(dataset(), input$color_proj, metacell_types(), cell_type_colors(), input$point_size, input$stroke, input$min_edge_size, input$set_range, input$show_selected_metacells, input$metacell1, input$metacell2, input$proj_stat, input$expr_range, input$lfp, input$color_proj_gene, input$color_proj_metadata)
 
     plot_gene_gene_mc_proxy <- plotly::plotlyProxy(ns("md_md_plot"), session)
 
@@ -194,27 +158,11 @@ mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, 
     connect_gene_plots(input, output, session, ns, source = "proj_mc_plot_gene_tab")
 
     # Metadata/Metadata plots
-    output$x_axis_select <- render_axis_select_ui("x_axis", "X axis", md_choices = dataset_metadata_fields(dataset()), md_selected = dataset_metadata_fields(dataset())[1], selected_gene = default_gene1, input = input, ns = ns, dataset = dataset)
+    output$x_axis_select <- render_axis_select_ui("x_axis", "X axis", md_choices = dataset_metadata_fields(dataset()), md_selected = dataset_metadata_fields(dataset())[1], selected_gene = default_gene1, input = input, ns = ns, dataset = dataset) %>% bindCache(dataset(), ns, ns("x_axis"), input$x_axis_type)
 
-    output$y_axis_select <- render_axis_select_ui("y_axis", "Y axis", md_choices = dataset_metadata_fields(dataset()), md_selected = dataset_metadata_fields(dataset())[2], selected_gene = default_gene2, input = input, ns = ns, dataset = dataset)
+    output$y_axis_select <- render_axis_select_ui("y_axis", "Y axis", md_choices = dataset_metadata_fields(dataset()), md_selected = dataset_metadata_fields(dataset())[2], selected_gene = default_gene2, input = input, ns = ns, dataset = dataset) %>% bindCache(dataset(), ns, ns("y_axis"), input$y_axis_type)
 
-    output$color_by_select <- render_axis_select_ui("color_by", "Color", md_choices = c("Cell type", dataset_metadata_fields(dataset())), md_selected = "Cell type", selected_gene = default_gene1, input = input, ns = ns, dataset = dataset)
-
-    axis_vars_ok <- function(dataset, input) {
-        metadata <- get_mc_data(dataset, "metadata")
-        vars_ok <- purrr::map_lgl(c("x_axis", "y_axis", "color_by"), function(v) {
-            type <- input[[glue("{v}_type")]]
-            var <- input[[glue("{v}_var")]]
-            if (type == "Metadata" && (var %in% c(colnames(metadata), "Cell type"))) {
-                return(TRUE)
-            } else if (type == "Gene" && var %in% gene_names(dataset())) {
-                return(TRUE)
-            } else {
-                return(FALSE)
-            }
-        })
-        return(all(vars_ok))
-    }
+    output$color_by_select <- render_axis_select_ui("color_by", "Color", md_choices = c("Cell type", dataset_metadata_fields(dataset())), md_selected = "Cell type", selected_gene = default_gene1, input = input, ns = ns, dataset = dataset) %>% bindCache(dataset(), ns, ns("color_by"), input$color_by_type)
 
     output$plot_gene_gene_mc <- plotly::renderPlotly({
         req(input$x_axis_var)
@@ -225,8 +173,7 @@ mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, 
         req(input$color_by_type)
         req(input$gene_gene_point_size)
         req(input$gene_gene_stroke)
-
-        req(axis_vars_ok(dataset(), input))
+        req(axis_vars_ok(dataset(), input, "metadata"))
 
         color_var <- input$color_by_var
         if (input$color_by_var == "Cell type") {
@@ -264,108 +211,9 @@ mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, 
         }
 
         return(fig)
-    })
+    }) %>% bindCache(dataset(), input$x_axis_var, input$x_axis_type, input$y_axis_var, input$y_axis_type, input$color_by_type, input$color_by_var, metacell_types(), cell_type_colors(), input$gene_gene_point_size, input$gene_gene_stroke)
 }
 
-axis_selector <- function(axis, selected, ns) {
-    fluidRow(
-        column(
-            width = 9,
-            uiOutput(ns(glue("{axis}_select")))
-        ),
-        column(
-            width = 3,
-            shinyWidgets::prettyRadioButtons(
-                ns(glue("{axis}_type")),
-                label = "",
-                choices = c("Metadata", "Gene"),
-                inline = TRUE,
-                status = "danger",
-                fill = TRUE,
-                selected = selected
-            )
-        )
-    )
-}
-
-render_axis_select_ui <- function(axis, title, md_choices, md_selected, selected_gene, ns, input, dataset) {
-    picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
-
-    renderUI({
-        req(dataset())
-        req(input[[glue("{axis}_type")]])
-        if (input[[glue("{axis}_type")]] == "Metadata") {
-            shinyWidgets::pickerInput(
-                ns(glue("{axis}_var")),
-                title,
-                choices = md_choices,
-                selected = md_selected,
-                multiple = FALSE,
-                options = picker_options
-            )
-        } else if (input[[glue("{axis}_type")]] == "Gene") {
-            shinyWidgets::pickerInput(
-                ns(glue("{axis}_var")),
-                title,
-                choices = gene_names(dataset()),
-                selected = selected_gene,
-                multiple = FALSE,
-                options = picker_options
-            )
-        }
-    })
-}
-
-top_correlated_selector <- function(gene_id, id, type_id, input, output, session, dataset, ns) {
-    output[[glue("top_correlated_select_{id}")]] <- renderUI({
-        req(has_gg_mc_top_cor(project, dataset()))
-        req(input[[type_id]] == "Gene")
-        req(input[[gene_id]])
-        gene <- input[[gene_id]]
-        req(gene %in% gene_names(dataset()))
-        tagList(
-            selectInput(
-                ns(glue("selected_top_{id}")),
-                glue("Top correlated to {gene}:"),
-                choices = c(get_top_cor_gene(dataset(), gene, type = "pos"), rev(get_top_cor_gene(dataset(), gene, type = "neg"))),
-                selected = NULL,
-                size = 10,
-                selectize = FALSE
-            ),
-            shinyWidgets::actionGroupButtons(
-                c(ns(glue("select_top_cor_{id}_x")), ns(glue("select_top_cor_{id}_y")), ns(glue("select_top_cor_{id}_color")), ns(glue("select_top_cor_{id}_proj2d"))),
-                labels = c("X", "Y", "Color", "2D"), size = "sm", fullwidth = FALSE
-            ),
-            shiny::actionButton(
-                inputId = ns(glue("genecards_{id}")), label = glue("GeneCards: {gene}"),
-                size = "sm", onclick = glue("window.open('https://www.genecards.org/cgi-bin/carddisp.pl?gene={gene}')")
-            )
-        )
-    })
-    observeEvent(input[[glue("select_top_cor_{id}_x")]], {
-        req(input[["x_axis_type"]] == "Gene")
-        shinyWidgets::updatePickerInput(session, "x_axis_var", selected = input[[glue("selected_top_{id}")]])
-    })
-    observeEvent(input[[glue("select_top_cor_{id}_y")]], {
-        req(input[["y_axis_type"]] == "Gene")
-        shinyWidgets::updatePickerInput(session, "y_axis_var", selected = input[[glue("selected_top_{id}")]])
-    })
-    observeEvent(input[[glue("select_top_cor_{id}_color")]], {
-        req(input[["color_by_type"]] == "Gene")
-        shinyWidgets::updatePickerInput(session, "color_by_var", selected = input[[glue("selected_top_{id}")]])
-    })
-    observeEvent(input[[glue("select_top_cor_{id}_proj2d")]], {
-        req(input[["color_proj"]] == "Gene")
-        shinyWidgets::updatePickerInput(session, "color_proj_gene", selected = input[[glue("selected_top_{id}")]])
-    })
-}
-
-top_correlated_selectors <- function(input, output, session, dataset, ns) {
-    top_correlated_selector("x_axis_var", "x_axis", "x_axis_type", input, output, session, dataset, ns)
-    top_correlated_selector("y_axis_var", "y_axis", "y_axis_type", input, output, session, dataset, ns)
-    top_correlated_selector("color_by_var", "color_by", "color_by_type", input, output, session, dataset, ns)
-    top_correlated_selector("color_proj_gene", "color_proj", "color_proj", input, output, session, dataset, ns)
-}
 
 mod_gene_mc_plotly_observers <- function(input, session) {
     observeEvent(plotly::event_data("plotly_click", source = "mc_mc_plot"), {
