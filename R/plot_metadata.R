@@ -221,8 +221,7 @@ plot_mc_scatter <- function(dataset,
     df <- df %>%
         mutate(
             Metacell = paste0(
-                glue("{metacell}\n{x_str}\n{y_str}\n{color_str}\n"),
-                glue("Top genes: {`Top genes`}\n"),
+                glue("{metacell}\n{x_str}\n{y_str}\n{color_str}\nTop genes: {`Top genes`}\n"),                
                 ifelse(has_name(df, "Age"), glue("Metacell age (E[t]): {round(Age, digits=2)}"), "")
             )
         )
