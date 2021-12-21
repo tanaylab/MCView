@@ -72,7 +72,7 @@ get_cell_types_mat <- function(cell_types, metacell_types, dataset) {
 }
 
 get_cell_types_egc <- function(cell_types, metacell_types, dataset, mat = NULL) {
-    mat <- mat %||% get_cell_types_mat(cell_types, metacell_types)
+    mat <- mat %||% get_cell_types_mat(cell_types, metacell_types, dataset)
 
     ct_egc <- t(t(mat) / colSums(mat))
 
