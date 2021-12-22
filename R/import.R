@@ -17,9 +17,9 @@
 #' @param dataset name for the dataset, e.g. "PBMC"
 #' @param anndata_file path to \code{h5ad} file which contains the output of metacell2 pipeline (metacells python package).
 #' @param cell_type_field name of a field in the anndata \code{object$obs} which contains a cell type (optional).
-#' If the field doesn't exist and \code{metacell_types_file} are missing, MCView would cluster the
-#' metacell matrix using kmeans++ algorithm (from the \code{tglkmeans} package).
-#' If \code{metacell_types} parameter is set this field is ignored.
+#' If the field doesn't exist and \code{metacell_types_file} are missing, MCView would first look
+#' for a field named 'type', 'cell_type' or 'cluster' at \code{object$obs}, and if it doesn't exists
+#' MCView would cluster the metacell matrix using kmeans++ algorithm (from the \code{tglkmeans} package).
 #' @param metacell_types_file path to a tabular file (csv,tsv) with cell type assignement for
 #' each metacell. The file should have a column named "metacell" with the metacell ids and another
 #' column named "cell_type" or "cluster" with the cell type assignment. Metacell ids that do
@@ -44,6 +44,11 @@
 #' @param calc_gg_cor calculate top 30 correlated and anti-correlated genes for each gene. This computation can be heavy
 #' for large datasets or weaker machines, so you can set \code{calc_gg_cor=FALSE} to skip it. Note that then this feature
 #' would be missing from the app.
+#' @param atlas_project path to and \code{MCView} project which contains the atlas.
+#' @param atlas_dataset name of the atlas dataset
+#' @param copy_atlas copy atlas MCView to the current project. If FALSE - a symbolic link would be created instaed.
+#'
+#' @return invisibly returns an \code{AnnDataR6} object of the read \code{anndata_file}
 #'
 #'
 #' @examples
@@ -62,13 +67,16 @@
 import_dataset <- function(project,
                            dataset,
                            anndata_file,
-                           cell_type_field = "cluster",
+                           cell_type_field = NULL,
                            metacell_types_file = NULL,
                            cell_type_colors_file = NULL,
                            metadata_fields = NULL,
                            metadata = NULL,
                            metadata_colors = NULL,
-                           calc_gg_cor = TRUE) {
+                           calc_gg_cor = TRUE,
+                           atlas_project = NULL,
+                           atlas_dataset = NULL,
+                           copy_atlas = TRUE) {
     verbose <- !is.null(getOption("MCView.verbose")) && getOption("MCView.verbose")
     verify_project_dir(project, create = TRUE)
 
@@ -167,6 +175,14 @@ import_dataset <- function(project,
                 select(cell_type = !!cell_type_field) %>%
                 rownames_to_column("metacell") %>%
                 as_tibble()
+        } else if (any(c("type", "cell_type", "cluster") %in% colnames(adata$obs))) {
+            cell_type_field <- colnames(adata$obs)[colnames(adata$obs) %in% c("type", "cell_type", "cluster")]
+            cell_type_field <- cell_type_field[1]
+            cli_alert_info("Taking cell type annotations from {.field {cell_type_field}} field in the anndata object")
+            metacell_types <- adata$obs %>%
+                select(cell_type = !!cell_type_field) %>%
+                rownames_to_column("metacell") %>%
+                as_tibble()
         } else {
             cli_alert_info("Clustering in order to get initial annotation.")
             # we generate clustering as initial annotation
@@ -198,7 +214,13 @@ import_dataset <- function(project,
             cli_abort("{anndata_file} object doesn't have a 'var' field named 'top_feature_gene' or 'feature_gene'")
         }
 
-        color_of_clusters <- chameleon::data_colors(t(feat_mat), groups = metacell_types$cell_type)
+        if (all(paste0("umap_", c("x", "y", "u")) %in% colnames(adata$obs))) {
+            cli_alert_info("Coloring using pre-calculated 3D umap")
+            color_of_clusters <- chameleon::data_colors(adata$obs[, paste0("umap_", c("x", "y", "u"))], groups = metacell_types$cell_type, run_umap = FALSE)
+        } else {
+            cli_alert_info("Coloring using umap on feature matrix")
+            color_of_clusters <- chameleon::data_colors(t(feat_mat), groups = metacell_types$cell_type)
+        }
 
         cell_type_colors <- enframe(color_of_clusters, name = "cell_type", value = "color") %>%
             mutate(order = 1:n())
@@ -221,15 +243,41 @@ import_dataset <- function(project,
     serialize_shiny_data(metacell_types, "metacell_types", dataset = dataset, cache_dir = cache_dir, flat = TRUE)
 
     if (calc_gg_cor) {
-        cli_alert_info("Calculating top 30 correlated and anti-correlated genes for each gene")
-        gg_mc_top_cor <- calc_gg_mc_top_cor(mc_egc, k = 30)
+        if (!is.null(adata$varp$var_similarity)) {
+            gg_mc_top_cor <- Matrix::summary(adata$varp$var_similarity) %>%
+                rlang::set_names(c("gene1", "gene2", "cor")) %>%
+                mutate(
+                    gene1 = adata$var_names[gene1],
+                    gene2 = adata$var_names[gene2]
+                ) %>%
+                filter(gene1 != gene2) %>%
+                as.data.frame()
+            gg_mc_top_cor <- gg_mc_top_cor %>%
+                arrange(gene1, desc(cor)) %>%
+                group_by(gene1) %>%
+                slice(1:30) %>%
+                ungroup() %>%
+                mutate(type = "pos")
+            # TODO: add the anti-correlated when Oren would implement this
+        } else {
+            cli_alert_info("Calculating top 30 correlated and anti-correlated genes for each gene")
+            gg_mc_top_cor <- calc_gg_mc_top_cor(mc_egc, k = 30)
+        }
         serialize_shiny_data(gg_mc_top_cor, "gg_mc_top_cor", dataset = dataset, cache_dir = cache_dir)
     } else {
         cli_alert_info("Skipping calculation of top 30 correlated and anti-correlated genes for each gene. Some features in the app would not be available")
     }
 
+    if (!is.null(atlas_project)) {
+        if (is.null(atlas_dataset)) {
+            cli_abort("Please provide {.code atlas_dataset}")
+        }
+
+        import_atlas(adata, atlas_project, atlas_dataset, dataset = dataset, cache_dir = cache_dir, copy_atlas)
+    }
 
     cli_alert_success("{.field {dataset}} dataset imported succesfully to {.path {project}} project")
+    invisible(adata)
 }
 
 #' Remove a dataset from a project

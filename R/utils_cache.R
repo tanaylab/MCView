@@ -18,8 +18,13 @@ serialize_shiny_data <- function(object, name, dataset, cache_dir, df2mat = FALS
     cli_alert_success_verbose("saved {.field {name}}")
 }
 
-load_shiny_data <- function(name, dataset, cache_dir) {
-    cache_dir <- fs::path(cache_dir, dataset)
+load_shiny_data <- function(name, dataset, cache_dir, atlas = FALSE) {
+    if (atlas) {
+        cache_dir <- fs::path(cache_dir, dataset, "atlas")
+    } else {
+        cache_dir <- fs::path(cache_dir, dataset)
+    }
+
 
     flat_file <- fs::path(cache_dir, glue("{name}.tsv"))
     if (fs::file_exists(flat_file)) {
@@ -37,10 +42,41 @@ load_shiny_data <- function(name, dataset, cache_dir) {
     return(object)
 }
 
+load_all_mc_data_atlas <- function(dataset, cache_dir) {
+    atlas_dir <- fs::path(cache_dir, dataset, "atlas")
+    if (fs::dir_exists(atlas_dir)) {
+        files <- list.files(atlas_dir, pattern = "*\\.(qs|tsv|csv)")
+
+        if (is.null(mc_data[[dataset]])) {
+            mc_data[[dataset]] <<- list()
+        }
+
+        if (is.null(mc_data[[dataset]]$atlas)) {
+            mc_data[[dataset]]$atlas <<- list()
+        }
+
+        for (fn in files) {
+            var_name <- basename(fn) %>%
+                sub("\\.qs$", "", .) %>%
+                sub("\\.tsv$", "", .)
+            obj <- load_shiny_data(var_name, dataset, cache_dir, atlas = TRUE)
+
+            mc_data[[dataset]]$atlas[[var_name]] <<- obj
+        }
+    }
+}
+
 load_all_mc_data <- function(dataset, cache_dir) {
+    atlas_dir <- fs::path(cache_dir, dataset, "atlas")
+    if (fs::dir_exists(atlas_dir)) {
+        load_all_mc_data_atlas(dataset, cache_dir)
+    }
+
     files <- list.files(fs::path(cache_dir, dataset), pattern = "*\\.(qs|tsv|csv)")
 
-    mc_data[[dataset]] <<- list()
+    if (is.null(mc_data[[dataset]])) {
+        mc_data[[dataset]] <<- list()
+    }
 
     for (fn in files) {
         var_name <- basename(fn) %>%
@@ -52,9 +88,11 @@ load_all_mc_data <- function(dataset, cache_dir) {
     }
 }
 
-verify_app_cache <- function(project, required_files = c("mc_mat.qs", "mc_sum.qs", "mc2d.qs", "metacell_types.tsv", "cell_type_colors.tsv")) {
+verify_app_cache <- function(project, required_files = c("mc_mat.qs", "mc_sum.qs", "mc2d.qs", "metacell_types.tsv", "cell_type_colors.tsv"), datasets = NULL) {
     cache_dir <- project_cache_dir(project)
-    datasets <- dataset_ls(project)
+    if (is.null(datasets)) {
+        datasets <- dataset_ls(project)
+    }
 
     for (dataset in datasets) {
         dataset_dir <- fs::path(cache_dir, dataset)
@@ -66,23 +104,35 @@ verify_app_cache <- function(project, required_files = c("mc_mat.qs", "mc_sum.qs
     }
 }
 
-load_all_data <- function(cache_dir) {
-    datasets <- dataset_ls(project)
+load_all_data <- function(cache_dir, datasets = NULL) {
+    if (is.null(datasets)) {
+        datasets <- dataset_ls(project)
+    }
 
     mc_data <<- list()
 
     purrr::walk(datasets, ~ load_all_mc_data(dataset = .x, cache_dir = cache_dir))
 }
 
-get_cell_type_data <- function(dataset) {
-    cell_type_colors <- mc_data[[dataset]][["cell_type_colors"]]
+get_cell_type_data <- function(dataset, atlas = FALSE) {
+    if (atlas) {
+        cell_type_colors <- mc_data[[dataset]]$atlas[["cell_type_colors"]]
+    } else {
+        cell_type_colors <- mc_data[[dataset]][["cell_type_colors"]]
+    }
+
     cell_type_colors <- cell_type_colors %>%
         mutate(cell_type = as.character(cell_type))
     return(cell_type_colors)
 }
 
-get_metacell_types_data <- function(dataset) {
-    metacell_types <- mc_data[[dataset]][["metacell_types"]]
+get_metacell_types_data <- function(dataset, atlas = FALSE) {
+    if (atlas) {
+        metacell_types <- mc_data[[dataset]]$atlas[["metacell_types"]]
+    } else {
+        metacell_types <- mc_data[[dataset]][["metacell_types"]]
+    }
+
     if (!is.factor(metacell_types$cell_type)) {
         metacell_types$cell_type <- factor(metacell_types$cell_type)
     }
@@ -90,7 +140,7 @@ get_metacell_types_data <- function(dataset) {
         mutate(cell_type = as.character(forcats::fct_explicit_na(cell_type))) %>%
         mutate(metacell = as.character(metacell))
 
-    cell_type_colors <- get_cell_type_data(dataset)
+    cell_type_colors <- get_cell_type_data(dataset, atlas = atlas)
 
     metacell_types <- metacell_types %>%
         left_join(cell_type_colors %>% select(cell_type, mc_col = color), by = "cell_type")
@@ -105,14 +155,18 @@ get_mc_color_key <- function(dataset) {
         as.data.frame()
 }
 
-get_mc_data <- function(dataset, var_name) {
+get_mc_data <- function(dataset, var_name, atlas = FALSE) {
     if (var_name == "metacell_types") {
-        return(get_metacell_types_data(dataset))
+        return(get_metacell_types_data(dataset, atlas = atlas))
     } else if (var_name == "cell_type_colors") {
-        return(get_cell_type_data(dataset))
+        return(get_cell_type_data(dataset, atlas = atlas))
     }
 
-    mc_data[[dataset]][[var_name]]
+    if (atlas) {
+        return(mc_data[[dataset]]$atlas[[var_name]])
+    } else {
+        return(mc_data[[dataset]][[var_name]])
+    }
 }
 
 get_mc_config <- function(dataset, var_name) {
@@ -147,6 +201,10 @@ has_samples <- function(dataset) {
     }
     cell_md <- get_mc_data(dataset, "cell_metadata")
     return(rlang::has_name(cell_md, "samp_id"))
+}
+
+has_projection <- function(dataset) {
+    !is.null(get_mc_data(dataset, "query_md"))
 }
 
 calc_samp_mc_count <- function(dataset) {

@@ -40,6 +40,8 @@ app_server <- function(input, output, session) {
     load_tab("gene_mc", mod_gene_mc_server)
     load_tab("markers", mod_markers_server)
     load_tab("samples", mod_samples_server)
+    load_tab("projection", mod_projection_server)
+    load_tab("atlas", mod_atlas_server)
     load_tab("mc_mc", mod_mc_mc_server)
     load_tab("annotate", mod_annotate_mc_server)
 
@@ -84,7 +86,7 @@ app_server <- function(input, output, session) {
                     steps = get_tab_steps("metacells", "mc_mc_ui_1")
                 )
             )
-        } else if (input$tab_sidebar == "mc_mc") {
+        } else if (input$tab_sidebar == "samples") {
             rintrojs::introjs(session,
                 options = list(
                     "showProgress" = TRUE,
@@ -92,6 +94,26 @@ app_server <- function(input, output, session) {
                     "nextLabel" = "next",
                     "prevLabel" = "back",
                     steps = get_tab_steps("samples", "samples_ui_1")
+                )
+            )
+        } else if (input$tab_sidebar == "Projection") {
+            rintrojs::introjs(session,
+                options = list(
+                    "showProgress" = TRUE,
+                    "showBullets" = FALSE,
+                    "nextLabel" = "next",
+                    "prevLabel" = "back",
+                    steps = get_tab_steps("projection", "projection_ui_1")
+                )
+            )
+        } else if (input$tab_sidebar == "Atlas") {
+            rintrojs::introjs(session,
+                options = list(
+                    "showProgress" = TRUE,
+                    "showBullets" = FALSE,
+                    "nextLabel" = "next",
+                    "prevLabel" = "back",
+                    steps = get_tab_steps("atlas", "atlas_ui_1")
                 )
             )
         } else if (input$tab_sidebar == "annotate") {

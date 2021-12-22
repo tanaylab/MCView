@@ -35,6 +35,14 @@ app_ui <- function(request) {
             mod_markers_sidebar_ui("markers_ui_1")
         ),
         conditionalPanel(
+            condition = "input.tab_sidebar == 'projection'",
+            mod_projection_sidebar_ui("projection_ui_1")
+        ),
+        conditionalPanel(
+            condition = "input.tab_sidebar == 'atlas'",
+            mod_atlas_sidebar_ui("atlas_ui_1")
+        ),
+        conditionalPanel(
             condition = "input.tab_sidebar == 'samples'",
             mod_samples_sidebar_ui("samples_ui_1")
         ),
@@ -63,6 +71,8 @@ app_ui <- function(request) {
             shinydashboard::tabItem(tabName = "manifold", mod_manifold_ui("manifold_ui_1")),
             shinydashboard::tabItem(tabName = "gene_mc", mod_gene_mc_ui("gene_mc_ui_1")),
             shinydashboard::tabItem(tabName = "markers", mod_markers_ui("markers_ui_1")),
+            shinydashboard::tabItem(tabName = "projection", mod_projection_ui("projection_ui_1")),
+            shinydashboard::tabItem(tabName = "atlas", mod_atlas_ui("atlas_ui_1")),
             shinydashboard::tabItem(tabName = "mc_mc", mod_mc_mc_ui("mc_mc_ui_1")),
             shinydashboard::tabItem(tabName = "samples", mod_samples_ui("samples_ui_1")),
             shinydashboard::tabItem(tabName = "annotate", mod_annotate_mc_ui("annotate_ui_1"))
