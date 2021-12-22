@@ -63,7 +63,7 @@ Imports:
     shinybusy,
     tglkmeans,
     tgstat,
-    tgutil (>= 0.1.9),
+    tgutil (>= 0.1.10),
     tibble,
     tidyr,
     vctrs,
