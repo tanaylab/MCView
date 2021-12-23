@@ -10,6 +10,11 @@ calc_diff_expr <- function(mat, egc, columns, diff_thresh = 1.5, pval_thresh = 0
 
     m <- mat[f, columns]
 
+    if (length(f) == 1) {
+        m <- t(as.matrix(m))
+        rownames(m) <- f
+    }
+
     if (nrow(m) > 0) {
         tots <- colSums(m)
 
@@ -24,10 +29,15 @@ calc_diff_expr <- function(mat, egc, columns, diff_thresh = 1.5, pval_thresh = 0
 
     df <- df %>%
         mutate(col = case_when(
-            diff >= 1.5 & pval <= pval_thresh ~ "darkred",
-            diff <= -1.5 & pval <= pval_thresh ~ "darkblue",
+            diff >= diff_thresh & pval <= pval_thresh ~ "darkred",
+            diff <= -diff_thresh & pval <= pval_thresh ~ "darkblue",
             TRUE ~ "gray"
         ))
+
+    # arrange in order for the significant genes to apear above the gray
+    df <- df %>%
+        mutate(col = factor(col, levels = c("gray", "darkred", "darkblue"))) %>%
+        arrange(col)
 
     return(df)
 }
@@ -79,6 +89,37 @@ calc_samp_samp_gene_df <- function(dataset, samp1, samp2, metacell_types, cell_t
     egc <- get_samples_egc(cell_types, metacell_types, dataset) + egc_epsilon
 
     df <- calc_diff_expr(mat, egc, c(samp1, samp2), diff_thresh, pval_thresh)
+
+    return(df)
+}
+
+calc_obs_exp_mc_df <- function(dataset, metacell, diff_thresh = 1.2, pval_thresh = 0.05) {
+    obs_mat <- get_mc_data(dataset, "mc_mat")
+    exp_mat <- get_mc_data(dataset, "projected_mat")
+    obs_egc <- get_metacells_egc(metacell, dataset) + egc_epsilon
+    exp_egc <- get_metacells_egc(metacell, dataset, projected = TRUE) + egc_epsilon
+
+    genes <- intersect(rownames(obs_mat), rownames(exp_mat))
+    mat <- as.matrix(data.frame(Observed = obs_mat[genes, 1], Projected = exp_mat[, 1]))
+    egc <- as.matrix(data.frame(Observed = obs_egc[genes, 1], Projected = exp_egc[, 1]))
+
+    df <- calc_diff_expr(mat, egc, c("Observed", "Projected"), diff_thresh, pval_thresh)
+
+    return(df)
+}
+
+calc_obs_exp_type_df <- function(dataset, cell_type, metacell_types, diff_thresh = 1.2, pval_thresh = 0.05) {
+    obs_mat <- get_cell_types_mat(cell_type, metacell_types, dataset)
+    exp_mat <- get_cell_types_mat(cell_type, metacell_types, dataset, projected = TRUE)
+
+    obs_egc <- get_cell_types_egc(cell_type, metacell_types, dataset) + egc_epsilon
+    exp_egc <- get_cell_types_egc(cell_type, metacell_types, dataset, projected = TRUE) + egc_epsilon
+
+    genes <- intersect(rownames(obs_mat), rownames(exp_mat))
+    mat <- as.matrix(data.frame(Observed = obs_mat[genes, 1], Projected = exp_mat[, 1]))
+    egc <- as.matrix(data.frame(Observed = obs_egc[genes, 1], Projected = exp_egc[, 1]))
+
+    df <- calc_diff_expr(mat, egc, c("Observed", "Projected"), diff_thresh, pval_thresh)
 
     return(df)
 }

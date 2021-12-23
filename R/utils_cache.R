@@ -207,6 +207,10 @@ has_projection <- function(dataset) {
     !is.null(get_mc_data(dataset, "query_md"))
 }
 
+has_atlas <- function(dataset) {
+    !is.null(mc_data[[dataset]]$atlas)
+}
+
 calc_samp_mc_count <- function(dataset) {
     metadata <- get_mc_data(dataset, "cell_metadata")
     samp_mc_count <- metadata %>%

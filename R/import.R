@@ -31,6 +31,8 @@
 #' cell types and another column named "color" with the color assignment. Cell types that do not
 #' exist in the metacell types would be ignored.
 #' If this is missing, MCView would use the \code{chameleon} package to assign a color for each cell type.
+#' When an atlas is given (using \code{atlas_project} and \code{atlas_dataset}), if the cell types
+#' are the same as the atlas, the atlas colors would be used.
 #' @param metadata_fields names of fields in the anndata \code{object$obs} which contains metadata for each metacell.
 #' The fields should *always* be numeric - if you have cell categorical annotations use
 #' \code{cell_metadata_to_metacell} with \code{categorical=TRUE} to convert them to a
@@ -78,7 +80,7 @@ import_dataset <- function(project,
                            atlas_dataset = NULL,
                            copy_atlas = TRUE) {
     verbose <- !is.null(getOption("MCView.verbose")) && getOption("MCView.verbose")
-    verify_project_dir(project, create = TRUE)
+    verify_project_dir(project, create = TRUE, atlas = !is.null(atlas_project))
 
     cli_alert_info("Importing {.field {dataset}}")
 
@@ -205,25 +207,18 @@ import_dataset <- function(project,
         cli_alert_info("Loading cell type color annotations from {.file {cell_type_colors_file}}")
         cell_type_colors <- parse_cell_type_colors(cell_type_colors_file)
     } else {
-        cli_alert_info("Generating cell type colors using {.pkg chameleon} package.")
-        if (rlang::has_name(adata$var, "top_feature_gene")) {
-            feat_mat <- mc_egc[adata$var$top_feature_gene, ]
-        } else if (rlang::has_name(adata$var, "feature_gene")) {
-            feat_mat <- mc_egc[adata$var$feature_gene, ]
+        if (!is.null(atlas_dataset) && !is.null(atlas_project)) { # use atlas colors
+            atlas_colors <- fread(fs::path(project_cache_dir(atlas_project), atlas_dataset, "cell_type_colors.tsv")) %>% as_tibble()
+            # if we are using the atlas cell types - use their colors
+            if (all(metacell_types$cell_type %in% atlas_colors$cell_type)) {
+                cli_alert_info("Loading cell type color annotations from {.field atlas}")
+                cell_type_colors <- atlas_colors
+            } else {
+                cell_type_colors <- color_cell_types(adata, mc_egc, metacell_types)
+            }
         } else {
-            cli_abort("{anndata_file} object doesn't have a 'var' field named 'top_feature_gene' or 'feature_gene'")
+            cell_type_colors <- color_cell_types(adata, mc_egc, metacell_types)
         }
-
-        if (all(paste0("umap_", c("x", "y", "u")) %in% colnames(adata$obs))) {
-            cli_alert_info("Coloring using pre-calculated 3D umap")
-            color_of_clusters <- chameleon::data_colors(adata$obs[, paste0("umap_", c("x", "y", "u"))], groups = metacell_types$cell_type, run_umap = FALSE)
-        } else {
-            cli_alert_info("Coloring using umap on feature matrix")
-            color_of_clusters <- chameleon::data_colors(t(feat_mat), groups = metacell_types$cell_type)
-        }
-
-        cell_type_colors <- enframe(color_of_clusters, name = "cell_type", value = "color") %>%
-            mutate(order = 1:n())
     }
 
     cell_type_colors <- cell_type_colors %>%
@@ -244,6 +239,7 @@ import_dataset <- function(project,
 
     if (calc_gg_cor) {
         if (!is.null(adata$varp$var_similarity)) {
+            cli_alert_info("Loading previously calculated 30 correlated and anti-correlated genes for each gene")
             gg_mc_top_cor <- Matrix::summary(adata$varp$var_similarity) %>%
                 rlang::set_names(c("gene1", "gene2", "cor")) %>%
                 mutate(
@@ -252,13 +248,24 @@ import_dataset <- function(project,
                 ) %>%
                 filter(gene1 != gene2) %>%
                 as.data.frame()
-            gg_mc_top_cor <- gg_mc_top_cor %>%
+
+            gg_mc_top_cor_pos <- gg_mc_top_cor %>%
                 arrange(gene1, desc(cor)) %>%
                 group_by(gene1) %>%
-                slice(1:30) %>%
+                slice(1:15) %>%
                 ungroup() %>%
                 mutate(type = "pos")
-            # TODO: add the anti-correlated when Oren would implement this
+            gg_mc_top_cor_neg <- gg_mc_top_cor %>%
+                arrange(gene1, cor) %>%
+                group_by(gene1) %>%
+                slice(1:15) %>%
+                ungroup() %>%
+                mutate(type = "neg")
+            gg_mc_top_cor <- bind_rows(
+                gg_mc_top_cor_pos,
+                gg_mc_top_cor_neg
+            ) %>%
+                arrange(gene1, desc(cor))
         } else {
             cli_alert_info("Calculating top 30 correlated and anti-correlated genes for each gene")
             gg_mc_top_cor <- calc_gg_mc_top_cor(mc_egc, k = 30)
@@ -335,6 +342,30 @@ calc_gg_mc_top_cor <- function(egc, k = 30, egc_epsilon = 1e-5) {
         filter(!is.na(cor))
 
     return(gg_mc_top_cor)
+}
+
+color_cell_types <- function(adata, mc_egc, metacell_types) {
+    cli_alert_info("Generating cell type colors using {.pkg chameleon} package.")
+    if (rlang::has_name(adata$var, "top_feature_gene")) {
+        feat_mat <- mc_egc[adata$var$top_feature_gene, ]
+    } else if (rlang::has_name(adata$var, "feature_gene")) {
+        feat_mat <- mc_egc[adata$var$feature_gene, ]
+    } else {
+        cli_abort("{anndata_file} object doesn't have a 'var' field named 'top_feature_gene' or 'feature_gene'")
+    }
+
+    if (all(paste0("umap_", c("x", "y", "u")) %in% colnames(adata$obs))) {
+        cli_alert_info("Coloring using pre-calculated 3D umap")
+        color_of_clusters <- chameleon::data_colors(adata$obs[, paste0("umap_", c("x", "y", "u"))], groups = metacell_types$cell_type, run_umap = FALSE)
+    } else {
+        cli_alert_info("Coloring using umap on feature matrix")
+        color_of_clusters <- chameleon::data_colors(t(feat_mat), groups = metacell_types$cell_type)
+    }
+
+    cell_type_colors <- enframe(color_of_clusters, name = "cell_type", value = "color") %>%
+        mutate(order = 1:n())
+
+    return(cell_type_colors)
 }
 
 cli_alert_verbose <- function(...) {

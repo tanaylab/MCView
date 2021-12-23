@@ -92,6 +92,23 @@ render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, mc_mc_
             ylab <- input$samp2
             label_prefix <- "Sample "
             source <- "samp_samp_diff_expr_plot"
+        } else if (mode == "MC") {
+            req(input$metacell1)
+            xlab <- "Observed"
+            ylab <- "Projected"
+            label_prefix <- glue::glue("MC #{input$metacell1}: ")
+            source <- "projection_diff_expr_plot"
+        } else if (mode == "Type") {
+            req(input$metacell1)
+            xlab <- "Observed"
+            ylab <- "Projected"
+            label_prefix <- glue::glue("{input$metacell1}: ")
+            source <- "projection_diff_expr_plot"
+        } else if (mode == "Group") {
+            label_prefix <- ""
+            xlab <- "Observed"
+            ylab <- "Projected"
+            source <- "projection_diff_expr_plot"
         }
 
         fig <- plotly::ggplotly(

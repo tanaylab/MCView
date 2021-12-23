@@ -22,10 +22,10 @@ project_cache_dir <- function(path) {
     fs::path(path, "cache")
 }
 
-verify_project_dir <- function(path, create = FALSE) {
+verify_project_dir <- function(path, create = FALSE, atlas = FALSE) {
     if (!dir.exists(path)) {
         if (create) {
-            create_project(project = basename(path), edit_config = FALSE)
+            create_project(project = basename(path), edit_config = FALSE, atlas = atlas)
         } else {
             cli_abort("{.path path} does not exist. Maybe there is a typo? You can start a new project by running {.code MCView::create_project}.")
         }
@@ -37,14 +37,19 @@ verify_project_dir <- function(path, create = FALSE) {
     }
 }
 
-create_project_dirs <- function(project_dir) {
+create_project_dirs <- function(project_dir, atlas = FALSE) {
     fs::dir_create(project_dir)
     cli_alert_info("creating {project_dir}")
 
     fs::dir_create(project_cache_dir(project_dir))
     fs::dir_create(fs::path(project_dir, "config"))
 
-    defaults_dir <- app_sys("default-config")
+    if (atlas) {
+        defaults_dir <- app_sys("atlas-proj-config")
+    } else {
+        defaults_dir <- app_sys("default-config")
+    }
+
     files <- c("config.yaml", "help.yaml", "about.Rmd")
     for (file in files) {
         if (!fs::file_exists(fs::path(project_dir, "config", file))) {
@@ -63,6 +68,7 @@ create_project_dirs <- function(project_dir) {
 #'
 #' @param project path of the project
 #' @param edit_config open file editor for config file editing
+#' @param atlas use default configuration for atlas projections
 #'
 #' @examples
 #' \dontrun{
@@ -73,8 +79,8 @@ create_project_dirs <- function(project_dir) {
 #' }
 #'
 #' @export
-create_project <- function(project, edit_config = TRUE) {
-    project_dir <- create_project_dirs(project)
+create_project <- function(project, edit_config = TRUE, atlas = FALSE) {
+    project_dir <- create_project_dirs(project, atlas = atlas)
     project_dir <- fs::path(project_dir, "config")
 
     if (rlang::is_interactive() && edit_config) {

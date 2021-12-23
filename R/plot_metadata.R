@@ -49,10 +49,14 @@ mc2d_plot_metadata_ggp <- function(dataset,
                                    graph_color = "black",
                                    graph_width = 0.1,
                                    id = NULL,
-                                   scale_edges = FALSE) {
+                                   scale_edges = FALSE,
+                                   metacell_types = NULL) {
     mc2d <- get_mc_data(dataset, "mc2d")
     metadata <- get_mc_data(dataset, "metadata") %>% mutate(metacell = as.character(metacell))
-    metacell_types <- get_mc_data(dataset, "metacell_types")
+    metacell_types <- metacell_types %||% get_mc_data(dataset, "metacell_types")
+
+    metacell_types <- metacell_types %>%
+        select(metacell, cell_type, top1_gene, top2_gene, top1_lfp, top2_lfp, mc_col)
 
     mc2d_df <- mc2d_to_df(mc2d) %>%
         left_join(metacell_types, by = "metacell") %>%
@@ -76,14 +80,95 @@ mc2d_plot_metadata_ggp <- function(dataset,
         mc2d_df <- mc2d_df %>% mutate(id = paste(id, metacell, sep = "\t"))
     }
 
+    if (is_numeric_field(mc2d_df, md)) {
+        p <- mc2d_plot_metadata_ggp_numeric(mc2d_df, graph, dataset, metadata, md, colors, color_breaks, point_size, min_d, stroke, graph_color, graph_width, id, scale_edges)
+    } else {
+        p <- mc2d_plot_metadata_ggp_categorical(mc2d_df, graph, dataset, md, colors, point_size, min_d, stroke, graph_color, graph_width, id, scale_edges)
+    }
+
+    return(p)
+}
+
+mc2d_plot_metadata_ggp_categorical <- function(mc2d_df,
+                                               graph,
+                                               dataset,
+                                               md,
+                                               colors,
+                                               point_size,
+                                               min_d,
+                                               stroke,
+                                               graph_color,
+                                               graph_width,
+                                               id,
+                                               scale_edges) {
     mc2d_df <- mc2d_df %>%
         mutate(
             Metacell = paste(
                 glue("{metacell}"),
                 glue("Cell type: {`Cell type`}"),
                 glue("Top genes: {`Top genes`}"),
-                paste0(md, ": ", round(.[[md]], digits = 3)),
-                ifelse(has_name(df, "Age"), glue("Metacell age (E[t]): {round(Age, digits=2)}"), ""),
+                paste0(md, ": ", mc2d_df[[md]]),
+                ifelse(has_name(mc2d_df, "Age"), glue("Metacell age (E[t]): {round(Age, digits=2)}"), ""),
+                sep = "\n"
+            )
+        )
+
+    metadata_colors <- get_mc_data(dataset, "metadata_colors")
+    if (is.null(metadata_colors[[md]])) {
+        categories <- unique(df[[md]])
+        colors <- chameleon::distinct_colors(length(categories))$name
+        names(colors) <- categories
+    } else {
+        colors <- metadata_colors[[md]]
+    }
+
+    p <- mc2d_df %>%
+        ggplot(aes(x = x, y = y, label = metacell, fill = !!sym(md), tooltip_text = Metacell, customdata = id))
+
+    if (nrow(graph) > 0) {
+        if (scale_edges) {
+            p <- p +
+                geom_segment(data = graph, inherit.aes = FALSE, aes(x = x_mc1, y = y_mc1, xend = x_mc2, yend = y_mc2, size = d_norm), color = graph_color) +
+                scale_size_continuous(range = c(0, graph_width)) +
+                guides(size = "none")
+        } else {
+            p <- p + geom_segment(data = graph, inherit.aes = FALSE, aes(x = x_mc1, y = y_mc1, xend = x_mc2, yend = y_mc2), color = graph_color, size = graph_width)
+        }
+    }
+
+    p <- p +
+        geom_point(size = point_size, shape = 21, stroke = stroke, color = "black") +
+        theme_void() +
+        guides(fill = "none")
+
+    p <- p +
+        scale_fill_manual(name = md, values = colors)
+
+    return(p)
+}
+
+mc2d_plot_metadata_ggp_numeric <- function(mc2d_df,
+                                           graph,
+                                           dataset,
+                                           metadata,
+                                           md,
+                                           colors,
+                                           color_breaks,
+                                           point_size,
+                                           min_d,
+                                           stroke,
+                                           graph_color,
+                                           graph_width,
+                                           id,
+                                           scale_edges) {
+    mc2d_df <- mc2d_df %>%
+        mutate(
+            Metacell = paste(
+                glue("{metacell}"),
+                glue("Cell type: {`Cell type`}"),
+                glue("Top genes: {`Top genes`}"),
+                paste0(md, ": ", round(mc2d_df[[md]], digits = 3)),
+                ifelse(has_name(mc2d_df, "Age"), glue("Metacell age (E[t]): {round(Age, digits=2)}"), ""),
                 sep = "\n"
             )
         )
@@ -121,7 +206,6 @@ mc2d_plot_metadata_ggp <- function(dataset,
 
     return(p)
 }
-
 
 
 plot_mc_scatter <- function(dataset,
@@ -425,6 +509,8 @@ plot_sample_scatter <- function(dataset,
                     categories <- unique(df[[color_var]])
                     colors <- chameleon::distinct_colors(length(categories))$name
                     names(colors) <- categories
+                } else {
+                    colors <- metadata_colors[[color_var]]
                 }
 
                 df <- df %>%
