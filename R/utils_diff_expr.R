@@ -93,7 +93,7 @@ calc_samp_samp_gene_df <- function(dataset, samp1, samp2, metacell_types, cell_t
     return(df)
 }
 
-calc_obs_exp_mc_df <- function(dataset, metacell, diff_thresh = 1.2, pval_thresh = 0.05) {
+calc_obs_exp_mc_df <- function(dataset, metacell, diff_thresh = 1.5, pval_thresh = 0.01) {
     obs_mat <- get_mc_data(dataset, "mc_mat")
     exp_mat <- get_mc_data(dataset, "projected_mat")
     obs_egc <- get_metacells_egc(metacell, dataset) + egc_epsilon
@@ -108,7 +108,7 @@ calc_obs_exp_mc_df <- function(dataset, metacell, diff_thresh = 1.2, pval_thresh
     return(df)
 }
 
-calc_obs_exp_type_df <- function(dataset, cell_type, metacell_types, diff_thresh = 1.2, pval_thresh = 0.05) {
+calc_obs_exp_type_df <- function(dataset, cell_type, metacell_types, diff_thresh = 1.5, pval_thresh = 0.01) {
     obs_mat <- get_cell_types_mat(cell_type, metacell_types, dataset)
     exp_mat <- get_cell_types_mat(cell_type, metacell_types, dataset, projected = TRUE)
 

@@ -29,9 +29,6 @@ mod_projection_ui <- function(id) {
                         uiOutput(ns("stroke_ui")),
                         uiOutput(ns("edge_distance_ui"))
                     ),
-                    shinycssloaders::withSpinner(
-                        plotly::plotlyOutput(ns("plot_mc_proj_2d"))
-                    ),
                     shinyWidgets::prettyRadioButtons(
                         ns("color_proj"),
                         label = "Color by:",
@@ -39,6 +36,9 @@ mod_projection_ui <- function(id) {
                         inline = TRUE,
                         status = "danger",
                         fill = TRUE
+                    ),
+                    shinycssloaders::withSpinner(
+                        plotly::plotlyOutput(ns("plot_mc_proj_2d"))
                     )
                 )
             ),
@@ -60,6 +60,21 @@ mod_projection_ui <- function(id) {
             )
         ),
         fluidRow(
+            column(
+                width = 7,
+                shinydashboardPlus::box(
+                    id = ns("metacell_projection"),
+                    title = "Type predictions",
+                    status = "primary",
+                    solidHeader = TRUE,
+                    collapsible = TRUE,
+                    closable = FALSE,
+                    width = 12,
+                    shinycssloaders::withSpinner(
+                        plotly::plotlyOutput(ns("plot_mc_stacked_type"))
+                    )
+                )
+            ),
             column(
                 width = 3,
                 uiOutput(ns("group_box"))
@@ -164,7 +179,10 @@ mod_projection_server <- function(input, output, session, dataset, metacell_type
     })
 
     # Projection plots
-    output$plot_mc_proj_2d <- render_2d_plotly(input, output, session, dataset, values, projected_metacell_types, atlas_colors, source = "proj_mc_plot_proj_tab")
+    output$plot_mc_proj_2d <- render_2d_plotly(input, output, session, dataset, projected_metacell_types, atlas_colors, source = "proj_mc_plot_proj_tab")
+
+
+    output$plot_mc_stacked_type <- plot_type_predictions_bar(dataset)
 }
 
 metacell_selectors_mod_projection <- function(input, output, session, dataset, ns, metacell_names, metacell_types, cell_type_colors, group) {

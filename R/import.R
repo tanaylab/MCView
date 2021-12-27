@@ -78,6 +78,7 @@ import_dataset <- function(project,
                            calc_gg_cor = TRUE,
                            atlas_project = NULL,
                            atlas_dataset = NULL,
+                           projection_weights_file = NULL,
                            copy_atlas = TRUE) {
     verbose <- !is.null(getOption("MCView.verbose")) && getOption("MCView.verbose")
     verify_project_dir(project, create = TRUE, atlas = !is.null(atlas_project))
@@ -92,6 +93,10 @@ import_dataset <- function(project,
 
     cli_alert_info("Reading {.file {anndata_file}}")
     adata <- anndata::read_h5ad(anndata_file)
+
+    if (rlang::has_name(adata$obs, "hidden")) {
+        adata <- adata[!adata$obs$hidden, ]
+    }
 
     cli_alert_info("Processing metacell matrix")
     mc_mat <- t(adata$X)
@@ -124,6 +129,7 @@ import_dataset <- function(project,
         serialize_shiny_data(metadata_colors, "metadata_colors", dataset = dataset, cache_dir = cache_dir)
     }
 
+
     cli_alert_info("Processing 2d projection")
     graph <- Matrix::summary(adata$obsp$obs_outgoing_weights) %>%
         as.data.frame()
@@ -149,6 +155,8 @@ import_dataset <- function(project,
     if (!is.null(adata$layers[["inner_fold"]])) {
         cli_alert_info("Processing inner-folds matrix")
         inner_fold_mat <- Matrix::t(adata$layers[["inner_fold"]])
+        rownames(inner_fold_mat) <- rownames(mc_mat)
+        colnames(inner_fold_mat) <- colnames(mc_mat)
         serialize_shiny_data(inner_fold_mat, "inner_fold_mat", dataset = dataset, cache_dir = cache_dir)
 
         cli_alert_info("Calculating top inner-fold genes")
@@ -202,6 +210,8 @@ import_dataset <- function(project,
                 mutate(cell_type = as.character(cell_type))
         }
     }
+
+    metacell_types <- metacell_types %>% mutate(cell_type = forcats::fct_explicit_na(factor(cell_type)))
 
     if (!is.null(cell_type_colors_file)) {
         cli_alert_info("Loading cell type color annotations from {.file {cell_type_colors_file}}")
@@ -280,7 +290,11 @@ import_dataset <- function(project,
             cli_abort("Please provide {.code atlas_dataset}")
         }
 
-        import_atlas(adata, atlas_project, atlas_dataset, dataset = dataset, cache_dir = cache_dir, copy_atlas)
+        if (is.null(projection_weights_file)) {
+            cli_abort("Please provide {.code projection_weights_file}")
+        }
+
+        import_atlas(adata, atlas_project, atlas_dataset, projection_weights_file, dataset = dataset, cache_dir = cache_dir, copy_atlas)
     }
 
     cli_alert_success("{.field {dataset}} dataset imported succesfully to {.path {project}} project")

@@ -17,6 +17,7 @@ import_dataset(
   calc_gg_cor = TRUE,
   atlas_project = NULL,
   atlas_dataset = NULL,
+  projection_weights_file = NULL,
   copy_atlas = TRUE
 )
 }
@@ -43,7 +44,9 @@ metacell matrix using kmeans++ algorithm (from the \code{tglkmeans} package).}
 each cell type. The file should have a column named "cell_type" or "cluster" with the
 cell types and another column named "color" with the color assignment. Cell types that do not
 exist in the metacell types would be ignored.
-If this is missing, MCView would use the \code{chameleon} package to assign a color for each cell type.}
+If this is missing, MCView would use the \code{chameleon} package to assign a color for each cell type.
+When an atlas is given (using \code{atlas_project} and \code{atlas_dataset}), if the cell types
+are the same as the atlas, the atlas colors would be used.}
 
 \item{metadata_fields}{names of fields in the anndata \code{object$obs} which contains metadata for each metacell.
 The fields should *always* be numeric - if you have cell categorical annotations use

@@ -2,8 +2,9 @@ plot_markers_mat <- function(mc_fp,
                              metacell_types,
                              cell_type_colors,
                              dataset,
-                             colors = c("darkblue", "blue", "lightblue", "white", "red", "darkred"),
-                             mid_color = 4,
+                             #  low_colors = c("darkblue", "blue", "lightblue"),
+                             #  high_colors = c( "red", "darkred", "#2c0101"),
+                             #  mid_color = "white",
                              min_lfp = NULL,
                              max_lfp = NULL,
                              plot_legend = TRUE,
@@ -12,15 +13,24 @@ plot_markers_mat <- function(mc_fp,
     min_lfp <- min_lfp %||% -3
     max_lfp <- max_lfp %||% 3
 
-    values <- unique(c(
-        seq(min_lfp, 0, length.out = mid_color),
-        seq(0, max_lfp, length.out = length(colors) - mid_color + 1)[-1]
-    ))
+    # if (min_lfp < 0 && max_lfp > 0){
+    #     colors <- c(low_colors, mid_color, high_colors)
+    #     values <- unique(c(
+    #         seq(min_lfp, 0, length.out = length(low_colors) + 1),
+    #         seq(0, max_lfp, length.out = length(colors) - length(low_colors) + 1)[-1]
+    #     ))
+    # } else if (min_lfp >= 0 & max_lfp >= 0){
+    #     colors <- c(mid_color, high_colors)
+    #     values <- seq(min_lfp, max_lfp, length.out = length(colors))
+    # } else if (min_lfp <= 0 & max_lfp <= 0) {
+    #     colors <- c(low_colors, mid_color)
+    #     values <- seq(min_lfp, max_lfp, length.out = length(colors))
+    # }
 
     metacells <- colnames(mc_fp)
 
     gene_ord <- order(apply(mc_fp, 1, which.max))
-    mat <- log2(mc_fp[gene_ord, ])
+    mat <- mc_fp[gene_ord, ]
 
     # matrix has only a single metacell
     if (!is.matrix(mat)) {
@@ -34,13 +44,15 @@ plot_markers_mat <- function(mc_fp,
         top_cell_type_bar <- FALSE
     }
 
+
     p_mat <- tgutil::tgplot_heatmap(
         clip_vals(mat, min_lfp, max_lfp),
         col_names = col_names,
         col_names_orient = "slanted",
         interleave = TRUE
     ) +
-        scale_fill_gradientn(name = "Fold change", colors = colors, values = scales::rescale(values))
+        scale_fill_gradient2(low = "darkblue", high = "darkred", mid = "white", midpoint = 0, limits = c(min_lfp, max_lfp))
+
 
     cell_type_colors <- cell_type_colors %>% select(cell_type, color)
     mc_types <- tibble(metacell = colnames(mat)) %>%
@@ -52,7 +64,7 @@ plot_markers_mat <- function(mc_fp,
             ggplot(aes(x = cell_type, color = cell_type, y = 1)) +
             geom_point() +
             scale_color_manual("", values = deframe(cell_type_colors)) +
-            guides(color = guide_legend(ncol = 1)))
+            guides(color = guide_legend(override.aes = list(size = 10), ncol = 1)))
         p_mat <- p_mat + theme(legend.position = "top")
 
         p <- add_markers_colorbars(p_mat, mc_types, dataset, top_cell_type_bar, metadata)

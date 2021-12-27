@@ -34,9 +34,6 @@ mod_gene_mc_ui <- function(id) {
                         uiOutput(ns("edge_distance_ui"))
                     ),
                     uiOutput(ns("manifold_select_ui")),
-                    shinycssloaders::withSpinner(
-                        plotly::plotlyOutput(ns("plot_gene_proj_2d"))
-                    ),
                     shinyWidgets::prettyRadioButtons(
                         ns("color_proj"),
                         label = "Color by:",
@@ -44,6 +41,9 @@ mod_gene_mc_ui <- function(id) {
                         inline = TRUE,
                         status = "danger",
                         fill = TRUE
+                    ),
+                    shinycssloaders::withSpinner(
+                        plotly::plotlyOutput(ns("plot_gene_proj_2d"))
                     )
                 )
             ),
@@ -143,7 +143,7 @@ mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, 
     projection_selectors(ns, dataset, output, input)
 
     # Projection plots
-    output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, values, metacell_types, cell_type_colors, source = "proj_mc_plot_gene_tab") %>%
+    output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, source = "proj_mc_plot_gene_tab") %>%
         bindCache(dataset(), input$color_proj, metacell_types(), cell_type_colors(), input$point_size, input$stroke, input$min_edge_size, input$set_range, input$show_selected_metacells, input$metacell1, input$metacell2, input$proj_stat, input$expr_range, input$lfp, input$color_proj_gene, input$color_proj_metadata)
 
     plot_gene_gene_mc_proxy <- plotly::plotlyProxy(ns("md_md_plot"), session)

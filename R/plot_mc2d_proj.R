@@ -197,7 +197,7 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
     return(p)
 }
 
-render_2d_plotly <- function(input, output, session, dataset, values, metacell_types, cell_type_colors, source, buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL, refresh_on_gene_change = FALSE) {
+render_2d_plotly <- function(input, output, session, dataset, metacell_types, cell_type_colors, source, buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL, refresh_on_gene_change = FALSE) {
     plotly::renderPlotly({
         req(input$color_proj)
         req(input$point_size)
@@ -282,8 +282,8 @@ render_2d_plotly <- function(input, output, session, dataset, values, metacell_t
             req(cell_type_colors())
 
             if (refresh_on_gene_change) {
-                req(values$gene1)
-                req(values$gene2)
+                req(input$gene1)
+                req(input$gene2)
             }
 
             fig <- mc2d_plot_ggp(
@@ -300,11 +300,11 @@ render_2d_plotly <- function(input, output, session, dataset, values, metacell_t
                 fig <- fig %>% plotly::hide_legend()
             }
         } else if (input$color_proj == "Gene A") {
-            req(values$gene1)
-            fig <- plot_2d_gene(values$gene1)
+            req(input$gene1)
+            fig <- plot_2d_gene(input$gene1)
         } else if (input$color_proj == "Gene B") {
-            req(values$gene2)
-            fig <- plot_2d_gene(values$gene2)
+            req(input$gene2)
+            fig <- plot_2d_gene(input$gene2)
         } else if (input$color_proj == "Metadata") {
             req(input$color_proj_metadata)
             fig <- plot_2d_metadata(input$color_proj_metadata)

@@ -96,7 +96,7 @@ app_server <- function(input, output, session) {
                     steps = get_tab_steps("samples", "samples_ui_1")
                 )
             )
-        } else if (input$tab_sidebar == "Projection") {
+        } else if (input$tab_sidebar == "Atlas Projection") {
             rintrojs::introjs(session,
                 options = list(
                     "showProgress" = TRUE,

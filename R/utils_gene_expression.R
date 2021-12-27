@@ -75,6 +75,12 @@ get_cell_types_mat <- function(cell_types, metacell_types, dataset, projected = 
 
     mc_mat <- mc_mat[, names(mc_types)]
 
+    if (is.null(dim(mc_mat))) {
+        ct_mat <- as.matrix(mc_mat)
+        colnames(ct_mat) <- mc_types
+        return(ct_mat)
+    }
+
     ct_mat <- t(tgs_matrix_tapply(mc_mat, mc_types, sum))
 
     return(ct_mat)

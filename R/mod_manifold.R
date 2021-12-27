@@ -34,9 +34,6 @@ mod_manifold_ui <- function(id) {
                         uiOutput(ns("stroke_ui")),
                         uiOutput(ns("edge_distance_ui"))
                     ),
-                    shinycssloaders::withSpinner(
-                        plotly::plotlyOutput(ns("plot_manifold_proj_2d"), height = "80vh")
-                    ),
                     shinyWidgets::prettyRadioButtons(
                         ns("color_proj"),
                         label = "Color by:",
@@ -44,6 +41,9 @@ mod_manifold_ui <- function(id) {
                         inline = TRUE,
                         status = "danger",
                         fill = TRUE
+                    ),
+                    shinycssloaders::withSpinner(
+                        plotly::plotlyOutput(ns("plot_manifold_proj_2d"), height = "80vh")
                     )
                 )
             )
@@ -80,12 +80,11 @@ mod_manifold_server <- function(input, output, session, dataset, metacell_types,
     ns <- session$ns
 
     # gene selectors
-    values <- reactiveValues(gene1 = default_gene1, gene2 = default_gene2)
-    server_gene_selectors(input, output, session, values, dataset, ns, show_button = FALSE)
+    server_gene_selectors(input, output, session, dataset, ns)
 
     projection_selectors(ns, dataset, output, input)
 
     # Projection plots
-    output$plot_manifold_proj_2d <- render_2d_plotly(input, output, session, dataset, values, metacell_types, cell_type_colors, source = "proj_manifold_plot") %>%
-        bindCache(dataset(), values$gene1, values$gene2, input$color_proj, metacell_types(), cell_type_colors(), input$point_size, input$stroke, input$min_edge_size, input$show_selected_metacells, input$metacell1, input$metacell2, input$proj_stat, input$expr_range, input$lfp, input$set_range)
+    output$plot_manifold_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, source = "proj_manifold_plot") %>%
+        bindCache(dataset(), input$gene1, input$gene2, input$color_proj, metacell_types(), cell_type_colors(), input$point_size, input$stroke, input$min_edge_size, input$show_selected_metacells, input$metacell1, input$metacell2, input$proj_stat, input$expr_range, input$lfp, input$set_range)
 }

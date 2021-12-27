@@ -34,9 +34,6 @@ mod_annotate_mc_ui <- function(id) {
                         uiOutput(ns("stroke_ui")),
                         uiOutput(ns("edge_distance_ui"))
                     ),
-                    shinycssloaders::withSpinner(
-                        plotly::plotlyOutput(ns("plot_gene_proj_2d"))
-                    ),
                     shinyWidgets::prettyRadioButtons(
                         ns("color_proj"),
                         label = "Color by:",
@@ -44,6 +41,9 @@ mod_annotate_mc_ui <- function(id) {
                         inline = TRUE,
                         status = "danger",
                         fill = TRUE
+                    ),
+                    shinycssloaders::withSpinner(
+                        plotly::plotlyOutput(ns("plot_gene_proj_2d"))
                     )
                 ),
                 fluidRow(
@@ -180,8 +180,8 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
     ns <- session$ns
 
     # gene selectors
-    values <- reactiveValues(gene1 = default_gene1, gene2 = default_gene2, file_status = NULL)
-    server_gene_selectors(input, output, session, values, dataset, ns)
+    values <- reactiveValues(file_status = NULL)
+    server_gene_selectors(input, output, session, dataset, ns)
 
     observeEvent(input$metacell_types_fn, {
         values$file_status <- "uploaded"
@@ -521,7 +521,6 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         output,
         session,
         dataset,
-        values,
         metacell_types,
         cell_type_colors,
         source = "proj_annot_plot",
@@ -532,13 +531,13 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
 
 
     output$plot_gene_gene_mc <- plotly::renderPlotly({
-        req(values$gene1)
-        req(values$gene2)
+        req(input$gene1)
+        req(input$gene2)
         req(metacell_types())
         req(dataset())
         req(input$gene_gene_point_size)
 
-        p_gg <- plotly::ggplotly(plot_gg_over_mc(dataset(), values$gene1, values$gene2, metacell_types = metacell_types(), cell_type_colors = cell_type_colors(), point_size = input$gene_gene_point_size, stroke = input$gene_gene_stroke, plot_text = FALSE), tooltip = "tooltip_text", source = "gene_gene_plot_annot") %>%
+        p_gg <- plotly::ggplotly(plot_gg_over_mc(dataset(), input$gene1, input$gene2, metacell_types = metacell_types(), cell_type_colors = cell_type_colors(), point_size = input$gene_gene_point_size, stroke = input$gene_gene_stroke, plot_text = FALSE), tooltip = "tooltip_text", source = "gene_gene_plot_annot") %>%
             sanitize_for_WebGL() %>%
             plotly::toWebGL() %>%
             sanitize_plotly_buttons(buttons = c("hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines")) %>%
@@ -600,18 +599,18 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
 
     # Expression/Time plots
     output$plot_gene_age_mc1 <- plotly::renderPlotly({
-        req(values$gene1)
+        req(input$gene1)
 
-        plotly::ggplotly(plot_gene_time_over_mc(dataset(), values$gene1, metacell_types = metacell_types(), cell_type_colors = cell_type_colors()), source = "gene_time_mc_plot1_annot", tooltip = "tooltip_text") %>%
+        plotly::ggplotly(plot_gene_time_over_mc(dataset(), input$gene1, metacell_types = metacell_types(), cell_type_colors = cell_type_colors()), source = "gene_time_mc_plot1_annot", tooltip = "tooltip_text") %>%
             plotly::hide_legend() %>%
             sanitize_plotly_buttons(buttons = c("hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines")) %>%
             plotly::layout(dragmode = "select")
     })
 
     output$plot_gene_age_mc2 <- plotly::renderPlotly({
-        req(values$gene2)
+        req(input$gene2)
 
-        plotly::ggplotly(plot_gene_time_over_mc(dataset(), values$gene2, metacell_types = metacell_types(), cell_type_colors = cell_type_colors()), source = "gene_time_mc_plot2_annot", tooltip = "tooltip_text") %>%
+        plotly::ggplotly(plot_gene_time_over_mc(dataset(), input$gene2, metacell_types = metacell_types(), cell_type_colors = cell_type_colors()), source = "gene_time_mc_plot2_annot", tooltip = "tooltip_text") %>%
             plotly::hide_legend() %>%
             sanitize_plotly_buttons(buttons = c("hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines")) %>%
             plotly::layout(dragmode = "select")

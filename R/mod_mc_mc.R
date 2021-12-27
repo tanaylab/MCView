@@ -28,10 +28,10 @@ mod_mc_mc_ui <- function(id) {
                         uiOutput(ns("point_size_ui")),
                         uiOutput(ns("edge_distance_ui"))
                     ),
+                    uiOutput(ns("projection_selectors")),
                     shinycssloaders::withSpinner(
                         plotly::plotlyOutput(ns("plot_mc_proj_2d"))
-                    ),
-                    uiOutput(ns("projection_selectors"))
+                    )
                 ),
                 uiOutput(ns("metacell_flow_box"))
             ),

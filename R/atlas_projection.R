@@ -1,4 +1,4 @@
-import_atlas <- function(query, atlas_project, atlas_dataset, dataset, cache_dir, copy_atlas) {
+import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights_file, dataset, cache_dir, copy_atlas) {
     cli_alert_info("Reading dataset {.file {atlas_dataset}} at project: {.file {atlas_project}}")
     verify_app_cache(atlas_project, datasets = atlas_dataset)
 
@@ -27,23 +27,34 @@ import_atlas <- function(query, atlas_project, atlas_dataset, dataset, cache_dir
         rownames_to_column("metacell") %>%
         as_tibble()
 
-    proj_types <- unique(query_md$type)
-    required_fields <- c(required_fields, paste0("fraction_", proj_types))
-
     purrr::walk(required_fields, ~ {
         if (!has_name(query_md, .x)) {
             cli_abort("Query h5ad file does not have the required field: '{.file {.x}}'")
         }
     })
 
-    query_atlas_cell_type_fracs <- query_md %>%
-        select(metacell, starts_with("fraction_")) %>%
-        pivot_longer(
-            cols = starts_with("fraction_"),
-            names_to = "type",
-            names_prefix = "fraction_",
-            values_to = "fraction",
-        )
+    proj_weights <- tgutil::fread(projection_weights_file) %>%
+        mutate(atlas = as.character(atlas), query = as.character(query)) %>%
+        as_tibble()
+    if (!all(rlang::has_name(proj_weights, c("query", "atlas", "weight")))) {
+        cli_abort(".{file {projection_weights_file}} should have fields named 'query', 'atlas' and 'weight'")
+    }
+    serialize_shiny_data(proj_weights, "proj_weights", dataset = dataset, cache_dir = cache_dir)
+
+    proj_types <- unique(query_md$type)
+    atlas_metacell_types <- get_mc_data(dataset, "metacell_types", atlas = TRUE)
+
+    query_atlas_cell_type_fracs <- proj_weights %>%
+        left_join(
+            atlas_metacell_types %>% select(atlas = metacell, type = cell_type),
+            by = "atlas"
+        ) %>%
+        group_by(query, type) %>%
+        summarise(fraction = sum(weight), .groups = "drop") %>%
+        rename(metacell = query)
+
+    query_atlas_cell_type_fracs <- query_atlas_cell_type_fracs %>%
+        tidyr::complete(metacell, type, fill = list(fraction = 0))
 
     serialize_shiny_data(query_atlas_cell_type_fracs, "query_atlas_cell_type_fracs", dataset = dataset, cache_dir = cache_dir, flat = TRUE)
 
@@ -122,6 +133,45 @@ import_atlas <- function(query, atlas_project, atlas_dataset, dataset, cache_dir
     serialize_shiny_data(disjoined_genes, "disjoined_genes", dataset = dataset, cache_dir = cache_dir)
 
     # TODO: systematic genes
-
     cli_alert_success("succesfully imported atlas projections")
+}
+
+
+plot_type_predictions_bar <- function(dataset) {
+    plotly::renderPlotly({
+        df_fracs <- get_mc_data(dataset(), "query_atlas_cell_type_fracs")
+        req(!is.null(df_fracs))
+        req(has_atlas(dataset()))
+        atlas_colors <- get_mc_data(dataset(), "cell_type_colors", atlas = TRUE)
+        atlas_colors <- atlas_colors %>%
+            select(cell_type, color) %>%
+            deframe()
+
+        fracs_mat <- df_fracs %>%
+            spread(type, fraction) %>%
+            column_to_rownames("metacell") %>%
+            as.matrix()
+        hc <- tgs_dist(fracs_mat) %>% hclust()
+        df_fracs <- df_fracs %>%
+            mutate(metacell = factor(metacell, levels = rownames(fracs_mat)[hc$order]))
+        p <- df_fracs %>%
+            ggplot(aes(x = metacell, y = fraction, fill = type)) +
+            geom_col() +
+            scale_fill_manual(name = "", values = atlas_colors) +
+            theme(
+                panel.grid.minor = element_blank(),
+                panel.grid.major = element_blank(),
+                axis.text.x = element_blank(),
+                axis.ticks.x = element_blank()
+            )
+
+        fig <- plotly::ggplotly(
+            p,
+            source = "type_prediction_bar"
+        ) %>%
+            sanitize_plotly_buttons() %>%
+            plotly::rangeslider()
+
+        return(p)
+    })
 }
