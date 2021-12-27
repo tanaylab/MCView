@@ -23,12 +23,12 @@ mod_mc_mc_ui <- function(id) {
                     width = 12,
                     sidebar = shinydashboardPlus::boxSidebar(
                         startOpen = FALSE,
-                        width = 25,
+                        width = 80,
                         id = ns("gene_projection_sidebar"),
+                        uiOutput(ns("projection_selectors")),
                         uiOutput(ns("point_size_ui")),
                         uiOutput(ns("edge_distance_ui"))
                     ),
-                    uiOutput(ns("projection_selectors")),
                     shinycssloaders::withSpinner(
                         plotly::plotlyOutput(ns("plot_mc_proj_2d"))
                     )

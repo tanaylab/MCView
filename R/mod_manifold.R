@@ -34,14 +34,6 @@ mod_manifold_ui <- function(id) {
                         uiOutput(ns("stroke_ui")),
                         uiOutput(ns("edge_distance_ui"))
                     ),
-                    shinyWidgets::prettyRadioButtons(
-                        ns("color_proj"),
-                        label = "Color by:",
-                        choices = c("Cell type", "Gene A", "Gene B"),
-                        inline = TRUE,
-                        status = "danger",
-                        fill = TRUE
-                    ),
                     shinycssloaders::withSpinner(
                         plotly::plotlyOutput(ns("plot_manifold_proj_2d"), height = "80vh")
                     )
@@ -65,6 +57,14 @@ mod_manifold_sidebar_ui <- function(id) {
     ns <- NS(id)
     tagList(
         list(
+            shinyWidgets::prettyRadioButtons(
+                ns("color_proj"),
+                label = "Color by:",
+                choices = c("Cell type", "Gene A", "Gene B"),
+                inline = TRUE,
+                status = "danger",
+                fill = TRUE
+            ),
             shinycssloaders::withSpinner(uiOutput(ns("gene_selectors"))),
             shinycssloaders::withSpinner(uiOutput(ns("top_correlated_select_gene1"))),
             shinycssloaders::withSpinner(uiOutput(ns("top_correlated_select_gene2"))),

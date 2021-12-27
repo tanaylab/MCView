@@ -23,8 +23,16 @@ mod_annotate_mc_ui <- function(id) {
                     width = 12,
                     sidebar = shinydashboardPlus::boxSidebar(
                         startOpen = FALSE,
-                        width = 25,
+                        width = 80,
                         id = ns("gene_projection_sidebar"),
+                        shinyWidgets::prettyRadioButtons(
+                            ns("color_proj"),
+                            label = "Color by:",
+                            choices = c("Cell type", "Gene A", "Gene B"),
+                            inline = TRUE,
+                            status = "danger",
+                            fill = TRUE
+                        ),
                         checkboxInput(ns("show_selected_metacells"), "Show selected metacells", value = FALSE),
                         selectInput(ns("proj_stat"), label = "Statistic", choices = c("Expression" = "expression", "Enrichment" = "enrichment"), selected = "Expression", multiple = FALSE, selectize = FALSE),
                         uiOutput(ns("set_range_ui")),
@@ -33,14 +41,6 @@ mod_annotate_mc_ui <- function(id) {
                         uiOutput(ns("point_size_ui")),
                         uiOutput(ns("stroke_ui")),
                         uiOutput(ns("edge_distance_ui"))
-                    ),
-                    shinyWidgets::prettyRadioButtons(
-                        ns("color_proj"),
-                        label = "Color by:",
-                        choices = c("Cell type", "Gene A", "Gene B"),
-                        inline = TRUE,
-                        status = "danger",
-                        fill = TRUE
                     ),
                     shinycssloaders::withSpinner(
                         plotly::plotlyOutput(ns("plot_gene_proj_2d"))
@@ -75,14 +75,20 @@ mod_annotate_mc_ui <- function(id) {
                         width = 6,
                         offset = 0,
                         shinydashboardPlus::box(
+                            id = ns("mc_mc_box"),
                             title = "Metacell/Metacell",
                             status = "primary",
                             solidHeader = TRUE,
                             collapsible = TRUE,
                             closable = FALSE,
                             width = 12,
-                            uiOutput(ns("metacell1_select")),
-                            uiOutput(ns("metacell2_select")),
+                            sidebar = shinydashboardPlus::boxSidebar(
+                                startOpen = FALSE,
+                                width = 80,
+                                id = ns("mc_mc_sidebar"),
+                                uiOutput(ns("metacell1_select")),
+                                uiOutput(ns("metacell2_select"))
+                            ),
                             shinycssloaders::withSpinner(
                                 plotly::plotlyOutput(ns("plot_mc_mc_gene_scatter"))
                             ),
@@ -629,7 +635,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         req(dataset())
         shinyWidgets::pickerInput(ns("metacell1"), "Metacell A",
             choices = metacell_names(),
-            selected = config$selected_mc1, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
+            selected = config$selected_mc1, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE)
         )
     })
 
@@ -637,7 +643,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
         req(dataset())
         shinyWidgets::pickerInput(ns("metacell2"), "Metacell B",
             choices = metacell_names(),
-            selected = config$selected_mc2, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
+            selected = config$selected_mc2, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE)
         )
     })
 

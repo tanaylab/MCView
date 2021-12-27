@@ -23,19 +23,19 @@ mod_projection_ui <- function(id) {
                     width = 12,
                     sidebar = shinydashboardPlus::boxSidebar(
                         startOpen = FALSE,
-                        width = 25,
+                        width = 80,
+                        shinyWidgets::prettyRadioButtons(
+                            ns("color_proj"),
+                            label = "Color by:",
+                            choices = c("Cell type", "Charting", "Metadata"),
+                            inline = TRUE,
+                            status = "danger",
+                            fill = TRUE
+                        ),
                         id = ns("gene_projection_sidebar"),
                         uiOutput(ns("point_size_ui")),
                         uiOutput(ns("stroke_ui")),
                         uiOutput(ns("edge_distance_ui"))
-                    ),
-                    shinyWidgets::prettyRadioButtons(
-                        ns("color_proj"),
-                        label = "Color by:",
-                        choices = c("Cell type", "Charting", "Metadata"),
-                        inline = TRUE,
-                        status = "danger",
-                        fill = TRUE
                     ),
                     shinycssloaders::withSpinner(
                         plotly::plotlyOutput(ns("plot_mc_proj_2d"))
