@@ -6,7 +6,7 @@
 #' @noRd
 app_ui <- function(request) {
     items_list <- purrr::map(tab_defs, ~ {
-        shinydashboard::menuItem(.x$title, tabName = .x$module_name, icon = icon(.x$icon))
+        shinydashboard::menuSubItem(.x$title, tabName = .x$module_name, icon = icon(.x$icon))
     })
 
     sidebar <- shinydashboard::dashboardSidebar(
@@ -14,7 +14,11 @@ app_ui <- function(request) {
             id = "tab_sidebar_help",
             shinydashboard::sidebarMenu(
                 id = "tab_sidebar",
-                items_list
+                shinydashboard::menuItem("Tabs",
+                    tabname = "tabs",
+                    startExpanded = TRUE,
+                    items_list
+                )
             )
         ),
         tags$hr(),
