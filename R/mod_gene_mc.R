@@ -33,7 +33,8 @@ mod_gene_mc_ui <- function(id) {
                             status = "danger",
                             fill = TRUE
                         ),
-                        uiOutput(ns("manifold_select_ui")),
+                        uiOutput(ns("gene_selector")),
+                        uiOutput(ns("metadata_selector")),
                         uiOutput(ns("proj_stat_ui")),
                         uiOutput(ns("set_range_ui")),
                         uiOutput(ns("expr_range_ui")),
@@ -107,37 +108,42 @@ mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, 
     top_correlated_selectors(input, output, session, dataset, ns)
     mod_gene_mc_plotly_observers(input, session)
 
-    # Manifold selectors
-    output$manifold_select_ui <- renderUI({
-        req(dataset())
-        req(input$color_proj)
-        picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE)
-        if (input$color_proj == "Metadata") {
-            if (!has_metadata(dataset())) {
-                print(glue("Dataset \"{dataset()}\" doesn't have any metadata. Use `update_metadata` to add it to your dataset."))
-            } else {
-                shinyWidgets::pickerInput(
-                    ns("color_proj_metadata"),
-                    label = "Color by:",
-                    choices = dataset_metadata_fields(dataset()),
-                    selected = dataset_metadata_fields(dataset())[1],
-                    width = "70%",
-                    multiple = FALSE,
-                    options = picker_options
-                )
-            }
-        } else if (input$color_proj == "Gene") {
+    picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE)
+
+    output$gene_selector <- renderUI({
+        shinyWidgets::pickerInput(
+            ns("color_proj_gene"),
+            label = "Gene:",
+            choices = gene_names(dataset()),
+            selected = default_gene1,
+            width = "70%",
+            multiple = FALSE,
+            options = picker_options
+        )
+    })
+
+    output$metadata_selector <- renderUI({
+        if (!has_metadata(dataset())) {
+            print(glue("Atlas doesn't have any metadata."))
+        } else {
             shinyWidgets::pickerInput(
-                ns("color_proj_gene"),
-                label = "Color by:",
-                choices = gene_names(dataset()),
-                selected = default_gene1,
+                ns("color_proj_metadata"),
+                label = "Metadata:",
+                choices = dataset_metadata_fields(dataset()),
+                selected = dataset_metadata_fields(dataset())[1],
                 width = "70%",
                 multiple = FALSE,
                 options = picker_options
             )
         }
     })
+
+    observe({
+        req(input$color_proj)
+        shinyjs::toggle(id = "gene_selector", condition = input$color_proj == "Gene")
+        shinyjs::toggle(id = "metadata_selector", condition = input$color_proj == "Metadata")
+    })
+
 
     scatter_selectors(ns, dataset, output)
     projection_selectors(ns, dataset, output, input)

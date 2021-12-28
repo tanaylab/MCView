@@ -50,9 +50,13 @@ mc2d_plot_metadata_ggp <- function(dataset,
                                    graph_width = 0.1,
                                    id = NULL,
                                    scale_edges = FALSE,
-                                   metacell_types = NULL) {
-    mc2d <- get_mc_data(dataset, "mc2d")
-    metadata <- get_mc_data(dataset, "metadata") %>% mutate(metacell = as.character(metacell))
+                                   metacell_types = NULL, 
+                                   atlas = FALSE, 
+                                   metadata = NULL) {
+    mc2d <- get_mc_data(dataset, "mc2d", atlas = atlas)
+    metadata <- metadata %||% get_mc_data(dataset, "metadata", atlas = atlas)
+    
+    metadata <- metadata %>% mutate(metacell = as.character(metacell))
     metacell_types <- metacell_types %||% get_mc_data(dataset, "metacell_types")
 
     metacell_types <- metacell_types %>%
@@ -83,7 +87,7 @@ mc2d_plot_metadata_ggp <- function(dataset,
     if (is_numeric_field(mc2d_df, md)) {
         p <- mc2d_plot_metadata_ggp_numeric(mc2d_df, graph, dataset, metadata, md, colors, color_breaks, point_size, min_d, stroke, graph_color, graph_width, id, scale_edges)
     } else {
-        p <- mc2d_plot_metadata_ggp_categorical(mc2d_df, graph, dataset, md, colors, point_size, min_d, stroke, graph_color, graph_width, id, scale_edges)
+        p <- mc2d_plot_metadata_ggp_categorical(mc2d_df, graph, dataset, md, point_size, min_d, stroke, graph_color, graph_width, id, scale_edges, colors)
     }
 
     return(p)
@@ -92,15 +96,15 @@ mc2d_plot_metadata_ggp <- function(dataset,
 mc2d_plot_metadata_ggp_categorical <- function(mc2d_df,
                                                graph,
                                                dataset,
-                                               md,
-                                               colors,
+                                               md,                                               
                                                point_size,
                                                min_d,
                                                stroke,
                                                graph_color,
                                                graph_width,
                                                id,
-                                               scale_edges) {
+                                               scale_edges, 
+                                               colors = NULL) {
     mc2d_df <- mc2d_df %>%
         mutate(
             Metacell = paste(
@@ -113,14 +117,17 @@ mc2d_plot_metadata_ggp_categorical <- function(mc2d_df,
             )
         )
 
-    metadata_colors <- get_mc_data(dataset, "metadata_colors")
-    if (is.null(metadata_colors[[md]])) {
-        categories <- unique(df[[md]])
-        colors <- chameleon::distinct_colors(length(categories))$name
-        names(colors) <- categories
-    } else {
-        colors <- metadata_colors[[md]]
+    if (is.null(colors)){
+        metadata_colors <- get_mc_data(dataset, "metadata_colors")
+        if (is.null(metadata_colors[[md]])) {
+            categories <- unique(mc2d_df[[md]])
+            colors <- chameleon::distinct_colors(length(categories))$name
+            names(colors) <- categories
+        } else {
+            colors <- metadata_colors[[md]]
+        }
     }
+    
 
     p <- mc2d_df %>%
         ggplot(aes(x = x, y = y, label = metacell, fill = !!sym(md), tooltip_text = Metacell, customdata = id))

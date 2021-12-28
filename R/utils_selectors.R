@@ -18,6 +18,18 @@ cell_type_selector <- function(dataset, ns, id = "selected_cell_types", label = 
     })
 }
 
+metacell_selector <- function(dataset, ns, id, label, selected = NULL, atlas = FALSE, ...) {
+    renderUI({
+        metacell_names <- colnames(get_mc_data(dataset(), "mc_mat", atlas = atlas))
+        shinyWidgets::pickerInput(ns(id), label,
+            choices = metacell_names,
+            selected = selected %||% config$selected_mc1,
+            multiple = FALSE,
+            options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", ...)
+        )
+    })
+}
+
 metadata_selector <- function(dataset, ns, id = "selected_md", label = "Metadata", metadata_id = "metadata", selected = NULL, multiple = TRUE) {
     renderUI({
         metadata <- get_mc_data(dataset(), metadata_id)

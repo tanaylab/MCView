@@ -187,8 +187,8 @@ has_time <- function(dataset) {
     !is.null(get_mc_data(dataset, "time_annot"))
 }
 
-has_metadata <- function(dataset) {
-    !is.null(get_mc_data(dataset, "metadata"))
+has_metadata <- function(dataset, atlas = FALSE) {
+    !is.null(get_mc_data(dataset, "metadata", atlas = atlas))
 }
 
 has_cell_metadata <- function(dataset) {

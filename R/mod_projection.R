@@ -178,7 +178,7 @@ mod_projection_server <- function(input, output, session, dataset, metacell_type
 
     mc_mc_gene_scatter_df <- reactive({
         req(input$mode)
-        req(input$mark_disjoined)
+        req(!is.null(input$mark_disjoined))
         if (input$mode == "MC") {
             req(input$metacell1)
             df <- calc_obs_exp_mc_df(dataset(), input$metacell1)
@@ -203,7 +203,7 @@ mod_projection_server <- function(input, output, session, dataset, metacell_type
                 mutate(col = ifelse(gene %in% disjoined, "yellow", as.character(col))) %>%
                 mutate(col = ifelse(gene %in% systematic, "purple", as.character(col))) %>%
                 mutate(col = factor(col, levels = c("yellow", "purple", prev_levels)))
-        }
+        }        
 
         df <- df %>%
             mutate(D = gene %in% disjoined, S = gene %in% systematic)

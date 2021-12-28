@@ -136,8 +136,8 @@ init_tab_defs <- function() {
     }
 }
 
-gene_names <- function(dataset) {
-    gene_names <- rownames(get_mc_data(dataset, "mc_mat"))
+gene_names <- function(dataset, atlas = FALSE) {
+    gene_names <- rownames(get_mc_data(dataset, "mc_mat", atlas = atlas))
     return(gene_names)
 }
 

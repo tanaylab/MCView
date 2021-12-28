@@ -61,7 +61,7 @@ mod_manifold_sidebar_ui <- function(id) {
                 ns("color_proj"),
                 label = "Color by:",
                 choices = c("Cell type", "Gene A", "Gene B"),
-                inline = TRUE,
+                inline = FALSE,
                 status = "danger",
                 fill = TRUE
             ),

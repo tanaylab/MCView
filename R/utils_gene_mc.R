@@ -1,6 +1,6 @@
-get_cell_type_colors <- function(dataset, cell_type_colors = NULL, na_color = "gray") {
+get_cell_type_colors <- function(dataset, cell_type_colors = NULL, na_color = "gray", atlas = FALSE) {
     if (is.null(cell_type_colors)) {
-        cell_type_colors <- get_mc_data(dataset, "cell_type_colors")
+        cell_type_colors <- get_mc_data(dataset, "cell_type_colors", atlas = atlas)
     }
 
     res <- cell_type_colors %>%
@@ -10,8 +10,8 @@ get_cell_type_colors <- function(dataset, cell_type_colors = NULL, na_color = "g
     return(res)
 }
 
-get_top_cor_gene <- function(dataset, gene, type = "pos") {
-    gg_mc_top_cor <- get_mc_data(dataset, "gg_mc_top_cor")
+get_top_cor_gene <- function(dataset, gene, type = "pos", atlas = FALSE) {
+    gg_mc_top_cor <- get_mc_data(dataset, "gg_mc_top_cor", atlas = atlas)
 
     if (gene %in% gg_mc_top_cor$gene1) {
         df <- gg_mc_top_cor %>%
@@ -19,7 +19,7 @@ get_top_cor_gene <- function(dataset, gene, type = "pos") {
             filter(type == !!type) %>%
             filter(gene1 != gene2)
     } else {
-        mc_egc <- get_mc_egc(dataset)
+        mc_egc <- get_mc_egc(dataset, atlas = atlas)
         req(gene %in% rownames(mc_egc))
         lfp <- log2(mc_egc + egc_epsilon)
         cors <- tgs_cor(as.matrix(lfp[gene, ]), t(lfp), pairwise.complete.obs = TRUE, spearman = FALSE)[1, ]
