@@ -34,9 +34,15 @@ filter_mat_by_cell_types <- function(mat, cell_types, metacell_types) {
     return(mat)
 }
 
-get_gene_egc <- function(gene, dataset) {
-    mc_mat <- get_mc_data(dataset, "mc_mat")
-    mc_sum <- get_mc_data(dataset, "mc_sum")
+get_gene_egc <- function(gene, dataset, projected = FALSE) {
+    if (projected) {
+        mc_mat <- get_mc_data(dataset, "projected_mat")
+        mc_sum <- get_mc_data(dataset, "projected_mat_sum")
+    } else {
+        mc_mat <- get_mc_data(dataset, "mc_mat")
+        mc_sum <- get_mc_data(dataset, "mc_sum")
+    }
+
 
     return(mc_mat[gene, ] / mc_sum)
 }

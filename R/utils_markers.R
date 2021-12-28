@@ -45,7 +45,7 @@ select_top_fold_genes <- function(fold_matrix, genes_per_metacell = 2, minimal_r
     return(mc_top_genes)
 }
 
-choose_markers <- function(marker_genes, max_markers) {
+choose_markers <- function(marker_genes, max_markers, dataset = NULL, add_systematic = FALSE) {
     markers <- marker_genes %>%
         group_by(metacell) %>%
         slice(2) %>%
@@ -67,6 +67,22 @@ choose_markers <- function(marker_genes, max_markers) {
 
     markers <- sort(unique(markers))
 
+    if (add_systematic && !is.null(dataset)) {
+        markers <- add_systematic_markers(dataset, markers)
+        markers <- markers[1:min(length(markers), max_markers)]
+    }
+
+    return(markers)
+}
+
+add_systematic_markers <- function(dataset, markers) {
+    systematic_genes <- get_mc_data(dataset, "systematic_genes")
+    if (!is.null(systematic_genes)) {
+        systematic_genes <- gene_names(dataset)[systematic_genes]
+        m <- get_mc_data(dataset, "projected_fold")
+        f <- Matrix::rowSums(m[intersect(rownames(m), systematic_genes), ]) > 0
+        return(unique(c(systematic_genes[f], markers)))
+    }
     return(markers)
 }
 

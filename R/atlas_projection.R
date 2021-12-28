@@ -129,10 +129,14 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
     # disjoined genes
     atlas_mat <- get_mc_data(dataset, "mc_mat", atlas = TRUE)
     query_mat <- get_mc_data(dataset, "mc_mat")
-    disjoined_genes <- setdiff(rownames(atlas_mat), rownames(query_mat))
-    serialize_shiny_data(disjoined_genes, "disjoined_genes", dataset = dataset, cache_dir = cache_dir)
+    disjoined_genes_no_atlas <- setdiff(rownames(query_mat), rownames(atlas_mat))
+    disjoined_genes_no_query <- setdiff(rownames(atlas_mat), rownames(query_mat))
 
-    # TODO: systematic genes
+    serialize_shiny_data(disjoined_genes_no_atlas, "disjoined_genes_no_atlas", dataset = dataset, cache_dir = cache_dir)
+    serialize_shiny_data(disjoined_genes_no_query, "disjoined_genes_no_query", dataset = dataset, cache_dir = cache_dir)
+
+    systematic_genes <- query$var$systematic %||% rep(FALSE, nrow(query_mat))
+    serialize_shiny_data(systematic_genes, "systematic_genes", dataset = dataset, cache_dir = cache_dir)
     cli_alert_success("succesfully imported atlas projections")
 }
 

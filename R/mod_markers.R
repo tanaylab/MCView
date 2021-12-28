@@ -28,6 +28,9 @@ mod_markers_ui <- function(id) {
                         id = ns("markers_heatmap_sidebar"),
                         checkboxInput(ns("force_cell_type"), "Force cell type", value = TRUE),
                         shinyWidgets::numericRangeInput(ns("lfp_range"), "Fold change range", c(-3, 3), width = "80%", separator = " to "),
+                        colourpicker::colourInput(ns("low_color"), "Low color", "blue"),
+                        colourpicker::colourInput(ns("high_color"), "High color", "red"),
+                        colourpicker::colourInput(ns("mid_color"), "Mid color", "white"),
                         checkboxInput(ns("plot_legend"), "Plot legend", value = TRUE)
                     ),
                     shinycssloaders::withSpinner(
@@ -66,6 +69,7 @@ mod_markers_sidebar_ui <- function(id) {
             uiOutput(ns("cell_type_list")),
             uiOutput(ns("metadata_list")),
             shinyWidgets::actionGroupButtons(ns("update_markers"), labels = "Update markers", size = "sm"),
+            numericInput(ns("max_gene_num"), "Maximal number of genes", value = 100),
             uiOutput(ns("marker_genes_list")),
             uiOutput(ns("add_genes_ui"))
         )
@@ -103,7 +107,8 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
     observe({
         req(input$mode)
         if (is.null(markers[[input$mode]])) {
-            initial_markers <- choose_markers(get_marker_genes(dataset(), mode = input$mode), 100)
+            req(input$max_gene_num)
+            initial_markers <- choose_markers(get_marker_genes(dataset(), mode = input$mode), input$max_gene_num, dataset = dataset(), add_systematic = input$mode == "Proj")
             markers[[input$mode]] <- initial_markers
         }
 
@@ -143,7 +148,9 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
         markers_df <- markers_df %>%
             select(metacell) %>%
             inner_join(get_marker_genes(dataset(), mode = input$mode), by = "metacell")
-        new_markers <- choose_markers(markers_df, 100)
+
+        req(input$max_gene_num)
+        new_markers <- choose_markers(markers_df, input$max_gene_num, dataset = dataset(), add_systematic = input$mode == "Proj")
 
         markers[[input$mode]] <- new_markers
     })
@@ -189,14 +196,6 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
             mat <- log2(mat)
         }
 
-        # if (input$mode == "Markers") {
-        #     colors <- c("darkblue", "blue", "lightblue", "white", "red", "darkred")
-        #     mid_color <- 4
-        # } else {
-        #     colors <- c("white", "red", "darkred", "black")
-        #     mid_color <- 1
-        # }
-
         if (!is.null(input$selected_md)) {
             metadata <- get_mc_data(dataset(), "metadata") %>%
                 select(metacell, one_of(input$selected_md))
@@ -204,6 +203,25 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
             metadata <- NULL
         }
 
+        marker_genes <- markers[[input$mode]]
+        req(marker_genes)
+
+        if (input$mode == "Proj") {
+            disjoined_genes <- get_mc_data(dataset(), "disjoined_genes_no_atlas")
+        } else {
+            disjoined_genes <- NULL
+        }
+
+
+        forbidden_genes <- get_mc_data(dataset(), "forbidden_genes")
+        if (!is.null(forbidden_genes)) {
+            forbidden_genes <- gene_names(dataset())[forbidden_genes]
+        }
+
+        systematic_genes <- get_mc_data(dataset(), "systematic_genes")
+        if (!is.null(systematic_genes)) {
+            systematic_genes <- gene_names(dataset())[systematic_genes]
+        }
 
         plot_markers_mat(
             mat,
@@ -213,11 +231,15 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
             min_lfp = lfp_range[[input$mode]][1],
             max_lfp = lfp_range[[input$mode]][2],
             plot_legend = input$plot_legend %||% TRUE,
-            # colors = colors,
-            # mid_color = mid_color,
-            metadata = metadata
+            high_color =  input$high_color,
+            low_color =  input$low_color,
+            mid_color =  input$mid_color,
+            metadata = metadata,
+            forbidden_genes = forbidden_genes,
+            systematic_genes = systematic_genes,
+            disjoined_genes = disjoined_genes
         )
-    }) %>% bindCache(dataset(), metacell_types(), cell_type_colors(), lfp_range[[input$mode]], input$plot_legend, input$selected_md, input$mode, markers[[input$mode]], input$selected_cell_types, input$force_cell_type)
+    }) %>% bindCache(dataset(), metacell_types(), cell_type_colors(), lfp_range[[input$mode]], input$plot_legend, input$selected_md, input$mode, markers[[input$mode]], input$selected_cell_types, input$force_cell_type, input$high_color, input$low_color, input$mid_color)
 }
 
 get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_types = NULL, force_cell_type = TRUE, mode = "Markers", notify_var_genes = FALSE) {
@@ -238,6 +260,7 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
     }
 
     req(dim(mc_fp))
+    req(nrow(mc_fp) > 0)
 
     if (!is.null(cell_types)) {
         mat <- filter_mat_by_cell_types(mc_fp, cell_types, metacell_types)

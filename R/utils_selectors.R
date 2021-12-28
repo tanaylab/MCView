@@ -55,7 +55,7 @@ axis_selector <- function(axis, selected, ns, choices = c("Metadata", "Gene")) {
 }
 
 render_axis_select_ui <- function(axis, title, md_choices, md_selected, selected_gene, ns, input, dataset, cell_types = NULL, cell_type_selected = NULL) {
-    picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
+    picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE)
 
     renderUI({
         req(dataset())
@@ -92,14 +92,20 @@ render_axis_select_ui <- function(axis, title, md_choices, md_selected, selected
     })
 }
 
-top_correlated_selector <- function(gene_id, id, type_id, input, output, session, dataset, ns, button_labels = c("X", "Y", "Color", "2D")) {
+top_correlated_selector <- function(gene_id, id, type_id, input, output, session, dataset, ns, button_labels = c("X", "Y", "Color", "2D"), ids = c("x", "y", "color", "proj2d")) {
     output[[glue("top_correlated_select_{id}")]] <- renderUI({
         req(has_gg_mc_top_cor(project, dataset()))
         req(input[[type_id]] == "Gene")
         req(input[[gene_id]])
         gene <- input[[gene_id]]
         req(gene %in% gene_names(dataset()))
-        input_ids <- c(ns(glue("select_top_cor_{id}_x")), ns(glue("select_top_cor_{id}_y")), ns(glue("select_top_cor_{id}_color")), ns(glue("select_top_cor_{id}_proj2d")))
+        input_ids <- purrr::map_chr(
+            ids,
+            ~ {
+                ns(glue("select_top_cor_{id}_{.x}"))
+            }
+        )
+        # input_ids <- c(ns(glue("select_top_cor_{id}_x")), ns(glue("select_top_cor_{id}_y")), ns(glue("select_top_cor_{id}_color")), ns(glue("select_top_cor_{id}_proj2d")))
         tagList(
             selectInput(
                 ns(glue("selected_top_{id}")),
@@ -118,6 +124,10 @@ top_correlated_selector <- function(gene_id, id, type_id, input, output, session
                 size = "sm", onclick = glue("window.open('https://www.genecards.org/cgi-bin/carddisp.pl?gene={gene}')")
             )
         )
+    })
+    observeEvent(input[[glue("select_top_cor_{id}_axis")]], {
+        req(input[["axis_type"]] == "Gene")
+        shinyWidgets::updatePickerInput(session, "axis_var", selected = input[[glue("selected_top_{id}")]])
     })
     observeEvent(input[[glue("select_top_cor_{id}_x")]], {
         req(input[["x_axis_type"]] == "Gene")
@@ -144,9 +154,9 @@ top_correlated_selectors <- function(input, output, session, dataset, ns, button
     top_correlated_selector("color_proj_gene", "color_proj", "color_proj", input, output, session, dataset, ns, button_labels = button_labels)
 }
 
-axis_vars_ok <- function(dataset, input, md_id) {
-    metadata <- get_mc_data(dataset, md_id)
-    vars_ok <- purrr::map_lgl(c("x_axis", "y_axis", "color_by"), function(v) {
+axis_vars_ok <- function(dataset, input, md_id, axes = c("x_axis", "y_axis", "color_by"), atlas = FALSE) {
+    metadata <- get_mc_data(dataset, md_id, atlas = atlas)
+    vars_ok <- purrr::map_lgl(axes, function(v) {
         type <- input[[glue("{v}_type")]]
         var <- input[[glue("{v}_var")]]
         if (type == "Metadata" && (var %in% c(colnames(metadata), "None", "Cell type"))) {

@@ -138,9 +138,11 @@ connect_gene_plots <- function(input, output, session, ns, source) {
     observe({
         restyle_events <- plotly::event_data(source = source, event = "plotly_restyle")
 
-        plotly::plotlyProxyInvoke(plot_gene_gene_mc_proxy, "restyle", restyle_events[[1]], restyle_events[[2]])
         plotly::plotlyProxyInvoke(plot_gene_age_mc1_proxy, "restyle", restyle_events[[1]], restyle_events[[2]])
         plotly::plotlyProxyInvoke(plot_gene_age_mc2_proxy, "restyle", restyle_events[[1]], restyle_events[[2]])
+
+        req(is.null(input$color_by_var) || input$color_by_var == "Cell type")
+        plotly::plotlyProxyInvoke(plot_gene_gene_mc_proxy, "restyle", restyle_events[[1]], restyle_events[[2]])
     })
 }
 

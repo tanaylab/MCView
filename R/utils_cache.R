@@ -275,8 +275,8 @@ get_samples_list <- function(dataset) {
     get_mc_data(dataset, "samp_list") %||% calc_samples_list(dataset)
 }
 
-dataset_metadata_fields <- function(dataset) {
-    metadata <- get_mc_data(dataset, "metadata")
+dataset_metadata_fields <- function(dataset, atlas = FALSE) {
+    metadata <- get_mc_data(dataset, "metadata", atlas = atlas)
     if (is.null(metadata)) {
         return(c())
     }
@@ -287,8 +287,8 @@ dataset_metadata_fields <- function(dataset) {
     return(fields)
 }
 
-dataset_cell_metadata_fields <- function(dataset) {
-    metadata <- get_mc_data(dataset, "cell_metadata")
+dataset_cell_metadata_fields <- function(dataset, atlas = FALSE) {
+    metadata <- get_mc_data(dataset, "cell_metadata", atlas = atlas)
     if (is.null(metadata)) {
         return(c())
     }
@@ -299,15 +299,15 @@ dataset_cell_metadata_fields <- function(dataset) {
     return(fields)
 }
 
-dataset_cell_metadata_fields_numeric <- function(dataset) {
-    fields <- dataset_cell_metadata_fields(dataset)
+dataset_cell_metadata_fields_numeric <- function(dataset, atlas = FALSE) {
+    fields <- dataset_cell_metadata_fields(dataset, atlas = atlas)
     df <- get_mc_data(dataset, "cell_metadata")
     numeric_f <- purrr::map_lgl(fields, ~ is_numeric_field(df, .x))
     return(fields[numeric_f])
 }
 
-dataset_cell_metadata_fields_categorical <- function(dataset) {
-    fields <- dataset_cell_metadata_fields(dataset)
+dataset_cell_metadata_fields_categorical <- function(dataset, atlas = FALSE) {
+    fields <- dataset_cell_metadata_fields(dataset, atlas = atlas)
     df <- get_mc_data(dataset, "cell_metadata")
     numeric_f <- purrr::map_lgl(fields, ~ is_numeric_field(df, .x))
     return(fields[!numeric_f])

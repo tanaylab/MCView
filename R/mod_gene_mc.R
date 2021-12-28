@@ -146,15 +146,6 @@ mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, 
     output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, source = "proj_mc_plot_gene_tab") %>%
         bindCache(dataset(), input$color_proj, metacell_types(), cell_type_colors(), input$point_size, input$stroke, input$min_edge_size, input$set_range, input$show_selected_metacells, input$metacell1, input$metacell2, input$proj_stat, input$expr_range, input$lfp, input$color_proj_gene, input$color_proj_metadata)
 
-    plot_gene_gene_mc_proxy <- plotly::plotlyProxy(ns("md_md_plot"), session)
-
-    observe({
-        restyle_events <- plotly::event_data(source = "proj_mc_plot_gene_tab", event = "plotly_restyle")
-        req(input$color_by_var == "Cell type")
-
-        plotly::plotlyProxyInvoke(plot_gene_gene_mc_proxy, "restyle", restyle_events[[1]], restyle_events[[2]])
-    })
-
     connect_gene_plots(input, output, session, ns, source = "proj_mc_plot_gene_tab")
 
     # Metadata/Metadata plots
