@@ -704,6 +704,7 @@ plot_obs_proj_scatter <- function(dataset,
         req(atlas_metadata)
         proj_w <- get_mc_data(dataset, "proj_weights")
         req(proj_w)
+        # not implemented yet
         req(FALSE)
 
         # df <- df %>%

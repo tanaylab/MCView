@@ -102,7 +102,7 @@ mod_projection_ui <- function(id) {
                         startOpen = FALSE,
                         width = 100,
                         id = ns("gene_gene_sidebar"),
-                        axis_selector("axis", "Gene", ns, choices = c("Metadata", "Gene")),
+                        axis_selector("axis", "Gene", ns, choices = c("Gene")),
                         axis_selector("color_by", "Metadata", ns, choices = c("Metadata", "Gene")),
                         uiOutput(ns("gene_gene_point_size_ui")),
                         uiOutput(ns("gene_gene_stroke_ui"))
