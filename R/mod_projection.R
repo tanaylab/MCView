@@ -27,12 +27,19 @@ mod_projection_ui <- function(id) {
                         shinyWidgets::prettyRadioButtons(
                             ns("color_proj"),
                             label = "Color by:",
-                            choices = c("Cell type", "Charting", "Metadata"),
+                            choices = c("Cell type", "Charting", "Query Metadata", "Atlas Metadata", "Gene"),
                             inline = TRUE,
                             status = "danger",
                             fill = TRUE
                         ),
                         id = ns("gene_projection_sidebar"),
+                        uiOutput(ns("gene_selector")),
+                        uiOutput(ns("query_metadata_selector")),
+                        uiOutput(ns("atlas_metadata_selector")),
+                        uiOutput(ns("proj_stat_ui")),
+                        uiOutput(ns("set_range_ui")),
+                        uiOutput(ns("expr_range_ui")),
+                        uiOutput(ns("enrich_range_ui")),
                         uiOutput(ns("point_size_ui")),
                         uiOutput(ns("stroke_ui")),
                         uiOutput(ns("edge_distance_ui"))
@@ -168,6 +175,60 @@ mod_projection_server <- function(input, output, session, dataset, metacell_type
         req(dataset())
         colnames(get_mc_data(dataset(), "mc_mat"))
     })
+
+    picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE)
+
+    output$gene_selector <- renderUI({
+        shinyWidgets::pickerInput(
+            ns("color_proj_gene"),
+            label = "Gene:",
+            choices = gene_names(dataset()),
+            selected = default_gene1,
+            width = "70%",
+            multiple = FALSE,
+            options = picker_options
+        )
+    })
+
+    output$query_metadata_selector <- renderUI({
+        if (!has_metadata(dataset())) {
+            print(glue("Query doesn't have any metadata."))
+        } else {
+            shinyWidgets::pickerInput(
+                ns("color_proj_query_metadata"),
+                label = "Metadata:",
+                choices = dataset_metadata_fields(dataset()),
+                selected = dataset_metadata_fields(dataset())[1],
+                width = "70%",
+                multiple = FALSE,
+                options = picker_options
+            )
+        }
+    })
+
+    output$atlas_metadata_selector <- renderUI({
+        if (!has_metadata(dataset(), atlas = TRUE)) {
+            print(glue("Atlas doesn't have any metadata."))
+        } else {
+            shinyWidgets::pickerInput(
+                ns("color_proj_atlas_metadata"),
+                label = "Metadata:",
+                choices = dataset_metadata_fields(dataset(), atlas = TRUE),
+                selected = dataset_metadata_fields(dataset(), atlas = TRUE)[1],
+                width = "70%",
+                multiple = FALSE,
+                options = picker_options
+            )
+        }
+    })
+
+    observe({
+        req(input$color_proj)
+        shinyjs::toggle(id = "gene_selector", condition = input$color_proj == "Gene")
+        shinyjs::toggle(id = "query_metadata_selector", condition = input$color_proj == "Query Metadata")
+        shinyjs::toggle(id = "atlas_metadata_selector", condition = input$color_proj == "Atlas Metadata")
+    })
+
 
     scatter_selectors(ns, dataset, output)
     projection_selectors(ns, dataset, output, input)

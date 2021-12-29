@@ -1,5 +1,5 @@
-get_md_attribute <- function(dataset, md, attr, default) {
-    metadata_colors <- get_mc_data(dataset, "metadata_colors")
+get_md_attribute <- function(dataset, md, attr, default, atlas = FALSE) {
+    metadata_colors <- get_mc_data(dataset, "metadata_colors", atlas = atlas)
     if (has_name(metadata_colors, md)) {
         md_attr <- metadata_colors[[md]][[attr]]
         if (!is.null(md_attr)) {
@@ -11,12 +11,12 @@ get_md_attribute <- function(dataset, md, attr, default) {
 }
 
 
-get_metadata_colors <- function(dataset, md, colors = NULL, color_breaks = NULL, metadata = NULL, default_colors = c("white", "#F7F7F7", "#FDDBC7", "#F4A582", "#D6604D", "#B2182B", "#67001F", "black")) {
-    colors <- colors %||% get_md_attribute(dataset, md, "colors", default_colors)
-    color_breaks <- color_breaks %||% get_md_attribute(dataset, md, "breaks", NULL)
+get_metadata_colors <- function(dataset, md, colors = NULL, color_breaks = NULL, metadata = NULL, default_colors = c("white", "#F7F7F7", "#FDDBC7", "#F4A582", "#D6604D", "#B2182B", "#67001F", "black"), atlas = FALSE) {
+    colors <- colors %||% get_md_attribute(dataset, md, "colors", default_colors, atlas = atlas)
+    color_breaks <- color_breaks %||% get_md_attribute(dataset, md, "breaks", NULL, atlas = atlas)
 
     if (is.null(color_breaks)) {
-        metadata <- metadata %||% get_mc_data(dataset, "metadata")
+        metadata <- metadata %||% get_mc_data(dataset, "metadata", atlas = atlas)
         min_val <- min(metadata[[md]], na.rm = TRUE)
         max_val <- max(metadata[[md]], na.rm = TRUE)
 
@@ -679,11 +679,16 @@ plot_obs_proj_scatter <- function(dataset,
                                   stroke = initial_scatters_stroke(dataset),
                                   expr_colors = c("#053061", "#2166AC", "#4393C3", "#92C5DE", "#D1E5F0", "#F7F7F7", "#FDDBC7", "#F4A582", "#D6604D", "#B2182B", "#67001F"),
                                   plot_text = TRUE) {
-    metadata <- get_mc_data(dataset, "metadata", atlas = TRUE)
-    if (!is.null(metadata)) {
-        metadata <- metadata %>% mutate(metacell = as.character(metacell))
+    atlas_metadata <- get_mc_data(dataset, "metadata", atlas = TRUE)
+    query_metadata <- get_mc_data(dataset, "metadata", atlas = FALSE)
+    if (!is.null(atlas_metadata)) {
+        atlas_metadata <- atlas_metadata %>% mutate(metacell = as.character(metacell))
     }
-    metadata_colors <- get_mc_data(dataset, "metadata_colors")
+    if (!is.null(query_metadata)) {
+        query_metadata <- query_metadata %>% mutate(metacell = as.character(metacell))
+    }
+    # atlas_metadata_colors <- get_mc_data(dataset, "metadata_colors", atlas = TRUE)
+    # query_metadata_colors <- get_mc_data(dataset, "metadata_colors", atlas = FALSE)
 
     df <- metacell_types %>%
         mutate(
@@ -696,7 +701,7 @@ plot_obs_proj_scatter <- function(dataset,
     # set axis variables
     axis_name <- axis_var
     if (axis_type == "Metadata") {
-        req(metadata)
+        req(atlas_metadata)
         proj_w <- get_mc_data(dataset, "proj_weights")
         req(proj_w)
         req(FALSE)
@@ -722,11 +727,22 @@ plot_obs_proj_scatter <- function(dataset,
             mutate(color = cell_type, color_values = cell_type) %>%
             mutate(color_str = glue("Cell type: {`Cell type`}"))
     } else if (color_type == "Metadata") {
-        req(metadata)
+        req(atlas_metadata)
+        proj_w <- get_mc_data(dataset, "proj_weights")
+        req(proj_w)
+        proj_md <- proj_w %>%
+            left_join(
+                atlas_metadata %>%
+                    select(atlas = metacell, !!color_var),
+                by = "atlas"
+            ) %>%
+            group_by(query) %>%
+            summarise(!!color_var := sum(weight * !!sym(color_var))) %>%
+            rename(metacell = query)
         df <- df %>%
             select(-any_of(color_var)) %>%
-            left_join(metadata %>% select(metacell, !!color_var), by = "metacell")
-        md_colors <- get_metadata_colors(dataset, color_var, colors = colors, color_breaks = color_breaks, metadata = metadata)
+            left_join(proj_md, by = "metacell")
+        md_colors <- get_metadata_colors(dataset, color_var, colors = colors, color_breaks = color_breaks, metadata = atlas_metadata, atlas = TRUE)
         palette <- circlize::colorRamp2(colors = md_colors$colors, breaks = md_colors$breaks)
         df$color <- palette(df[[color_var]])
         df$color_values <- df[[color_var]]

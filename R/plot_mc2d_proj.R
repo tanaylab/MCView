@@ -352,6 +352,26 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
                 tidyr::replace_na(replace = list(Fraction = 0, query = "other"))
             # fig <- plot_2d_metadata("Fraction", metadata = metadata)
             fig <- plot_2d_metadata("query", metadata = metadata, colors = c("query" = "darkred", "other" = "white"))
+        } else if (input$color_proj == "Query Metadata") {
+            req(input$color_proj_query_metadata)
+            fig <- plot_2d_metadata(input$color_proj_query_metadata)
+        } else if (input$color_proj == "Atlas Metadata") {
+            req(input$color_proj_atlas_metadata)
+            atlas_metadata <- get_mc_data(dataset(), "metadata", atlas = TRUE)
+            proj_w <- get_mc_data(dataset(), "proj_weights")
+            req(proj_w)
+            metadata <- proj_w %>%
+                mutate(atlas = as.character(atlas)) %>%
+                left_join(
+                    atlas_metadata %>%
+                        select(atlas = metacell, !!input$color_proj_atlas_metadata) %>%
+                        mutate(atlas = as.character(atlas)),
+                    by = "atlas"
+                ) %>%
+                group_by(query) %>%
+                summarise(!!input$color_proj_atlas_metadata := sum(weight * !!sym(input$color_proj_atlas_metadata))) %>%
+                rename(metacell = query)
+            fig <- plot_2d_metadata(input$color_proj_atlas_metadata, metadata = metadata)
         }
 
         fig <- fig %>% plotly::event_register("plotly_restyle")
