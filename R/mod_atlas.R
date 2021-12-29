@@ -25,7 +25,7 @@ mod_atlas_ui <- function(id) {
                     sidebar = shinydashboardPlus::boxSidebar(
                         startOpen = FALSE,
                         width = 80,
-                        id = ns("gene_projection_sidebar"),                        
+                        id = ns("gene_projection_sidebar"),
                         uiOutput(ns("proj_stat_ui")),
                         uiOutput(ns("set_range_ui")),
                         uiOutput(ns("expr_range_ui")),
@@ -64,7 +64,7 @@ mod_atlas_sidebar_ui <- function(id) {
                 inline = FALSE,
                 status = "danger",
                 fill = TRUE
-            ),            
+            ),
             uiOutput(ns("gene_selector")),
             uiOutput(ns("metadata_selector")),
             uiOutput(ns("metacell_selector")),
@@ -92,18 +92,18 @@ mod_atlas_server <- function(input, output, session, dataset, metacell_types, ce
                 selected = NULL,
                 size = 10,
                 selectize = FALSE
-            )            
+            )
         )
     })
 
     picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE)
 
-    output$gene_selector <- renderUI({        
+    output$gene_selector <- renderUI({
         shinyWidgets::pickerInput(
             ns("color_proj_gene"),
             label = "Gene:",
             choices = gene_names(dataset(), atlas = TRUE),
-            selected = default_gene1,            
+            selected = default_gene1,
             multiple = FALSE,
             options = picker_options
         )
@@ -123,7 +123,7 @@ mod_atlas_server <- function(input, output, session, dataset, metacell_types, ce
             )
         }
     })
-    
+
     output$cell_type_selector <- cell_type_selector(dataset, ns, id = "selected_cell_types", label = "Cell types", cell_type_colors = cell_type_colors(), selected = "all")
 
     output$metacell_selector <- metacell_selector(dataset, ns, id = "selected_metacell", label = "Metacell")
@@ -131,7 +131,7 @@ mod_atlas_server <- function(input, output, session, dataset, metacell_types, ce
     observe({
         req(input$color_proj)
         shinyjs::toggle(id = "gene_selector", condition = input$color_proj == "Gene")
-        shinyjs::toggle(id = "metadata_selector", condition = input$color_proj == "Metadata")        
+        shinyjs::toggle(id = "metadata_selector", condition = input$color_proj == "Metadata")
         shinyjs::toggle(id = "cell_type_selector", condition = input$color_proj == "Query cell type")
         shinyjs::toggle(id = "metacell_selector", condition = input$color_proj == "Query metacell")
     })

@@ -5,7 +5,7 @@
 #' @param highlight data.frame with 'metacell',"label" and 'color'
 #'
 #' @noRd
-mc2d_plot_ggp <- function(dataset, highlight = NULL, point_size = initial_proj_point_size(dataset), min_d = min_edge_length(dataset), stroke = NULL, graph_color = "black", graph_width = 0.1, scale_edges = FALSE, id = NULL,  atlas = FALSE, metacell_types = get_mc_data(dataset, "metacell_types", atlas = atlas), cell_type_colors = get_mc_data(dataset, "cell_type_colors", atlas = atlas)) {
+mc2d_plot_ggp <- function(dataset, highlight = NULL, point_size = initial_proj_point_size(dataset), min_d = min_edge_length(dataset), stroke = NULL, graph_color = "black", graph_width = 0.1, scale_edges = FALSE, id = NULL, atlas = FALSE, metacell_types = get_mc_data(dataset, "metacell_types", atlas = atlas), cell_type_colors = get_mc_data(dataset, "cell_type_colors", atlas = atlas)) {
     mc2d <- get_mc_data(dataset, "mc2d", atlas = atlas)
 
     mc2d_df <- mc2d_to_df(mc2d) %>%
@@ -261,8 +261,8 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
                 point_size = input$point_size,
                 min_d = input$min_edge_size,
                 metacell_types = metacell_types(),
-                atlas = atlas, 
-                metadata = metadata, 
+                atlas = atlas,
+                metadata = metadata,
                 colors = colors
             ) %>%
                 plotly::ggplotly(tooltip = "tooltip_text", source = source) %>%
@@ -321,7 +321,7 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
             fig <- plot_2d_metadata(paste0("samp_id: ", input$samp1))
         } else if (input$color_proj == "Charting") {
             fig <- plot_2d_metadata("charted", colors = c("charted" = "white", "un-charted" = "darkred"))
-        } else if (input$color_proj == "Query cell type"){            
+        } else if (input$color_proj == "Query cell type") {
             req(input$selected_cell_types)
             all_mc_w <- get_mc_data(dataset(), "proj_weights")
             req(all_mc_w)
@@ -336,10 +336,10 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
             metadata <- tibble(metacell = colnames(get_mc_data(dataset(), "mc_mat", atlas = TRUE))) %>%
                 left_join(mc_proj_w, by = "metacell") %>%
                 tidyr::replace_na(replace = list(Fraction = 0, query = "other"))
-            
+
             # fig <- plot_2d_metadata("Fraction", metadata = metadata)
             fig <- plot_2d_metadata("query", metadata = metadata, colors = c("query" = "darkred", "other" = "white"))
-        } else if (input$color_proj == "Query metacell"){            
+        } else if (input$color_proj == "Query metacell") {
             req(input$selected_metacell)
             all_mc_w <- get_mc_data(dataset(), "proj_weights")
             req(all_mc_w)

@@ -53,6 +53,7 @@ Imports:
     rlang,
     rmarkdown,
     scales,
+    slanter,
     shiny (>= 1.6.0),
     shinyjs,
     shinycssloaders,

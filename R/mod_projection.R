@@ -203,7 +203,7 @@ mod_projection_server <- function(input, output, session, dataset, metacell_type
                 mutate(col = ifelse(gene %in% disjoined, "yellow", as.character(col))) %>%
                 mutate(col = ifelse(gene %in% systematic, "purple", as.character(col))) %>%
                 mutate(col = factor(col, levels = c("yellow", "purple", prev_levels)))
-        }        
+        }
 
         df <- df %>%
             mutate(D = gene %in% disjoined, S = gene %in% systematic)

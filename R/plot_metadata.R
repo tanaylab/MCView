@@ -50,12 +50,12 @@ mc2d_plot_metadata_ggp <- function(dataset,
                                    graph_width = 0.1,
                                    id = NULL,
                                    scale_edges = FALSE,
-                                   metacell_types = NULL, 
-                                   atlas = FALSE, 
+                                   metacell_types = NULL,
+                                   atlas = FALSE,
                                    metadata = NULL) {
     mc2d <- get_mc_data(dataset, "mc2d", atlas = atlas)
     metadata <- metadata %||% get_mc_data(dataset, "metadata", atlas = atlas)
-    
+
     metadata <- metadata %>% mutate(metacell = as.character(metacell))
     metacell_types <- metacell_types %||% get_mc_data(dataset, "metacell_types")
 
@@ -96,14 +96,14 @@ mc2d_plot_metadata_ggp <- function(dataset,
 mc2d_plot_metadata_ggp_categorical <- function(mc2d_df,
                                                graph,
                                                dataset,
-                                               md,                                               
+                                               md,
                                                point_size,
                                                min_d,
                                                stroke,
                                                graph_color,
                                                graph_width,
                                                id,
-                                               scale_edges, 
+                                               scale_edges,
                                                colors = NULL) {
     mc2d_df <- mc2d_df %>%
         mutate(
@@ -117,7 +117,7 @@ mc2d_plot_metadata_ggp_categorical <- function(mc2d_df,
             )
         )
 
-    if (is.null(colors)){
+    if (is.null(colors)) {
         metadata_colors <- get_mc_data(dataset, "metadata_colors")
         if (is.null(metadata_colors[[md]])) {
             categories <- unique(mc2d_df[[md]])
@@ -127,7 +127,7 @@ mc2d_plot_metadata_ggp_categorical <- function(mc2d_df,
             colors <- metadata_colors[[md]]
         }
     }
-    
+
 
     p <- mc2d_df %>%
         ggplot(aes(x = x, y = y, label = metacell, fill = !!sym(md), tooltip_text = Metacell, customdata = id))
