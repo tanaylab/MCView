@@ -184,7 +184,8 @@ mc2d_plot_metadata_ggp_numeric <- function(mc2d_df,
     palette <- circlize::colorRamp2(colors = md_colors$colors, breaks = md_colors$breaks)
 
     mc2d_df <- mc2d_df %>%
-        mutate(col_x = palette(.[[md]]))
+        mutate(col_x = palette(.[[md]])) %>%
+        arrange(desc(!!sym(md)))
 
     p <- mc2d_df %>%
         ggplot(aes(x = x, y = y, label = metacell, fill = col_x, color = !!sym(md), tooltip_text = Metacell, customdata = id))
@@ -208,7 +209,7 @@ mc2d_plot_metadata_ggp_numeric <- function(mc2d_df,
         guides(fill = "none")
 
     p <- p +
-        scale_color_gradientn(name = md, colors = md_colors$colors, values = scales::rescale(md_colors$breaks)) +
+        scale_color_gradientn(name = md, colors = md_colors$colors, values = scales::rescale(md_colors$breaks, c(0, 1)), breaks = round(md_colors$breaks, digits = 2)) +
         scale_fill_identity()
 
     return(p)

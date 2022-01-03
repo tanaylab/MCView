@@ -69,6 +69,15 @@ mod_atlas_sidebar_ui <- function(id) {
             uiOutput(ns("metadata_selector")),
             uiOutput(ns("metacell_selector")),
             uiOutput(ns("cell_type_selector")),
+            shinyWidgets::prettyRadioButtons(
+                ns("color_by_scale"),
+                label = "Color scale:",
+                choices = c("Cell type", "Discrete", "Continuous"),
+                inline = FALSE,
+                status = "danger",
+                fill = TRUE
+            ),
+            sliderInput(ns("query_threshold"), "Threshold", 0, 1, 0.1),
             uiOutput(ns("top_correlated_select_color_proj"))
         )
     )
@@ -128,12 +137,15 @@ mod_atlas_server <- function(input, output, session, dataset, metacell_types, ce
 
     output$metacell_selector <- metacell_selector(dataset, ns, id = "selected_metacell", label = "Metacell")
 
+
     observe({
         req(input$color_proj)
         shinyjs::toggle(id = "gene_selector", condition = input$color_proj == "Gene")
         shinyjs::toggle(id = "metadata_selector", condition = input$color_proj == "Metadata")
         shinyjs::toggle(id = "cell_type_selector", condition = input$color_proj == "Query cell type")
         shinyjs::toggle(id = "metacell_selector", condition = input$color_proj == "Query metacell")
+        shinyjs::toggle(id = "color_by_scale", condition = input$color_proj %in% c("Query metacell", "Query cell type"))
+        shinyjs::toggle(id = "query_threshold", condition = input$color_proj %in% c("Query metacell", "Query cell type"))
     })
 
     atlas_colors <- reactive({
@@ -146,5 +158,5 @@ mod_atlas_server <- function(input, output, session, dataset, metacell_types, ce
         get_mc_data(dataset(), "metacell_types", atlas = TRUE)
     })
 
-    output$plot_mc_proj_2d <- render_2d_plotly(input, output, session, dataset, atlas_metacell_types, atlas_colors, atlas = TRUE, query_types = metacell_types, source = "proj_mc_plot_proj_tab") %>% bindCache(dataset(), input$color_proj, atlas_metacell_types(), atlas_colors(), input$point_size, input$stroke, input$min_edge_size, input$set_range, input$proj_stat, input$expr_range, input$lfp, input$color_proj_gene, input$color_proj_metadata, input$selected_cell_types, input$selected_metacell)
+    output$plot_mc_proj_2d <- render_2d_plotly(input, output, session, dataset, atlas_metacell_types, atlas_colors, atlas = TRUE, query_types = metacell_types, source = "proj_mc_plot_proj_tab") %>% bindCache(dataset(), input$color_proj, atlas_metacell_types(), atlas_colors(), input$point_size, input$stroke, input$min_edge_size, input$set_range, input$proj_stat, input$expr_range, input$lfp, input$color_proj_gene, input$color_proj_metadata, input$selected_cell_types, input$selected_metacell, input$color_by_scale, input$query_threshold)
 }

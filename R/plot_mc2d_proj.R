@@ -254,7 +254,7 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
             return(fig)
         }
 
-        plot_2d_metadata <- function(md, metadata = NULL, colors = NULL) {
+        plot_2d_metadata <- function(md, metadata = NULL, colors = NULL, color_breaks = NULL) {
             fig <- mc2d_plot_metadata_ggp(
                 dataset(),
                 md,
@@ -263,7 +263,8 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
                 metacell_types = metacell_types(),
                 atlas = atlas,
                 metadata = metadata,
-                colors = colors
+                colors = colors,
+                color_breaks = color_breaks
             ) %>%
                 plotly::ggplotly(tooltip = "tooltip_text", source = source) %>%
                 rm_plotly_grid()
@@ -276,6 +277,50 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
                     .x$showlegend <- FALSE
                     .x
                 })
+            }
+
+            return(fig)
+        }
+
+        plot_2d_atlas_proj <- function(type) {
+            req(input$color_by_scale)
+            all_mc_w <- get_mc_data(dataset(), "proj_weights")
+            req(all_mc_w)
+
+            if (type == "Query cell type") {
+                req(input$selected_cell_types)
+                req(query_types)
+                metacells <- query_types() %>%
+                    filter(cell_type %in% input$selected_cell_types) %>%
+                    pull(metacell)
+                mc_proj_w <- all_mc_w %>%
+                    filter(query %in% metacells)
+            } else {
+                req(input$selected_metacell)
+                mc_proj_w <- all_mc_w %>%
+                    filter(query == input$selected_metacell)
+            }
+
+            mc_proj_w <- mc_proj_w %>%
+                select(metacell = atlas, Weight = weight) %>%
+                mutate(query = "query")
+            metadata <- tibble(metacell = colnames(get_mc_data(dataset(), "mc_mat", atlas = TRUE))) %>%
+                left_join(mc_proj_w, by = "metacell") %>%
+                tidyr::replace_na(replace = list(Weight = 0, query = "other"))
+
+            req(input$query_threshold)
+            if (input$color_by_scale == "Discrete") {
+                metadata <- metadata %>%
+                    mutate(query = ifelse(Weight <= input$query_threshold, "other", query))
+                fig <- plot_2d_metadata("query", metadata = metadata, colors = c("query" = "darkred", "other" = "white"))
+            } else if (input$color_by_scale == "Continuous") {
+                fig <- plot_2d_metadata("Weight", metadata = metadata, colors = c("white", viridis::viridis_pal()(6)), color_breaks = c(0, seq(input$query_threshold, 1, length.out = 6)))
+            } else {
+                metadata <- metadata %>%
+                    mutate(query = ifelse(Weight <= input$query_threshold, "other", query)) %>%
+                    left_join(metacell_types() %>% select(metacell, cell_type), by = "metacell") %>%
+                    mutate(query = ifelse(query != "other", cell_type, query))
+                fig <- plot_2d_metadata("query", metadata = metadata, colors = c("other" = "white", get_cell_type_colors(dataset(), cell_type_colors())))
             }
 
             return(fig)
@@ -321,37 +366,8 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
             fig <- plot_2d_metadata(paste0("samp_id: ", input$samp1))
         } else if (input$color_proj == "Charting") {
             fig <- plot_2d_metadata("charted", colors = c("charted" = "white", "un-charted" = "darkred"))
-        } else if (input$color_proj == "Query cell type") {
-            req(input$selected_cell_types)
-            all_mc_w <- get_mc_data(dataset(), "proj_weights")
-            req(all_mc_w)
-            req(query_types)
-            metacells <- query_types() %>%
-                filter(cell_type %in% input$selected_cell_types) %>%
-                pull(metacell)
-            mc_proj_w <- all_mc_w %>%
-                filter(query %in% metacells) %>%
-                select(metacell = atlas, Fraction = weight) %>%
-                mutate(query = "query")
-            metadata <- tibble(metacell = colnames(get_mc_data(dataset(), "mc_mat", atlas = TRUE))) %>%
-                left_join(mc_proj_w, by = "metacell") %>%
-                tidyr::replace_na(replace = list(Fraction = 0, query = "other"))
-
-            # fig <- plot_2d_metadata("Fraction", metadata = metadata)
-            fig <- plot_2d_metadata("query", metadata = metadata, colors = c("query" = "darkred", "other" = "white"))
-        } else if (input$color_proj == "Query metacell") {
-            req(input$selected_metacell)
-            all_mc_w <- get_mc_data(dataset(), "proj_weights")
-            req(all_mc_w)
-            mc_proj_w <- all_mc_w %>%
-                filter(query == input$selected_metacell) %>%
-                select(metacell = atlas, Fraction = weight) %>%
-                mutate(query = "query")
-            metadata <- tibble(metacell = colnames(get_mc_data(dataset(), "mc_mat", atlas = TRUE))) %>%
-                left_join(mc_proj_w, by = "metacell") %>%
-                tidyr::replace_na(replace = list(Fraction = 0, query = "other"))
-            # fig <- plot_2d_metadata("Fraction", metadata = metadata)
-            fig <- plot_2d_metadata("query", metadata = metadata, colors = c("query" = "darkred", "other" = "white"))
+        } else if (input$color_proj %in% c("Query cell type", "Query metacell")) {
+            fig <- plot_2d_atlas_proj(input$color_proj)
         } else if (input$color_proj == "Query Metadata") {
             req(input$color_proj_query_metadata)
             fig <- plot_2d_metadata(input$color_proj_query_metadata)
@@ -395,6 +411,8 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
         return(fig)
     })
 }
+
+
 
 # TODO: find a better heuristic that takes into account the plot size
 initial_proj_point_size <- function(dataset) {
