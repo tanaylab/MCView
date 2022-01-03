@@ -224,6 +224,7 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
             if (has_name(new_metacell_types, "color")) {
                 new_cell_type_colors <- new_metacell_types %>%
                     distinct(cell_type, color) %>%
+                    select(cell_type, color) %>%
                     filter(cell_type != "(Missing)") %>%
                     arrange(cell_type) %>%
                     mutate(order = 1:n())
