@@ -15,7 +15,7 @@ mod_projection_ui <- function(id) {
                 width = 7,
                 shinydashboardPlus::box(
                     id = ns("metacell_projection"),
-                    title = "2D Projection",
+                    title = "Query 2D Projection",
                     status = "primary",
                     solidHeader = TRUE,
                     collapsible = TRUE,

@@ -5,6 +5,7 @@ get_cell_type_colors <- function(dataset, cell_type_colors = NULL, na_color = "g
 
     res <- cell_type_colors %>%
         distinct(cell_type, color) %>%
+        select(cell_type, color) %>% 
         bind_rows(tibble(cell_type = "(Missing)", color = na_color)) %>%
         deframe()
     return(res)

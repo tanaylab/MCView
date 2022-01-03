@@ -17,12 +17,12 @@
 #' @param dataset name for the dataset, e.g. "PBMC"
 #' @param anndata_file path to \code{h5ad} file which contains the output of metacell2 pipeline (metacells python package).
 #' @param cell_type_field name of a field in the anndata \code{object$obs} which contains a cell type (optional).
-#' If the field doesn't exist and \code{metacell_types_file} are missing, MCView would first look
+#' If the field doesn't exist and \code{metacell_types_file} is missing, MCView would first look
 #' for a field named 'type', 'cell_type' or 'cluster' at \code{object$obs}, and if it doesn't exists
 #' MCView would cluster the metacell matrix using kmeans++ algorithm (from the \code{tglkmeans} package).
 #' @param metacell_types_file path to a tabular file (csv,tsv) with cell type assignement for
 #' each metacell. The file should have a column named "metacell" with the metacell ids and another
-#' column named "cell_type" or "cluster" with the cell type assignment. Metacell ids that do
+#' column named "cell_type", or "cluster" with the cell type assignment. Metacell ids that do
 #' not exists in the data would be ignored.
 #' If this parameter and \code{cell_type_field} are missing, MCView would cluster the
 #' metacell matrix using kmeans++ algorithm (from the \code{tglkmeans} package).

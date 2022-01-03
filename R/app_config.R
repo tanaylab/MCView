@@ -97,8 +97,8 @@ init_tab_defs <- function() {
             module_name = "samples",
             icon = "vials"
         ),
-        "Atlas Projection" = list(
-            title = "Atlas Projection",
+        "Query" = list(
+            title = "Query",
             module_name = "projection",
             icon = "video"
         ),
