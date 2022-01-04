@@ -27,10 +27,16 @@ sanitize_for_WebGL <- function(p) {
     return(p)
 }
 
+# See https://github.com/plotly/plotly.js/issues/4999
 arrange_2d_proj_tooltip <- function(fig) {
     if (fig$x$data[[1]]$mode == "lines") {
         fig$x$data[[1]]$hoverinfo <- "none"
-        fig$x$data <- fig$x$data[c(2:length(fig$x$data), 1)]
+        point_data <- fig$x$data[2:length(fig$x$data)]
+        point_data_no_legend <- purrr::map(point_data, ~ {
+            .x$showlegend <- FALSE
+            .x
+        })
+        fig$x$data <- c(point_data, fig$x$data[1], point_data_no_legend)
     }
     return(fig)
 }

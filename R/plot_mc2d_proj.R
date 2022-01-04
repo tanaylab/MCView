@@ -403,9 +403,9 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
         }
 
         fig <- fig %>%
-            # sanitize_for_WebGL() %>%
-            # plotly::toWebGL() %>%
-            # arrange_2d_proj_tooltip() %>%
+            sanitize_for_WebGL() %>%
+            plotly::toWebGL() %>%
+            arrange_2d_proj_tooltip() %>%
             rm_plotly_grid()
 
         return(fig)
@@ -429,8 +429,8 @@ initial_proj_point_size <- function(dataset, screen_width = NULL, screen_height 
 initial_proj_stroke <- function(dataset) {
     if (!is.null(config$datasets[[dataset]]$projection_stroke)) {
         return(config$datasets[[dataset]]$projection_stroke)
-    }    
-    return(0.04)
+    }
+    return(0.1)
 }
 
 min_edge_length <- function(dataset) {
