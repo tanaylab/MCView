@@ -76,13 +76,13 @@ mod_manifold_sidebar_ui <- function(id) {
 #' gene_mc Server Function
 #'
 #' @noRd
-mod_manifold_server <- function(input, output, session, dataset, metacell_types, cell_type_colors) {
+mod_manifold_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals) {
     ns <- session$ns
 
     # gene selectors
     server_gene_selectors(input, output, session, dataset, ns)
 
-    projection_selectors(ns, dataset, output, input)
+    projection_selectors(ns, dataset, output, input, globals, weight = 1)
 
     # Projection plots
     output$plot_manifold_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, source = "proj_manifold_plot") %>%

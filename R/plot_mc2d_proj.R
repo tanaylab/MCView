@@ -403,9 +403,9 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
         }
 
         fig <- fig %>%
-            sanitize_for_WebGL() %>%
-            plotly::toWebGL() %>%
-            arrange_2d_proj_tooltip() %>%
+            # sanitize_for_WebGL() %>%
+            # plotly::toWebGL() %>%
+            # arrange_2d_proj_tooltip() %>%
             rm_plotly_grid()
 
         return(fig)
@@ -414,13 +414,16 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
 
 
 
-# TODO: find a better heuristic that takes into account the plot size
-initial_proj_point_size <- function(dataset) {
+initial_proj_point_size <- function(dataset, screen_width = NULL, screen_height = NULL, weight = 1, atlas = FALSE) {
     if (!is.null(config$datasets[[dataset]]$projection_point_size)) {
-        return(config$datasets[[dataset]]$projection_point_size)
+        return(config$datasets[[dataset]]$projection_point_size * weight)
     }
-    n_metacells <- length(get_mc_data(dataset, "mc_sum"))
-    return(max(1, min(1.5, 3e4 / n_metacells)))
+    n_metacells <- length(get_mc_data(dataset, "mc_sum", atlas = atlas))
+    screen_width <- screen_width %||% 1920
+    screen_height <- screen_height %||% 1080
+    point_size <- screen_width * screen_height / (n_metacells * 1400) * weight
+
+    return(max(1, min(3, point_size)))
 }
 
 initial_proj_stroke <- function(dataset) {
@@ -432,5 +435,5 @@ initial_proj_stroke <- function(dataset) {
 }
 
 min_edge_length <- function(dataset) {
-    config$datasets[[dataset]]$min_d %||% 0.05
+    config$datasets[[dataset]]$min_d %||% 0.01
 }

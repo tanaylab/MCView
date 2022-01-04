@@ -86,10 +86,10 @@ mod_atlas_sidebar_ui <- function(id) {
 #' atlas Server Function
 #'
 #' @noRd
-mod_atlas_server <- function(input, output, session, dataset, metacell_types, cell_type_colors) {
+mod_atlas_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals) {
     ns <- session$ns
 
-    projection_selectors(ns, dataset, output, input)
+    projection_selectors(ns, dataset, output, input, globals, weight = 1, atlas = TRUE)
     output$top_correlated_select_color_proj <- renderUI({
         req(input$gene1)
         req(has_gg_mc_top_cor(project, dataset()))

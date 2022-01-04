@@ -79,7 +79,7 @@ mod_markers_sidebar_ui <- function(id) {
 #' gene_mc Server Function
 #'
 #' @noRd
-mod_markers_server <- function(input, output, session, dataset, metacell_types, cell_type_colors) {
+mod_markers_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals) {
     ns <- session$ns
 
     markers <- reactiveValues()

@@ -13,6 +13,13 @@ app_server <- function(input, output, session) {
         }
     }
 
+    globals <- reactiveValues()
+
+    observe({
+        globals$screen_width <- input$screen_width
+        globals$screen_height <- input$screen_height
+    })
+
     # annotation reactives
     metacell_types <- reactiveVal()
     cell_type_colors <- reactiveVal()
@@ -33,7 +40,7 @@ app_server <- function(input, output, session) {
     })
 
     load_tab <- function(tab_name, module) {
-        callModule(module, glue("{tab_name}_ui_1"), dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors)
+        callModule(module, glue("{tab_name}_ui_1"), dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors, globals = globals)
     }
 
     load_tab("manifold", mod_manifold_server)

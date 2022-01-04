@@ -99,7 +99,7 @@
 # #' gene_mc Server Function
 # #'
 # #' @noRd
-# mod_flow_mc_server <- function(input, output, session, dataset, metacell_types, cell_type_colors) {
+# mod_flow_mc_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals) {
 #     ns <- session$ns
 
 #     # gene selectors

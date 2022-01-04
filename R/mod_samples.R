@@ -107,14 +107,14 @@ mod_samples_sidebar_ui <- function(id) {
 #' gene_mc Server Function
 #'
 #' @noRd
-mod_samples_server <- function(input, output, session, dataset, metacell_types, cell_type_colors) {
+mod_samples_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals) {
     ns <- session$ns
     top_correlated_selectors(input, output, session, dataset, ns, button_labels = c("X", "Y", "Color"))
 
     output$cell_type_list <- cell_type_selector(dataset, ns, id = "selected_cell_types", label = "Cell types", cell_type_colors = cell_type_colors())
 
-    scatter_selectors(ns, dataset, output)
-    projection_selectors(ns, dataset, output, input)
+    scatter_selectors(ns, dataset, output, globals)
+    projection_selectors(ns, dataset, output, input, globals, weight = 0.6)
 
     output$sample_select_ui <- renderUI({
         req(dataset())

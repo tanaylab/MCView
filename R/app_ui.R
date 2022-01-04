@@ -121,7 +121,17 @@ app_ui <- function(request) {
         controlbar = right_sidebar
     )
 
+    screen_size_jscode <-
+        '$(document).on("shiny:connected", function(e) {
+         var screenWidth = screen.width;
+         var screenHeight = screen.height;
+        Shiny.onInputChange("screen_width", screenWidth)
+        Shiny.onInputChange("screen_height", screenHeight)
+        });
+    '
+
     tagList(
+        tags$script(screen_size_jscode),
         shinyjs::useShinyjs(), # Set up shinyjs
         rintrojs::introjsUI(),
         shinybusy::add_busy_spinner(spin = "breeding-rhombus", position = "bottom-right", timeout = 100),

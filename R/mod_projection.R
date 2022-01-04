@@ -156,7 +156,7 @@ mod_projection_sidebar_ui <- function(id) {
 #' projection Server Function
 #'
 #' @noRd
-mod_projection_server <- function(input, output, session, dataset, metacell_types, cell_type_colors) {
+mod_projection_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals) {
     ns <- session$ns
 
     group <- reactiveVal()
@@ -230,8 +230,8 @@ mod_projection_server <- function(input, output, session, dataset, metacell_type
     })
 
 
-    scatter_selectors(ns, dataset, output)
-    projection_selectors(ns, dataset, output, input)
+    scatter_selectors(ns, dataset, output, globals)
+    projection_selectors(ns, dataset, output, input, globals, weight = 0.6)
     top_correlated_selector("axis_var", "axis", "axis_type", input, output, session, dataset, ns, button_labels = c("Axes", "Color"), ids = c("axis", "color"))
 
     group_selectors_mod_projection(input, output, session, dataset, ns, group)
@@ -334,7 +334,7 @@ mod_projection_server <- function(input, output, session, dataset, metacell_type
 
     # Point size selector
     output$point_size_ui <- renderUI({
-        numericInput(ns("point_size"), label = "Point size", value = initial_proj_point_size(dataset()), min = 0.1, max = 3, step = 0.1)
+        numericInput(ns("point_size"), label = "Point size", value = initial_proj_point_size(dataset(), globals$screen_width, globals$screen_height, weight = 0.6), min = 0.1, max = 3, step = 0.1)
     })
 
     # Minimal edge length selector

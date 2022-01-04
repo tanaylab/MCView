@@ -103,7 +103,7 @@ mod_mc_mc_sidebar_ui <- function(id) {
 #' mc_mc Server Function
 #'
 #' @noRd
-mod_mc_mc_server <- function(input, output, session, dataset, metacell_types, cell_type_colors) {
+mod_mc_mc_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals) {
     ns <- session$ns
 
     groupA <- reactiveVal()
@@ -205,7 +205,7 @@ mod_mc_mc_server <- function(input, output, session, dataset, metacell_types, ce
 
     # Point size selector
     output$point_size_ui <- renderUI({
-        numericInput(ns("point_size"), label = "Point size", value = initial_proj_point_size(dataset()), min = 0.1, max = 3, step = 0.1)
+        numericInput(ns("point_size"), label = "Point size", value = initial_proj_point_size(dataset(), globals$screen_width, globals$screen_height, weight = 0.3), min = 0.1, max = 3, step = 0.1)
     })
 
     # Minimal edge length selector

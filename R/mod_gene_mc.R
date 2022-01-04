@@ -102,7 +102,7 @@ mod_gene_mc_sidebar_ui <- function(id) {
 #' gene_mc Server Function
 #'
 #' @noRd
-mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, cell_type_colors) {
+mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals) {
     ns <- session$ns
 
     top_correlated_selectors(input, output, session, dataset, ns)
@@ -145,8 +145,8 @@ mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, 
     })
 
 
-    scatter_selectors(ns, dataset, output)
-    projection_selectors(ns, dataset, output, input)
+    scatter_selectors(ns, dataset, output, globals)
+    projection_selectors(ns, dataset, output, input, globals, weight = 0.6)
 
     # Projection plots
     output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, source = "proj_mc_plot_gene_tab") %>%

@@ -182,7 +182,7 @@ mod_annotate_mc_sidebar_ui <- function(id) {
 #' annotate_mc Server Function
 #'
 #' @noRd
-mod_annotate_mc_server <- function(input, output, session, dataset, metacell_types, cell_type_colors) {
+mod_annotate_mc_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals) {
     ns <- session$ns
 
     # gene selectors
@@ -519,8 +519,8 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
     observer_mc_deselect_event("gene_time_mc_plot1_annot", selected_metacell_types)
     observer_mc_deselect_event("gene_time_mc_plot2_annot", selected_metacell_types)
 
-    projection_selectors(ns, dataset, output, input)
-    scatter_selectors(ns, dataset, output)
+    projection_selectors(ns, dataset, output, input, globals, weight = 0.6)
+    scatter_selectors(ns, dataset, output, globals)
 
     # Projection plots
     output$plot_gene_proj_2d <- render_2d_plotly(

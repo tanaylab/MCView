@@ -146,12 +146,16 @@ connect_gene_plots <- function(input, output, session, ns, source) {
     })
 }
 
-# TODO: find a better heuristic that takes into account the plot size
-initial_scatters_point_size <- function(dataset) {
+initial_scatters_point_size <- function(dataset, screen_width = NULL, screen_height = NULL, weight = 1, atlas = FALSE) {
     if (!is.null(config$datasets[[dataset]]$scatters_point_size)) {
         return(config$datasets[[dataset]]$scatters_point_size)
     }
-    return(2.5)
+    n_metacells <- length(get_mc_data(dataset, "mc_sum", atlas = atlas))
+    screen_width <- screen_width %||% 1920
+    screen_height <- screen_height %||% 1080
+    point_size <- screen_width * screen_height / (n_metacells * 2500) * weight
+
+    return(max(1, min(3, point_size)))
 }
 
 initial_scatters_stroke <- function(dataset) {

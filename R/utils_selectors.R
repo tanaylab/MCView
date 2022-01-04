@@ -184,9 +184,11 @@ axis_vars_ok <- function(dataset, input, md_id, axes = c("x_axis", "y_axis", "co
     return(all(vars_ok))
 }
 
-scatter_selectors <- function(ns, dataset, output) {
+scatter_selectors <- function(ns, dataset, output, globals) {
     output$gene_gene_point_size_ui <- renderUI({
-        numericInput(ns("gene_gene_point_size"), label = "Point size", value = initial_scatters_point_size(dataset()), min = 0.05, max = 3, step = 0.1)
+        req(globals$screen_width)
+        req(globals$screen_height)
+        numericInput(ns("gene_gene_point_size"), label = "Point size", value = initial_scatters_point_size(dataset(), globals$screen_width, globals$screen_height), min = 0.05, max = 3, step = 0.1)
     })
 
     output$gene_gene_stroke_ui <- renderUI({
@@ -194,7 +196,7 @@ scatter_selectors <- function(ns, dataset, output) {
     })
 }
 
-projection_selectors <- function(ns, dataset, output, input) {
+projection_selectors <- function(ns, dataset, output, input, globals, weight = 1, atlas = FALSE) {
     output$proj_stat_ui <- renderUI({
         req(input$color_proj == "Gene" || input$color_proj == "Gene A" || input$color_proj == "Gene B")
         selectInput(ns("proj_stat"), label = "Statistic", choices = c("Expression" = "expression", "Enrichment" = "enrichment"), selected = "Expression", multiple = FALSE, selectize = FALSE)
@@ -223,7 +225,10 @@ projection_selectors <- function(ns, dataset, output, input) {
 
     # Point size selectors
     output$point_size_ui <- renderUI({
-        numericInput(ns("point_size"), label = "Point size", value = initial_proj_point_size(dataset()), min = 0.1, max = 3, step = 0.1)
+        req(globals$screen_height)
+        req(globals$screen_width)
+        req(dataset())
+        numericInput(ns("point_size"), label = "Point size", value = initial_proj_point_size(dataset(), globals$screen_width, globals$screen_height, weight = weight, atlas = atlas), min = 0.1, max = 3, step = 0.1)
     })
 
     output$stroke_ui <- renderUI({
