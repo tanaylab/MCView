@@ -27,6 +27,13 @@ test_that("create_bundle works", {
     test_bundle(project_bundle)
 })
 
+test_that("create_bundle works with self-contained=TRUE", {
+    MCView::create_bundle(project = project_dir, path = bundle_dir, name = "PBMC_sc", self_contained = TRUE)
+
+    project_bundle <- fs::path(bundle_dir, "PBMC_sc")
+    test_bundle(project_bundle)
+})
+
 test_that("create_bundle works with overwrite=TRUE", {
     MCView::create_bundle(project = project_dir, path = bundle_dir, name = "PBMC")
     MCView::create_bundle(project = project_dir, path = bundle_dir, name = "PBMC", overwrite = TRUE)
@@ -45,6 +52,25 @@ test_that(
     "bundle app launches",
     {
         withr::local_dir(fs::path(bundle_dir, "PBMC"))
+
+        skip_on_ci()
+        skip_on_cran()
+        skip_on_travis()
+        skip_on_appveyor()
+        x <- processx::process$new(
+            "Rscript",
+            "app.R"
+        )
+        Sys.sleep(5)
+        expect_true(x$is_alive())
+        x$kill()
+    }
+)
+
+test_that(
+    "bundle app launches when self-contaiend=TRUE",
+    {
+        withr::local_dir(fs::path(bundle_dir, "PBMC_sc"))
 
         skip_on_ci()
         skip_on_cran()

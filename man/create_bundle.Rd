@@ -8,7 +8,9 @@ create_bundle(
   project,
   path = getwd(),
   name = "MCView_bundle",
-  overwrite = FALSE
+  overwrite = FALSE,
+  self_contained = FALSE,
+  branch = "latest_release"
 )
 }
 \arguments{
@@ -19,6 +21,19 @@ create_bundle(
 \item{name}{name of the folder in which to create the bundle. The bundle would be created at \code{path}/\code{name}}
 
 \item{overwrite}{overwrite bundle if already exists}
+
+\item{self_contained}{include the source code of \code{MCView} in the bundle
+and use it to run the app. Use this in order to ensure that the package would always
+run the same way, regardless of MCView changes. When this option is FALSE,
+the installed version of \code{MCView} would be loaded, which can be occasionally
+updated for all the \code{MCView} apps running from a server. By default, the code
+of the latest \code{MCView} release would be used, see \code{branch} for
+other options.}
+
+\item{branch}{name of the \code{MCView} branch to include when \code{self_contained=TRUE}. By default, the latest release would be used. You can set this
+parameter to NULL in order to include the current development version
+('master' branch), or set it to any other branch in the 'tanaylab/MCView' github
+repository.}
 }
 \description{
 Generate a 'deployment ready' bundle of the a project app
@@ -37,6 +52,15 @@ Note: when deploying to these services - make sure you have the MCView package i
 \examples{
 \dontrun{
 MCView::create_bundle(project = "PBMC", path = getwd(), name = "PBMC")
+
+# latest release
+MCView::create_bundle(project = "PBMC", path = getwd(), name = "PBMC", self_contained = TRUE)
+
+# development version
+MCView::create_bundle(project = "PBMC", path = getwd(), name = "PBMC", self_contained = TRUE, branch = NULL)
+
+# specific branch
+MCView::create_bundle(project = "PBMC", path = getwd(), name = "PBMC", self_contained = TRUE, branch = "feat@atlas-projection")
 }
 
 }
