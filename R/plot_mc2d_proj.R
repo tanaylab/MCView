@@ -429,11 +429,10 @@ initial_proj_point_size <- function(dataset, screen_width = NULL, screen_height 
 initial_proj_stroke <- function(dataset) {
     if (!is.null(config$datasets[[dataset]]$projection_stroke)) {
         return(config$datasets[[dataset]]$projection_stroke)
-    }
-    n_metacells <- length(get_mc_data(dataset, "mc_sum"))
-    return(min(0.1, 5e5 / n_metacells^2))
+    }    
+    return(0.04)
 }
 
 min_edge_length <- function(dataset) {
-    config$datasets[[dataset]]$min_d %||% 0.01
+    config$datasets[[dataset]]$min_d %||% 0.025
 }
