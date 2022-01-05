@@ -197,7 +197,7 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
     return(p)
 }
 
-render_2d_plotly <- function(input, output, session, dataset, metacell_types, cell_type_colors, source, buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL, refresh_on_gene_change = FALSE, atlas = FALSE, query_types = NULL) {
+render_2d_plotly <- function(input, output, session, dataset, metacell_types, cell_type_colors, source, buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL, refresh_on_gene_change = FALSE, atlas = FALSE, query_types = NULL, group = NULL, groupA = NULL, groupB = NULL) {
     plotly::renderPlotly({
         req(input$color_proj)
         req(input$point_size)
@@ -388,6 +388,42 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
                 summarise(!!input$color_proj_atlas_metadata := sum(weight * !!sym(input$color_proj_atlas_metadata))) %>%
                 rename(metacell = query)
             fig <- plot_2d_metadata(input$color_proj_atlas_metadata, metadata = metadata)
+        } else if (input$color_proj == "Selected") {
+            req(input$mode)
+            if (input$mode == "Groups") {
+                req(groupA)
+                req(groupB)
+                selected_metacells1 <- groupA()
+                selected_metacells2 <- groupB()
+                metadata <- metacell_types() %>%
+                    select(metacell) %>%
+                    mutate(grp = case_when(
+                        metacell %in% selected_metacells1 ~ "Group A",
+                        metacell %in% selected_metacells2 ~ "Group B",
+                        TRUE ~ "other"
+                    ))
+                fig <- plot_2d_metadata("grp", metadata = metadata, colors = c("Group A" = "red", "Group B" = "blue", "other" = "gray"))
+            } else {
+                if (input$mode == "MC") {
+                    req(input$metacell1)
+                    selected_metacells <- input$metacell1
+                } else if (input$mode == "Type") {
+                    req(input$metacell1)
+                    selected_metacells <- metacell_types() %>%
+                        filter(cell_type %in% input$metacell1) %>%
+                        pull(metacell)
+                } else if (input$mode == "Group") {
+                    selected_metacells <- group()
+                } else {
+                    req(FALSE)
+                }
+                metadata <- metacell_types() %>%
+                    select(metacell) %>%
+                    mutate(grp = ifelse(metacell %in% selected_metacells, "selected",
+                        "other"
+                    ))
+                fig <- plot_2d_metadata("grp", metadata = metadata, colors = c("selected" = "red", "other" = "gray"))
+            }
         }
 
         fig <- fig %>% plotly::event_register("plotly_restyle")

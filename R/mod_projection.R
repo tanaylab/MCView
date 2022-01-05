@@ -27,7 +27,7 @@ mod_projection_ui <- function(id) {
                         shinyWidgets::prettyRadioButtons(
                             ns("color_proj"),
                             label = "Color by:",
-                            choices = c("Cell type", "Charting", "Query Metadata", "Atlas Metadata", "Gene"),
+                            choices = c("Cell type", "Charting", "Query Metadata", "Atlas Metadata", "Gene", "Selected"),
                             inline = TRUE,
                             status = "danger",
                             fill = TRUE
@@ -273,7 +273,7 @@ mod_projection_server <- function(input, output, session, dataset, metacell_type
     })
 
     # Projection plots
-    output$plot_mc_proj_2d <- render_2d_plotly(input, output, session, dataset, projected_metacell_types, atlas_colors, source = "proj_mc_plot_proj_tab")
+    output$plot_mc_proj_2d <- render_2d_plotly(input, output, session, dataset, projected_metacell_types, atlas_colors, group = group, source = "proj_mc_plot_proj_tab")
 
     # connect_gene_plots(input, output, session, ns, source = "proj_mc_plot_proj_tab")
 
