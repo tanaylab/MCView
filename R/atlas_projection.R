@@ -163,7 +163,7 @@ plot_type_predictions_bar <- function(dataset) {
             mutate(type = factor(type, levels = colnames(fracs_mat)[ord$cols]))
 
         p <- df_fracs %>%
-            ggplot(aes(x = metacell, y = fraction, fill = type)) +
+            ggplot(aes(x = metacell, y = fraction, fill = type, customdata = metacell)) +
             geom_col() +
             scale_fill_manual(name = "", values = atlas_colors) +
             theme(

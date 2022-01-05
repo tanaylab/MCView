@@ -329,8 +329,12 @@ mod_projection_server <- function(input, output, session, dataset, metacell_type
             })
         }
 
+        if (!is.null(input$mode) && input$mode %in% c("Groups", "Group")) {
+            fig <- fig %>% plotly::layout(dragmode = "select")
+        }
+
         return(fig)
-    }) %>% bindCache(dataset(), input$axis_var, input$axis_type, input$color_by_type, input$color_by_var, metacell_types(), cell_type_colors(), input$gene_gene_point_size, input$gene_gene_stroke)
+    }) %>% bindCache(dataset(), input$axis_var, input$axis_type, input$color_by_type, input$color_by_var, metacell_types(), cell_type_colors(), input$gene_gene_point_size, input$gene_gene_stroke, input$mode)
 
     # Point size selector
     output$point_size_ui <- renderUI({
@@ -384,8 +388,15 @@ metacell_selectors_mod_projection <- function(input, output, session, dataset, n
     })
 
     # Select metacell / cell type when clicking on it
-    observeEvent(plotly::event_data("plotly_click", source = "proj_mc_plot_proj_tab"), {
-        el <- plotly::event_data("plotly_click", source = "proj_mc_plot_proj_tab")
+    select_metacell_plotly_event_projection("proj_mc_plot_proj_tab", input, session, metacell_types, group)
+    select_metacell_plotly_event_projection("obs_proj_plot", input, session, metacell_types, group)
+    select_metacell_plotly_event_projection("type_prediction_bar", input, session, metacell_types, group)
+}
+
+select_metacell_plotly_event_projection <- function(source, input, session, metacell_types, group) {
+    # Select metacell / cell type when clicking on it
+    observeEvent(plotly::event_data("plotly_click", source = source), {
+        el <- plotly::event_data("plotly_click", source = source)
         metacell <- el$customdata
 
         if (input$mode == "MC") {
@@ -396,6 +407,7 @@ metacell_selectors_mod_projection <- function(input, output, session, dataset, n
                 filter(metacell == !!metacell) %>%
                 slice(1) %>%
                 pull(cell_type)
+            req(cell_type)
             updateSelectInput(session, "metacell1", selected = cell_type)
             showNotification(glue("Selected Cell type: {cell_type}"))
         } else if (input$mode == "Group") {
@@ -453,6 +465,20 @@ group_selectors_mod_projection <- function(input, output, session, dataset, ns, 
 
     observeEvent(plotly::event_data("plotly_selected", source = "proj_mc_plot_proj_tab"), {
         el <- plotly::event_data("plotly_selected", source = "proj_mc_plot_proj_tab")
+
+        selected_metacells <- el$customdata
+        req(input$mode == "Group")
+
+
+        if (is.null(group())) {
+            group(selected_metacells)
+        } else {
+            group(unique(c(group(), selected_metacells)))
+        }
+    })
+
+    observeEvent(plotly::event_data("plotly_selected", source = "obs_proj_plot"), {
+        el <- plotly::event_data("plotly_selected", source = "obs_proj_plot")
 
         selected_metacells <- el$customdata
         req(input$mode == "Group")
