@@ -212,14 +212,14 @@ mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, 
 }
 
 
-mod_gene_mc_plotly_observers <- function(input, session) {
-    observeEvent(plotly::event_data("plotly_click", source = "mc_mc_plot"), {
-        el <- plotly::event_data("plotly_click", source = "mc_mc_plot")
+mod_gene_mc_plotly_observers <- function(input, session, source = "mc_mc_plot", notification_suffix = " in \"Genes\" tab") {
+    observeEvent(plotly::event_data("plotly_click", source = source), {
+        el <- plotly::event_data("plotly_click", source = source)
 
         gene <- el$customdata
         if (input$x_axis_type == "Gene") {
             shinyWidgets::updatePickerInput(session, "x_axis_var", selected = gene)
         }
-        showNotification(glue("Selected {gene} in \"Genes\" tab"))
+        showNotification(glue("Selected {gene}{notification_suffix}"))
     })
 }

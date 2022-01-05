@@ -726,7 +726,9 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
 
     diff_expr_switch_metacells(dataset, input, output, session)
 
-    output$plot_mc_mc_gene_scatter <- render_mc_mc_gene_plotly(input, output, session, ns, dataset, mc_mc_gene_scatter_df, metacell_names(), cell_type_colors())
+    output$plot_mc_mc_gene_scatter <- render_mc_mc_gene_plotly(input, output, session, ns, dataset, mc_mc_gene_scatter_df, metacell_names(), cell_type_colors(), source_suffix = "_annot")
+
+    mod_gene_mc_plotly_observers(input, session, source = "mc_mc_plot_annot", notification_suffix = "")
 
     output$diff_expr_table <- render_mc_mc_gene_diff_table(input, output, session, ns, dataset, mc_mc_gene_scatter_df)
 
