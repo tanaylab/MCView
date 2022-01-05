@@ -120,39 +120,9 @@ mod_mc_mc_server <- function(input, output, session, dataset, metacell_types, ce
     group_selectors(input, output, session, dataset, ns, groupA, groupB)
     metacell_selectors(input, output, session, dataset, ns, metacell_names, metacell_types, cell_type_colors, groupA, groupB)
 
-    mc_mc_gene_scatter_df <- reactive({
-        req(input$mode)
-        if (input$mode == "MCs") {
-            calc_mc_mc_gene_df(dataset(), input$metacell1, input$metacell2)
-        } else if (input$mode == "Types") {
-            req(metacell_types())
-            req(input$metacell1 %in% cell_type_colors()$cell_type)
-            req(input$metacell2 %in% cell_type_colors()$cell_type)
-            calc_ct_ct_gene_df(dataset(), input$metacell1, input$metacell2, metacell_types())
-        } else if (input$mode == "Groups") {
-            req(groupA())
-            req(groupB())
-            group_types_df <- bind_rows(
-                tibble(metacell = groupA(), cell_type = "Group A"),
-                tibble(metacell = groupB(), cell_type = "Group B")
-            )
+    mc_mc_gene_scatter_df <- mc_mc_gene_scatter_df_reactive(dataset, input, output, session, metacell_types, cell_type_colors, groupA, groupB)
 
-            calc_ct_ct_gene_df(dataset(), "Group A", "Group B", group_types_df)
-        }
-    })
-
-    observeEvent(input$switch_metacells, {
-        if (input$mode == "Groups") {
-            temp <- groupA()
-            groupA(groupB())
-            groupB(temp)
-        } else {
-            mc1 <- input$metacell1
-            mc2 <- input$metacell2
-            updateSelectInput(session, "metacell1", selected = mc2)
-            updateSelectInput(session, "metacell2", selected = mc1)
-        }
-    })
+    diff_expr_switch_metacells(dataset, input, output, session, groupA, groupB)
 
     output$projection_color_selectors <- renderUI({
         req(input$mode)
@@ -361,7 +331,7 @@ metacell_selectors <- function(input, output, session, dataset, ns, metacell_nam
         if (input$mode == "MCs") {
             shinyWidgets::pickerInput(ns("metacell1"), "Metacell A",
                 choices = metacell_names(),
-                selected = config$selected_mc1, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
+                selected = config$selected_mc1, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE)
             )
         } else if (input$mode == "Types") {
             req(cell_type_colors())
@@ -371,7 +341,7 @@ metacell_selectors <- function(input, output, session, dataset, ns, metacell_nam
                 choices = cell_types,
                 selected = cell_types[1],
                 multiple = FALSE,
-                options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith"),
+                options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE),
                 choicesOpt = list(
                     style = paste0("color: ", cell_types_hex, ";")
                 )
@@ -380,7 +350,7 @@ metacell_selectors <- function(input, output, session, dataset, ns, metacell_nam
             tagList(
                 shinyWidgets::pickerInput(ns("metacell"), "Metacell",
                     choices = metacell_names(),
-                    selected = config$selected_mc1, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
+                    selected = config$selected_mc1, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE)
                 ),
                 shinyWidgets::actionGroupButtons(
                     c(ns("add_metacell_to_groupA"), ns("add_metacell_to_groupB")),

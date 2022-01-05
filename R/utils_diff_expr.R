@@ -123,3 +123,46 @@ calc_obs_exp_type_df <- function(dataset, cell_type, metacell_types, diff_thresh
 
     return(df)
 }
+
+
+mc_mc_gene_scatter_df_reactive <- function(dataset, input, output, session, metacell_types, cell_type_colors, groupA = NULL, groupB = NULL) {
+    reactive({
+        req(input$mode)
+        if (input$mode == "MCs") {
+            req(input$metacell1)
+            req(input$metacell2)
+            calc_mc_mc_gene_df(dataset(), input$metacell1, input$metacell2)
+        } else if (input$mode == "Types") {
+            req(metacell_types())
+            req(input$metacell1 %in% cell_type_colors()$cell_type)
+            req(input$metacell2 %in% cell_type_colors()$cell_type)
+            calc_ct_ct_gene_df(dataset(), input$metacell1, input$metacell2, metacell_types())
+        } else if (input$mode == "Groups") {
+            req(groupA && groupA())
+            req(groupB && groupB())
+            group_types_df <- bind_rows(
+                tibble(metacell = groupA(), cell_type = "Group A"),
+                tibble(metacell = groupB(), cell_type = "Group B")
+            )
+
+            calc_ct_ct_gene_df(dataset(), "Group A", "Group B", group_types_df)
+        }
+    })
+}
+
+diff_expr_switch_metacells <- function(dataset, input, output, session, groupA = NULL, groupB = NULL) {
+    observeEvent(input$switch_metacells, {
+        if (input$mode == "Groups") {
+            req(groupA)
+            req(groupB)
+            temp <- groupA()
+            groupA(groupB())
+            groupB(temp)
+        } else {
+            mc1 <- input$metacell1
+            mc2 <- input$metacell2
+            updateSelectInput(session, "metacell1", selected = mc2)
+            updateSelectInput(session, "metacell2", selected = mc1)
+        }
+    })
+}
