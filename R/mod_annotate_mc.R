@@ -13,6 +13,7 @@ mod_annotate_mc_ui <- function(id) {
         fluidRow(
             column(
                 width = 8,
+                style = "padding-right:0px;",
                 shinydashboardPlus::box(
                     id = ns("gene_projection"),
                     title = "2D Projection",
@@ -53,6 +54,7 @@ mod_annotate_mc_ui <- function(id) {
                     column(
                         width = 6,
                         offset = 0,
+                        style = "padding-right:0px;",
                         shinydashboardPlus::box(
                             id = ns("gene_gene_box"),
                             title = "Gene/Gene",
@@ -79,6 +81,7 @@ mod_annotate_mc_ui <- function(id) {
                     column(
                         width = 6,
                         offset = 0,
+                        style = "padding-left:0px;",
                         shinydashboardPlus::box(
                             id = ns("mc_mc_box"),
                             title = "Differential expression",
@@ -115,6 +118,7 @@ mod_annotate_mc_ui <- function(id) {
             ),
             column(
                 width = 4,
+                style = "padding-right:0px; padding-left:0px;",
                 shinydashboardPlus::box(
                     id = ns("metacell_types_box"),
                     title = "Metacell annotation",
@@ -149,6 +153,7 @@ mod_annotate_mc_ui <- function(id) {
             ),
             column(
                 width = 4,
+                style = "padding-right:0px; padding-left:0px;",
                 shinydashboardPlus::box(
                     id = ns("cell_type_colors"),
                     title = "Cell Types",
@@ -643,73 +648,6 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
     }) # %>% bindCache(dataset(), input$x_axis_var, input$x_axis_type, input$y_axis_var, input$y_axis_type, input$color_by_type, input$color_by_var, metacell_types(), cell_type_colors(), input$gene_gene_point_size, input$gene_gene_stroke)
 
 
-    output$time_box_ui_column <- renderUI({
-        req(has_time(dataset()))
-
-        column(
-            width = 6,
-            offset = 0,
-            uiOutput(ns("gene_time_box_ui")),
-            uiOutput(ns("mc_time_box_ui"))
-        )
-    })
-
-    output$gene_time_box_ui <- renderUI({
-        req(has_time(dataset()))
-
-        shinydashboardPlus::box(
-            id = ns("gene_time_box"),
-            title = "Gene Expression/Time",
-            status = "primary",
-            solidHeader = TRUE,
-            collapsible = TRUE,
-            closable = FALSE,
-            width = 12,
-            shinycssloaders::withSpinner(
-                plotly::plotlyOutput(ns("plot_gene_age_mc1"))
-            ),
-            shinycssloaders::withSpinner(
-                plotly::plotlyOutput(ns("plot_gene_age_mc2"))
-            )
-        )
-    })
-
-    output$mc_time_box_ui <- renderUI({
-        req(has_time(dataset()))
-
-        shinydashboardPlus::box(
-            id = ns("mc_time_box"),
-            title = "Metacell Age",
-            status = "primary",
-            solidHeader = TRUE,
-            collapsible = TRUE,
-            closable = FALSE,
-            width = 12,
-            uiOutput(ns("time_dist_metacell_select")),
-            shinycssloaders::withSpinner(
-                plotly::plotlyOutput(ns("mc_time_dist_plot"))
-            )
-        )
-    })
-
-    # Expression/Time plots
-    output$plot_gene_age_mc1 <- plotly::renderPlotly({
-        req(input$gene1)
-
-        plotly::ggplotly(plot_gene_time_over_mc(dataset(), input$gene1, metacell_types = metacell_types(), cell_type_colors = cell_type_colors()), source = "gene_time_mc_plot1_annot", tooltip = "tooltip_text") %>%
-            plotly::hide_legend() %>%
-            sanitize_plotly_buttons(buttons = c("hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines")) %>%
-            plotly::layout(dragmode = "select")
-    })
-
-    output$plot_gene_age_mc2 <- plotly::renderPlotly({
-        req(input$gene2)
-
-        plotly::ggplotly(plot_gene_time_over_mc(dataset(), input$gene2, metacell_types = metacell_types(), cell_type_colors = cell_type_colors()), source = "gene_time_mc_plot2_annot", tooltip = "tooltip_text") %>%
-            plotly::hide_legend() %>%
-            sanitize_plotly_buttons(buttons = c("hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines")) %>%
-            plotly::layout(dragmode = "select")
-    })
 
     connect_gene_plots(input, output, session, ns, source = "proj_annot_plot")
 
@@ -731,16 +669,6 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
     mod_gene_mc_plotly_observers(input, session, source = "mc_mc_plot_annot", notification_suffix = "")
 
     output$diff_expr_table <- render_mc_mc_gene_diff_table(input, output, session, ns, dataset, mc_mc_gene_scatter_df)
-
-    output$time_dist_metacell_select <- renderUI({
-        selectizeInput(ns("time_dist_metacell"), "Metacell", choices = metacell_names(), multiple = FALSE, selected = config$selected_mc1, options = list(maxOptions = 1e4))
-    })
-
-    output$mc_time_dist_plot <- plotly::renderPlotly({
-        req(input$time_dist_metacell)
-        plotly::ggplotly(plot_mc_time_dist(dataset(), input$time_dist_metacell, ylab = glue("# of cells #{input$time_dist_metacell}")), tooltip = "tooltip_text", height = 200) %>%
-            sanitize_plotly_buttons()
-    })
 }
 
 

@@ -70,8 +70,8 @@ mod_markers_sidebar_ui <- function(id) {
             uiOutput(ns("metadata_list")),
             shinyWidgets::actionGroupButtons(ns("update_markers"), labels = "Update markers", size = "sm"),
             numericInput(ns("max_gene_num"), "Maximal number of genes", value = 100),
-            uiOutput(ns("marker_genes_list")),
-            uiOutput(ns("add_genes_ui"))
+            uiOutput(ns("add_genes_ui")),
+            uiOutput(ns("marker_genes_list"))
         )
     )
 }
@@ -165,13 +165,13 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
 
     output$add_genes_ui <- renderUI({
         tagList(
-            shinyWidgets::pickerInput(ns("genes_to_add"), "",
+            shinyWidgets::actionGroupButtons(ns("add_genes"), labels = "Add genes", size = "sm"),
+            shinyWidgets::pickerInput(ns("genes_to_add"),
                 choices = gene_names(dataset()),
                 selected = c(),
                 multiple = TRUE,
                 options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
-            ),
-            shinyWidgets::actionGroupButtons(ns("add_genes"), labels = "Add genes", size = "sm")
+            )
         )
     })
 

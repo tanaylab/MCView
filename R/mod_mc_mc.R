@@ -288,7 +288,7 @@ mod_mc_mc_server <- function(input, output, session, dataset, metacell_types, ce
     observe({
         req(input$metacell1)
         req(has_network(dataset()))
-        updateSelectizeInput(session, "traj_genes", choices = gene_names(dataset()), server = TRUE, selected = top_var_genes(), options = list(maxItems = 5, maxOptions = 1e5))
+        updateSelectizeInput(session, "traj_genes", choices = gene_names(dataset()), server = TRUE, selected = top_var_genes(), options = list(maxItems = 5))
     })
 
     output$plot_mc_traj <- plotly::renderPlotly({
