@@ -441,6 +441,7 @@ group_selectors <- function(input, output, session, dataset, ns, groupA, groupB)
             closable = FALSE,
             width = 12,
             actionButton(ns("reset_groupA"), "Reset"),
+            actionButton(ns("remove_groupA_metacells"), "Remove"),
             shinycssloaders::withSpinner(
                 DT::dataTableOutput(ns("groupA_table"))
             )
@@ -458,6 +459,7 @@ group_selectors <- function(input, output, session, dataset, ns, groupA, groupB)
             closable = FALSE,
             width = 12,
             actionButton(ns("reset_groupB"), "Reset"),
+            actionButton(ns("remove_groupB_metacells"), "Remove"),
             shinycssloaders::withSpinner(
                 DT::dataTableOutput(ns("groupB_table"))
             )
@@ -504,6 +506,22 @@ group_selectors <- function(input, output, session, dataset, ns, groupA, groupB)
         } else {
             groupB(unique(c(groupB(), input$metacell)))
         }
+    })
+
+    observeEvent(input$remove_groupA_metacells, {
+        rows <- input$groupA_table_rows_selected
+        req(rows)
+        req(length(rows) > 0)
+
+        groupA(groupA()[-rows])
+    })
+
+    observeEvent(input$remove_groupB_metacells, {
+        rows <- input$groupB_table_rows_selected
+        req(rows)
+        req(length(rows) > 0)
+
+        groupB(groupB()[-rows])
     })
 
     observeEvent(input$reset_groupA, {

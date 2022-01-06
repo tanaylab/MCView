@@ -138,8 +138,10 @@ mc_mc_gene_scatter_df_reactive <- function(dataset, input, output, session, meta
             req(input$metacell2 %in% cell_type_colors()$cell_type)
             calc_ct_ct_gene_df(dataset(), input$metacell1, input$metacell2, metacell_types())
         } else if (input$mode == "Groups") {
-            req(groupA && groupA())
-            req(groupB && groupB())
+            req(groupA)
+            req(groupB)
+            req(groupA())
+            req(groupB())
             group_types_df <- bind_rows(
                 tibble(metacell = groupA(), cell_type = "Group A"),
                 tibble(metacell = groupB(), cell_type = "Group B")

@@ -432,6 +432,7 @@ group_selectors_mod_projection <- function(input, output, session, dataset, ns, 
             closable = FALSE,
             width = 12,
             actionButton(ns("reset_group"), "Reset"),
+            actionButton(ns("remove_group_metacells"), "Remove"),
             shinycssloaders::withSpinner(
                 DT::dataTableOutput(ns("group_table"))
             )
@@ -461,6 +462,14 @@ group_selectors_mod_projection <- function(input, output, session, dataset, ns, 
 
     observeEvent(input$reset_group, {
         group(NULL)
+    })
+
+    observeEvent(input$remove_group_metacells, {
+        rows <- input$group_table_rows_selected
+        req(rows)
+        req(length(rows) > 0)
+
+        group(group()[-rows])
     })
 
     observeEvent(plotly::event_data("plotly_selected", source = "proj_mc_plot_proj_tab"), {
