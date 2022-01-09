@@ -256,7 +256,7 @@ mod_projection_server <- function(input, output, session, dataset, metacell_type
         }
 
         disjoined <- get_mc_data(dataset(), "disjoined_genes_no_atlas")
-        systematic <- rownames(get_mc_data(dataset(), "mc_mat"))[get_mc_data(dataset(), "systematic_genes")]
+        systematic <- get_mc_data(dataset(), "systematic_genes")
 
         if (input$mark_disjoined) {
             prev_levels <- levels(df$col)

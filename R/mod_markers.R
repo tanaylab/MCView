@@ -214,14 +214,7 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
 
 
         forbidden_genes <- get_mc_data(dataset(), "forbidden_genes")
-        if (!is.null(forbidden_genes)) {
-            forbidden_genes <- gene_names(dataset())[forbidden_genes]
-        }
-
         systematic_genes <- get_mc_data(dataset(), "systematic_genes")
-        if (!is.null(systematic_genes)) {
-            systematic_genes <- gene_names(dataset())[systematic_genes]
-        }
 
         plot_markers_mat(
             mat,

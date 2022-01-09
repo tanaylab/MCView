@@ -135,7 +135,12 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
     serialize_shiny_data(disjoined_genes_no_atlas, "disjoined_genes_no_atlas", dataset = dataset, cache_dir = cache_dir)
     serialize_shiny_data(disjoined_genes_no_query, "disjoined_genes_no_query", dataset = dataset, cache_dir = cache_dir)
 
-    systematic_genes <- query$var$systematic %||% rep(FALSE, nrow(query_mat))
+    if (is.null(query$var$systematic_gene)) {
+        systematic_genes <- c()
+    } else {
+        systematic_genes <- rownames(query$var)[query$var$systematic_gene]
+    }
+
     serialize_shiny_data(systematic_genes, "systematic_genes", dataset = dataset, cache_dir = cache_dir)
     cli_alert_success("succesfully imported atlas projections")
 }

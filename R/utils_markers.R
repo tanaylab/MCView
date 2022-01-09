@@ -78,7 +78,6 @@ choose_markers <- function(marker_genes, max_markers, dataset = NULL, add_system
 add_systematic_markers <- function(dataset, markers) {
     systematic_genes <- get_mc_data(dataset, "systematic_genes")
     if (!is.null(systematic_genes)) {
-        systematic_genes <- gene_names(dataset)[systematic_genes]
         m <- get_mc_data(dataset, "projected_fold")
         f <- Matrix::rowSums(m[intersect(rownames(m), systematic_genes), ]) > 0
         return(unique(c(systematic_genes[f], markers)))
