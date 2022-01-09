@@ -388,6 +388,7 @@ metacell_selectors <- function(input, output, session, dataset, ns, metacell_nam
     observeEvent(plotly::event_data("plotly_click", source = "proj_mc_plot"), {
         el <- plotly::event_data("plotly_click", source = "proj_mc_plot")
         metacell <- el$customdata
+        req(input$proj_select_main)
 
         if (input$mode == "MCs") {
             if (input$proj_select_main == "Metacell A") {
