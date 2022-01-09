@@ -15,7 +15,7 @@ mod_proj_fold_ui <- function(id) {
                 width = 12,
                 shinydashboardPlus::box(
                     id = ns("markers_heatmap_box"),
-                    title = "Markers Heatmap",
+                    title = "Projected-Fold Heatmap",
                     status = "primary",
                     solidHeader = TRUE,
                     collapsible = TRUE,
