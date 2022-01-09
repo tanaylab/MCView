@@ -7,7 +7,7 @@
 #' @noRd
 #'
 #' @importFrom shiny NS tagList
-mod_markers_ui <- function(id) {
+mod_inner_fold_ui <- function(id) {
     ns <- NS(id)
     tagList(
         fluidRow(
@@ -27,7 +27,7 @@ mod_markers_ui <- function(id) {
                         width = 25,
                         id = ns("markers_heatmap_sidebar"),
                         checkboxInput(ns("force_cell_type"), "Force cell type", value = TRUE),
-                        shinyWidgets::numericRangeInput(ns("lfp_range"), "Fold change range", c(-3, 3), width = "80%", separator = " to "),
+                        shinyWidgets::numericRangeInput(ns("lfp_range"), "Fold change range", c(-1, 3), width = "80%", separator = " to "),
                         colourpicker::colourInput(ns("low_color"), "Low color", "blue"),
                         colourpicker::colourInput(ns("high_color"), "High color", "red"),
                         colourpicker::colourInput(ns("mid_color"), "Mid color", "white"),
@@ -52,7 +52,7 @@ mod_markers_ui <- function(id) {
 #' @noRd
 #'
 #' @importFrom shiny NS tagList
-mod_markers_sidebar_ui <- function(id) {
+mod_inner_fold_sidebar_ui <- function(id) {
     ns <- NS(id)
     tagList(
         list(
@@ -69,7 +69,7 @@ mod_markers_sidebar_ui <- function(id) {
 #' gene_mc Server Function
 #'
 #' @noRd
-mod_markers_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals) {
+mod_inner_fold_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals) {
     ns <- session$ns
 
     markers <- reactiveVal()
@@ -97,7 +97,7 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
     observe({
         if (is.null(markers())) {
             req(input$max_gene_num)
-            initial_markers <- choose_markers(get_marker_genes(dataset(), mode = "Markers"), input$max_gene_num, dataset = dataset(), add_systematic = FALSE)
+            initial_markers <- choose_markers(get_marker_genes(dataset(), mode = "Inner"), input$max_gene_num, dataset = dataset(), add_systematic = FALSE)
             markers(initial_markers)
         }
 
@@ -105,7 +105,7 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
     })
 
     markers_matrix <- reactive({
-        req(markers())
+        req(markers)
         req(metacell_types())
         req(is.null(input$selected_cell_types) || all(input$selected_cell_types %in% c(cell_type_colors()$cell_type, "(Missing)")))
 
@@ -115,7 +115,7 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
             input$selected_cell_types,
             metacell_types(),
             force_cell_type = input$force_cell_type,
-            mode = "Markers",
+            mode = "Inner",
             notify_var_genes = TRUE
         )
     })
@@ -134,7 +134,7 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
 
         markers_df <- markers_df %>%
             select(metacell) %>%
-            inner_join(get_marker_genes(dataset(), mode = "Markers"), by = "metacell")
+            inner_join(get_marker_genes(dataset(), mode = "Inner"), by = "metacell")
 
         req(input$max_gene_num)
         new_markers <- choose_markers(markers_df, input$max_gene_num, dataset = dataset(), add_systematic = FALSE)
@@ -144,7 +144,7 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
 
 
     observeEvent(input$remove_genes, {
-        req(markers())
+        req(markers)
         new_markers <- markers()[!(markers() %in% input$selected_marker_genes)]
         markers(new_markers)
         shinyWidgets::updatePickerInput(session, ns("genes_to_add"), selected = c())
@@ -176,7 +176,6 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
 
         mat <- markers_matrix()
         req(mat)
-        mat <- log2(mat)
 
         if (!is.null(input$selected_md)) {
             metadata <- get_mc_data(dataset(), "metadata") %>%
@@ -187,6 +186,7 @@ mod_markers_server <- function(input, output, session, dataset, metacell_types, 
 
         marker_genes <- markers()
         req(marker_genes)
+
 
         forbidden_genes <- get_mc_data(dataset(), "forbidden_genes")
         systematic_genes <- get_mc_data(dataset(), "systematic_genes")

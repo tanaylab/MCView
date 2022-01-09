@@ -1,5 +1,5 @@
 title: MCView
-tabs: ["Manifold", "Genes", "Query", "Atlas", "Markers", "Diff. Expression", "Annotate", "About"] # which tabs to show
+tabs: ["Manifold", "Genes", "Query", "Atlas", "Markers", "Proj-fold", "Diff. Expression", "Annotate", "About"] # which tabs to show
 help: false # set to true to show introjs help on start
 # selected_gene1: Foxc1 # Default selected gene1
 # selected_gene2: Twist1 # Default selected gene2
