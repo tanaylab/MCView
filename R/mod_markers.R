@@ -241,15 +241,18 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
         req(mc_fp)
         mc_fp <- as.matrix(mc_fp[Matrix::rowSums(mc_fp) > 0, ])
         epsilon <- 1e-5
+        log_transform <- FALSE
     } else if (mode == "Proj") {
         mc_fp <- get_mc_data(dataset, "projected_fold")
         req(mc_fp)
-        mc_fp <- as.matrix(mc_fp[Matrix::rowSums(mc_fp) > 0, ])
+        mc_fp <- as.matrix(mc_fp[abs(Matrix::rowSums(mc_fp)) > 0, ])
         mc_fp <- mc_fp[intersect(markers, rownames(mc_fp)), ]
         epsilon <- 1e-5
+        log_transform <- FALSE
     } else {
         mc_fp <- get_mc_fp(dataset, markers)
         epsilon <- 0
+        log_transform <- TRUE
     }
 
     req(dim(mc_fp))
@@ -262,7 +265,7 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
     }
 
     if (ncol(mat) > 1) {
-        mc_order <- order_mc_by_most_var_genes(mat, force_cell_type = force_cell_type, metacell_types = metacell_types, epsilon = epsilon, notify_var_genes = notify_var_genes)
+        mc_order <- order_mc_by_most_var_genes(mat, force_cell_type = force_cell_type, metacell_types = metacell_types, epsilon = epsilon, notify_var_genes = notify_var_genes, log_transform = log_transform)
         mat <- mat[, mc_order]
     }
 

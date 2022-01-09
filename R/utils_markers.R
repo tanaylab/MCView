@@ -30,12 +30,17 @@ calc_marker_genes <- function(mc_egc,
     return(mc_top_genes)
 }
 
-select_top_fold_genes <- function(fold_matrix, genes_per_metacell = 2, minimal_relative_log_fraction = 2, fold_change_reg = 0.1) {
+select_top_fold_genes <- function(fold_matrix, genes_per_metacell = 2, minimal_relative_log_fraction = 2, fold_change_reg = 0.1, use_abs = FALSE) {
     fold_matrix <- fold_matrix + fold_change_reg
     fold_matrix[fold_matrix < minimal_relative_log_fraction] <- NA
 
     mc_top_genes <- apply(fold_matrix, 2, function(fp) {
-        top_ind <- order(-fp)[1:genes_per_metacell]
+        if (use_abs) {
+            top_ind <- order(-abs(fp))[1:genes_per_metacell]
+        } else {
+            top_ind <- order(-fp)[1:genes_per_metacell]
+        }
+
         return(tibble(gene = rownames(fold_matrix)[top_ind], rank = 1:length(top_ind), fp = fp[top_ind]))
     }) %>%
         purrr::imap_dfr(~ .x %>% mutate(metacell = .y)) %>%
@@ -121,12 +126,17 @@ get_top_marks <- function(feat) {
 #'
 #' @noRd
 #' @return named vector with metacell order
-order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers = FALSE, force_cell_type = FALSE, metacell_types = NULL, order_each_cell_type = FALSE, epsilon = 0, notify_var_genes = FALSE) {
+order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers = FALSE, force_cell_type = FALSE, metacell_types = NULL, order_each_cell_type = FALSE, epsilon = 0, notify_var_genes = FALSE, log_transform = TRUE) {
     if (filter_markers) {
         gene_folds <- filter_markers_mat(gene_folds)
     }
 
-    feat <- log2(gene_folds + epsilon)
+    if (log_transform) {
+        feat <- log2(gene_folds + epsilon)
+    } else {
+        feat <- gene_folds
+    }
+
 
     if (is.null(marks)) {
         marks <- get_top_marks(feat)
