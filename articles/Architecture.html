@@ -26,7 +26,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">MCView</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.2</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -212,6 +212,9 @@
 <li>app.R file.</li>
 <li>project config and cache.</li>
 </ol>
+<blockquote>
+<p>Note: The bundle would use use the installed version of MCView in server. If you want to create a ‘self-contained’ bundle that would include MCView code as well, set <code>self_contained=TRUE</code>.</p>
+</blockquote>
 <p>The bundle can then be deployed in shiny-server by running:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu">rsconnect</span><span class="fu">::</span><span class="fu">deployApp</span><span class="op">(</span>appDir <span class="op">=</span> <span class="st">"/path/to/the/bundle/my_project"</span><span class="op">)</span></code></pre></div>

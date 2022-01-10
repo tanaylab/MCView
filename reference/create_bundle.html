@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">MCView</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.2</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -65,7 +65,9 @@
   <span class="va">project</span>,
   path <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/getwd.html" class="external-link">getwd</a></span><span class="op">(</span><span class="op">)</span>,
   name <span class="op">=</span> <span class="st">"MCView_bundle"</span>,
-  overwrite <span class="op">=</span> <span class="cn">FALSE</span>
+  overwrite <span class="op">=</span> <span class="cn">FALSE</span>,
+  self_contained <span class="op">=</span> <span class="cn">FALSE</span>,
+  branch <span class="op">=</span> <span class="st">"latest_release"</span>
 <span class="op">)</span></code></pre></div>
     </div>
 
@@ -79,6 +81,19 @@
 <dd><p>name of the folder in which to create the bundle. The bundle would be created at <code>path</code>/<code>name</code></p></dd>
 <dt>overwrite</dt>
 <dd><p>overwrite bundle if already exists</p></dd>
+<dt>self_contained</dt>
+<dd><p>include the source code of <code>MCView</code> in the bundle
+and use it to run the app. Use this in order to ensure that the package would always
+run the same way, regardless of MCView changes. When this option is FALSE,
+the installed version of <code>MCView</code> would be loaded, which can be occasionally
+updated for all the <code>MCView</code> apps running from a server. By default, the code
+of the latest <code>MCView</code> release would be used, see <code>branch</code> for
+other options.</p></dd>
+<dt>branch</dt>
+<dd><p>name of the <code>MCView</code> branch to include when <code>self_contained=TRUE</code>. By default, the latest release would be used. You can set this
+parameter to NULL in order to include the current development version
+('master' branch), or set it to any other branch in the 'tanaylab/MCView' github
+repository.</p></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -92,6 +107,15 @@
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span></span>
 <span class="r-in"><span class="fu">MCView</span><span class="fu">::</span><span class="fu">create_bundle</span><span class="op">(</span>project <span class="op">=</span> <span class="st">"PBMC"</span>, path <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/getwd.html" class="external-link">getwd</a></span><span class="op">(</span><span class="op">)</span>, name <span class="op">=</span> <span class="st">"PBMC"</span><span class="op">)</span></span>
+<span class="r-in"></span>
+<span class="r-in"><span class="co"># latest release</span></span>
+<span class="r-in"><span class="fu">MCView</span><span class="fu">::</span><span class="fu">create_bundle</span><span class="op">(</span>project <span class="op">=</span> <span class="st">"PBMC"</span>, path <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/getwd.html" class="external-link">getwd</a></span><span class="op">(</span><span class="op">)</span>, name <span class="op">=</span> <span class="st">"PBMC"</span>, self_contained <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span class="r-in"></span>
+<span class="r-in"><span class="co"># development version</span></span>
+<span class="r-in"><span class="fu">MCView</span><span class="fu">::</span><span class="fu">create_bundle</span><span class="op">(</span>project <span class="op">=</span> <span class="st">"PBMC"</span>, path <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/getwd.html" class="external-link">getwd</a></span><span class="op">(</span><span class="op">)</span>, name <span class="op">=</span> <span class="st">"PBMC"</span>, self_contained <span class="op">=</span> <span class="cn">TRUE</span>, branch <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
+<span class="r-in"></span>
+<span class="r-in"><span class="co"># specific branch</span></span>
+<span class="r-in"><span class="fu">MCView</span><span class="fu">::</span><span class="fu">create_bundle</span><span class="op">(</span>project <span class="op">=</span> <span class="st">"PBMC"</span>, path <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/getwd.html" class="external-link">getwd</a></span><span class="op">(</span><span class="op">)</span>, name <span class="op">=</span> <span class="st">"PBMC"</span>, self_contained <span class="op">=</span> <span class="cn">TRUE</span>, branch <span class="op">=</span> <span class="st">"feat@atlas-projection"</span><span class="op">)</span></span>
 <span class="r-in"><span class="op">}</span></span>
 <span class="r-in"></span>
 </code></pre></div>

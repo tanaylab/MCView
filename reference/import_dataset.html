@@ -14,7 +14,7 @@ which can be in the app using the right sidebar."><!-- mathjax --><script src="h
     
     <a class="navbar-brand me-2" href="../index.html">MCView</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.2</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -71,13 +71,17 @@ which can be in the app using the right sidebar.</p>
   <span class="va">project</span>,
   <span class="va">dataset</span>,
   <span class="va">anndata_file</span>,
-  cell_type_field <span class="op">=</span> <span class="st">"cluster"</span>,
+  cell_type_field <span class="op">=</span> <span class="cn">NULL</span>,
   metacell_types_file <span class="op">=</span> <span class="cn">NULL</span>,
   cell_type_colors_file <span class="op">=</span> <span class="cn">NULL</span>,
   metadata_fields <span class="op">=</span> <span class="cn">NULL</span>,
   metadata <span class="op">=</span> <span class="cn">NULL</span>,
   metadata_colors <span class="op">=</span> <span class="cn">NULL</span>,
-  calc_gg_cor <span class="op">=</span> <span class="cn">TRUE</span>
+  calc_gg_cor <span class="op">=</span> <span class="cn">TRUE</span>,
+  atlas_project <span class="op">=</span> <span class="cn">NULL</span>,
+  atlas_dataset <span class="op">=</span> <span class="cn">NULL</span>,
+  projection_weights_file <span class="op">=</span> <span class="cn">NULL</span>,
+  copy_atlas <span class="op">=</span> <span class="cn">TRUE</span>
 <span class="op">)</span></code></pre></div>
     </div>
 
@@ -91,13 +95,13 @@ which can be in the app using the right sidebar.</p>
 <dd><p>path to <code>h5ad</code> file which contains the output of metacell2 pipeline (metacells python package).</p></dd>
 <dt>cell_type_field</dt>
 <dd><p>name of a field in the anndata <code>object$obs</code> which contains a cell type (optional).
-If the field doesn't exist and <code>metacell_types_file</code> are missing, MCView would cluster the
-metacell matrix using kmeans++ algorithm (from the <code>tglkmeans</code> package).
-If <code>metacell_types</code> parameter is set this field is ignored.</p></dd>
+If the field doesn't exist and <code>metacell_types_file</code> is missing, MCView would first look
+for a field named 'type', 'cell_type' or 'cluster' at <code>object$obs</code>, and if it doesn't exists
+MCView would cluster the metacell matrix using kmeans++ algorithm (from the <code>tglkmeans</code> package).</p></dd>
 <dt>metacell_types_file</dt>
 <dd><p>path to a tabular file (csv,tsv) with cell type assignement for
 each metacell. The file should have a column named "metacell" with the metacell ids and another
-column named "cell_type" or "cluster" with the cell type assignment. Metacell ids that do
+column named "cell_type", or "cluster" with the cell type assignment. Metacell ids that do
 not exists in the data would be ignored.
 If this parameter and <code>cell_type_field</code> are missing, MCView would cluster the
 metacell matrix using kmeans++ algorithm (from the <code>tglkmeans</code> package).</p></dd>
@@ -106,7 +110,9 @@ metacell matrix using kmeans++ algorithm (from the <code>tglkmeans</code> packag
 each cell type. The file should have a column named "cell_type" or "cluster" with the
 cell types and another column named "color" with the color assignment. Cell types that do not
 exist in the metacell types would be ignored.
-If this is missing, MCView would use the <code>chameleon</code> package to assign a color for each cell type.</p></dd>
+If this is missing, MCView would use the <code>chameleon</code> package to assign a color for each cell type.
+When an atlas is given (using <code>atlas_project</code> and <code>atlas_dataset</code>), if the cell types
+are the same as the atlas, the atlas colors would be used.</p></dd>
 <dt>metadata_fields</dt>
 <dd><p>names of fields in the anndata <code>object$obs</code> which contains metadata for each metacell.
 The fields should *always* be numeric - if you have cell categorical annotations use
@@ -124,7 +130,17 @@ If only colors are given breaks would be implicitly determined from the minimum 
 <dd><p>calculate top 30 correlated and anti-correlated genes for each gene. This computation can be heavy
 for large datasets or weaker machines, so you can set <code>calc_gg_cor=FALSE</code> to skip it. Note that then this feature
 would be missing from the app.</p></dd>
+<dt>atlas_project</dt>
+<dd><p>path to and <code>MCView</code> project which contains the atlas.</p></dd>
+<dt>atlas_dataset</dt>
+<dd><p>name of the atlas dataset</p></dd>
+<dt>copy_atlas</dt>
+<dd><p>copy atlas MCView to the current project. If FALSE - a symbolic link would be created instaed.</p></dd>
 </dl></div>
+    <div class="section level2">
+    <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
+    <p>invisibly returns an <code>AnnDataR6</code> object of the read <code>anndata_file</code></p>
+    </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>The function would create a directory under <code>project/cache/dataset</code> which
