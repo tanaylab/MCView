@@ -653,10 +653,10 @@ mod_annotate_mc_server <- function(input, output, session, dataset, metacell_typ
 
     # MC/MC diff gene expression plots
     metacell_names <- metacell_names_reactive(dataset)
-    metacell_colors <- metacell_colors_reactive(dataset, metacell_names, metacell_types) 
+    metacell_colors <- metacell_colors_reactive(dataset, metacell_names, metacell_types)
 
     group_selectors(input, output, session, dataset, ns)
-    metacell_selectors(input, output, session, dataset, ns, metacell_names, metacell_colors, metacell_types, cell_type_colors,)
+    metacell_selectors(input, output, session, dataset, ns, metacell_names, metacell_colors, metacell_types, cell_type_colors, )
 
     mc_mc_gene_scatter_df <- mc_mc_gene_scatter_df_reactive(dataset, input, output, session, metacell_types, cell_type_colors)
 

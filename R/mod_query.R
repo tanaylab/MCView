@@ -232,7 +232,7 @@ mod_query_server <- function(input, output, session, dataset, metacell_types, ce
     projection_selectors(ns, dataset, output, input, globals, weight = 0.6)
     top_correlated_selector("axis_var", "axis", "axis_type", input, output, session, dataset, ns, button_labels = c("Axes", "Color"), ids = c("axis", "color"))
 
-    group_selectors_mod_query(input, output, session, dataset, ns, group)
+    group_selectors_mod_query(input, output, session, dataset, ns, group, metacell_types, cell_type_colors)
     metacell_selectors_mod_query(input, output, session, dataset, ns, metacell_names, metacell_colors, projected_metacell_types, atlas_colors, group)
 
     mc_mc_gene_scatter_df <- reactive({
@@ -434,7 +434,7 @@ select_metacell_plotly_event_projection <- function(source, input, session, meta
     })
 }
 
-group_selectors_mod_query <- function(input, output, session, dataset, ns, group) {
+group_selectors_mod_query <- function(input, output, session, dataset, ns, group, metacell_types, cell_type_colors) {
     output$group_box <- renderUI({
         req(input$mode == "Group")
         shinydashboardPlus::box(
@@ -454,16 +454,33 @@ group_selectors_mod_query <- function(input, output, session, dataset, ns, group
     })
 
     output$group_table <- DT::renderDataTable(
-        tibble(metacell = group()),
-        escape = FALSE,
-        server = FALSE,
-        rownames = FALSE,
-        filter = "none",
-        options = list(
-            dom = "t",
-            paging = FALSE,
-            language = list(emptyTable = "Please select metacells")
-        )
+        {
+            req(metacell_types())
+            req(cell_type_colors())
+            req(group())
+            DT::datatable(
+                tibble(metacell = group()) %>%
+                    left_join(metacell_types() %>% select(metacell, cell_type), by = "metacell"),
+                escape = FALSE,
+                rownames = FALSE,
+                colnames = "",
+                filter = "none",
+                options = list(
+                    dom = "t",
+                    paging = FALSE,
+                    language = list(emptyTable = "Please select metacells"),
+                    columnDefs = list(list(visible = FALSE, targets = c(1)))
+                )
+            ) %>%
+                DT::formatStyle(
+                    "metacell", "cell_type",
+                    backgroundColor = DT::styleEqual(
+                        cell_type_colors()$cell_type,
+                        col2hex(cell_type_colors()$color)
+                    )
+                )
+        },
+        server = FALSE
     )
 
     observeEvent(input$add_metacell_to_group, {
