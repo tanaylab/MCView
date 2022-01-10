@@ -85,12 +85,12 @@ init_tab_defs <- function() {
         "Inner-fold" = list(
             title = "Inner-fold",
             module_name = "inner_fold",
-            icon = "map-marker"
+            icon = "cloud-sun-rain"
         ),
-        "Proj-fold" = list(
-            title = "Proj-fold",
+        "Projected-fold" = list(
+            title = "Projected-fold",
             module_name = "proj_fold",
-            icon = "map-marker"
+            icon = "cloud-moon-rain"
         ),
         "Genes" = list(
             title = "Genes",
@@ -127,11 +127,13 @@ init_tab_defs <- function() {
     default_tabs <- c("About", "Genes", "Diff. Expression")
 
     if (!is.null(config$tabs)) {
+        config$original_tabs <<- config$tabs
         config$tabs[config$tabs == "Metacells"] <- "Diff. Expression" # here for backward compatibility
-        config$tabs <- config$tabs[config$tabs != "Metadata"] # ignore "Metadata" for backward compatibility
+        config$tabs <<- config$tabs[config$tabs != "Metadata"] # ignore "Metadata" for backward compatibility
         purrr::walk(config$tabs, ~ {
             if (!(.x %in% names(tab_defs))) {
-                cli_abort("{.x} is not a valid tab name. Update `tabs` in your configuration file.")
+                cli_warn("{.x} is not a valid tab name. Update `tabs` in your configuration file.")
+                config$tabs <<- config$tabs[config$tabs != .x]
             }
         })
 
