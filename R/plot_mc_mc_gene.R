@@ -137,24 +137,34 @@ render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, mc_mc_
 }
 
 render_mc_mc_gene_diff_table <- function(input, output, session, ns, dataset, mc_mc_gene_scatter_df) {
-    DT::renderDT({
-        if (!is.null(input$mode) && input$mode == "MCs") {
-            req(input$metacell1)
-            req(input$metacell2)
-        }
+    DT::renderDT(
+        {
+            if (!is.null(input$mode) && input$mode == "MCs") {
+                req(input$metacell1)
+                req(input$metacell2)
+            }
 
-        if (input$show_diff_expr_table) {
-            DT::datatable(
-                mc_mc_gene_scatter_df() %>%
-                    filter(col != "gray") %>%
-                    arrange(diff) %>%
-                    select(Gene = gene, `Diff (log2)` = diff, `P-value` = pval, any_of(c("S", "D"))) %>%
-                    mutate(GeneCards = glue("<a href='{link}' target='_blank'>Open</a>", link = paste0("https://www.genecards.org/cgi-bin/carddisp.pl?gene=", Gene))),
-                selection = "single",
-                escape = FALSE
-            ) %>%
-                DT::formatSignif(columns = c("Diff (log2)"), digits = 3) %>%
-                DT::formatSignif(columns = c("P-value"), digits = 2)
-        }
-    })
+            if (input$show_diff_expr_table) {
+                DT::datatable(
+                    mc_mc_gene_scatter_df() %>%
+                        filter(col != "gray") %>%
+                        arrange(diff) %>%
+                        select(Gene = gene, `Diff (log2)` = diff, `P-value` = pval, any_of(c("Systematic", "Disjoined"))) %>%
+                        mutate(GeneCards = glue("<a href='{link}' target='_blank'>Open</a>", link = paste0("https://www.genecards.org/cgi-bin/carddisp.pl?gene=", Gene))),
+                    selection = "single",
+                    escape = FALSE,
+                    rownames = FALSE,
+                    extensions = c("Buttons", "Responsive"),
+                    options = list(
+                        dom = "Bfrtip",
+                        buttons = c("copy", "csv", "excel")
+                    )
+                    # filter = "top"
+                ) %>%
+                    DT::formatSignif(columns = c("Diff (log2)"), digits = 3) %>%
+                    DT::formatSignif(columns = c("P-value"), digits = 2)
+            }
+        },
+        server = FALSE
+    )
 }

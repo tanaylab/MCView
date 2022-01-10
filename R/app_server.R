@@ -49,7 +49,7 @@ app_server <- function(input, output, session) {
     load_tab("inner_fold", mod_inner_fold_server)
     load_tab("proj_fold", mod_proj_fold_server)
     load_tab("samples", mod_samples_server)
-    load_tab("projection", mod_projection_server)
+    load_tab("projection", mod_query_server)
     load_tab("atlas", mod_atlas_server)
     load_tab("mc_mc", mod_mc_mc_server)
     load_tab("annotate", mod_annotate_mc_server)

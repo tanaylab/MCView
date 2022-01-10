@@ -7,7 +7,7 @@
 #' @noRd
 #'
 #' @importFrom shiny NS tagList
-mod_projection_ui <- function(id) {
+mod_query_ui <- function(id) {
     ns <- NS(id)
     tagList(
         fluidRow(
@@ -130,7 +130,7 @@ mod_projection_ui <- function(id) {
 #' @noRd
 #'
 #' @importFrom shiny NS tagList
-mod_projection_sidebar_ui <- function(id) {
+mod_query_sidebar_ui <- function(id) {
     ns <- NS(id)
     tagList(
         list(
@@ -156,7 +156,7 @@ mod_projection_sidebar_ui <- function(id) {
 #' projection Server Function
 #'
 #' @noRd
-mod_projection_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals) {
+mod_query_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals) {
     ns <- session$ns
 
     group <- reactiveVal()
@@ -171,10 +171,8 @@ mod_projection_server <- function(input, output, session, dataset, metacell_type
         get_mc_data(dataset(), "cell_type_colors", atlas = TRUE)
     })
 
-    metacell_names <- reactive({
-        req(dataset())
-        colnames(get_mc_data(dataset(), "mc_mat"))
-    })
+    metacell_names <- metacell_names_reactive(dataset)
+    metacell_colors <- metacell_colors_reactive(dataset, metacell_names, metacell_types)
 
     picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE)
 
@@ -234,8 +232,8 @@ mod_projection_server <- function(input, output, session, dataset, metacell_type
     projection_selectors(ns, dataset, output, input, globals, weight = 0.6)
     top_correlated_selector("axis_var", "axis", "axis_type", input, output, session, dataset, ns, button_labels = c("Axes", "Color"), ids = c("axis", "color"))
 
-    group_selectors_mod_projection(input, output, session, dataset, ns, group)
-    metacell_selectors_mod_projection(input, output, session, dataset, ns, metacell_names, projected_metacell_types, atlas_colors, group)
+    group_selectors_mod_query(input, output, session, dataset, ns, group, metacell_types, cell_type_colors)
+    metacell_selectors_mod_query(input, output, session, dataset, ns, metacell_names, metacell_colors, projected_metacell_types, atlas_colors, group)
 
     mc_mc_gene_scatter_df <- reactive({
         req(input$mode)
@@ -246,6 +244,7 @@ mod_projection_server <- function(input, output, session, dataset, metacell_type
         } else if (input$mode == "Type") {
             req(input$metacell1)
             req(input$metacell1 %in% atlas_colors()$cell_type)
+            req(input$metacell1 %in% metacell_types()$cell_type) # we cannot show diff expression if the cell type doesn't exist in the query
             req(projected_metacell_types())
             df <- calc_obs_exp_type_df(dataset(), input$metacell1, projected_metacell_types())
         } else if (input$mode == "Group") {
@@ -267,7 +266,7 @@ mod_projection_server <- function(input, output, session, dataset, metacell_type
         }
 
         df <- df %>%
-            mutate(D = gene %in% disjoined, S = gene %in% systematic)
+            mutate(Disjoined = gene %in% disjoined, Systematic = gene %in% systematic)
 
         return(df)
     })
@@ -350,19 +349,28 @@ mod_projection_server <- function(input, output, session, dataset, metacell_type
     output$plot_mc_stacked_type <- plot_type_predictions_bar(dataset)
 }
 
-metacell_selectors_mod_projection <- function(input, output, session, dataset, ns, metacell_names, metacell_types, cell_type_colors, group) {
+metacell_selectors_mod_query <- function(input, output, session, dataset, ns, metacell_names, metacell_colors, metacell_types, cell_type_colors, group) {
     output$diff_select <- renderUI({
         req(dataset())
         req(input$mode)
         if (input$mode == "MC") {
+            req(metacell_colors())
+            req(metacell_names())
+            cell_types_hex <- col2hex(metacell_colors())
             shinyWidgets::pickerInput(ns("metacell1"), "Metacell",
                 choices = metacell_names(),
-                selected = config$selected_mc1, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
+                selected = config$selected_mc1, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith"),
+                choicesOpt = list(
+                    style = paste0("color: ", cell_types_hex, ";")
+                )
             )
         } else if (input$mode == "Type") {
             req(cell_type_colors())
-            cell_types_hex <- col2hex(cell_type_colors()$color)
-            cell_types <- cell_type_colors()$cell_type
+            req(metacell_types())
+            # do not show cell types that do not exist in the query
+            types_df <- cell_type_colors() %>% filter(cell_type %in% metacell_types()$cell_type)
+            cell_types_hex <- col2hex(types_df$color)
+            cell_types <- types_df$cell_type
             shinyWidgets::pickerInput(ns("metacell1"), "Cell type",
                 choices = cell_types,
                 selected = cell_types[1],
@@ -373,10 +381,16 @@ metacell_selectors_mod_projection <- function(input, output, session, dataset, n
                 )
             )
         } else if (input$mode == "Group") {
+            req(metacell_colors())
+            req(metacell_names())
+            cell_types_hex <- col2hex(metacell_colors())
             tagList(
                 shinyWidgets::pickerInput(ns("metacell"), "Metacell",
                     choices = metacell_names(),
-                    selected = config$selected_mc1, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
+                    selected = config$selected_mc1, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith"),
+                    choicesOpt = list(
+                        style = paste0("color: ", cell_types_hex, ";")
+                    )
                 ),
                 shinyWidgets::actionGroupButtons(
                     ns("add_metacell_to_group"),
@@ -420,7 +434,7 @@ select_metacell_plotly_event_projection <- function(source, input, session, meta
     })
 }
 
-group_selectors_mod_projection <- function(input, output, session, dataset, ns, group) {
+group_selectors_mod_query <- function(input, output, session, dataset, ns, group, metacell_types, cell_type_colors) {
     output$group_box <- renderUI({
         req(input$mode == "Group")
         shinydashboardPlus::box(
@@ -440,16 +454,33 @@ group_selectors_mod_projection <- function(input, output, session, dataset, ns, 
     })
 
     output$group_table <- DT::renderDataTable(
-        tibble(metacell = group()),
-        escape = FALSE,
-        server = FALSE,
-        rownames = FALSE,
-        filter = "none",
-        options = list(
-            dom = "t",
-            paging = FALSE,
-            language = list(emptyTable = "Please select metacells")
-        )
+        {
+            req(metacell_types())
+            req(cell_type_colors())
+            req(group())
+            DT::datatable(
+                tibble(metacell = group()) %>%
+                    left_join(metacell_types() %>% select(metacell, cell_type), by = "metacell"),
+                escape = FALSE,
+                rownames = FALSE,
+                colnames = "",
+                filter = "none",
+                options = list(
+                    dom = "t",
+                    paging = FALSE,
+                    language = list(emptyTable = "Please select metacells"),
+                    columnDefs = list(list(visible = FALSE, targets = c(1)))
+                )
+            ) %>%
+                DT::formatStyle(
+                    "metacell", "cell_type",
+                    backgroundColor = DT::styleEqual(
+                        cell_type_colors()$cell_type,
+                        col2hex(cell_type_colors()$color)
+                    )
+                )
+        },
+        server = FALSE
     )
 
     observeEvent(input$add_metacell_to_group, {
