@@ -82,7 +82,7 @@ mod_samples_ui <- function(id) {
 }
 
 
-#' gene_mc sidebar UI Function
+#' samples sidebar UI Function
 #'
 #' @description A shiny Module.
 #'
@@ -104,7 +104,7 @@ mod_samples_sidebar_ui <- function(id) {
     )
 }
 
-#' gene_mc Server Function
+#' samples Server Function
 #'
 #' @noRd
 mod_samples_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals) {

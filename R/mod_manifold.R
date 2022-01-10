@@ -1,4 +1,4 @@
-#' gene_mc UI Function
+#' manifold UI Function
 #'
 #' @description A shiny Module.
 #'
@@ -73,7 +73,7 @@ mod_manifold_sidebar_ui <- function(id) {
     )
 }
 
-#' gene_mc Server Function
+#' manifold Server Function
 #'
 #' @noRd
 mod_manifold_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals) {
