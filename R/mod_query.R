@@ -171,10 +171,8 @@ mod_query_server <- function(input, output, session, dataset, metacell_types, ce
         get_mc_data(dataset(), "cell_type_colors", atlas = TRUE)
     })
 
-    metacell_names <- reactive({
-        req(dataset())
-        colnames(get_mc_data(dataset(), "mc_mat"))
-    })
+    metacell_names <- metacell_names_reactive(dataset)
+    metacell_colors <- metacell_colors_reactive(dataset, metacell_names, metacell_types)
 
     picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE)
 
@@ -235,7 +233,7 @@ mod_query_server <- function(input, output, session, dataset, metacell_types, ce
     top_correlated_selector("axis_var", "axis", "axis_type", input, output, session, dataset, ns, button_labels = c("Axes", "Color"), ids = c("axis", "color"))
 
     group_selectors_mod_query(input, output, session, dataset, ns, group)
-    metacell_selectors_mod_query(input, output, session, dataset, ns, metacell_names, projected_metacell_types, atlas_colors, group)
+    metacell_selectors_mod_query(input, output, session, dataset, ns, metacell_names, metacell_colors, projected_metacell_types, atlas_colors, group)
 
     mc_mc_gene_scatter_df <- reactive({
         req(input$mode)
@@ -351,14 +349,20 @@ mod_query_server <- function(input, output, session, dataset, metacell_types, ce
     output$plot_mc_stacked_type <- plot_type_predictions_bar(dataset)
 }
 
-metacell_selectors_mod_query <- function(input, output, session, dataset, ns, metacell_names, metacell_types, cell_type_colors, group) {
+metacell_selectors_mod_query <- function(input, output, session, dataset, ns, metacell_names, metacell_colors, metacell_types, cell_type_colors, group) {
     output$diff_select <- renderUI({
         req(dataset())
         req(input$mode)
         if (input$mode == "MC") {
+            req(metacell_colors())
+            req(metacell_names())
+            cell_types_hex <- col2hex(metacell_colors())
             shinyWidgets::pickerInput(ns("metacell1"), "Metacell",
                 choices = metacell_names(),
-                selected = config$selected_mc1, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
+                selected = config$selected_mc1, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith"),
+                choicesOpt = list(
+                    style = paste0("color: ", cell_types_hex, ";")
+                )
             )
         } else if (input$mode == "Type") {
             req(cell_type_colors())
@@ -377,10 +381,16 @@ metacell_selectors_mod_query <- function(input, output, session, dataset, ns, me
                 )
             )
         } else if (input$mode == "Group") {
+            req(metacell_colors())
+            req(metacell_names())
+            cell_types_hex <- col2hex(metacell_colors())
             tagList(
                 shinyWidgets::pickerInput(ns("metacell"), "Metacell",
                     choices = metacell_names(),
-                    selected = config$selected_mc1, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
+                    selected = config$selected_mc1, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith"),
+                    choicesOpt = list(
+                        style = paste0("color: ", cell_types_hex, ";")
+                    )
                 ),
                 shinyWidgets::actionGroupButtons(
                     ns("add_metacell_to_group"),

@@ -111,14 +111,12 @@ mod_mc_mc_server <- function(input, output, session, dataset, metacell_types, ce
     groupA <- reactiveVal()
     groupB <- reactiveVal()
 
-    metacell_names <- reactive({
-        req(dataset())
-        colnames(get_mc_data(dataset(), "mc_mat"))
-    })
+    metacell_names <- metacell_names_reactive(dataset)
+    metacell_colors <- metacell_colors_reactive(dataset, metacell_names, metacell_types)
 
     projection_selectors(ns, dataset, output, input, globals, weight = 0.6)
     group_selectors(input, output, session, dataset, ns, groupA, groupB)
-    metacell_selectors(input, output, session, dataset, ns, metacell_names, metacell_types, cell_type_colors, groupA, groupB)
+    metacell_selectors(input, output, session, dataset, ns, metacell_names, metacell_colors, metacell_types, cell_type_colors, groupA, groupB)
 
     mc_mc_gene_scatter_df <- mc_mc_gene_scatter_df_reactive(dataset, input, output, session, metacell_types, cell_type_colors, groupA, groupB)
 
@@ -324,14 +322,20 @@ mod_mc_mc_server <- function(input, output, session, dataset, metacell_types, ce
     outputOptions(output, "plot_mc_traj", priority = 3)
 }
 
-metacell_selectors <- function(input, output, session, dataset, ns, metacell_names, metacell_types, cell_type_colors, groupA, groupB) {
+metacell_selectors <- function(input, output, session, dataset, ns, metacell_names, metacell_colors, metacell_types, cell_type_colors, groupA, groupB) {
     output$metacell1_select <- renderUI({
         req(dataset())
         req(input$mode)
-        if (input$mode == "MCs") {
+        if (input$mode == "MCs") {            
+            req(metacell_colors())
+            req(metacell_names())
+            cell_types_hex <- col2hex(metacell_colors())
             shinyWidgets::pickerInput(ns("metacell1"), "Metacell A",
                 choices = metacell_names(),
-                selected = config$selected_mc1, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE)
+                selected = config$selected_mc1, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE),
+                choicesOpt = list(
+                    style = paste0("color: ", cell_types_hex, ";")
+                )
             )
         } else if (input$mode == "Types") {
             req(cell_type_colors())
@@ -349,10 +353,16 @@ metacell_selectors <- function(input, output, session, dataset, ns, metacell_nam
                 )
             )
         } else if (input$mode == "Groups") {
+            req(metacell_colors())
+            req(metacell_names())
+            cell_types_hex <- col2hex(metacell_colors())
             tagList(
                 shinyWidgets::pickerInput(ns("metacell"), "Metacell",
                     choices = metacell_names(),
-                    selected = config$selected_mc1, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE)
+                    selected = config$selected_mc1, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE),
+                    choicesOpt = list(
+                        style = paste0("color: ", cell_types_hex, ";")
+                    )
                 ),
                 shinyWidgets::actionGroupButtons(
                     c(ns("add_metacell_to_groupA"), ns("add_metacell_to_groupB")),
@@ -367,9 +377,15 @@ metacell_selectors <- function(input, output, session, dataset, ns, metacell_nam
         req(dataset())
         req(input$mode)
         if (input$mode == "MCs") {
+            req(metacell_colors())
+            req(metacell_names())
+            cell_types_hex <- col2hex(metacell_colors())
             shinyWidgets::pickerInput(ns("metacell2"), "Metacell B",
                 choices = metacell_names(),
-                selected = config$selected_mc2, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
+                selected = config$selected_mc2, multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith"),
+                choicesOpt = list(
+                    style = paste0("color: ", cell_types_hex, ";")
+                )
             )
         } else if (input$mode == "Types") {
             req(cell_type_colors())
