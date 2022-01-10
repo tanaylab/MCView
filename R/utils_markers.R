@@ -273,7 +273,9 @@ get_marker_genes <- function(dataset, mode = "Markers") {
         return(get_mc_data(dataset, "marker_genes_inner_fold"))
     } else if (mode == "Proj") {
         if (is.null(get_mc_data(dataset, "projected_fold"))) {
-            showNotification(glue("Projected-fold matrix was not computed. Please compute it in python using the metacells package and rerun the import"), type = "error")
+            if ("Projected-fold" %in% config$original_tabs) {
+                showNotification(glue("Projected-fold matrix was not computed. Please compute it in python using the metacells package and rerun the import"), type = "error")
+            }
             req(FALSE)
         }
         return(get_mc_data(dataset, "marker_genes_projected"))
