@@ -267,7 +267,7 @@ mod_query_server <- function(input, output, session, dataset, metacell_types, ce
         }
 
         df <- df %>%
-            mutate(D = gene %in% disjoined, S = gene %in% systematic)
+            mutate(Disjoined = gene %in% disjoined, Systematic = gene %in% systematic)
 
         return(df)
     })
