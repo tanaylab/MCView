@@ -23,8 +23,18 @@ mod_gene_mc_ui <- function(id) {
                     width = 12,
                     sidebar = shinydashboardPlus::boxSidebar(
                         startOpen = FALSE,
-                        width = 25,
+                        width = 80,
                         id = ns("gene_projection_sidebar"),
+                        shinyWidgets::prettyRadioButtons(
+                            ns("color_proj"),
+                            label = "Color by:",
+                            choices = c("Cell type", "Gene", "Metadata"),
+                            inline = TRUE,
+                            status = "danger",
+                            fill = TRUE
+                        ),
+                        uiOutput(ns("gene_selector")),
+                        uiOutput(ns("metadata_selector")),
                         uiOutput(ns("proj_stat_ui")),
                         uiOutput(ns("set_range_ui")),
                         uiOutput(ns("expr_range_ui")),
@@ -33,17 +43,8 @@ mod_gene_mc_ui <- function(id) {
                         uiOutput(ns("stroke_ui")),
                         uiOutput(ns("edge_distance_ui"))
                     ),
-                    uiOutput(ns("manifold_select_ui")),
                     shinycssloaders::withSpinner(
                         plotly::plotlyOutput(ns("plot_gene_proj_2d"))
-                    ),
-                    shinyWidgets::prettyRadioButtons(
-                        ns("color_proj"),
-                        label = "Color by:",
-                        choices = c("Cell type", "Gene", "Metadata"),
-                        inline = TRUE,
-                        status = "danger",
-                        fill = TRUE
                     )
                 )
             ),
@@ -59,14 +60,14 @@ mod_gene_mc_ui <- function(id) {
                     width = 12,
                     sidebar = shinydashboardPlus::boxSidebar(
                         startOpen = FALSE,
-                        width = 25,
+                        width = 100,
                         id = ns("gene_gene_sidebar"),
+                        axis_selector("x_axis", "Gene", ns),
+                        axis_selector("y_axis", "Gene", ns),
+                        axis_selector("color_by", "Metadata", ns),
                         uiOutput(ns("gene_gene_point_size_ui")),
                         uiOutput(ns("gene_gene_stroke_ui"))
                     ),
-                    axis_selector("x_axis", "Gene", ns),
-                    axis_selector("y_axis", "Gene", ns),
-                    axis_selector("color_by", "Metadata", ns),
                     shinycssloaders::withSpinner(
                         plotly::plotlyOutput(ns("plot_gene_gene_mc"))
                     )
@@ -101,37 +102,35 @@ mod_gene_mc_sidebar_ui <- function(id) {
 #' gene_mc Server Function
 #'
 #' @noRd
-mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, cell_type_colors) {
+mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals) {
     ns <- session$ns
 
     top_correlated_selectors(input, output, session, dataset, ns)
     mod_gene_mc_plotly_observers(input, session)
 
-    # Manifold selectors
-    output$manifold_select_ui <- renderUI({
-        req(dataset())
-        req(input$color_proj)
-        picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
-        if (input$color_proj == "Metadata") {
-            if (!has_metadata(dataset())) {
-                print(glue("Dataset \"{dataset()}\" doesn't have any metadata. Use `update_metadata` to add it to your dataset."))
-            } else {
-                shinyWidgets::pickerInput(
-                    ns("color_proj_metadata"),
-                    label = "Color by:",
-                    choices = dataset_metadata_fields(dataset()),
-                    selected = dataset_metadata_fields(dataset())[1],
-                    width = "70%",
-                    multiple = FALSE,
-                    options = picker_options
-                )
-            }
-        } else if (input$color_proj == "Gene") {
+    picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE)
+
+    output$gene_selector <- renderUI({
+        shinyWidgets::pickerInput(
+            ns("color_proj_gene"),
+            label = "Gene:",
+            choices = gene_names(dataset()),
+            selected = default_gene1,
+            width = "70%",
+            multiple = FALSE,
+            options = picker_options
+        )
+    })
+
+    output$metadata_selector <- renderUI({
+        if (!has_metadata(dataset())) {
+            print(glue("Dataset doesn't have any metadata."))
+        } else {
             shinyWidgets::pickerInput(
-                ns("color_proj_gene"),
-                label = "Color by:",
-                choices = gene_names(dataset()),
-                selected = default_gene1,
+                ns("color_proj_metadata"),
+                label = "Metadata:",
+                choices = dataset_metadata_fields(dataset()),
+                selected = dataset_metadata_fields(dataset())[1],
                 width = "70%",
                 multiple = FALSE,
                 options = picker_options
@@ -139,21 +138,19 @@ mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, 
         }
     })
 
-    scatter_selectors(ns, dataset, output)
-    projection_selectors(ns, dataset, output, input)
+    observe({
+        req(input$color_proj)
+        shinyjs::toggle(id = "gene_selector", condition = input$color_proj == "Gene")
+        shinyjs::toggle(id = "metadata_selector", condition = input$color_proj == "Metadata")
+    })
+
+
+    scatter_selectors(ns, dataset, output, globals)
+    projection_selectors(ns, dataset, output, input, globals, weight = 0.6)
 
     # Projection plots
-    output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, values, metacell_types, cell_type_colors, source = "proj_mc_plot_gene_tab") %>%
+    output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, source = "proj_mc_plot_gene_tab") %>%
         bindCache(dataset(), input$color_proj, metacell_types(), cell_type_colors(), input$point_size, input$stroke, input$min_edge_size, input$set_range, input$show_selected_metacells, input$metacell1, input$metacell2, input$proj_stat, input$expr_range, input$lfp, input$color_proj_gene, input$color_proj_metadata)
-
-    plot_gene_gene_mc_proxy <- plotly::plotlyProxy(ns("md_md_plot"), session)
-
-    observe({
-        restyle_events <- plotly::event_data(source = "proj_mc_plot_gene_tab", event = "plotly_restyle")
-        req(input$color_by_var == "Cell type")
-
-        plotly::plotlyProxyInvoke(plot_gene_gene_mc_proxy, "restyle", restyle_events[[1]], restyle_events[[2]])
-    })
 
     connect_gene_plots(input, output, session, ns, source = "proj_mc_plot_gene_tab")
 
@@ -215,14 +212,14 @@ mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, 
 }
 
 
-mod_gene_mc_plotly_observers <- function(input, session) {
-    observeEvent(plotly::event_data("plotly_click", source = "mc_mc_plot"), {
-        el <- plotly::event_data("plotly_click", source = "mc_mc_plot")
+mod_gene_mc_plotly_observers <- function(input, session, source = "mc_mc_plot", notification_suffix = " in \"Genes\" tab") {
+    observeEvent(plotly::event_data("plotly_click", source = source), {
+        el <- plotly::event_data("plotly_click", source = source)
 
         gene <- el$customdata
         if (input$x_axis_type == "Gene") {
             shinyWidgets::updatePickerInput(session, "x_axis_var", selected = gene)
         }
-        showNotification(glue("Selected {gene} in \"Genes\" tab"))
+        showNotification(glue("Selected {gene}{notification_suffix}"))
     })
 }

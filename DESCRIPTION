@@ -1,6 +1,6 @@
 Package: MCView
 Title: A Shiny App for Metacell Analysis
-Version: 0.2.1.9000
+Version: 0.2.2
 Authors@R: 
     person(given = "Aviezer",
            family = "Lifshitz",
@@ -34,6 +34,7 @@ Imports:
     fs,
     furrr,
     future,
+    gert,
     ggnewscale,
     ggplot2,
     ggrepel,
@@ -53,6 +54,7 @@ Imports:
     rlang,
     rmarkdown,
     scales,
+    slanter,
     shiny (>= 1.6.0),
     shinyjs,
     shinycssloaders,

@@ -6,7 +6,7 @@
 #' @noRd
 app_ui <- function(request) {
     items_list <- purrr::map(tab_defs, ~ {
-        shinydashboard::menuItem(.x$title, tabName = .x$module_name, icon = icon(.x$icon))
+        shinydashboard::menuSubItem(.x$title, tabName = .x$module_name, icon = icon(.x$icon))
     })
 
     sidebar <- shinydashboard::dashboardSidebar(
@@ -14,7 +14,11 @@ app_ui <- function(request) {
             id = "tab_sidebar_help",
             shinydashboard::sidebarMenu(
                 id = "tab_sidebar",
-                items_list
+                shinydashboard::menuItem("Tabs",
+                    tabname = "tabs",
+                    startExpanded = TRUE,
+                    items_list
+                )
             )
         ),
         tags$hr(),
@@ -33,6 +37,22 @@ app_ui <- function(request) {
         conditionalPanel(
             condition = "input.tab_sidebar == 'markers'",
             mod_markers_sidebar_ui("markers_ui_1")
+        ),
+        conditionalPanel(
+            condition = "input.tab_sidebar == 'inner_fold'",
+            mod_inner_fold_sidebar_ui("inner_fold_ui_1")
+        ),
+        conditionalPanel(
+            condition = "input.tab_sidebar == 'proj_fold'",
+            mod_proj_fold_sidebar_ui("proj_fold_ui_1")
+        ),
+        conditionalPanel(
+            condition = "input.tab_sidebar == 'projection'",
+            mod_projection_sidebar_ui("projection_ui_1")
+        ),
+        conditionalPanel(
+            condition = "input.tab_sidebar == 'atlas'",
+            mod_atlas_sidebar_ui("atlas_ui_1")
         ),
         conditionalPanel(
             condition = "input.tab_sidebar == 'samples'",
@@ -63,6 +83,10 @@ app_ui <- function(request) {
             shinydashboard::tabItem(tabName = "manifold", mod_manifold_ui("manifold_ui_1")),
             shinydashboard::tabItem(tabName = "gene_mc", mod_gene_mc_ui("gene_mc_ui_1")),
             shinydashboard::tabItem(tabName = "markers", mod_markers_ui("markers_ui_1")),
+            shinydashboard::tabItem(tabName = "inner_fold", mod_inner_fold_ui("inner_fold_ui_1")),
+            shinydashboard::tabItem(tabName = "proj_fold", mod_proj_fold_ui("proj_fold_ui_1")),
+            shinydashboard::tabItem(tabName = "projection", mod_projection_ui("projection_ui_1")),
+            shinydashboard::tabItem(tabName = "atlas", mod_atlas_ui("atlas_ui_1")),
             shinydashboard::tabItem(tabName = "mc_mc", mod_mc_mc_ui("mc_mc_ui_1")),
             shinydashboard::tabItem(tabName = "samples", mod_samples_ui("samples_ui_1")),
             shinydashboard::tabItem(tabName = "annotate", mod_annotate_mc_ui("annotate_ui_1"))
@@ -107,7 +131,17 @@ app_ui <- function(request) {
         controlbar = right_sidebar
     )
 
+    screen_size_jscode <-
+        '$(document).on("shiny:connected", function(e) {
+         var screenWidth = screen.width;
+         var screenHeight = screen.height;
+        Shiny.onInputChange("screen_width", screenWidth)
+        Shiny.onInputChange("screen_height", screenHeight)
+        });
+    '
+
     tagList(
+        tags$script(screen_size_jscode),
         shinyjs::useShinyjs(), # Set up shinyjs
         rintrojs::introjsUI(),
         shinybusy::add_busy_spinner(spin = "breeding-rhombus", position = "bottom-right", timeout = 100),

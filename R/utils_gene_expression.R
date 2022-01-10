@@ -1,6 +1,6 @@
-get_mc_egc <- function(dataset, genes = NULL) {
-    mc_mat <- get_mc_data(dataset, "mc_mat")
-    mc_sum <- get_mc_data(dataset, "mc_sum")
+get_mc_egc <- function(dataset, genes = NULL, atlas = FALSE) {
+    mc_mat <- get_mc_data(dataset, "mc_mat", atlas = atlas)
+    mc_sum <- get_mc_data(dataset, "mc_sum", atlas = atlas)
 
     if (!is.null(genes)) {
         mc_mat <- mc_mat[genes, ]
@@ -9,8 +9,8 @@ get_mc_egc <- function(dataset, genes = NULL) {
     return(t(t(mc_mat) / mc_sum))
 }
 
-get_mc_fp <- function(dataset, genes = NULL) {
-    mc_egc <- get_mc_egc(dataset, genes = genes)
+get_mc_fp <- function(dataset, genes = NULL, atlas = FALSE) {
+    mc_egc <- get_mc_egc(dataset, genes = genes, atlas = atlas)
 
     mc_egc_norm <- mc_egc + 1e-5
     mc_fp <- mc_egc_norm / apply(mc_egc_norm, 1, median, na.rm = TRUE)
@@ -34,30 +34,45 @@ filter_mat_by_cell_types <- function(mat, cell_types, metacell_types) {
     return(mat)
 }
 
-get_gene_egc <- function(gene, dataset) {
-    mc_mat <- get_mc_data(dataset, "mc_mat")
-    mc_sum <- get_mc_data(dataset, "mc_sum")
+get_gene_egc <- function(gene, dataset, projected = FALSE, atlas = FALSE) {
+    if (projected) {
+        mc_mat <- get_mc_data(dataset, "projected_mat")
+        mc_sum <- get_mc_data(dataset, "projected_mat_sum")
+    } else {
+        mc_mat <- get_mc_data(dataset, "mc_mat", atlas = atlas)
+        mc_sum <- get_mc_data(dataset, "mc_sum", atlas = atlas)
+    }
+
 
     return(mc_mat[gene, ] / mc_sum)
 }
 
-get_gene_fp <- function(gene, dataset) {
-    mc_egc_norm <- get_gene_egc(gene, dataset) + 1e-5
+get_gene_fp <- function(gene, dataset, atlas = FALSE) {
+    mc_egc_norm <- get_gene_egc(gene, dataset, atlas = atlas) + 1e-5
 
     mc_fp <- mc_egc_norm / median(mc_egc_norm, na.rm = TRUE)
     return(mc_fp)
 }
 
-get_metacells_egc <- function(metacells, dataset) {
-    mc_mat <- get_mc_data(dataset, "mc_mat")
-    mc_sum <- get_mc_data(dataset, "mc_sum")
+get_metacells_egc <- function(metacells, dataset, projected = FALSE, atlas = FALSE) {
+    if (projected) {
+        mc_mat <- get_mc_data(dataset, "projected_mat")
+        mc_sum <- get_mc_data(dataset, "projected_mat_sum")
+    } else {
+        mc_mat <- get_mc_data(dataset, "mc_mat", atlas = atlas)
+        mc_sum <- get_mc_data(dataset, "mc_sum", atlas = atlas)
+    }
 
     mc_egc <- t(t(mc_mat[, metacells]) / mc_sum[metacells])
     return(mc_egc)
 }
 
-get_cell_types_mat <- function(cell_types, metacell_types, dataset) {
-    mc_mat <- get_mc_data(dataset, "mc_mat")
+get_cell_types_mat <- function(cell_types, metacell_types, dataset, projected = FALSE, atlas = FALSE) {
+    if (projected) {
+        mc_mat <- get_mc_data(dataset, "projected_mat")
+    } else {
+        mc_mat <- get_mc_data(dataset, "mc_mat", atlas = atlas)
+    }
 
     mc_types <- metacell_types %>%
         filter(cell_type %in% cell_types) %>%
@@ -66,13 +81,19 @@ get_cell_types_mat <- function(cell_types, metacell_types, dataset) {
 
     mc_mat <- mc_mat[, names(mc_types)]
 
+    if (is.null(dim(mc_mat))) {
+        ct_mat <- as.matrix(mc_mat)
+        colnames(ct_mat) <- mc_types
+        return(ct_mat)
+    }
+
     ct_mat <- t(tgs_matrix_tapply(mc_mat, mc_types, sum))
 
     return(ct_mat)
 }
 
-get_cell_types_egc <- function(cell_types, metacell_types, dataset, mat = NULL) {
-    mat <- mat %||% get_cell_types_mat(cell_types, metacell_types, dataset)
+get_cell_types_egc <- function(cell_types, metacell_types, dataset, mat = NULL, projected = FALSE, atlas = FALSE) {
+    mat <- mat %||% get_cell_types_mat(cell_types, metacell_types, dataset, projected = projected, atlas = atlas)
 
     ct_egc <- t(t(mat) / colSums(mat))
 

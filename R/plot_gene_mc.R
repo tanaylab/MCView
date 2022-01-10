@@ -138,18 +138,24 @@ connect_gene_plots <- function(input, output, session, ns, source) {
     observe({
         restyle_events <- plotly::event_data(source = source, event = "plotly_restyle")
 
-        plotly::plotlyProxyInvoke(plot_gene_gene_mc_proxy, "restyle", restyle_events[[1]], restyle_events[[2]])
         plotly::plotlyProxyInvoke(plot_gene_age_mc1_proxy, "restyle", restyle_events[[1]], restyle_events[[2]])
         plotly::plotlyProxyInvoke(plot_gene_age_mc2_proxy, "restyle", restyle_events[[1]], restyle_events[[2]])
+
+        req(is.null(input$color_by_var) || input$color_by_var == "Cell type")
+        plotly::plotlyProxyInvoke(plot_gene_gene_mc_proxy, "restyle", restyle_events[[1]], restyle_events[[2]])
     })
 }
 
-# TODO: find a better heuristic that takes into account the plot size
-initial_scatters_point_size <- function(dataset) {
+initial_scatters_point_size <- function(dataset, screen_width = NULL, screen_height = NULL, weight = 1, atlas = FALSE) {
     if (!is.null(config$datasets[[dataset]]$scatters_point_size)) {
         return(config$datasets[[dataset]]$scatters_point_size)
     }
-    return(2.5)
+    n_metacells <- length(get_mc_data(dataset, "mc_sum", atlas = atlas))
+    screen_width <- screen_width %||% 1920
+    screen_height <- screen_height %||% 1080
+    point_size <- screen_width * screen_height / (n_metacells * 2000) * weight
+
+    return(max(1, min(3, point_size)))
 }
 
 initial_scatters_stroke <- function(dataset) {

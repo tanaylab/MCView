@@ -82,6 +82,16 @@ init_tab_defs <- function() {
             module_name = "markers",
             icon = "map-marker"
         ),
+        "Inner-fold" = list(
+            title = "Inner-fold",
+            module_name = "inner_fold",
+            icon = "cloud-sun-rain"
+        ),
+        "Projected-fold" = list(
+            title = "Projected-fold",
+            module_name = "proj_fold",
+            icon = "cloud-moon-rain"
+        ),
         "Genes" = list(
             title = "Genes",
             module_name = "gene_mc",
@@ -97,6 +107,16 @@ init_tab_defs <- function() {
             module_name = "samples",
             icon = "vials"
         ),
+        "Query" = list(
+            title = "Query",
+            module_name = "projection",
+            icon = "video"
+        ),
+        "Atlas" = list(
+            title = "Atlas",
+            module_name = "atlas",
+            icon = "atlas"
+        ),
         "Annotate" = list(
             title = "Annotate",
             module_name = "annotate",
@@ -107,11 +127,13 @@ init_tab_defs <- function() {
     default_tabs <- c("About", "Genes", "Diff. Expression")
 
     if (!is.null(config$tabs)) {
+        config$original_tabs <<- config$tabs
         config$tabs[config$tabs == "Metacells"] <- "Diff. Expression" # here for backward compatibility
-        config$tabs <- config$tabs[config$tabs != "Metadata"] # ignore "Metadata" for backward compatibility
+        config$tabs <<- config$tabs[config$tabs != "Metadata"] # ignore "Metadata" for backward compatibility
         purrr::walk(config$tabs, ~ {
             if (!(.x %in% names(tab_defs))) {
-                cli_abort("{.x} is not a valid tab name. Update `tabs` in your configuration file.")
+                cli_warn("{.x} is not a valid tab name. Update `tabs` in your configuration file.")
+                config$tabs <<- config$tabs[config$tabs != .x]
             }
         })
 
@@ -126,8 +148,8 @@ init_tab_defs <- function() {
     }
 }
 
-gene_names <- function(dataset) {
-    gene_names <- rownames(get_mc_data(dataset, "mc_mat"))
+gene_names <- function(dataset, atlas = FALSE) {
+    gene_names <- rownames(get_mc_data(dataset, "mc_mat", atlas = atlas))
     return(gene_names)
 }
 

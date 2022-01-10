@@ -163,7 +163,6 @@ import_cell_metadata <- function(project, dataset, cell_metadata, cell_to_metace
 }
 
 
-
 #' Convert cell metadata to metacell metadata
 #'
 #' @param cell_metadata data frame with a column named "cell_id" with
@@ -322,11 +321,19 @@ cell_metadata_to_metacell_from_h5ad <- function(anndata_file, metadata_fields, f
         cli_abort("h5ad object doesn't have a 'metacell' field.")
     }
 
-    purrr::walk(metadata_fields, ~ {
-        if (!(.x %in% colnames(adata$obs))) {
-            cli_abort("{.field {.x}} is not present in the h5ad object.")
-        }
-    })
+    if (length(metadata_fields) == 1 && metadata_fields == "all") {
+        metadata_fields <- colnames(adata$obs)
+        forbidden_fields <- c("metacell", "outlier")
+        metadata_fields <- metadata_fields[!(metadata_fields %in% forbidden_fields)]
+    } else {
+        purrr::walk(metadata_fields, ~ {
+            if (!(.x %in% colnames(adata$obs))) {
+                cli_abort("{.field {.x}} is not present in the h5ad object.")
+            }
+        })
+    }
+
+
 
     df <- adata$obs %>%
         rownames_to_column("cell_id")

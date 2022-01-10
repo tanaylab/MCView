@@ -1,4 +1,9 @@
-# MCView 0.2.1.9000
+# MCView 0.2.2
+
+* Added support for atlas projections ('Atlas', 'Query' and 'Projected-fold' tabs)
+* Homogenzie Annotate, Diff. Expr and Genes tabs. 
+
+# MCView 0.2.1
 
 * Added Metadata tab.
 * Added Markers tab.

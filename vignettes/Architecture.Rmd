@@ -162,6 +162,8 @@ This would create a minimal shiny app in "/path/to/the/bundle/my_project" direct
 1. app.R file. 
 2. project config and cache. 
 
+> Note: The bundle would use use the installed version of MCView in server. If you want to create a 'self-contained' bundle that would include MCView code as well, set `self_contained=TRUE`. 
+
 The bundle can then be deployed in shiny-server by running: 
 
 ```{r, eval=FALSE}

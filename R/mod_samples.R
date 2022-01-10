@@ -23,14 +23,14 @@ mod_samples_ui <- function(id) {
                     width = 12,
                     sidebar = shinydashboardPlus::boxSidebar(
                         startOpen = FALSE,
-                        width = 25,
+                        width = 100,
                         id = ns("gene_gene_sidebar"),
+                        axis_selector("x_axis", "Metadata", ns, choices = c("Metadata", "Gene", "Cell type")),
+                        axis_selector("y_axis", "Metadata", ns, choices = c("Metadata", "Gene", "Cell type")),
+                        axis_selector("color_by", "Metadata", ns, choices = c("Metadata", "Gene", "Cell type")),
                         uiOutput(ns("gene_gene_point_size_ui")),
                         uiOutput(ns("gene_gene_stroke_ui"))
                     ),
-                    axis_selector("x_axis", "Metadata", ns, choices = c("Metadata", "Gene", "Cell type")),
-                    axis_selector("y_axis", "Metadata", ns, choices = c("Metadata", "Gene", "Cell type")),
-                    axis_selector("color_by", "Metadata", ns, choices = c("Metadata", "Gene", "Cell type")),
                     textOutput(ns("please_select_cell_types")),
                     textOutput(ns("no_samples1")),
                     shinycssloaders::withSpinner(
@@ -51,8 +51,17 @@ mod_samples_ui <- function(id) {
                     width = 12,
                     sidebar = shinydashboardPlus::boxSidebar(
                         startOpen = FALSE,
-                        width = 25,
+                        width = 80,
                         id = ns("gene_projection_sidebar"),
+                        shinyWidgets::prettyRadioButtons(
+                            ns("color_proj"),
+                            label = "Color by:",
+                            choices = c("Sample", "Cell type"),
+                            selected = "Sample",
+                            inline = TRUE,
+                            status = "danger",
+                            fill = TRUE
+                        ),
                         uiOutput(ns("proj_stat_ui")),
                         uiOutput(ns("set_range_ui")),
                         uiOutput(ns("expr_range_ui")),
@@ -64,15 +73,6 @@ mod_samples_ui <- function(id) {
                     textOutput(ns("no_samples2")),
                     shinycssloaders::withSpinner(
                         plotly::plotlyOutput(ns("plot_gene_proj_2d"))
-                    ),
-                    shinyWidgets::prettyRadioButtons(
-                        ns("color_proj"),
-                        label = "Color by:",
-                        choices = c("Sample", "Cell type"),
-                        selected = "Sample",
-                        inline = TRUE,
-                        status = "danger",
-                        fill = TRUE
                     )
                 ),
                 uiOutput(ns("sample_info_box"))
@@ -82,7 +82,7 @@ mod_samples_ui <- function(id) {
 }
 
 
-#' gene_mc sidebar UI Function
+#' samples sidebar UI Function
 #'
 #' @description A shiny Module.
 #'
@@ -104,17 +104,17 @@ mod_samples_sidebar_ui <- function(id) {
     )
 }
 
-#' gene_mc Server Function
+#' samples Server Function
 #'
 #' @noRd
-mod_samples_server <- function(input, output, session, dataset, metacell_types, cell_type_colors) {
+mod_samples_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals) {
     ns <- session$ns
     top_correlated_selectors(input, output, session, dataset, ns, button_labels = c("X", "Y", "Color"))
 
     output$cell_type_list <- cell_type_selector(dataset, ns, id = "selected_cell_types", label = "Cell types", cell_type_colors = cell_type_colors())
 
-    scatter_selectors(ns, dataset, output)
-    projection_selectors(ns, dataset, output, input)
+    scatter_selectors(ns, dataset, output, globals)
+    projection_selectors(ns, dataset, output, input, globals, weight = 0.6)
 
     output$sample_select_ui <- renderUI({
         req(dataset())
@@ -126,7 +126,7 @@ mod_samples_server <- function(input, output, session, dataset, metacell_types, 
             selected2 <- samp_list[1]
         }
 
-        picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
+        picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE)
         tagList(
             shinyWidgets::pickerInput(
                 ns("samp1"),
@@ -150,7 +150,7 @@ mod_samples_server <- function(input, output, session, dataset, metacell_types, 
     })
 
     # Projection plots
-    output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, values, metacell_types, cell_type_colors, source = "proj_mc_plot_gene_tab") %>%
+    output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, source = "proj_mc_plot_gene_tab") %>%
         bindCache(dataset(), input$color_proj, metacell_types(), cell_type_colors(), input$point_size, input$stroke, input$min_edge_size, input$set_range, input$show_selected_metacells, input$metacell1, input$metacell2, input$proj_stat, input$expr_range, input$lfp, input$samp1)
 
     # Info box

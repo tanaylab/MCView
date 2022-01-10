@@ -1,4 +1,4 @@
-#' markers UI Function
+#' proj_fold UI Function
 #'
 #' @description A shiny Module.
 #'
@@ -7,13 +7,13 @@
 #' @noRd
 #'
 #' @importFrom shiny NS tagList
-mod_markers_ui <- function(id) {
+mod_proj_fold_ui <- function(id) {
     ns <- NS(id)
     tagList(
         fluidRow(
             column(
                 width = 12,
-                heatmap_box(ns, "Markers Heatmap")
+                heatmap_box(ns, "Projected-Fold Heatmap")
             )
         )
     )
@@ -29,21 +29,21 @@ mod_markers_ui <- function(id) {
 #' @noRd
 #'
 #' @importFrom shiny NS tagList
-mod_markers_sidebar_ui <- function(id) {
+mod_proj_fold_sidebar_ui <- function(id) {
     ns <- NS(id)
     tagList(
         heatmap_sidebar(ns)
     )
 }
 
-#' markers Server Function
+#' proj_fold Server Function
 #'
 #' @noRd
-mod_markers_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals) {
+mod_proj_fold_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals) {
     ns <- session$ns
 
     markers <- reactiveVal()
     lfp_range <- reactiveVal()
 
-    heatmap_reactives(ns, input, output, session, dataset, metacell_types, cell_type_colors, globals, markers, lfp_range, "Markers")
+    heatmap_reactives(ns, input, output, session, dataset, metacell_types, cell_type_colors, globals, markers, lfp_range, "Proj")
 }

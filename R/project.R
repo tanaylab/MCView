@@ -22,10 +22,10 @@ project_cache_dir <- function(path) {
     fs::path(path, "cache")
 }
 
-verify_project_dir <- function(path, create = FALSE) {
+verify_project_dir <- function(path, create = FALSE, atlas = FALSE) {
     if (!dir.exists(path)) {
         if (create) {
-            create_project(project = basename(path), edit_config = FALSE)
+            create_project(project = path, edit_config = FALSE, atlas = atlas)
         } else {
             cli_abort("{.path path} does not exist. Maybe there is a typo? You can start a new project by running {.code MCView::create_project}.")
         }
@@ -37,14 +37,19 @@ verify_project_dir <- function(path, create = FALSE) {
     }
 }
 
-create_project_dirs <- function(project_dir) {
+create_project_dirs <- function(project_dir, atlas = FALSE) {
     fs::dir_create(project_dir)
     cli_alert_info("creating {project_dir}")
 
     fs::dir_create(project_cache_dir(project_dir))
     fs::dir_create(fs::path(project_dir, "config"))
 
-    defaults_dir <- app_sys("default-config")
+    if (atlas) {
+        defaults_dir <- app_sys("atlas-proj-config")
+    } else {
+        defaults_dir <- app_sys("default-config")
+    }
+
     files <- c("config.yaml", "help.yaml", "about.Rmd")
     for (file in files) {
         if (!fs::file_exists(fs::path(project_dir, "config", file))) {
@@ -63,6 +68,7 @@ create_project_dirs <- function(project_dir) {
 #'
 #' @param project path of the project
 #' @param edit_config open file editor for config file editing
+#' @param atlas use default configuration for atlas projections
 #'
 #' @examples
 #' \dontrun{
@@ -73,8 +79,8 @@ create_project_dirs <- function(project_dir) {
 #' }
 #'
 #' @export
-create_project <- function(project, edit_config = TRUE) {
-    project_dir <- create_project_dirs(project)
+create_project <- function(project, edit_config = TRUE, atlas = FALSE) {
+    project_dir <- create_project_dirs(project, atlas = atlas)
     project_dir <- fs::path(project_dir, "config")
 
     if (rlang::is_interactive() && edit_config) {
@@ -101,14 +107,35 @@ create_project <- function(project, edit_config = TRUE) {
 #' @param path path in which to create the bundle.
 #' @param name name of the folder in which to create the bundle. The bundle would be created at \code{path}/\code{name}
 #' @param overwrite overwrite bundle if already exists
+#' @param self_contained include the source code of \code{MCView} in the bundle
+#' and use it to run the app. Use this in order to ensure that the package would always
+#' run the same way, regardless of MCView changes. When this option is FALSE,
+#' the installed version of \code{MCView} would be loaded, which can be occasionally
+#' updated for all the \code{MCView} apps running from a server. By default, the code
+#' of the latest \code{MCView} release would be used, see \code{branch} for
+#' other options.
+#' @param branch name of the \code{MCView} branch to include when \code{self_contained=TRUE}. By default, the latest release would be used. You can set this
+#' parameter to NULL in order to include the current development version
+#' ('master' branch), or set it to any other branch in the 'tanaylab/MCView' github
+#' repository.
+#'
 #'
 #' @examples
 #' \dontrun{
 #' MCView::create_bundle(project = "PBMC", path = getwd(), name = "PBMC")
+#'
+#' # latest release
+#' MCView::create_bundle(project = "PBMC", path = getwd(), name = "PBMC", self_contained = TRUE)
+#'
+#' # development version
+#' MCView::create_bundle(project = "PBMC", path = getwd(), name = "PBMC", self_contained = TRUE, branch = NULL)
+#'
+#' # specific branch
+#' MCView::create_bundle(project = "PBMC", path = getwd(), name = "PBMC", self_contained = TRUE, branch = "feat@atlas-projection")
 #' }
 #'
 #' @export
-create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overwrite = FALSE) {
+create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overwrite = FALSE, self_contained = FALSE, branch = "latest_release") {
     bundle_dir <- fs::path(path, name)
     if (!(fs::dir_exists(project))) {
         cli::cli_abort("{.path {project}} does not exists.")
@@ -122,6 +149,25 @@ create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overw
         }
     } else {
         fs::dir_create(bundle_dir)
+    }
+
+    if (self_contained) {
+        cli::cli_alert("Creating a self-contained bundle")
+        code_dir <- fs::path(bundle_dir, "code")
+        if (!is.null(branch) && branch == "latest_release") {
+            gert::git_clone("git@github.com:tanaylab/MCView", path = code_dir)
+            tag_list <- gert::git_tag_list(repo = code_dir)
+            latest_tag <- tail(tag_list, n = 1)
+            gert::git_branch_create(
+                branch = latest_tag$name,
+                ref = latest_tag$commit,
+                repo = code_dir,
+                checkout = TRUE
+            )
+            cli::cli_alert_info("Using latest release: {.file {latest_tag$name}}")
+        } else {
+            gert::git_clone("git@github.com:tanaylab/MCView", path = code_dir, branch = branch)
+        }
     }
 
     fs::file_copy(app_sys("app.R"), fs::path(bundle_dir, "app.R"))

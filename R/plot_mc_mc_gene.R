@@ -14,10 +14,14 @@ plot_mc_mc_gene <- function(df, metacell1, metacell2, highlight = NULL, label_pr
     ymin <- max(c(1:length(xylims))[xylims <= min(df[, metacell2])])
 
     if (!is.null(highlight)) {
-        df <- df %>% mutate(col = ifelse(gene %in% highlight, "green", col))
+        prev_levels <- levels(df$col)
+        df <- df %>%
+            mutate(col = ifelse(gene %in% highlight, "green", as.character(col))) %>%
+            mutate(col = factor(col, levels = c("green", prev_levels)))
     }
 
     df <- df %>%
+        arrange(col) %>%
         mutate(
             expr_text1 = scales::scientific(!!sym(metacell1)),
             expr_text2 = scales::scientific(!!sym(metacell2)),
@@ -45,7 +49,7 @@ plot_mc_mc_gene <- function(df, metacell1, metacell2, highlight = NULL, label_pr
     return(p)
 }
 
-render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, mc_mc_gene_scatter_df = NULL, metacell_names = NULL, cell_type_colors = NULL, mode = NULL) {
+render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, mc_mc_gene_scatter_df = NULL, metacell_names = NULL, cell_type_colors = NULL, mode = NULL, source_suffix = "") {
     plotly::renderPlotly({
         req(mc_mc_gene_scatter_df)
 
@@ -71,7 +75,7 @@ render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, mc_mc_
             xlab <- input$metacell1
             ylab <- input$metacell2
             label_prefix <- "MC #"
-            source <- "mc_mc_plot"
+            source <- glue("mc_mc_plot{source_suffix}")
         } else if (mode == "Types") {
             req(cell_type_colors)
             req(input$metacell1 %in% cell_type_colors$cell_type)
@@ -79,19 +83,36 @@ render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, mc_mc_
             xlab <- input$metacell1
             ylab <- input$metacell2
             label_prefix <- ""
-            source <- "ct_ct_plot"
+            source <- glue("ct_ct_plot{source_suffix}")
         } else if (mode == "Groups") {
             label_prefix <- ""
             xlab <- "Group A"
             ylab <- "Group B"
-            source <- "grp_grp_plot"
+            source <- glue("grp_grp_plot{source_suffix}")
         } else if (mode == "Samples") {
             req(input$samp1)
             req(input$samp2)
             xlab <- input$samp1
             ylab <- input$samp2
             label_prefix <- "Sample "
-            source <- "samp_samp_diff_expr_plot"
+            source <- glue("samp_samp_diff_expr_plot{source_suffix}")
+        } else if (mode == "MC") {
+            req(input$metacell1)
+            xlab <- "Observed"
+            ylab <- "Projected"
+            label_prefix <- glue::glue("MC #{input$metacell1}: ")
+            source <- glue("projection_diff_expr_plot{source_suffix}")
+        } else if (mode == "Type") {
+            req(input$metacell1)
+            xlab <- "Observed"
+            ylab <- "Projected"
+            label_prefix <- glue::glue("{input$metacell1}: ")
+            source <- glue("projection_diff_expr_plot{source_suffix}")
+        } else if (mode == "Group") {
+            label_prefix <- ""
+            xlab <- "Observed"
+            ylab <- "Projected"
+            source <- glue("projection_diff_expr_plot{source_suffix}")
         }
 
         fig <- plotly::ggplotly(
@@ -127,7 +148,7 @@ render_mc_mc_gene_diff_table <- function(input, output, session, ns, dataset, mc
                 mc_mc_gene_scatter_df() %>%
                     filter(col != "gray") %>%
                     arrange(diff) %>%
-                    select(Gene = gene, `Diff (log2)` = diff, `P-value` = pval) %>%
+                    select(Gene = gene, `Diff (log2)` = diff, `P-value` = pval, any_of(c("S", "D"))) %>%
                     mutate(GeneCards = glue("<a href='{link}' target='_blank'>Open</a>", link = paste0("https://www.genecards.org/cgi-bin/carddisp.pl?gene=", Gene))),
                 selection = "single",
                 escape = FALSE

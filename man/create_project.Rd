@@ -4,12 +4,14 @@
 \alias{create_project}
 \title{Create a configuration folder for a project}
 \usage{
-create_project(project, edit_config = TRUE)
+create_project(project, edit_config = TRUE, atlas = FALSE)
 }
 \arguments{
 \item{project}{path of the project}
 
 \item{edit_config}{open file editor for config file editing}
+
+\item{atlas}{use default configuration for atlas projections}
 }
 \description{
 Create a project directory with the default configuration files and directory structure.

@@ -108,7 +108,8 @@ parse_cell_type_colors <- function(file) {
     }
 
     cell_type_colors <- cell_type_colors %>%
-        distinct(cell_type, color, order)
+        distinct(cell_type, color, order) %>%
+        select(cell_type, color, order)
 
     n_colors <- cell_type_colors %>%
         count(cell_type) %>%
