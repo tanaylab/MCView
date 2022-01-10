@@ -48,7 +48,7 @@ app_ui <- function(request) {
         ),
         conditionalPanel(
             condition = "input.tab_sidebar == 'projection'",
-            mod_projection_sidebar_ui("projection_ui_1")
+            mod_query_sidebar_ui("projection_ui_1")
         ),
         conditionalPanel(
             condition = "input.tab_sidebar == 'atlas'",
@@ -85,7 +85,7 @@ app_ui <- function(request) {
             shinydashboard::tabItem(tabName = "markers", mod_markers_ui("markers_ui_1")),
             shinydashboard::tabItem(tabName = "inner_fold", mod_inner_fold_ui("inner_fold_ui_1")),
             shinydashboard::tabItem(tabName = "proj_fold", mod_proj_fold_ui("proj_fold_ui_1")),
-            shinydashboard::tabItem(tabName = "projection", mod_projection_ui("projection_ui_1")),
+            shinydashboard::tabItem(tabName = "projection", mod_query_ui("projection_ui_1")),
             shinydashboard::tabItem(tabName = "atlas", mod_atlas_ui("atlas_ui_1")),
             shinydashboard::tabItem(tabName = "mc_mc", mod_mc_mc_ui("mc_mc_ui_1")),
             shinydashboard::tabItem(tabName = "samples", mod_samples_ui("samples_ui_1")),

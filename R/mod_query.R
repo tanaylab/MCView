@@ -7,7 +7,7 @@
 #' @noRd
 #'
 #' @importFrom shiny NS tagList
-mod_projection_ui <- function(id) {
+mod_query_ui <- function(id) {
     ns <- NS(id)
     tagList(
         fluidRow(
@@ -130,7 +130,7 @@ mod_projection_ui <- function(id) {
 #' @noRd
 #'
 #' @importFrom shiny NS tagList
-mod_projection_sidebar_ui <- function(id) {
+mod_query_sidebar_ui <- function(id) {
     ns <- NS(id)
     tagList(
         list(
@@ -156,7 +156,7 @@ mod_projection_sidebar_ui <- function(id) {
 #' projection Server Function
 #'
 #' @noRd
-mod_projection_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals) {
+mod_query_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals) {
     ns <- session$ns
 
     group <- reactiveVal()
@@ -234,8 +234,8 @@ mod_projection_server <- function(input, output, session, dataset, metacell_type
     projection_selectors(ns, dataset, output, input, globals, weight = 0.6)
     top_correlated_selector("axis_var", "axis", "axis_type", input, output, session, dataset, ns, button_labels = c("Axes", "Color"), ids = c("axis", "color"))
 
-    group_selectors_mod_projection(input, output, session, dataset, ns, group)
-    metacell_selectors_mod_projection(input, output, session, dataset, ns, metacell_names, projected_metacell_types, atlas_colors, group)
+    group_selectors_mod_query(input, output, session, dataset, ns, group)
+    metacell_selectors_mod_query(input, output, session, dataset, ns, metacell_names, projected_metacell_types, atlas_colors, group)
 
     mc_mc_gene_scatter_df <- reactive({
         req(input$mode)
@@ -350,7 +350,7 @@ mod_projection_server <- function(input, output, session, dataset, metacell_type
     output$plot_mc_stacked_type <- plot_type_predictions_bar(dataset)
 }
 
-metacell_selectors_mod_projection <- function(input, output, session, dataset, ns, metacell_names, metacell_types, cell_type_colors, group) {
+metacell_selectors_mod_query <- function(input, output, session, dataset, ns, metacell_names, metacell_types, cell_type_colors, group) {
     output$diff_select <- renderUI({
         req(dataset())
         req(input$mode)
@@ -420,7 +420,7 @@ select_metacell_plotly_event_projection <- function(source, input, session, meta
     })
 }
 
-group_selectors_mod_projection <- function(input, output, session, dataset, ns, group) {
+group_selectors_mod_query <- function(input, output, session, dataset, ns, group) {
     output$group_box <- renderUI({
         req(input$mode == "Group")
         shinydashboardPlus::box(
