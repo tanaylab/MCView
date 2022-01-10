@@ -335,8 +335,10 @@ metacell_selectors <- function(input, output, session, dataset, ns, metacell_nam
             )
         } else if (input$mode == "Types") {
             req(cell_type_colors())
-            cell_types_hex <- col2hex(cell_type_colors()$color)
-            cell_types <- cell_type_colors()$cell_type
+            req(metacell_types())
+            types_df <- cell_type_colors() %>% filter(cell_type %in% metacell_types()$cell_type)
+            cell_types_hex <- col2hex(types_df$color)
+            cell_types <- types_df$cell_type
             shinyWidgets::pickerInput(ns("metacell1"), "Cell type A",
                 choices = cell_types,
                 selected = cell_types[1],
@@ -371,8 +373,9 @@ metacell_selectors <- function(input, output, session, dataset, ns, metacell_nam
             )
         } else if (input$mode == "Types") {
             req(cell_type_colors())
-            cell_types_hex <- col2hex(cell_type_colors()$color)
-            cell_types <- cell_type_colors()$cell_type
+            types_df <- cell_type_colors() %>% filter(cell_type %in% metacell_types()$cell_type)
+            cell_types_hex <- col2hex(types_df$color)
+            cell_types <- types_df$cell_type
             shinyWidgets::pickerInput(ns("metacell2"), "Cell type B",
                 choices = cell_types,
                 selected = cell_types[2],

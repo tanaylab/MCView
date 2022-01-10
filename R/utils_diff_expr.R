@@ -134,8 +134,11 @@ mc_mc_gene_scatter_df_reactive <- function(dataset, input, output, session, meta
             calc_mc_mc_gene_df(dataset(), input$metacell1, input$metacell2)
         } else if (input$mode == "Types") {
             req(metacell_types())
+            # both types should be present as an annotation for at least one metacell
             req(input$metacell1 %in% cell_type_colors()$cell_type)
+            req(input$metacell1 %in% metacell_types()$cell_type) 
             req(input$metacell2 %in% cell_type_colors()$cell_type)
+            req(input$metacell2 %in% metacell_types()$cell_type)
             calc_ct_ct_gene_df(dataset(), input$metacell1, input$metacell2, metacell_types())
         } else if (input$mode == "Groups") {
             req(groupA)

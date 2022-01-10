@@ -246,6 +246,7 @@ mod_query_server <- function(input, output, session, dataset, metacell_types, ce
         } else if (input$mode == "Type") {
             req(input$metacell1)
             req(input$metacell1 %in% atlas_colors()$cell_type)
+            req(input$metacell1 %in% metacell_types()$cell_type) # we cannot show diff expression if the cell type doesn't exist in the query
             req(projected_metacell_types())
             df <- calc_obs_exp_type_df(dataset(), input$metacell1, projected_metacell_types())
         } else if (input$mode == "Group") {
@@ -361,8 +362,11 @@ metacell_selectors_mod_query <- function(input, output, session, dataset, ns, me
             )
         } else if (input$mode == "Type") {
             req(cell_type_colors())
-            cell_types_hex <- col2hex(cell_type_colors()$color)
-            cell_types <- cell_type_colors()$cell_type
+            req(metacell_types())
+            # do not show cell types that do not exist in the query
+            types_df <- cell_type_colors() %>% filter(cell_type %in% metacell_types()$cell_type)
+            cell_types_hex <- col2hex(types_df$color)
+            cell_types <- types_df$cell_type
             shinyWidgets::pickerInput(ns("metacell1"), "Cell type",
                 choices = cell_types,
                 selected = cell_types[1],
