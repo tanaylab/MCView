@@ -11,7 +11,7 @@ mod_samples_ui <- function(id) {
     ns <- NS(id)
     tagList(
         fluidRow(
-            column(
+            resizable_column(
                 width = 5,
                 shinydashboardPlus::box(
                     id = ns("sample_sample_box"),
@@ -39,7 +39,7 @@ mod_samples_ui <- function(id) {
                 ),
                 uiOutput(ns("diff_expr_box"))
             ),
-            column(
+            resizable_column(
                 width = 7,
                 shinydashboardPlus::box(
                     id = ns("sample_projection"),

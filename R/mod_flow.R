@@ -11,7 +11,7 @@
 #     ns <- NS(id)
 #     tagList(
 #         fluidRow(
-#             column(
+#             resizable_column(
 #                 width = 7,
 #                 shinydashboardPlus::box(
 #                     id = ns("gene_projection"),
@@ -47,7 +47,7 @@
 #                 ),
 #                 uiOutput(ns("vein_box"))
 #             ),
-#             column(
+#             resizable_column(
 #                 width = 5,
 #                 shinydashboardPlus::box(
 #                     id = ns("gene_gene_box"),

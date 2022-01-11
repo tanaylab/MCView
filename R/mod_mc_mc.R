@@ -11,7 +11,7 @@ mod_mc_mc_ui <- function(id) {
     ns <- NS(id)
     tagList(
         fluidRow(
-            column(
+            resizable_column(
                 width = 7,
                 shinydashboardPlus::box(
                     id = ns("metacell_projection"),
@@ -37,7 +37,7 @@ mod_mc_mc_ui <- function(id) {
                 ),
                 uiOutput(ns("metacell_flow_box"))
             ),
-            column(
+            resizable_column(
                 width = 5,
                 shinydashboardPlus::box(
                     title = "Diff. Expression",
