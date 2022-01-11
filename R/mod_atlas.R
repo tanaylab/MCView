@@ -133,7 +133,7 @@ mod_atlas_server <- function(input, output, session, dataset, metacell_types, ce
         }
     })
 
-    output$cell_type_selector <- cell_type_selector(dataset, ns, id = "selected_cell_types", label = "Cell types", cell_type_colors = cell_type_colors(), selected = "all")
+    output$cell_type_selector <- cell_type_selector(dataset, ns, id = "selected_cell_types", label = "Cell types", cell_type_colors = cell_type_colors, selected = "all")
 
     output$metacell_selector <- metacell_selector(dataset, ns, id = "selected_metacell", label = "Metacell")
 

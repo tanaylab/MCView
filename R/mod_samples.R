@@ -111,7 +111,7 @@ mod_samples_server <- function(input, output, session, dataset, metacell_types, 
     ns <- session$ns
     top_correlated_selectors(input, output, session, dataset, ns, button_labels = c("X", "Y", "Color"))
 
-    output$cell_type_list <- cell_type_selector(dataset, ns, id = "selected_cell_types", label = "Cell types", cell_type_colors = cell_type_colors())
+    output$cell_type_list <- cell_type_selector(dataset, ns, id = "selected_cell_types", label = "Cell types", cell_type_colors = cell_type_colors)
 
     scatter_selectors(ns, dataset, output, globals)
     projection_selectors(ns, dataset, output, input, globals, weight = 0.6)
