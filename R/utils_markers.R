@@ -51,11 +51,18 @@ select_top_fold_genes <- function(fold_matrix, genes_per_metacell = 2, minimal_r
 }
 
 choose_markers <- function(marker_genes, max_markers, dataset = NULL, add_systematic = FALSE) {
-    markers <- marker_genes %>%
-        group_by(metacell) %>%
-        slice(2) %>%
-        pull(gene) %>%
-        unique()
+    if (has_name(marker_genes, "metacell")) {
+        n_metacells <- length(unique(marker_genes$metacell))
+        genes_per_metacell <- min(10, max(1, round(max_markers / n_metacells)))
+
+        markers <- marker_genes %>%
+            group_by(metacell) %>%
+            slice(1:genes_per_metacell) %>%
+            pull(gene) %>%
+            unique()
+    } else {
+        markers <- unique(marker_genes$gene)
+    }
 
     # make sure we do not have more than max markers
     if (length(markers) > max_markers) {
@@ -230,6 +237,7 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
         mc_fp <- get_mc_data(dataset, "inner_fold_mat")
         req(mc_fp)
         mc_fp <- as.matrix(mc_fp[Matrix::rowSums(mc_fp) > 0, ])
+        mc_fp <- mc_fp[intersect(markers, rownames(mc_fp)), ]
         epsilon <- 1e-5
         log_transform <- FALSE
     } else if (mode == "Proj") {
@@ -387,9 +395,14 @@ heatmap_reactives <- function(ns, input, output, session, dataset, metacell_type
             markers_df <- metacell_types()
         }
 
-        markers_df <- markers_df %>%
-            select(metacell) %>%
-            inner_join(get_marker_genes(dataset(), mode = mode), by = "metacell")
+        new_markers_df <- get_marker_genes(dataset(), mode = mode)
+        if (has_name(new_markers_df, "metacell")) {
+            markers_df <- markers_df %>%
+                select(metacell) %>%
+                inner_join(new_markers_df, by = "metacell")
+        } else {
+            markers_df <- new_markers_df
+        }
 
         req(input$max_gene_num)
         new_markers <- choose_markers(markers_df, input$max_gene_num, dataset = dataset(), add_systematic = mode == "Proj")
@@ -406,10 +419,20 @@ heatmap_reactives <- function(ns, input, output, session, dataset, metacell_type
     })
 
     output$add_genes_ui <- renderUI({
+        if (mode == "Inner") {
+            mc_fp <- get_mc_data(dataset(), "inner_fold_mat")
+            req(mc_fp)
+            gene_choices <- rownames(mc_fp)[Matrix::rowSums(mc_fp) > 0]
+            req(markers)
+            gene_choices <- gene_choices[!(gene_choices %in% markers())]
+        } else {
+            gene_choices <- gene_names(dataset())
+        }
+
         tagList(
             shinyWidgets::actionGroupButtons(ns("add_genes"), labels = "Add genes", size = "sm"),
             shinyWidgets::pickerInput(ns("genes_to_add"),
-                choices = gene_names(dataset()),
+                choices = gene_choices,
                 selected = c(),
                 multiple = TRUE,
                 options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
