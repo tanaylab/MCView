@@ -11,7 +11,7 @@ mod_query_ui <- function(id) {
     ns <- NS(id)
     tagList(
         fluidRow(
-            column(
+            resizable_column(
                 width = 7,
                 shinydashboardPlus::box(
                     id = ns("metacell_projection"),
@@ -49,7 +49,7 @@ mod_query_ui <- function(id) {
                     )
                 )
             ),
-            column(
+            resizable_column(
                 width = 5,
                 shinydashboardPlus::box(
                     title = "Diff. Expression",
@@ -73,7 +73,7 @@ mod_query_ui <- function(id) {
             )
         ),
         fluidRow(
-            column(
+            resizable_column(
                 width = 7,
                 shinydashboardPlus::box(
                     id = ns("metacell_projection"),
@@ -88,7 +88,7 @@ mod_query_ui <- function(id) {
                     )
                 )
             ),
-            column(
+            resizable_column(
                 width = 5,
                 shinydashboardPlus::box(
                     id = ns("scatter_box"),

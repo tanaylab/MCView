@@ -10,33 +10,30 @@
 mod_manifold_ui <- function(id) {
     ns <- NS(id)
     tagList(
-        fluidRow(
-            column(
+        shinyjqui::jqui_resizable(
+            shinydashboardPlus::box(
+                id = ns("gene_projection"),
+                title = "2D Projection",
+                status = "primary",
+                solidHeader = TRUE,
+                collapsible = TRUE,
+                closable = FALSE,
                 width = 12,
-                shinydashboardPlus::box(
-                    id = ns("gene_projection"),
-                    title = "2D Projection",
-                    status = "primary",
-                    solidHeader = TRUE,
-                    collapsible = TRUE,
-                    closable = FALSE,
-                    width = 12,
-                    height = "80vh",
-                    sidebar = shinydashboardPlus::boxSidebar(
-                        startOpen = FALSE,
-                        width = 25,
-                        id = ns("gene_projection_sidebar"),
-                        selectInput(ns("proj_stat"), label = "Statistic", choices = c("Expression" = "expression", "Enrichment" = "enrichment"), selected = "Expression", multiple = FALSE, selectize = FALSE),
-                        uiOutput(ns("set_range_ui")),
-                        uiOutput(ns("expr_range_ui")),
-                        uiOutput(ns("enrich_range_ui")),
-                        uiOutput(ns("point_size_ui")),
-                        uiOutput(ns("stroke_ui")),
-                        uiOutput(ns("edge_distance_ui"))
-                    ),
-                    shinycssloaders::withSpinner(
-                        plotly::plotlyOutput(ns("plot_manifold_proj_2d"), height = "80vh")
-                    )
+                height = "80vh",
+                sidebar = shinydashboardPlus::boxSidebar(
+                    startOpen = FALSE,
+                    width = 25,
+                    id = ns("gene_projection_sidebar"),
+                    selectInput(ns("proj_stat"), label = "Statistic", choices = c("Expression" = "expression", "Enrichment" = "enrichment"), selected = "Expression", multiple = FALSE, selectize = FALSE),
+                    uiOutput(ns("set_range_ui")),
+                    uiOutput(ns("expr_range_ui")),
+                    uiOutput(ns("enrich_range_ui")),
+                    uiOutput(ns("point_size_ui")),
+                    uiOutput(ns("stroke_ui")),
+                    uiOutput(ns("edge_distance_ui"))
+                ),
+                shinycssloaders::withSpinner(
+                    plotly::plotlyOutput(ns("plot_manifold_proj_2d"), height = "80vh")
                 )
             )
         )
