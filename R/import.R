@@ -169,7 +169,10 @@ import_dataset <- function(project,
         serialize_shiny_data(inner_fold_mat, "inner_fold_mat", dataset = dataset, cache_dir = cache_dir)
 
         cli_alert_info("Calculating top inner-fold genes")
-        marker_genes_inner_fold <- select_top_fold_genes(inner_fold_mat[!forbidden, ])
+        inner_fold_genes <- rownames(inner_fold_mat)[Matrix::rowSums(inner_fold_mat) > 0]
+        inner_fold_genes_vars <- matrixStats::rowVars(as.matrix(inner_fold_mat[inner_fold_genes, ]))
+        # fp here is the variance of each non-zero inner-fold gene.
+        marker_genes_inner_fold <- tibble(gene = inner_fold_genes, fp = inner_fold_genes_vars)
         serialize_shiny_data(marker_genes_inner_fold, "marker_genes_inner_fold", dataset = dataset, cache_dir = cache_dir)
     }
 
