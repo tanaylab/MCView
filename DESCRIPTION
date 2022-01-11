@@ -57,6 +57,7 @@ Imports:
     slanter,
     shiny (>= 1.6.0),
     shinyjs,
+    shinyjqui,
     shinycssloaders,
     shinydashboard,
     shinydashboardPlus (>= 2.0.0),
