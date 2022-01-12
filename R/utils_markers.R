@@ -115,7 +115,7 @@ filter_markers_mat <- function(gene_folds) {
     return(gene_folds[good_marks, ])
 }
 
-get_top_marks <- function(feat) {
+get_top_marks <- function(feat, notify_var_genes = TRUE) {
     g_ncover <- apply(feat > 1, 1, sum)
     main_mark <- names(g_ncover)[which.max(g_ncover)]
     f <- feat[main_mark, ] < 0.25
@@ -125,7 +125,10 @@ get_top_marks <- function(feat) {
         g_score <- -apply(feat, 1, cor, feat[main_mark, ])
     }
     second_mark <- names(g_score)[which.max(g_score)]
-    cli_alert_info("Ordering metacells based on {.file {main_mark}} vs {.file {second_mark}}")
+    if (notify_var_genes) {
+        cli_alert_info("Ordering metacells based on {.file {main_mark}} vs {.file {second_mark}}")
+    }
+
     return(c(main_mark, second_mark))
 }
 
@@ -146,7 +149,7 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
 
 
     if (is.null(marks)) {
-        marks <- get_top_marks(feat)
+        marks <- get_top_marks(feat, notify_var_genes = notify_var_genes)
         main_mark <- marks[1]
         second_mark <- marks[2]
     } else {
@@ -162,6 +165,13 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
         return(1)
     }
 
+    zero_mcs <- colSums(feat > 0) == 0
+    if (any(zero_mcs)) {
+        feat_all <- feat
+        feat <- feat_all[, !zero_mcs]
+        feat_zero <- feat_all[, zero_mcs]
+    }
+
     hc <- hclust(tgs_dist(tgs_cor(feat, pairwise.complete.obs = TRUE)), method = "ward.D2")
 
     d <- reorder(
@@ -171,11 +181,18 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
     )
     ord <- as.hclust(d)$order
 
+    if (any(zero_mcs)) {
+        mc_order <- c(colnames(feat)[ord], colnames(feat_zero))
+        feat <- feat_all
+    } else {
+        mc_order <- colnames(feat)[ord]
+    }
+
     if (force_cell_type) {
         ord_df <- tibble(metacell = colnames(feat)) %>%
             mutate(orig_ord = 1:n()) %>%
             left_join(
-                tibble(metacell = colnames(feat)[ord]) %>% mutate(glob_ord = 1:n()),
+                tibble(metacell = mc_order) %>% mutate(glob_ord = 1:n()),
                 by = "metacell"
             ) %>%
             left_join(
@@ -187,7 +204,7 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
             if (nrow(x) == 1) {
                 ct_ord <- 1
             } else {
-                ct_ord <- suppressWarnings(order_mc_by_most_var_genes(gene_folds[, x$metacell]))
+                ct_ord <- suppressWarnings(order_mc_by_most_var_genes(gene_folds[, x$metacell], notify_var_genes = FALSE))
             }
 
             tibble(
