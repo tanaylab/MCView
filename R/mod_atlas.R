@@ -120,7 +120,7 @@ mod_atlas_server <- function(input, output, session, dataset, metacell_types, ce
 
     output$metadata_selector <- renderUI({
         if (!has_metadata(dataset(), atlas = TRUE)) {
-            print(glue("Atlas doesn't have any metadata."))
+            HTML(glue("&nbspAtlas doesn't have any metadata."))
         } else {
             shinyWidgets::pickerInput(
                 ns("color_proj_metadata"),
