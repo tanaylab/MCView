@@ -48,9 +48,9 @@ app_server <- function(input, output, session) {
     load_tab("markers", mod_markers_server)
     load_tab("inner_fold", mod_inner_fold_server)
     load_tab("samples", mod_samples_server)
-
+    
     if (any_has_atlas(project)) {
-        load_tab("projection", mod_query_server)
+        load_tab("query", mod_query_server)
         load_tab("atlas", mod_atlas_server)
         load_tab("proj_fold", mod_proj_fold_server)
     }
@@ -117,7 +117,7 @@ app_server <- function(input, output, session) {
                     "showBullets" = FALSE,
                     "nextLabel" = "next",
                     "prevLabel" = "back",
-                    steps = get_tab_steps("projection", "projection_ui_1")
+                    steps = get_tab_steps("query", "query_ui_1")
                 )
             )
         } else if (input$tab_sidebar == "Atlas") {
