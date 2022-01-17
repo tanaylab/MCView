@@ -49,7 +49,7 @@ app_server <- function(input, output, session) {
     load_tab("inner_fold", mod_inner_fold_server)
     load_tab("samples", mod_samples_server)
 
-    if (has_atlas(dataset())) {
+    if (any_has_atlas(project)) {
         load_tab("projection", mod_query_server)
         load_tab("atlas", mod_atlas_server)
         load_tab("proj_fold", mod_proj_fold_server)

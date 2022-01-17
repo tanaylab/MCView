@@ -211,6 +211,10 @@ has_atlas <- function(dataset) {
     !is.null(mc_data[[dataset]]$atlas)
 }
 
+any_has_atlas <- function(project){
+    any(purrr::map_lgl(dataset_ls(project), has_atlas))
+}
+
 calc_samp_mc_count <- function(dataset) {
     metadata <- get_mc_data(dataset, "cell_metadata")
     samp_mc_count <- metadata %>%
