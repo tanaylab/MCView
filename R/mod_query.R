@@ -506,7 +506,7 @@ group_selectors_mod_query <- function(input, output, session, dataset, ns, group
     observeEvent(plotly::event_data("plotly_selected", source = "proj_mc_plot_proj_tab"), {
         el <- plotly::event_data("plotly_selected", source = "proj_mc_plot_proj_tab")
 
-        selected_metacells <- el$customdata
+        selected_metacells <- unique(el$customdata)
         req(input$mode == "Group")
 
 
@@ -520,7 +520,7 @@ group_selectors_mod_query <- function(input, output, session, dataset, ns, group
     observeEvent(plotly::event_data("plotly_selected", source = "obs_proj_plot"), {
         el <- plotly::event_data("plotly_selected", source = "obs_proj_plot")
 
-        selected_metacells <- el$customdata
+        selected_metacells <- unique(el$customdata)
         req(input$mode == "Group")
 
 

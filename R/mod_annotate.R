@@ -1,4 +1,4 @@
-#' annotate_mc UI Function
+#' annotate UI Function
 #'
 #' @description A shiny Module.
 #'
@@ -7,7 +7,7 @@
 #' @noRd
 #'
 #' @importFrom shiny NS tagList
-mod_annotate_mc_ui <- function(id) {
+mod_annotate_ui <- function(id) {
     ns <- NS(id)
     tagList(
         fluidRow(
@@ -179,7 +179,7 @@ mod_annotate_mc_ui <- function(id) {
 }
 
 
-#' annotate_mc sidebar UI Function
+#' annotate sidebar UI Function
 #'
 #' @description A shiny Module.
 #'
@@ -188,7 +188,7 @@ mod_annotate_mc_ui <- function(id) {
 #' @noRd
 #'
 #' @importFrom shiny NS tagList
-mod_annotate_mc_sidebar_ui <- function(id) {
+mod_annotate_sidebar_ui <- function(id) {
     ns <- NS(id)
     tagList(
         uiOutput(ns("top_correlated_select_x_axis")),
@@ -199,10 +199,10 @@ mod_annotate_mc_sidebar_ui <- function(id) {
 }
 
 
-#' annotate_mc Server Function
+#' annotate Server Function
 #'
 #' @noRd
-mod_annotate_mc_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals) {
+mod_annotate_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals) {
     ns <- session$ns
 
     # gene selectors
@@ -693,7 +693,7 @@ observer_mc_select_event <- function(source, input, cell_type_colors, metacell_t
     observeEvent(plotly::event_data("plotly_selected", source = source), {
         el <- plotly::event_data("plotly_selected", source = source)
 
-        selected_metacells <- el$customdata
+        selected_metacells <- unique(el$customdata)
 
         new_selected_annot <- metacell_types() %>% filter(metacell %in% selected_metacells)
         selected_metacell_types(

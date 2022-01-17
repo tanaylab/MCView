@@ -588,7 +588,7 @@ group_selectors <- function(input, output, session, dataset, ns, groupA, groupB,
     observeEvent(plotly::event_data("plotly_selected", source = "proj_mc_plot"), {
         el <- plotly::event_data("plotly_selected", source = "proj_mc_plot")
 
-        selected_metacells <- el$customdata
+        selected_metacells <- unique(el$customdata)
         req(input$mode == "Groups")
 
         if (input$proj_select_main == "Group A") {

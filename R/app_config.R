@@ -109,7 +109,7 @@ init_tab_defs <- function() {
         ),
         "Query" = list(
             title = "Query",
-            module_name = "projection",
+            module_name = "query",
             icon = "video"
         ),
         "Atlas" = list(
