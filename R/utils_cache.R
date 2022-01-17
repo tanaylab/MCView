@@ -211,7 +211,7 @@ has_atlas <- function(dataset) {
     !is.null(mc_data[[dataset]]$atlas)
 }
 
-any_has_atlas <- function(project){
+any_has_atlas <- function(project) {
     any(purrr::map_lgl(dataset_ls(project), has_atlas))
 }
 

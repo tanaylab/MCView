@@ -166,7 +166,7 @@ mod_query_server <- function(input, output, session, dataset, metacell_types, ce
             mutate(metacell = as.character(metacell))
     })
 
-    atlas_colors <- reactive({        
+    atlas_colors <- reactive({
         req(has_atlas(dataset()))
         get_mc_data(dataset(), "cell_type_colors", atlas = TRUE)
     })

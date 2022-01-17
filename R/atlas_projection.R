@@ -22,7 +22,7 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
 
     load_all_data(cache_dir, datasets = dataset)
 
-    required_fields <- c("type", "charted")
+    required_fields <- c("type", "similar")
     query_md <- query$obs %>%
         rownames_to_column("metacell") %>%
         as_tibble()
@@ -59,7 +59,7 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
     serialize_shiny_data(query_atlas_cell_type_fracs, "query_atlas_cell_type_fracs", dataset = dataset, cache_dir = cache_dir, flat = TRUE)
 
     proj_metacell_types <- query_md %>%
-        select(metacell, cell_type = type, charted)
+        select(metacell, cell_type = type, similar)
 
     # Take metacell metadata from the query
     query_types <- get_mc_data(dataset, "metacell_types", atlas = FALSE) %>%
@@ -73,35 +73,35 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
 
     serialize_shiny_data(proj_metacell_types, "projected_metacell_types", dataset = dataset, cache_dir = cache_dir, flat = TRUE)
 
-    # Add charted to regular metadata
+    # Add similar to regular metadata
     prev_metadata <- get_mc_data(dataset, "metadata")
     if (is.null(prev_metadata)) {
         metadata <- proj_metacell_types %>%
-            select(metacell, charted)
+            select(metacell, similar)
     } else {
-        if (has_name(prev_metadata, "charted")) {
-            if (!all(prev_metadata$charted == proj_metacell_types$charted)) {
-                cli_abort("Metacell metadata includes a field named {.field charted}. Please rename it in order to run MCView in atlas mode.")
+        if (has_name(prev_metadata, "similar")) {
+            if (!all(prev_metadata$similar == proj_metacell_types$similar)) {
+                cli_abort("Metacell metadata includes a field named {.field similar}. Please rename it in order to run MCView in atlas mode.")
             }
             metadata <- prev_metadata
         } else {
             metadata <- prev_metadata %>% left_join(
-                proj_metacell_types %>% select(metacell, charted),
+                proj_metacell_types %>% select(metacell, similar),
                 by = "metacell"
             )
         }
     }
     metadata <- metadata %>%
-        mutate(charted = ifelse(charted, "charted", "un-charted"))
+        mutate(similar = ifelse(similar, "similar", "dissimilar"))
     serialize_shiny_data(metadata, "metadata", dataset = dataset, cache_dir = cache_dir, flat = TRUE)
 
-    # set colors for charted
-    charting_colors <- c("charted" = "darkgreen", "un-charted" = "darkred")
+    # set colors for similar
+    similarity_colors <- c("similar" = "darkgreen", "dissimilar" = "darkred")
     metadata_colors <- get_mc_data(dataset, "metadata_colors")
     if (is.null(metadata_colors)) {
         metadata_colors <- list()
     }
-    metadata_colors[["charted"]] <- charting_colors
+    metadata_colors[["similar"]] <- similarity_colors
     serialize_shiny_data(metadata_colors, "metadata_colors", dataset = dataset, cache_dir = cache_dir)
 
     if (is.null(query$layers[["projected"]])) {

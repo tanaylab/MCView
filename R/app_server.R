@@ -48,7 +48,7 @@ app_server <- function(input, output, session) {
     load_tab("markers", mod_markers_server)
     load_tab("inner_fold", mod_inner_fold_server)
     load_tab("samples", mod_samples_server)
-    
+
     if (any_has_atlas(project)) {
         load_tab("query", mod_query_server)
         load_tab("atlas", mod_atlas_server)

@@ -364,8 +364,8 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
         } else if (input$color_proj == "Sample") {
             req(input$samp1)
             fig <- plot_2d_metadata(paste0("samp_id: ", input$samp1))
-        } else if (input$color_proj == "Charting") {
-            fig <- plot_2d_metadata("charted", colors = c("charted" = "white", "un-charted" = "darkred"))
+        } else if (input$color_proj == "Similarity") {
+            fig <- plot_2d_metadata("similar", colors = c("similar" = "white", "dissimilar" = "darkred"))
         } else if (input$color_proj %in% c("Query cell type", "Query metacell")) {
             fig <- plot_2d_atlas_proj(input$color_proj)
         } else if (input$color_proj == "Query Metadata") {
