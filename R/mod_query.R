@@ -27,7 +27,7 @@ mod_query_ui <- function(id) {
                         shinyWidgets::prettyRadioButtons(
                             ns("color_proj"),
                             label = "Color by:",
-                            choices = c("Cell type", "Charting", "Query Metadata", "Atlas Metadata", "Gene", "Selected"),
+                            choices = c("Cell type", "Similarity", "Query Metadata", "Atlas Metadata", "Gene", "Selected"),
                             inline = TRUE,
                             status = "danger",
                             fill = TRUE
@@ -166,7 +166,7 @@ mod_query_server <- function(input, output, session, dataset, metacell_types, ce
             mutate(metacell = as.character(metacell))
     })
 
-    atlas_colors <- reactive({
+    atlas_colors <- reactive({        
         req(has_atlas(dataset()))
         get_mc_data(dataset(), "cell_type_colors", atlas = TRUE)
     })
