@@ -102,6 +102,11 @@ init_tab_defs <- function() {
             module_name = "mc_mc",
             icon = "chart-bar"
         ),
+        "Flow" = list(
+            title = "Flow",
+            module_name = "flow",
+            icon = "water"
+        ),
         "Samples" = list(
             title = "Samples",
             module_name = "samples",

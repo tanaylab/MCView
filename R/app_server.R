@@ -45,6 +45,7 @@ app_server <- function(input, output, session) {
 
     load_tab("manifold", mod_manifold_server)
     load_tab("gene_mc", mod_gene_mc_server)
+    load_tab("flow", mod_flow_server)
     load_tab("markers", mod_markers_server)
     load_tab("inner_fold", mod_inner_fold_server)
     load_tab("samples", mod_samples_server)
