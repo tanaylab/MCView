@@ -87,12 +87,12 @@ The title of the app. This would be shown on the top left of the screen.
 Controls which tabs to show in the left sidebar and their order. Options are: 
 
 ```yaml
-["Manifold", "Genes", "Markers", "Diff. Expression", "Annotate", "About"]
+["Manifold", "Genes", "Query", "Atlas", "Markers", "Projected-fold", "Diff. Expression", "Flow", "Annotate", "About"]
 ```
 
-Why would you want to remove tabs? 
+Why would you want to add or remove tabs? 
 
-Many times we would want to separate between a the 'development' version of an __MCView__ app which allows users to re-annotate the data and a 'production' version which only contains data analysis tabs. This can be done by removing "Annotate" from the `tabs` field. In addition, you might want to always start the app from the "Genes" tab instead of the "Manifold", which can be done by changing the order in the `tabs` field. 
+Many times we would want to separate between a the 'development' version of an __MCView__ app which allows users to re-annotate the data and a 'production' version which only contains data analysis tabs. This can be done by removing "Annotate" from the `tabs` field. In addition, you might want to always start the app from the "Genes" tab instead of the "Manifold", which can be done by changing the order in the `tabs` field. And lastly, some tabs such as "Query", "Atlas" and "Flow" are not enabled by default and should be added explicitly to the tabs section of the config file.
 
 ### help
 
