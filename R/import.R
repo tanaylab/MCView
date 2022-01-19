@@ -34,9 +34,8 @@
 #' When an atlas is given (using \code{atlas_project} and \code{atlas_dataset}), if the cell types
 #' are the same as the atlas, the atlas colors would be used.
 #' @param metadata_fields names of fields in the anndata \code{object$obs} which contains metadata for each metacell.
-#' The fields should *always* be numeric - if you have cell categorical annotations use
-#' \code{cell_metadata_to_metacell} with \code{categorical=TRUE} to convert them to a
-#' numeric score (e.g. using fraction of the category). You can use 'all' in order to import all the numeric fields
+#' The fields should can be either numeric or categorical. You can use
+#' \code{cell_metadata_to_metacell} with \code{categorical=TRUE} to convert from categorical to a numeric score (e.g. using fraction of the category). You can use 'all' in order to import all the fields
 #'  of the anndata object.
 #' @param metadata can be either a data frame with a column named "metacell" with the metacell id and other metadata columns
 #' or a name of a delimited file which contains such data frame.

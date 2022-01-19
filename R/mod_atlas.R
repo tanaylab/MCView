@@ -125,8 +125,8 @@ mod_atlas_server <- function(input, output, session, dataset, metacell_types, ce
             shinyWidgets::pickerInput(
                 ns("color_proj_metadata"),
                 label = "Metadata:",
-                choices = dataset_metadata_fields(dataset(), atlas = TRUE),
-                selected = dataset_metadata_fields(dataset(), atlas = TRUE)[1],
+                choices = dataset_metadata_fields_numeric(dataset(), atlas = TRUE),
+                selected = dataset_metadata_fields_numeric(dataset(), atlas = TRUE)[1],
                 multiple = FALSE,
                 options = picker_options
             )

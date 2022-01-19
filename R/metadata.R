@@ -429,15 +429,6 @@ parse_metadata <- function(metadata, metacells) {
         select(-metacell) %>%
         colnames()
 
-    metadata <- metadata %>%
-        mutate_at(fields, as.numeric)
-
-    purrr::walk(fields, ~ {
-        if (all(is.na(metadata[[.x]]))) {
-            cli_abort("The metadata variable {.field {.x}} is all NA. Is it numeric? Convert categorical variables to numeric using {.code cell_metadata_to_metacell} with {.code categorical=TRUE}")
-        }
-    })
-
     return(metadata)
 }
 

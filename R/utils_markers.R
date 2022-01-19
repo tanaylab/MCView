@@ -398,7 +398,7 @@ heatmap_reactives <- function(ns, input, output, session, dataset, metacell_type
             mode = mode,
             notify_var_genes = TRUE
         )
-    })
+    }) %>% bindCache(dataset(), metacell_types(), cell_type_colors(), markers(), input$selected_cell_types, input$force_cell_type)
 
 
     observeEvent(input$update_markers, {

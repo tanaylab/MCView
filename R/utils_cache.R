@@ -291,6 +291,13 @@ dataset_metadata_fields <- function(dataset, atlas = FALSE) {
     return(fields)
 }
 
+dataset_metadata_fields_numeric <- function(dataset, atlas = FALSE) {
+    fields <- dataset_metadata_fields(dataset, atlas = atlas)
+    df <- get_mc_data(dataset, "metadata", atlas = atlas)
+    numeric_f <- purrr::map_lgl(fields, ~ is_numeric_field(df, .x))
+    return(fields[numeric_f])
+}
+
 dataset_cell_metadata_fields <- function(dataset, atlas = FALSE) {
     metadata <- get_mc_data(dataset, "cell_metadata", atlas = atlas)
     if (is.null(metadata)) {

@@ -48,6 +48,7 @@ app_server <- function(input, output, session) {
     load_tab("markers", mod_markers_server)
     load_tab("inner_fold", mod_inner_fold_server)
     load_tab("samples", mod_samples_server)
+    load_tab("cell_type", mod_cell_type_server)
 
     if (any_has_atlas(project)) {
         load_tab("query", mod_query_server)
@@ -98,6 +99,16 @@ app_server <- function(input, output, session) {
                     "nextLabel" = "next",
                     "prevLabel" = "back",
                     steps = get_tab_steps("metacells", "mc_mc_ui_1")
+                )
+            )
+        } else if (input$tab_sidebar == "cell_type") {
+            rintrojs::introjs(session,
+                options = list(
+                    "showProgress" = TRUE,
+                    "showBullets" = FALSE,
+                    "nextLabel" = "next",
+                    "prevLabel" = "back",
+                    steps = get_tab_steps("cell_type", "cell_type_ui_1")
                 )
             )
         } else if (input$tab_sidebar == "samples") {

@@ -189,15 +189,15 @@ axis_vars_ok <- function(dataset, input, md_id, axes = c("x_axis", "y_axis", "co
     return(all(vars_ok))
 }
 
-scatter_selectors <- function(ns, dataset, output, globals) {
-    output$gene_gene_point_size_ui <- renderUI({
+scatter_selectors <- function(ns, dataset, output, globals, prefix = "gene_gene") {
+    output[[glue("{prefix}_point_size_ui")]] <- renderUI({
         req(globals$screen_width)
         req(globals$screen_height)
-        numericInput(ns("gene_gene_point_size"), label = "Point size", value = initial_scatters_point_size(dataset(), globals$screen_width, globals$screen_height), min = 0.05, max = 3, step = 0.1)
+        numericInput(ns(glue("{prefix}_point_size")), label = "Point size", value = initial_scatters_point_size(dataset(), globals$screen_width, globals$screen_height), min = 0.05, max = 3, step = 0.1)
     })
 
-    output$gene_gene_stroke_ui <- renderUI({
-        numericInput(ns("gene_gene_stroke"), label = "Stroke width", value = initial_scatters_stroke(dataset()), min = 0, max = 3, step = 0.01)
+    output[[glue("{prefix}_stroke_ui")]] <- renderUI({
+        numericInput(ns(glue("{prefix}_stroke")), label = "Stroke width", value = initial_scatters_stroke(dataset()), min = 0, max = 3, step = 0.01)
     })
 }
 

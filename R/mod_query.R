@@ -166,7 +166,7 @@ mod_query_server <- function(input, output, session, dataset, metacell_types, ce
             mutate(metacell = as.character(metacell))
     })
 
-    atlas_colors <- reactive({        
+    atlas_colors <- reactive({
         req(has_atlas(dataset()))
         get_mc_data(dataset(), "cell_type_colors", atlas = TRUE)
     })
@@ -195,8 +195,8 @@ mod_query_server <- function(input, output, session, dataset, metacell_types, ce
             shinyWidgets::pickerInput(
                 ns("color_proj_query_metadata"),
                 label = "Metadata:",
-                choices = dataset_metadata_fields(dataset()),
-                selected = dataset_metadata_fields(dataset())[1],
+                choices = dataset_metadata_fields_numeric(dataset()),
+                selected = dataset_metadata_fields_numeric(dataset())[1],
                 width = "70%",
                 multiple = FALSE,
                 options = picker_options
@@ -211,8 +211,8 @@ mod_query_server <- function(input, output, session, dataset, metacell_types, ce
             shinyWidgets::pickerInput(
                 ns("color_proj_atlas_metadata"),
                 label = "Metadata:",
-                choices = dataset_metadata_fields(dataset(), atlas = TRUE),
-                selected = dataset_metadata_fields(dataset(), atlas = TRUE)[1],
+                choices = dataset_metadata_fields_numeric(dataset(), atlas = TRUE),
+                selected = dataset_metadata_fields_numeric(dataset(), atlas = TRUE)[1],
                 width = "70%",
                 multiple = FALSE,
                 options = picker_options
@@ -282,9 +282,9 @@ mod_query_server <- function(input, output, session, dataset, metacell_types, ce
     output$diff_expr_table <- render_mc_mc_gene_diff_table(input, output, session, ns, dataset, mc_mc_gene_scatter_df)
 
     # Scatter
-    output$axis_select <- render_axis_select_ui("axis", "Data", md_choices = dataset_metadata_fields(dataset(), atlas = TRUE), md_selected = dataset_metadata_fields(dataset(), atlas = TRUE)[1], selected_gene = default_gene1, input = input, ns = ns, dataset = dataset) %>% bindCache(dataset(), ns, ns("axis"), input$axis_type)
+    output$axis_select <- render_axis_select_ui("axis", "Data", md_choices = dataset_metadata_fields_numeric(dataset(), atlas = TRUE), md_selected = dataset_metadata_fields_numeric(dataset(), atlas = TRUE)[1], selected_gene = default_gene1, input = input, ns = ns, dataset = dataset) %>% bindCache(dataset(), ns, ns("axis"), input$axis_type)
 
-    output$color_by_select <- render_axis_select_ui("color_by", "Color", md_choices = c("Cell type", dataset_metadata_fields(dataset(), atlas = TRUE)), md_selected = "Cell type", selected_gene = default_gene1, input = input, ns = ns, dataset = dataset) %>% bindCache(dataset(), ns, ns("color_by"), input$color_by_type)
+    output$color_by_select <- render_axis_select_ui("color_by", "Color", md_choices = c("Cell type", dataset_metadata_fields_numeric(dataset(), atlas = TRUE)), md_selected = "Cell type", selected_gene = default_gene1, input = input, ns = ns, dataset = dataset) %>% bindCache(dataset(), ns, ns("color_by"), input$color_by_type)
 
     output$plot_gene_gene_mc <- plotly::renderPlotly({
         req(input$axis_var)
