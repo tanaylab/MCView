@@ -256,7 +256,7 @@ plot_mc_scatter <- function(dataset,
     } else {
         egc_x <- get_gene_egc(x_var, dataset) + egc_epsilon
         df <- df %>%
-            mutate(!!x_var := egc_x) %>%
+            mutate(!!x_var := egc_x[metacell]) %>%
             mutate(x_str = glue("{x_name} expression: {expr_text}", expr_text = scales::scientific(!!sym(x_var))))
     }
 
@@ -271,7 +271,7 @@ plot_mc_scatter <- function(dataset,
     } else {
         egc_y <- get_gene_egc(y_var, dataset) + egc_epsilon
         df <- df %>%
-            mutate(!!y_var := egc_y) %>%
+            mutate(!!y_var := egc_y[metacell]) %>%
             mutate(y_str = glue("{y_name} expression: {expr_text}", expr_text = scales::scientific(!!sym(y_var))))
     }
 
@@ -353,7 +353,7 @@ plot_mc_scatter <- function(dataset,
     }
 
     # arrange axis for gene expression
-    xylims <- c(1e-5, 2e-5, 4e-5, 1e-4, 2e-4, 4e-4, 1e-3, 2e-3, 4e-3, 1e-2, 2e-2, 4e-2, 1e-1, 2e-1, 4e-1, 1)
+    xylims <- expr_breaks
 
     if (x_type == "Gene") {
         xmax <- min(c(1:length(xylims))[xylims >= max(egc_x)])
@@ -632,7 +632,7 @@ plot_sample_scatter <- function(dataset,
         ylab(y_var)
 
     # arrange axis for gene expression
-    xylims <- c(1e-5, 2e-5, 4e-5, 1e-4, 2e-4, 4e-4, 1e-3, 2e-3, 4e-3, 1e-2, 2e-2, 4e-2, 1e-1, 2e-1, 4e-1, 1)
+    xylims <- expr_breaks
 
     if (x_type == "Gene") {
         xmax <- min(c(1:length(xylims))[xylims >= max(egc_x)])
@@ -718,7 +718,7 @@ plot_obs_proj_scatter <- function(dataset,
         x_var <- glue("{axis_var} - observed")
         y_var <- glue("{axis_var} - projected")
         df <- df %>%
-            mutate(!!x_var := egc_obs, !!y_var := egc_proj) %>%
+            mutate(!!x_var := egc_obs[metacell], !!y_var := egc_proj[metacell]) %>%
             mutate(x_str = glue("{axis_name} obs: {expr_text}", expr_text = scales::scientific(!!sym(x_var)))) %>%
             mutate(y_str = glue("{axis_name} proj: {expr_text}", expr_text = scales::scientific(!!sym(x_var))))
     }
@@ -812,7 +812,7 @@ plot_obs_proj_scatter <- function(dataset,
     }
 
     # arrange axis for gene expression
-    xylims <- c(1e-5, 2e-5, 4e-5, 1e-4, 2e-4, 4e-4, 1e-3, 2e-3, 4e-3, 1e-2, 2e-2, 4e-2, 1e-1, 2e-1, 4e-1, 1)
+    xylims <- expr_breaks
 
     if (axis_type == "Gene") {
         xmax <- min(c(1:length(xylims))[xylims >= max(egc_obs)])

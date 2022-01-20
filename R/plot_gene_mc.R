@@ -10,6 +10,9 @@ plot_gg_over_mc <- function(dataset, g1, g2, metacell_types = get_mc_data(datase
     egc_g1 <- get_gene_egc(g1, dataset) + egc_epsilon
     egc_g2 <- get_gene_egc(g2, dataset) + egc_epsilon
 
+    egc_g1 <- egc_g1[metacell_types$metacell]
+    egc_g2 <- egc_g2[metacell_types$metacell]
+
     df <- metacell_types %>%
         mutate(
             !!g1 := egc_g1,
@@ -28,7 +31,7 @@ plot_gg_over_mc <- function(dataset, g1, g2, metacell_types = get_mc_data(datase
         df <- df %>% rename(`Age` = mc_age)
     }
 
-    xylims <- c(1e-5, 2e-5, 4e-5, 1e-4, 2e-4, 4e-4, 1e-3, 2e-3, 4e-3, 1e-2, 2e-2, 4e-2, 1e-1, 2e-1, 4e-1, 1)
+    xylims <- expr_breaks
 
     xmax <- min(c(1:length(xylims))[xylims >= max(egc_g1)])
     xmin <- max(c(1:length(xylims))[xylims <= min(egc_g1)])
@@ -76,6 +79,7 @@ plot_gg_over_mc <- function(dataset, g1, g2, metacell_types = get_mc_data(datase
 #' @noRd
 plot_gene_time_over_mc <- function(dataset, gene, metacell_types = get_mc_data(dataset, "metacell_types"), cell_type_colors = get_mc_data(dataset, "cell_type_colors"), point_size = initial_scatters_point_size(dataset), stroke = initial_scatters_stroke(dataset), plot_text = TRUE) {
     egc_gene <- get_gene_egc(gene, dataset) + egc_epsilon
+    egc_gene <- egc_gene[metacell_types$metacell]
 
     df <- metacell_types %>%
         mutate(
@@ -89,7 +93,7 @@ plot_gene_time_over_mc <- function(dataset, gene, metacell_types = get_mc_data(d
             `Age` = mc_age
         )
 
-    ylims <- c(1e-5, 2e-5, 4e-5, 1e-4, 2e-4, 4e-4, 1e-3, 2e-3, 4e-3, 1e-2, 2e-2, 4e-2, 1e-1, 2e-1, 4e-1, 1)
+    ylims <- expr_breaks
     ymax <- min(c(1:length(ylims))[ylims >= max(egc_gene)])
     ymin <- max(c(1:length(ylims))[ylims <= min(egc_gene)])
 

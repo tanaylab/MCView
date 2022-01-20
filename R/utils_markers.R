@@ -264,6 +264,13 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
         mc_fp <- mc_fp[intersect(markers, rownames(mc_fp)), ]
         epsilon <- 1e-5
         log_transform <- FALSE
+    } else if (mode == "Consistency") {
+        mc_fp <- get_mc_data(dataset, "consistency_fold")
+        req(mc_fp)
+        mc_fp <- as.matrix(mc_fp[abs(Matrix::rowSums(mc_fp)) > 0, ])
+        mc_fp <- mc_fp[intersect(markers, rownames(mc_fp)), ]
+        epsilon <- 1e-5
+        log_transform <- FALSE
     } else {
         mc_fp <- get_mc_fp(dataset, markers)
         epsilon <- 0
@@ -304,6 +311,14 @@ get_marker_genes <- function(dataset, mode = "Markers") {
             req(FALSE)
         }
         return(get_mc_data(dataset, "marker_genes_projected"))
+    } else if (mode == "Consistency") {
+        if (is.null(get_mc_data(dataset, "consistency_fold"))) {
+            if ("Consistency-fold" %in% config$original_tabs) {
+                showNotification(glue("Consistency-fold matrix was not computed. Please compute it in python using the metacells package and rerun the import"), type = "error")
+            }
+            req(FALSE)
+        }
+        return(get_mc_data(dataset, "marker_genes_consistency"))
     } else {
         return(get_markers(dataset))
     }
@@ -342,7 +357,7 @@ heatmap_sidebar <- function(ns) {
     list(
         uiOutput(ns("cell_type_list")),
         uiOutput(ns("metadata_list")),
-        shinyWidgets::actionGroupButtons(ns("update_markers"), labels = "Update markers", size = "sm"),
+        shinyWidgets::actionGroupButtons(ns("update_markers"), labels = "Update genes", size = "sm"),
         numericInput(ns("max_gene_num"), "Maximal number of genes", value = 100),
         uiOutput(ns("add_genes_ui")),
         uiOutput(ns("marker_genes_list"))
@@ -398,7 +413,7 @@ heatmap_reactives <- function(ns, input, output, session, dataset, metacell_type
             mode = mode,
             notify_var_genes = TRUE
         )
-    })
+    }) %>% bindCache(dataset(), metacell_types(), cell_type_colors(), markers(), input$selected_cell_types, input$force_cell_type)
 
 
     observeEvent(input$update_markers, {

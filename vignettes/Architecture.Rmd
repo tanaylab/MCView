@@ -87,7 +87,7 @@ The title of the app. This would be shown on the top left of the screen.
 Controls which tabs to show in the left sidebar and their order. Options are: 
 
 ```yaml
-["Manifold", "Genes", "Markers", "Diff. Expression", "Annotate", "About"]
+["Manifold", "Genes", "Markers", "Diff. Expression", "Cell types", "Annotate", "About"]
 ```
 
 Why would you want to remove tabs? 
