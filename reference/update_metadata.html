@@ -79,12 +79,12 @@
 <dd><p>name for the dataset, e.g. "PBMC"</p></dd>
 <dt>metadata</dt>
 <dd><p>can be either a data frame with a column named "metacell" with the metacell id and other metadata columns
-or a name of a delimited file which contains such data frame.</p></dd>
+or a name of a delimited file which contains such data frame. See <code>metadata_fields</code> for other details.</p></dd>
 <dt>metadata_fields</dt>
 <dd><p>names of fields in the anndata <code>object$obs</code> which contains metadata for each metacell.
-The fields should *always* be numeric - if you have cell categorical annotations use
-<code>cell_metadata_to_metacell</code> with <code>categorical=TRUE</code> to convert them to a
-numeric score (e.g. using fraction of the category). You can use 'all' in order to import all the numeric fields
+The fields should can be either numeric or categorical, but currently
+categorical annotations are only supported at the 'Cell type' tabs.
+ You can use <code>cell_metadata_to_metacell</code> with <code>categorical=TRUE</code> to convert from categorical to a numeric score (e.g. by using fraction of the category). You can use 'all' in order to import all the fields
  of the anndata object.</p></dd>
 <dt>anndata_file</dt>
 <dd><p>path to <code>h5ad</code> file which contains the output of metacell2 pipeline (metacells python package).</p></dd>

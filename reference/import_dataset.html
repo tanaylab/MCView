@@ -115,17 +115,19 @@ When an atlas is given (using <code>atlas_project</code> and <code>atlas_dataset
 are the same as the atlas, the atlas colors would be used.</p></dd>
 <dt>metadata_fields</dt>
 <dd><p>names of fields in the anndata <code>object$obs</code> which contains metadata for each metacell.
-The fields should *always* be numeric - if you have cell categorical annotations use
-<code>cell_metadata_to_metacell</code> with <code>categorical=TRUE</code> to convert them to a
-numeric score (e.g. using fraction of the category). You can use 'all' in order to import all the numeric fields
+The fields should can be either numeric or categorical, but currently
+categorical annotations are only supported at the 'Cell type' tabs.
+ You can use <code>cell_metadata_to_metacell</code> with <code>categorical=TRUE</code> to convert from categorical to a numeric score (e.g. by using fraction of the category). You can use 'all' in order to import all the fields
  of the anndata object.</p></dd>
 <dt>metadata</dt>
 <dd><p>can be either a data frame with a column named "metacell" with the metacell id and other metadata columns
-or a name of a delimited file which contains such data frame.</p></dd>
+or a name of a delimited file which contains such data frame. See <code>metadata_fields</code> for other details.</p></dd>
 <dt>metadata_colors</dt>
 <dd><p>a named list with colors for each metadata column, or a name of a yaml file with such list.
-Colors should be given as a list where the first element is a vector of colors and the second element is a vector of breaks.
-If only colors are given breaks would be implicitly determined from the minimum and maximum of the metadata field.</p></dd>
+For numerical metadata columns, colors should be given as a list where the first element is a vector of colors and the second element is a vector of breaks.
+If only colors are given breaks would be implicitly determined from the minimum and maximum of the metadata field.
+For categorical metadata columns, color can be given either as a named vector where names are the categories and the values are the colors, or as a named list where the first element named 'colors' holds the colors, and the second element
+called 'categories' holds the categories.</p></dd>
 <dt>calc_gg_cor</dt>
 <dd><p>calculate top 30 correlated and anti-correlated genes for each gene. This computation can be heavy
 for large datasets or weaker machines, so you can set <code>calc_gg_cor=FALSE</code> to skip it. Note that then this feature
