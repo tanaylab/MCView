@@ -2,6 +2,10 @@
 
 * Added support for atlas projections ('Atlas', 'Query' and 'Projected-fold' tabs)
 * Homogenzie Annotate, Diff. Expr and Genes tabs. 
+* Added 'Cell types' tab. 
+* Added support for cell metadata using the 'Samples' tab. 
+* Allow coloring by categorical metadata annotations. 
+* Moved flow graphs to their own tab named 'Flow'. 
 
 # MCView 0.2.1
 

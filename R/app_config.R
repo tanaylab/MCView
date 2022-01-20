@@ -49,6 +49,8 @@ init_defs <- function() {
     init_tab_defs()
 
     init_selected_genes()
+
+    expr_breaks <<- c(1e-5, 2e-5, 4e-5, 1e-4, 2e-4, 4e-4, 1e-3, 2e-3, 4e-3, 1e-2, 2e-2, 4e-2, 1e-1, 2e-1, 4e-1, 1)
 }
 
 init_selected_genes <- function() {
@@ -92,6 +94,11 @@ init_tab_defs <- function() {
             module_name = "proj_fold",
             icon = "cloud-moon-rain"
         ),
+        "Consistency-fold" = list(
+            title = "Consistency-fold",
+            module_name = "consistency_fold",
+            icon = "vector-square"
+        ),
         "Genes" = list(
             title = "Genes",
             module_name = "gene_mc",
@@ -106,6 +113,11 @@ init_tab_defs <- function() {
             title = "Flow",
             module_name = "flow",
             icon = "water"
+         ),
+        "Cell types" = list(
+            title = "Cell types",
+            module_name = "cell_type",
+            icon = "bacteria"
         ),
         "Samples" = list(
             title = "Samples",

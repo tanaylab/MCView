@@ -429,15 +429,6 @@ parse_metadata <- function(metadata, metacells) {
         select(-metacell) %>%
         colnames()
 
-    metadata <- metadata %>%
-        mutate_at(fields, as.numeric)
-
-    purrr::walk(fields, ~ {
-        if (all(is.na(metadata[[.x]]))) {
-            cli_abort("The metadata variable {.field {.x}} is all NA. Is it numeric? Convert categorical variables to numeric using {.code cell_metadata_to_metacell} with {.code categorical=TRUE}")
-        }
-    })
-
     return(metadata)
 }
 
@@ -451,25 +442,42 @@ parse_metadata_colors <- function(metadata_colors, metadata) {
             cli_abort("{.code metadata} doesen't have a field named {.field {.y}} but it exists in {.code metadata_colors}")
         }
 
-        if (length(.x) == 0 || length(.x[[1]]) == 0) {
+        if (length(.x) == 0) {
             cli_abort("{.field {.y}} in {.code metadata_colors} does not contain any colors.")
         }
 
-        colors <- .x[[1]]
-
-        if (length(.x) > 1) {
-            breaks <- .x[[2]]
-            if (length(breaks) != length(colors)) {
-                cli_abort("In metadata colors field {.field {.y}}: length of {.code breaks} shuold be equal to {.code colors}")
+        if (is_numeric_field(metadata, .y)) {
+            if (length(.x[[1]]) == 0) {
+                cli_abort("{.field {.y}} in {.code metadata_colors} does not contain any colors.")
             }
-            return(list(
-                colors = colors,
-                breaks = breaks
-            ))
+
+            colors <- .x[[1]]
+
+            if (length(.x) > 1) {
+                breaks <- .x[[2]]
+                if (length(breaks) != length(colors)) {
+                    cli_abort("In metadata colors field {.field {.y}}: length of {.code breaks} shuold be equal to {.code colors}")
+                }
+                return(list(
+                    colors = colors,
+                    breaks = breaks
+                ))
+            } else {
+                return(list(
+                    colors = colors
+                ))
+            }
         } else {
-            return(list(
-                colors = colors
-            ))
+            if (is.list(.x) && all(names(.x) == c("colors", "categories"))) {
+                res <- .x$colors
+                names(res) <- .x$categories
+            } else {
+                if (is.null(names(.x))) {
+                    cli_abort("In metadata colors field {.field {.y}}, color vector doesn't have any names.")
+                }
+                res <- .x
+            }
+            return(res)
         }
     })
 

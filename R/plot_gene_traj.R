@@ -49,7 +49,7 @@ plot_gene_trajectory <- function(dataset, genes, metacell, anchor_genes = NULL) 
         df <- df %>% mutate(gene = forcats::fct_relevel(gene, anchor_genes))
     }
 
-    ylims <- c(1e-5, 2e-5, 4e-5, 1e-4, 2e-4, 4e-4, 1e-3, 2e-3, 4e-3, 1e-2, 2e-2, 4e-2, 1e-1, 2e-1, 4e-1, 1)
+    ylims <- expr_breaks
     ymax <- min(c(1:length(ylims))[ylims >= max(df$expr, na.rm = TRUE)])
     ymin <- max(c(1:length(ylims))[ylims <= min(df$expr, na.rm = TRUE)])
 

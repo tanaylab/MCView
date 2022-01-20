@@ -51,12 +51,20 @@ app_ui <- function(request) {
             mod_proj_fold_sidebar_ui("proj_fold_ui_1")
         ),
         conditionalPanel(
+            condition = "input.tab_sidebar == 'consistency_fold'",
+            mod_consistency_fold_sidebar_ui("consistency_fold_ui_1")
+        ),
+        conditionalPanel(
             condition = "input.tab_sidebar == 'query'",
             mod_query_sidebar_ui("query_ui_1")
         ),
         conditionalPanel(
             condition = "input.tab_sidebar == 'atlas'",
             mod_atlas_sidebar_ui("atlas_ui_1")
+        ),
+        conditionalPanel(
+            condition = "input.tab_sidebar == 'cell_type'",
+            mod_cell_type_sidebar_ui("cell_type_ui_1")
         ),
         conditionalPanel(
             condition = "input.tab_sidebar == 'samples'",
@@ -89,10 +97,12 @@ app_ui <- function(request) {
             shinydashboard::tabItem(tabName = "markers", mod_markers_ui("markers_ui_1")),
             shinydashboard::tabItem(tabName = "inner_fold", mod_inner_fold_ui("inner_fold_ui_1")),
             shinydashboard::tabItem(tabName = "proj_fold", mod_proj_fold_ui("proj_fold_ui_1")),
+            shinydashboard::tabItem(tabName = "consistency_fold", mod_consistency_fold_ui("consistency_fold_ui_1")),
             shinydashboard::tabItem(tabName = "query", mod_query_ui("query_ui_1")),
             shinydashboard::tabItem(tabName = "atlas", mod_atlas_ui("atlas_ui_1")),
             shinydashboard::tabItem(tabName = "mc_mc", mod_mc_mc_ui("mc_mc_ui_1")),
             shinydashboard::tabItem(tabName = "samples", mod_samples_ui("samples_ui_1")),
+            shinydashboard::tabItem(tabName = "cell_type", mod_cell_type_ui("cell_type_ui_1")),
             shinydashboard::tabItem(tabName = "annotate", mod_annotate_ui("annotate_ui_1"))
         )
     )
