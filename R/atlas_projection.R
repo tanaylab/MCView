@@ -173,7 +173,16 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
         spread(dtype, value) %>%
         select(
             gene, cell_type, biased_gene, systematic_gene, ignored_gene, everything()
+        ) %>%
+        arrange(
+            desc(biased_gene),
+            desc(systematic_gene),
+            desc(glob_biased_gene),
+            desc(glob_systematic_gene),
+            desc(ignored_gene),
+            desc(glob_ignored_gene)
         )
+    
     serialize_shiny_data(cell_type_gene_md, "gene_metadata", dataset = dataset, cache_dir = cache_dir, flat = TRUE)
 
 

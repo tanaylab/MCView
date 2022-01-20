@@ -116,6 +116,24 @@ mod_query_ui <- function(id) {
                 width = 3,
                 uiOutput(ns("group_box"))
             )
+        ),
+        fluidRow(
+            resizable_column(
+                width = 12,
+                shinydashboardPlus::box(
+                    id = ns("gene_metadata_box"),
+                    title = "Gene metadata",
+                    status = "primary",
+                    solidHeader = TRUE,
+                    collapsible = TRUE,
+                    closable = FALSE,
+                    width = 12,
+                    uiOutput(ns("gene_metadata_cell_type_selector")),
+                    shinycssloaders::withSpinner(
+                        DT::dataTableOutput(ns("gene_metadata_table"))
+                    )
+                )
+            )
         )
     )
 }
@@ -347,6 +365,22 @@ mod_query_server <- function(input, output, session, dataset, metacell_types, ce
 
 
     output$plot_mc_stacked_type <- plot_type_predictions_bar(dataset)
+
+    output$gene_metadata_cell_type_selector <- cell_type_selector(dataset, ns, id = "gene_metadata_cell_type", label = "Cell types", selected = "all", cell_type_colors = cell_type_colors)
+
+    output$gene_metadata_table <- DT::renderDataTable(
+        get_mc_data(dataset(), "gene_metadata") %>% 
+            filter(cell_type %in% input$gene_metadata_cell_type),
+        escape = FALSE,
+        server = TRUE,
+        rownames = FALSE,
+        extensions = c("FixedColumns"),        
+        options = list(
+            dom = "Bfrtip",
+            scrollX = TRUE,
+            fixedColumns = list(leftColumns = 2)
+        )
+    )
 }
 
 metacell_selectors_mod_query <- function(input, output, session, dataset, ns, metacell_names, metacell_colors, metacell_types, cell_type_colors, group) {
