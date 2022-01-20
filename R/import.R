@@ -34,11 +34,12 @@
 #' When an atlas is given (using \code{atlas_project} and \code{atlas_dataset}), if the cell types
 #' are the same as the atlas, the atlas colors would be used.
 #' @param metadata_fields names of fields in the anndata \code{object$obs} which contains metadata for each metacell.
-#' The fields should can be either numeric or categorical. You can use
-#' \code{cell_metadata_to_metacell} with \code{categorical=TRUE} to convert from categorical to a numeric score (e.g. using fraction of the category). You can use 'all' in order to import all the fields
+#' The fields should can be either numeric or categorical, but currently
+#' categorical annotations are only supported at the 'Cell type' tabs.
+#'  You can use \code{cell_metadata_to_metacell} with \code{categorical=TRUE} to convert from categorical to a numeric score (e.g. by using fraction of the category). You can use 'all' in order to import all the fields
 #'  of the anndata object.
 #' @param metadata can be either a data frame with a column named "metacell" with the metacell id and other metadata columns
-#' or a name of a delimited file which contains such data frame.
+#' or a name of a delimited file which contains such data frame. See \code{metadata_fields} for other details.
 #' @param metadata_colors a named list with colors for each metadata column, or a name of a yaml file with such list.
 #' Colors should be given as a list where the first element is a vector of colors and the second element is a vector of breaks.
 #' If only colors are given breaks would be implicitly determined from the minimum and maximum of the metadata field.

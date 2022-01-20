@@ -236,27 +236,6 @@ test_that("import_dataset fails with metadata with unknown metacells", {
     )
 })
 
-test_that("import_dataset fails when metadata is categorical", {
-    set.seed(60427)
-    dataset <- "PBMC163k_md"
-    metadata_df <- get_test_metadata(raw_dir) %>%
-        mutate(md1 = "savta")
-
-    expect_error(
-        expect_warning(
-            MCView::import_dataset(
-                project = project_dir,
-                dataset = dataset,
-                anndata_file = fs::path(raw_dir, "metacells.h5ad"),
-                cell_type_colors_file = fs::path(raw_dir, "cluster-colors.csv"),
-                metadata = metadata_df,
-                calc_gg_cor = FALSE
-            )
-        )
-    )
-})
-
-
 test_that("import_dataset works with metadata colors", {
     set.seed(60427)
     dataset <- "PBMC163k_md"

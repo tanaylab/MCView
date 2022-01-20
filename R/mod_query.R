@@ -195,8 +195,8 @@ mod_query_server <- function(input, output, session, dataset, metacell_types, ce
             shinyWidgets::pickerInput(
                 ns("color_proj_query_metadata"),
                 label = "Metadata:",
-                choices = dataset_metadata_fields_numeric(dataset()),
-                selected = dataset_metadata_fields_numeric(dataset())[1],
+                choices = dataset_metadata_fields(dataset()),
+                selected = dataset_metadata_fields(dataset())[1],
                 width = "70%",
                 multiple = FALSE,
                 options = picker_options
