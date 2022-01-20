@@ -35,6 +35,22 @@ metacell_selector <- function(dataset, ns, id, label, selected = NULL, atlas = F
     })
 }
 
+colored_metacell_selector <- function(dataset, ns, id, label, metacell_colors, metacell_names, selected = NULL) {
+    renderUI({
+        req(metacell_colors())
+        req(metacell_names())
+        cell_types_hex <- col2hex(metacell_colors())
+        shinyWidgets::pickerInput(ns(id), label,
+            choices = metacell_names(),
+            selected = selected %||% config$selected_mc1,
+            multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith"),
+            choicesOpt = list(
+                style = paste0("color: ", cell_types_hex, ";")
+            )
+        )
+    })
+}
+
 metadata_selector <- function(dataset, ns, id = "selected_md", label = "Metadata", metadata_id = "metadata", selected = NULL, multiple = TRUE) {
     renderUI({
         metadata <- get_mc_data(dataset(), metadata_id)
