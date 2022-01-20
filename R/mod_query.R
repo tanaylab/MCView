@@ -297,6 +297,9 @@ mod_query_server <- function(input, output, session, dataset, metacell_types, ce
     # Differential expression
     output$plot_mc_mc_gene_scatter <- render_mc_mc_gene_plotly(input, output, session, ns, dataset, mc_mc_gene_scatter_df, metacell_names(), atlas_colors())
 
+    # Select a gene when clicking on it
+    plotly_click_observer("projection_diff_expr_plot", session, "axis_var", notification_prefix = "Selected ", update_function = shinyWidgets::updatePickerInput)
+
     output$diff_expr_table <- render_mc_mc_gene_diff_table(input, output, session, ns, dataset, mc_mc_gene_scatter_df)
 
     # Scatter
@@ -363,18 +366,34 @@ mod_query_server <- function(input, output, session, dataset, metacell_types, ce
         sliderInput(ns("min_edge_size"), label = "Min edge length", min = 0, max = 0.3, value = min_edge_length(dataset()), step = 0.001)
     })
 
-
     output$plot_mc_stacked_type <- plot_type_predictions_bar(dataset)
 
     output$gene_metadata_cell_type_selector <- cell_type_selector(dataset, ns, id = "gene_metadata_cell_type", label = "Cell types", selected = "all", cell_type_colors = cell_type_colors)
 
+    current_gene_table <- reactiveVal()
+
+    observe({
+        req(input$gene_metadata_cell_type)
+        current_gene_table(get_mc_data(dataset(), "gene_metadata") %>%
+            filter(cell_type %in% input$gene_metadata_cell_type))
+    })
+
+    observe({
+        req(input$gene_metadata_table_rows_selected)
+        gene <- current_gene_table() %>%
+            slice(input$gene_metadata_table_rows_selected) %>%
+            pull(gene)
+        showNotification(glue("selecting {gene}"))
+        shinyWidgets::updatePickerInput(session, "axis_var", selected = gene)
+    })
+
     output$gene_metadata_table <- DT::renderDataTable(
-        get_mc_data(dataset(), "gene_metadata") %>% 
-            filter(cell_type %in% input$gene_metadata_cell_type),
+        current_gene_table(),
         escape = FALSE,
         server = TRUE,
         rownames = FALSE,
-        extensions = c("FixedColumns"),        
+        extensions = c("FixedColumns"),
+        selection = "single",
         options = list(
             dom = "Bfrtip",
             scrollX = TRUE,

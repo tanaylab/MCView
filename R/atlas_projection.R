@@ -130,7 +130,7 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
     serialize_shiny_data(consistency_fold, "consistency_fold", dataset = dataset, cache_dir = cache_dir)
     marker_genes_consistency <- select_top_fold_genes(consistency_fold[!forbidden, ], minimal_relative_log_fraction = -Inf, use_abs = TRUE, genes_per_metacell = 50)
     serialize_shiny_data(marker_genes_consistency, "marker_genes_consistency", dataset = dataset, cache_dir = cache_dir)
- 
+
     # disjoined genes
     atlas_mat <- get_mc_data(dataset, "mc_mat", atlas = TRUE)
     query_mat <- get_mc_data(dataset, "mc_mat")
@@ -155,7 +155,7 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
 
     cell_type_gene_md <- gene_md %>%
         select(
-            gene, 
+            gene,
             contains("_of_"),
             forbidden_gene,
             ignored_gene,
@@ -164,7 +164,7 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
             glob_biased_gene = biased_gene,
             glob_ignored_gene = ignored_gene,
             glob_systematic_gene = systematic_gene,
-            ) %>%
+        ) %>%
         pivot_longer(
             contains("_of_"),
             names_to = c("dtype", "cell_type"),
@@ -182,7 +182,7 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
             desc(ignored_gene),
             desc(glob_ignored_gene)
         )
-    
+
     serialize_shiny_data(cell_type_gene_md, "gene_metadata", dataset = dataset, cache_dir = cache_dir, flat = TRUE)
 
 

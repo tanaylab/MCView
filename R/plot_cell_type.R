@@ -125,11 +125,11 @@ cell_type_metadata_confusion <- function(var,
         group_by(!!sym(var)) %>%
         mutate(n_tot_md = sum(n), p_md = n / n_tot_md) %>%
         ungroup() %>%
-        tidyr::replace_na(replace = list(p_cell_type = 0, p_var = 0)) %>%        
-        mutate(            
-            `# of metacells` = n, 
-            `total # of cell type metacells` = n_tot, 
-            !!sym(glue("total # of {var} metacells")) := n_tot_md, 
+        tidyr::replace_na(replace = list(p_cell_type = 0, p_var = 0)) %>%
+        mutate(
+            `# of metacells` = n,
+            `total # of cell type metacells` = n_tot,
+            !!sym(glue("total # of {var} metacells")) := n_tot_md,
             `% of cell type metacells` = glue("{scales::percent(p_cell_type)} ({n}/{n_tot})"),
             !!sym(glue("% of {var} metacells")) := glue("{scales::percent(p_md)} ({n}/{n_tot_md})")
         ) %>%
@@ -142,9 +142,9 @@ cell_type_metadata_confusion <- function(var,
         df <- df %>% mutate(color = p_md)
         label <- glue("% {var}")
     }
-    
+
     fracs_mat <- df %>%
-        distinct(`Cell type`, !!sym(var), color) %>% 
+        distinct(`Cell type`, !!sym(var), color) %>%
         spread(`Cell type`, color) %>%
         column_to_rownames(var) %>%
         as.matrix()
@@ -157,15 +157,15 @@ cell_type_metadata_confusion <- function(var,
 
     p <- df %>%
         ggplot(aes(
-            x = `Cell type`, 
-            y = !!sym(var), 
-            lab1 = `# of metacells`, 
+            x = `Cell type`,
+            y = !!sym(var),
+            lab1 = `# of metacells`,
             lab2 = `total # of cell type metacells`,
-            lab3 = !!sym(glue("total # of {var} metacells")), 
-            lab4 = `% of cell type metacells`, 
-            lab5 = !!sym(glue("% of {var} metacells")), 
+            lab3 = !!sym(glue("total # of {var} metacells")),
+            lab4 = `% of cell type metacells`,
+            lab5 = !!sym(glue("% of {var} metacells")),
             fill = color
-            )) +
+        )) +
         geom_tile() +
         scale_fill_gradientn(
             colors = c("white", "#F4A582", "#D6604D", "#B2182B", "#67001F", "black"),

@@ -264,7 +264,7 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
         mc_fp <- mc_fp[intersect(markers, rownames(mc_fp)), ]
         epsilon <- 1e-5
         log_transform <- FALSE
-    } else if (mode == "Consistency"){
+    } else if (mode == "Consistency") {
         mc_fp <- get_mc_data(dataset, "consistency_fold")
         req(mc_fp)
         mc_fp <- as.matrix(mc_fp[abs(Matrix::rowSums(mc_fp)) > 0, ])
