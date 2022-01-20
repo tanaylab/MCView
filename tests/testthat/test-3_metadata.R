@@ -4,6 +4,7 @@ test_that("import_dataset works with metadata dataframe", {
     set.seed(60427)
     dataset <- "PBMC163k_md"
     metadata_df <- get_test_metadata(raw_dir)
+    browser()
 
     MCView::import_dataset(
         project = project_dir,
@@ -243,7 +244,7 @@ test_that("import_dataset works with metadata colors", {
 
     metadata_colors <- list(
         md1 = list(
-            colors = c("darblue", "white", "darkred"),
+            colors = c("darkblue", "white", "darkred"),
             breaks = c(0, 0.5, 1)
         ),
         md2 = list(
@@ -253,7 +254,8 @@ test_that("import_dataset works with metadata colors", {
         md3 = list(
             colors = c("green", "purple", "orange"),
             breaks = c(0, 0.5, 1)
-        )
+        ),
+        md5 = c("type1" = "red", "type2" = "blue", "type3" = "green")
     )
 
     MCView::import_dataset(
@@ -285,7 +287,7 @@ test_that("import_dataset works with metadata colors file", {
 
     metadata_colors <- list(
         md1 = list(
-            colors = c("darblue", "white", "darkred"),
+            colors = c("darkblue", "white", "darkred"),
             breaks = c(0, 0.5, 1)
         ),
         md2 = list(
@@ -295,10 +297,14 @@ test_that("import_dataset works with metadata colors file", {
         md3 = list(
             colors = c("green", "purple", "orange"),
             breaks = c(0, 0.5, 1)
+        ),
+        md5 = list(
+            colors = c("red", "blue", "green"),
+            categories = c("type1", "type2", "type3")
         )
     )
 
-    metadata_colors_file <- fs::path(test_dir, "metadata_colors.yaml")
+    metadata_colors_file <- tempfile()
     yaml::write_yaml(metadata_colors, metadata_colors_file)
 
     MCView::import_dataset(
@@ -316,9 +322,6 @@ test_that("import_dataset works with metadata colors file", {
     saved_md <- tgutil::fread(fs::path(project_dir, "cache", dataset, "metadata.tsv")) %>% tibble::as_tibble()
     expect_equivalent(metadata_df, saved_md)
 
-    saved_md_colors <- qs::qread(fs::path(project_dir, "cache", dataset, "metadata_colors.qs"))
-    expect_equivalent(metadata_colors, saved_md_colors)
-
     withr::defer(unlink(fs::path(project_dir, "cache", dataset)))
     withr::defer(gc())
 })
@@ -330,7 +333,7 @@ test_that("import_dataset works with metadata colors without breaks", {
 
     metadata_colors <- list(
         md1 = list(
-            colors = c("darblue", "white", "darkred")
+            colors = c("darkblue", "white", "darkred")
         ),
         md2 = list(
             colors = c("black", "gray", "yellow"),
@@ -370,7 +373,7 @@ test_that("import_dataset works with metadata colors with wrong number of breaks
 
     metadata_colors <- list(
         md1 = list(
-            colors = c("darblue", "white", "darkred")
+            colors = c("darkblue", "white", "darkred")
         ),
         md2 = list(
             colors = c("black", "gray", "yellow"),
@@ -401,7 +404,7 @@ test_that("import_dataset works with metadata colors with wrong number of colors
 
     metadata_colors <- list(
         md1 = list(
-            colors = c("darblue", "white", "darkred")
+            colors = c("darkblue", "white", "darkred")
         ),
         md2 = list(
             colors = c("black", "gray", "yellow", "red"),
@@ -433,7 +436,7 @@ test_that("import_dataset works with metadata colors with non-existing metadata 
 
     metadata_colors <- list(
         md18 = list(
-            colors = c("darblue", "white", "darkred")
+            colors = c("darkblue", "white", "darkred")
         )
     )
 
@@ -457,7 +460,7 @@ test_that("import_dataset works with metadata colors but without metadata", {
 
     metadata_colors <- list(
         md18 = list(
-            colors = c("darblue", "white", "darkred")
+            colors = c("darkblue", "white", "darkred")
         )
     )
 
@@ -552,7 +555,7 @@ test_that("update_metadata_colors work", {
 
     metadata_colors <- list(
         md1 = list(
-            colors = c("darblue", "white", "darkred")
+            colors = c("darkblue", "white", "darkred")
         ),
         md2 = list(
             colors = c("black", "gray", "yellow"),
@@ -601,7 +604,7 @@ test_that("update_metadata_colors work with overwrite = TRUE", {
 
     metadata_colors <- list(
         md1 = list(
-            colors = c("darblue", "white", "darkred")
+            colors = c("darkblue", "white", "darkred")
         ),
         md2 = list(
             colors = c("black", "gray", "yellow"),
@@ -650,7 +653,7 @@ test_that("update_metadata_colors fails without metadata", {
 
     metadata_colors <- list(
         md1 = list(
-            colors = c("darblue", "white", "darkred")
+            colors = c("darkblue", "white", "darkred")
         ),
         md2 = list(
             colors = c("black", "gray", "yellow"),
