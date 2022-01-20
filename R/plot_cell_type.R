@@ -138,10 +138,22 @@ cell_type_metadata_confusion <- function(var,
     if (color_by == "X axis") {
         df <- df %>% mutate(color = p_cell_type)
         label <- "% Cell type"
-    } else {        
+    } else {
         df <- df %>% mutate(color = p_md)
         label <- glue("% {var}")
     }
+    
+    fracs_mat <- df %>%
+        distinct(`Cell type`, !!sym(var), color) %>% 
+        spread(`Cell type`, color) %>%
+        column_to_rownames(var) %>%
+        as.matrix()
+
+    ord <- slanter::slanted_orders(fracs_mat)
+
+    df <- df %>%
+        mutate(`Cell type` = factor(`Cell type`, levels = colnames(fracs_mat)[ord$cols])) %>%
+        mutate(!!sym(var) := factor(!!sym(var), levels = rownames(fracs_mat)[ord$rows]))
 
     p <- df %>%
         ggplot(aes(
