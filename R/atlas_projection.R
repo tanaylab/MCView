@@ -126,6 +126,11 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
     marker_genes_projected <- select_top_fold_genes(projected_fold[!forbidden, ], minimal_relative_log_fraction = -Inf, use_abs = TRUE, genes_per_metacell = 50)
     serialize_shiny_data(marker_genes_projected, "marker_genes_projected", dataset = dataset, cache_dir = cache_dir)
 
+    consistency_fold <- Matrix::t(query$layers[["consistency_fold"]])
+    serialize_shiny_data(consistency_fold, "consistency_fold", dataset = dataset, cache_dir = cache_dir)
+    marker_genes_consistency <- select_top_fold_genes(consistency_fold[!forbidden, ], minimal_relative_log_fraction = -Inf, use_abs = TRUE, genes_per_metacell = 50)
+    serialize_shiny_data(marker_genes_consistency, "marker_genes_consistency", dataset = dataset, cache_dir = cache_dir)
+ 
     # disjoined genes
     atlas_mat <- get_mc_data(dataset, "mc_mat", atlas = TRUE)
     query_mat <- get_mc_data(dataset, "mc_mat")
@@ -142,6 +147,36 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
     }
 
     serialize_shiny_data(systematic_genes, "systematic_genes", dataset = dataset, cache_dir = cache_dir)
+
+    # Gene metadata
+    gene_md <- query$var %>%
+        rownames_to_column("gene") %>%
+        as_tibble()
+
+    cell_type_gene_md <- gene_md %>%
+        select(
+            gene, 
+            contains("_of_"),
+            forbidden_gene,
+            ignored_gene,
+            significant_gene,
+            atlas_significant_gene,
+            glob_biased_gene = biased_gene,
+            glob_ignored_gene = ignored_gene,
+            glob_systematic_gene = systematic_gene,
+            ) %>%
+        pivot_longer(
+            contains("_of_"),
+            names_to = c("dtype", "cell_type"),
+            names_pattern = c("^(.+)_of_(.+)$")
+        ) %>%
+        spread(dtype, value) %>%
+        select(
+            gene, cell_type, biased_gene, systematic_gene, ignored_gene, everything()
+        )
+    serialize_shiny_data(cell_type_gene_md, "gene_metadata", dataset = dataset, cache_dir = cache_dir, flat = TRUE)
+
+
     cli_alert_success("succesfully imported atlas projections")
 }
 
