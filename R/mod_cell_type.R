@@ -78,8 +78,8 @@ mod_cell_type_server <- function(input, output, session, dataset, metacell_types
     output$confusion_color_by_selector <- renderUI({
         shinyWidgets::prettyRadioButtons(
             ns("confusion_color_by"),
-            label = "Color by:",
-            choices = c("Cell type", "Metadata"),
+            label = "Normalize by:",
+            choices = c("X axis", "Y Axis"),
             inline = TRUE,
             status = "danger",
             fill = TRUE

@@ -125,23 +125,35 @@ cell_type_metadata_confusion <- function(var,
         group_by(!!sym(var)) %>%
         mutate(n_tot_md = sum(n), p_md = n / n_tot_md) %>%
         ungroup() %>%
-        tidyr::replace_na(replace = list(p_cell_type = 0, p_var = 0)) %>%
-        mutate(
-            cell_type_stats = glue("{scales::percent(p_cell_type)} ({n}/{n_tot})"),
-            md_stats = glue("{scales::percent(p_md)} ({n}/{n_tot_md})")
+        tidyr::replace_na(replace = list(p_cell_type = 0, p_var = 0)) %>%        
+        mutate(            
+            `# of metacells` = n, 
+            `total # of cell type metacells` = n_tot, 
+            !!sym(glue("total # of {var} metacells")) := n_tot_md, 
+            `% of cell type metacells` = glue("{scales::percent(p_cell_type)} ({n}/{n_tot})"),
+            !!sym(glue("% of {var} metacells")) := glue("{scales::percent(p_md)} ({n}/{n_tot_md})")
         ) %>%
         rename(`Cell type` = cell_type)
 
-    if (color_by == "Cell type") {
-        color_var <- "p_cell_type"
-        label <- "% Type"
-    } else {
-        color_var <- "p_md"
+    if (color_by == "X axis") {
+        df <- df %>% mutate(color = p_cell_type)
+        label <- "% Cell type"
+    } else {        
+        df <- df %>% mutate(color = p_md)
         label <- glue("% {var}")
     }
 
     p <- df %>%
-        ggplot(aes(x = `Cell type`, y = !!sym(var), cell_type_stats = cell_type_stats, md_stats = md_stats, fill = !!sym(color_var))) +
+        ggplot(aes(
+            x = `Cell type`, 
+            y = !!sym(var), 
+            lab1 = `# of metacells`, 
+            lab2 = `total # of cell type metacells`,
+            lab3 = !!sym(glue("total # of {var} metacells")), 
+            lab4 = `% of cell type metacells`, 
+            lab5 = !!sym(glue("% of {var} metacells")), 
+            fill = color
+            )) +
         geom_tile() +
         scale_fill_gradientn(
             colors = c("white", "#F4A582", "#D6604D", "#B2182B", "#67001F", "black"),
