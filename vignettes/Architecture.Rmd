@@ -63,7 +63,7 @@ The main configuration file (`config/config.yaml`) contains the parameters:
 
 ```yaml
 title: MCView
-tabs: ["Manifold", "Genes", "Markers", "Diff. Expression", "Annotate", "About"] # which tabs to show
+tabs: ["Manifold", "Genes", "Markers", "Diff. Expression", "Cell types", "Annotate", "About"] # which tabs to show
 help: false # set to true to show introjs help on start
 selected_gene1: Foxc1 # Default selected gene1 (optional)
 selected_gene2: Twist1 # Default selected gene2 (optional)
