@@ -230,12 +230,13 @@ plot_mc_scatter <- function(dataset,
                             point_size = initial_scatters_point_size(dataset),
                             stroke = initial_scatters_stroke(dataset),
                             expr_colors = c("#053061", "#2166AC", "#4393C3", "#92C5DE", "#D1E5F0", "#F7F7F7", "#FDDBC7", "#F4A582", "#D6604D", "#B2182B", "#67001F"),
-                            plot_text = TRUE) {
-    metadata <- get_mc_data(dataset, "metadata")
+                            plot_text = TRUE,
+                            atlas = FALSE) {
+    metadata <- get_mc_data(dataset, "metadata", atlas = atlas)
     if (!is.null(metadata)) {
         metadata <- metadata %>% mutate(metacell = as.character(metacell))
     }
-    metadata_colors <- get_mc_data(dataset, "metadata_colors")
+    metadata_colors <- get_mc_data(dataset, "metadata_colors", atlas = atlas)
 
     df <- metacell_types %>%
         mutate(
@@ -254,7 +255,7 @@ plot_mc_scatter <- function(dataset,
             left_join(metadata %>% select(metacell, !!x_var), by = "metacell") %>%
             mutate(x_str = glue("{x_name}: {x_values}", x_values = round(!!sym(x_var), digits = 3)))
     } else {
-        egc_x <- get_gene_egc(x_var, dataset) + egc_epsilon
+        egc_x <- get_gene_egc(x_var, dataset, atlas = atlas) + egc_epsilon
         df <- df %>%
             mutate(!!x_var := egc_x[metacell]) %>%
             mutate(x_str = glue("{x_name} expression: {expr_text}", expr_text = scales::scientific(!!sym(x_var))))
@@ -269,7 +270,7 @@ plot_mc_scatter <- function(dataset,
             left_join(metadata %>% select(metacell, !!y_var), by = "metacell") %>%
             mutate(y_str = glue("{y_name}: {y_values}", y_values = round(!!sym(x_var), digits = 3)))
     } else {
-        egc_y <- get_gene_egc(y_var, dataset) + egc_epsilon
+        egc_y <- get_gene_egc(y_var, dataset, atlas = atlas) + egc_epsilon
         df <- df %>%
             mutate(!!y_var := egc_y[metacell]) %>%
             mutate(y_str = glue("{y_name} expression: {expr_text}", expr_text = scales::scientific(!!sym(y_var))))
@@ -293,7 +294,7 @@ plot_mc_scatter <- function(dataset,
         df <- df %>%
             mutate(color_str = glue("{color_name}: {color_values}\nCell type: {`Cell type`}", color_values = round(!!sym(color_var), digits = 3)))
     } else if (color_type == "Gene") {
-        egc_color <- get_gene_egc(color_var, dataset) + egc_epsilon
+        egc_color <- get_gene_egc(color_var, dataset, atlas = atlas) + egc_epsilon
         df <- df %>%
             mutate(expression = log2(egc_color[df$metacell]))
         min_expr <- min(df$expression, na.rm = TRUE)
@@ -336,7 +337,12 @@ plot_mc_scatter <- function(dataset,
 
     # set color plotting
     if (is.null(color_var)) {
-        col_to_ct <- get_cell_type_colors(dataset, cell_type_colors)
+        if (atlas) {
+            col_to_ct <- get_cell_type_colors(dataset, NULL, atlas = TRUE)
+        } else {
+            col_to_ct <- get_cell_type_colors(dataset, cell_type_colors)
+        }
+
         p <- p +
             geom_point(size = point_size, shape = 21, stroke = stroke, color = "black") +
             scale_fill_manual(values = col_to_ct) +

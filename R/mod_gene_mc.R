@@ -71,7 +71,8 @@ mod_gene_mc_ui <- function(id) {
                     shinycssloaders::withSpinner(
                         plotly::plotlyOutput(ns("plot_gene_gene_mc"))
                     )
-                )
+                ),
+                uiOutput(ns("atlas_gene_gene_box_ui"))
             )
         )
     )
@@ -209,6 +210,8 @@ mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, 
 
         return(fig)
     }) %>% bindCache(dataset(), input$x_axis_var, input$x_axis_type, input$y_axis_var, input$y_axis_type, input$color_by_type, input$color_by_var, metacell_types(), cell_type_colors(), input$gene_gene_point_size, input$gene_gene_stroke)
+
+    atlas_gene_gene(input, output, session, dataset, metacell_types, cell_type_colors, globals, ns)
 }
 
 
@@ -222,4 +225,92 @@ mod_gene_mc_plotly_observers <- function(input, session, source = "mc_mc_plot", 
         }
         showNotification(glue("Selected {gene}{notification_suffix}"))
     })
+}
+
+atlas_gene_gene <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals, ns) {
+    output$atlas_gene_gene_box_ui <- renderUI({
+        req(has_atlas(dataset()))
+        shinydashboardPlus::box(
+            id = ns("atlas_gene_gene_box"),
+            title = "Atlas Gene/Gene",
+            status = "primary",
+            solidHeader = TRUE,
+            collapsible = TRUE,
+            closable = FALSE,
+            width = 12,
+            sidebar = shinydashboardPlus::boxSidebar(
+                startOpen = FALSE,
+                width = 100,
+                id = ns("atlas_gene_gene_sidebar"),
+                axis_selector("atlas_x_axis", "Gene", ns),
+                axis_selector("atlas_y_axis", "Gene", ns),
+                axis_selector("atlas_color_by", "Metadata", ns),
+                uiOutput(ns("atlas_gene_gene_point_size_ui")),
+                uiOutput(ns("atlas_gene_gene_stroke_ui"))
+            ),
+            shinycssloaders::withSpinner(
+                plotly::plotlyOutput(ns("atlas_plot_gene_gene_mc"))
+            )
+        )
+    })
+
+    scatter_selectors(ns, dataset, output, globals, prefix = "atlas_gene_gene")
+
+    # Metadata/Metadata plots
+    output$atlas_x_axis_select <- render_axis_select_ui("atlas_x_axis", "X axis", md_choices = dataset_metadata_fields_numeric(dataset(), atlas = TRUE), md_selected = dataset_metadata_fields_numeric(dataset(), atlas = TRUE)[1], selected_gene = default_gene1, input = input, ns = ns, dataset = dataset) %>% bindCache(dataset(), ns, ns("atlas_x_axis"), input$atlas_x_axis_type)
+
+    output$atlas_y_axis_select <- render_axis_select_ui("atlas_y_axis", "Y axis", md_choices = dataset_metadata_fields_numeric(dataset(), atlas = TRUE), md_selected = dataset_metadata_fields_numeric(dataset(), atlas = TRUE)[2], selected_gene = default_gene2, input = input, ns = ns, dataset = dataset) %>% bindCache(dataset(), ns, ns("atlas_y_axis"), input$atlas_y_axis_type)
+
+    output$atlas_color_by_select <- render_axis_select_ui("atlas_color_by", "Color", md_choices = c("Cell type", dataset_metadata_fields_numeric(dataset(), atlas = TRUE)), md_selected = "Cell type", selected_gene = default_gene1, input = input, ns = ns, dataset = dataset) %>% bindCache(dataset(), ns, ns("atlas_color_by"), input$atlas_olor_by_type)
+
+    output$atlas_plot_gene_gene_mc <- plotly::renderPlotly({
+        req(has_atlas(dataset()))
+        req(input$atlas_x_axis_var)
+        req(input$atlas_y_axis_var)
+        req(input$atlas_color_by_var)
+        req(input$atlas_x_axis_type)
+        req(input$atlas_y_axis_type)
+        req(input$atlas_color_by_type)
+        req(input$atlas_gene_gene_point_size)
+        req(input$atlas_gene_gene_stroke)
+        req(axis_vars_ok(dataset(), input, "metadata", axes = c("atlas_x_axis", "atlas_y_axis", "atlas_color_by"), atlas = TRUE))
+
+        color_var <- input$atlas_color_by_var
+        if (input$atlas_color_by_var == "Cell type") {
+            color_var <- NULL
+        }
+
+        fig <- plot_mc_scatter(
+            dataset(),
+            input$atlas_x_axis_var,
+            input$atlas_y_axis_var,
+            color_var,
+            x_type = input$atlas_x_axis_type,
+            y_type = input$atlas_y_axis_type,
+            color_type = input$atlas_color_by_type,
+            metacell_types = get_mc_data(dataset(), "metacell_types", atlas = TRUE),
+            cell_type_colors = get_mc_data(dataset(), "cell_type_colors", atlas = TRUE),
+            point_size = input$atlas_gene_gene_point_size,
+            stroke = input$atlas_gene_gene_stroke,
+            plot_text = FALSE,
+            atlas = TRUE
+        ) %>%
+            plotly::ggplotly(tooltip = "tooltip_text", source = "atlas_md_md_plot") %>%
+            sanitize_for_WebGL() %>%
+            plotly::toWebGL() %>%
+            sanitize_plotly_buttons()
+
+        if (input$atlas_color_by_var == "Cell type") {
+            fig <- plotly::hide_legend(fig)
+        } else {
+            # This ugly hack is due to https://github.com/ropensci/plotly/issues/1234
+            # We need to remove the legend generated by scale_color_identity
+            fig$x$data <- fig$x$data %>% purrr::map(~ {
+                .x$showlegend <- FALSE
+                .x
+            })
+        }
+
+        return(fig)
+    }) %>% bindCache(dataset(), input$atlas_x_axis_var, input$atlas_x_axis_type, input$atlas_y_axis_var, input$atlas_y_axis_type, input$atlas_color_by_type, input$atlas_color_by_var, input$atlas_gene_gene_point_size, input$atlas_gene_gene_stroke)
 }
