@@ -326,7 +326,13 @@ get_marker_genes <- function(dataset, mode = "Markers") {
     return(get_markers(dataset))
 }
 
-heatmap_box <- function(ns, title = "Heatmap") {
+heatmap_box <- function(ns,
+                        title = "Heatmap",
+                        fold_change_range = c(-3, 3),
+                        midpoint = 0,
+                        low_color = "blue",
+                        mid_color = "white",
+                        high_color = "red") {
     shinydashboardPlus::box(
         id = ns("markers_heatmap_box"),
         title = title,
@@ -341,10 +347,11 @@ heatmap_box <- function(ns, title = "Heatmap") {
             width = 25,
             id = ns("markers_heatmap_sidebar"),
             checkboxInput(ns("force_cell_type"), "Force cell type", value = TRUE),
-            shinyWidgets::numericRangeInput(ns("lfp_range"), "Fold change range", c(-3, 3), width = "80%", separator = " to "),
-            colourpicker::colourInput(ns("low_color"), "Low color", "blue"),
-            colourpicker::colourInput(ns("high_color"), "High color", "red"),
-            colourpicker::colourInput(ns("mid_color"), "Mid color", "white"),
+            shinyWidgets::numericRangeInput(ns("lfp_range"), "Fold change range", fold_change_range, width = "80%", separator = " to "),
+            numericInput(ns("midpoint"), "Midpoint", midpoint),
+            colourpicker::colourInput(ns("low_color"), "Low color", low_color),
+            colourpicker::colourInput(ns("high_color"), "High color", high_color),
+            colourpicker::colourInput(ns("mid_color"), "Mid color", mid_color),
             checkboxInput(ns("plot_legend"), "Plot legend", value = TRUE)
         ),
         shinycssloaders::withSpinner(
@@ -483,6 +490,12 @@ heatmap_reactives <- function(ns, input, output, session, dataset, metacell_type
         req(lfp_range())
         req(metacell_types())
         req(cell_type_colors())
+        req(input$midpoint)
+        req(input$low_color)
+        req(input$high_color)
+        req(input$mid_color)
+        req(input$midpoint > lfp_range()[1])
+        req(input$midpoint < lfp_range()[2])
 
         mat <- markers_matrix()
         req(mat)
@@ -516,10 +529,11 @@ heatmap_reactives <- function(ns, input, output, session, dataset, metacell_type
             high_color =  input$high_color,
             low_color =  input$low_color,
             mid_color =  input$mid_color,
+            midpoint = input$midpoint,
             metadata = metadata,
             forbidden_genes = forbidden_genes,
             systematic_genes = systematic_genes,
             disjoined_genes = disjoined_genes
         )
-    }) %>% bindCache(dataset(), metacell_types(), cell_type_colors(), lfp_range(), input$plot_legend, input$selected_md, markers(), input$selected_cell_types, input$force_cell_type, input$high_color, input$low_color, input$mid_color)
+    }) %>% bindCache(dataset(), metacell_types(), cell_type_colors(), lfp_range(), input$plot_legend, input$selected_md, markers(), input$selected_cell_types, input$force_cell_type, input$high_color, input$low_color, input$mid_color, input$midpoint)
 }

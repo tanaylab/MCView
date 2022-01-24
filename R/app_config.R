@@ -113,7 +113,7 @@ init_tab_defs <- function() {
             title = "Flow",
             module_name = "flow",
             icon = "water"
-         ),
+        ),
         "Cell types" = list(
             title = "Cell types",
             module_name = "cell_type",

@@ -5,6 +5,7 @@ plot_markers_mat <- function(mc_fp,
                              low_color = "blue",
                              high_color = "red",
                              mid_color = "white",
+                             midpoint = 0,
                              min_lfp = NULL,
                              max_lfp = NULL,
                              plot_legend = TRUE,
@@ -15,7 +16,7 @@ plot_markers_mat <- function(mc_fp,
                              systematic_genes = NULL,
                              systematic_color = "purple",
                              disjoined_genes = NULL,
-                             disjoined_color = "yellow") {
+                             disjoined_color = "#00b7ff") {
     min_lfp <- min_lfp %||% -3
     max_lfp <- max_lfp %||% 3
 
@@ -51,7 +52,7 @@ plot_markers_mat <- function(mc_fp,
         col_names_orient = "slanted",
         interleave = TRUE
     ) +
-        scale_fill_gradient2(name = "", low = low_color, high = high_color, mid = mid_color, midpoint = 0, limits = c(min_lfp, max_lfp))
+        scale_fill_gradient2(name = "", low = low_color, high = high_color, mid = mid_color, midpoint = midpoint, limits = c(min_lfp, max_lfp))
 
     p_mat <- suppressWarnings(
         p_mat +
@@ -64,11 +65,12 @@ plot_markers_mat <- function(mc_fp,
         left_join(cell_type_colors, by = "cell_type")
 
     if (plot_legend) {
+        legend_point_size <- max(1, min(10, 250 / nrow(cell_type_colors)))
         legend <- cowplot::get_legend(cell_type_colors %>%
             ggplot(aes(x = cell_type, color = cell_type, y = 1)) +
             geom_point() +
             scale_color_manual("", values = deframe(cell_type_colors)) +
-            guides(color = guide_legend(override.aes = list(size = 10), ncol = 1)))
+            guides(color = guide_legend(override.aes = list(size = legend_point_size), ncol = 1)))
         p_mat <- p_mat + theme(legend.position = "top")
 
         p <- add_markers_colorbars(p_mat, mc_types, dataset, top_cell_type_bar, metadata)

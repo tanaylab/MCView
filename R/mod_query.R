@@ -278,9 +278,9 @@ mod_query_server <- function(input, output, session, dataset, metacell_types, ce
         if (input$mark_disjoined) {
             prev_levels <- levels(df$col)
             df <- df %>%
-                mutate(col = ifelse(gene %in% disjoined, "yellow", as.character(col))) %>%
+                mutate(col = ifelse(gene %in% disjoined, "#00b7ff", as.character(col))) %>%
                 mutate(col = ifelse(gene %in% systematic, "purple", as.character(col))) %>%
-                mutate(col = factor(col, levels = c("yellow", "purple", prev_levels)))
+                mutate(col = factor(col, levels = c("#00b7ff", "purple", prev_levels)))
         }
 
         df <- df %>%
