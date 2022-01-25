@@ -1,4 +1,4 @@
-plot_markers_mat <- function(mc_fp,
+plot_markers_mat <- function(mat,
                              metacell_types,
                              cell_type_colors,
                              dataset,
@@ -16,26 +16,12 @@ plot_markers_mat <- function(mc_fp,
                              systematic_genes = NULL,
                              systematic_color = "purple",
                              disjoined_genes = NULL,
-                             disjoined_color = "#00b7ff") {
+                             disjoined_color = "#00b7ff",
+                             col_names = FALSE,
+                             interleave = TRUE,
+                             vertial_gridlines = FALSE) {
     min_lfp <- min_lfp %||% -3
     max_lfp <- max_lfp %||% 3
-
-    metacells <- colnames(mc_fp)
-
-    gene_ord <- order(apply(mc_fp, 1, which.max))
-    mat <- mc_fp[gene_ord, ]
-
-    # matrix has only a single metacell
-    if (!is.matrix(mat)) {
-        mat <- as.matrix(mat)
-        colnames(mat) <- metacells
-    }
-
-    col_names <- FALSE
-    if (ncol(mat) <= 100) {
-        col_names <- colnames(mat)
-        top_cell_type_bar <- FALSE
-    }
 
     gene_colors <- tibble(gene = rownames(mat)) %>%
         mutate(color = case_when(
@@ -50,7 +36,7 @@ plot_markers_mat <- function(mc_fp,
         clip_vals(mat, min_lfp, max_lfp),
         col_names = col_names,
         col_names_orient = "slanted",
-        interleave = TRUE
+        interleave = interleave
     ) +
         scale_fill_gradient2(name = "", low = low_color, high = high_color, mid = mid_color, midpoint = midpoint, limits = c(min_lfp, max_lfp))
 
@@ -58,6 +44,10 @@ plot_markers_mat <- function(mc_fp,
         p_mat +
             theme(axis.text.y = element_text(color = gene_colors))
     ) # we suppress the warning 'Vectorized input to `element_text()` is not officially supported.'
+
+    if (vertial_gridlines) {
+        p_mat <- p_mat + geom_hline(yintercept = 1:nrow(mat) - 0.5, color = "gray", size = 0.1)
+    }
 
     cell_type_colors <- cell_type_colors %>% select(cell_type, color)
     mc_types <- tibble(metacell = colnames(mat)) %>%

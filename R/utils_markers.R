@@ -271,10 +271,12 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
         mc_fp <- mc_fp[intersect(markers, rownames(mc_fp)), ]
         epsilon <- 1e-5
         log_transform <- FALSE
-    } else {
+    } else if (mode == "Markers") {
         mc_fp <- get_mc_fp(dataset, markers)
         epsilon <- 0
         log_transform <- TRUE
+    } else {
+        stop("unknown mode")
     }
 
     req(dim(mc_fp))
@@ -289,6 +291,21 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
     if (ncol(mat) > 1) {
         mc_order <- order_mc_by_most_var_genes(mat, force_cell_type = force_cell_type, metacell_types = metacell_types, epsilon = epsilon, notify_var_genes = notify_var_genes, log_transform = log_transform)
         mat <- mat[, mc_order]
+    }
+
+    if (mode == "Markers") {
+        mat <- log2(mat)
+    }
+
+    gene_ord <- order(apply(mat, 1, which.max))
+    mat <- mat[gene_ord, ]
+
+    metacells <- colnames(mat)
+
+    # matrix has only a single metacell
+    if (!is.matrix(mat)) {
+        mat <- as.matrix(mat)
+        colnames(mat) <- metacells
     }
 
     return(mat)
@@ -499,9 +516,6 @@ heatmap_reactives <- function(ns, input, output, session, dataset, metacell_type
 
         mat <- markers_matrix()
         req(mat)
-        if (mode == "Markers") {
-            mat <- log2(mat)
-        }
 
         if (!is.null(input$selected_md)) {
             metadata <- get_mc_data(dataset(), "metadata") %>%
@@ -509,10 +523,6 @@ heatmap_reactives <- function(ns, input, output, session, dataset, metacell_type
         } else {
             metadata <- NULL
         }
-
-        marker_genes <- markers()
-        req(marker_genes)
-
 
         disjoined_genes <- get_mc_data(dataset(), "disjoined_genes_no_atlas")
         forbidden_genes <- get_mc_data(dataset(), "forbidden_genes")
@@ -533,7 +543,11 @@ heatmap_reactives <- function(ns, input, output, session, dataset, metacell_type
             metadata = metadata,
             forbidden_genes = forbidden_genes,
             systematic_genes = systematic_genes,
-            disjoined_genes = disjoined_genes
+            disjoined_genes = disjoined_genes,
+            col_names = ncol(mat) <= 100,
+            top_cell_type_bar = ncol(mat) <= 100,
+            interleave = nrow(mat) > 80,
+            vertial_gridlines = mode %in% c("Inner", "Proj", "Consistency")
         )
     }) %>% bindCache(dataset(), metacell_types(), cell_type_colors(), lfp_range(), input$plot_legend, input$selected_md, markers(), input$selected_cell_types, input$force_cell_type, input$high_color, input$low_color, input$mid_color, input$midpoint)
 }
