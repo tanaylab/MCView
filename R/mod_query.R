@@ -305,7 +305,20 @@ mod_query_server <- function(input, output, session, dataset, metacell_types, ce
     # Scatter
     output$axis_select <- render_axis_select_ui("axis", "Data", md_choices = dataset_metadata_fields_numeric(dataset(), atlas = TRUE), md_selected = dataset_metadata_fields_numeric(dataset(), atlas = TRUE)[1], selected_gene = default_gene1, input = input, ns = ns, dataset = dataset) %>% bindCache(dataset(), ns, ns("axis"), input$axis_type)
 
-    output$color_by_select <- render_axis_select_ui("color_by", "Color", md_choices = c("Cell type", dataset_metadata_fields_numeric(dataset(), atlas = TRUE)), md_selected = "Cell type", selected_gene = default_gene1, input = input, ns = ns, dataset = dataset) %>% bindCache(dataset(), ns, ns("color_by"), input$color_by_type)
+    output$color_by_select <- render_axis_select_ui(
+        "color_by",
+        "Color",
+        md_choices = c(
+            "Cell type",
+            paste0(dataset_metadata_fields_numeric(dataset(), atlas = TRUE), "_atlas"),
+            dataset_metadata_fields(dataset(), atlas = FALSE)
+        ),
+        md_selected = "Cell type",
+        selected_gene = default_gene1,
+        input = input,
+        ns = ns,
+        dataset = dataset
+    ) %>% bindCache(dataset(), ns, ns("color_by"), input$color_by_type)
 
     output$plot_gene_gene_mc <- plotly::renderPlotly({
         req(input$axis_var)
@@ -314,7 +327,7 @@ mod_query_server <- function(input, output, session, dataset, metacell_types, ce
         req(input$color_by_type)
         req(input$gene_gene_point_size)
         req(input$gene_gene_stroke)
-        req(axis_vars_ok(dataset(), input, "metadata", axes = c("axis", "color_by"), atlas = TRUE))
+        req(axis_vars_ok(dataset(), input, "metadata", axes = c("axis", "color_by"), atlas = TRUE) || axis_vars_ok(dataset(), input, "metadata", axes = c("axis", "color_by"), atlas = FALSE))
 
         color_var <- input$color_by_var
         if (input$color_by_var == "Cell type") {

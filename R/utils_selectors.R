@@ -194,6 +194,8 @@ axis_vars_ok <- function(dataset, input, md_id, axes = c("x_axis", "y_axis", "co
         var <- input[[glue("{v}_var")]]
         if (type == "Metadata" && (var %in% c(colnames(metadata), "None", "Cell type"))) {
             return(TRUE)
+        } else if (type == "Metadata" && atlas && var %in% paste0(colnames(metadata), "_atlas")) {
+            return(TRUE)
         } else if (type == "Gene" && var %in% gene_names(dataset)) {
             return(TRUE)
         } else if (type == "Cell type" && (var %in% names(get_cell_type_colors(dataset)))) {
