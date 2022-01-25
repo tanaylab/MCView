@@ -666,8 +666,6 @@ plot_obs_proj_scatter <- function(dataset,
     if (!is.null(query_metadata)) {
         query_metadata <- query_metadata %>% mutate(metacell = as.character(metacell))
     }
-    # atlas_metadata_colors <- get_mc_data(dataset, "metadata_colors", atlas = TRUE)
-    # query_metadata_colors <- get_mc_data(dataset, "metadata_colors", atlas = FALSE)
 
     df <- metacell_types %>%
         mutate(
@@ -701,33 +699,54 @@ plot_obs_proj_scatter <- function(dataset,
             mutate(y_str = glue("{axis_name} proj: {expr_text}", expr_text = scales::scientific(!!sym(x_var))))
     }
 
+    categorical_md <- FALSE
     color_name <- color_var
     if (is.null(color_var)) {
         df <- df %>%
             mutate(color = cell_type, color_values = cell_type) %>%
             mutate(color_str = glue("Cell type: {`Cell type`}"))
     } else if (color_type == "Metadata") {
-        req(atlas_metadata)
-        proj_w <- get_mc_data(dataset, "proj_weights")
-        req(proj_w)
-        proj_md <- proj_w %>%
-            left_join(
-                atlas_metadata %>%
-                    select(atlas = metacell, !!color_var),
-                by = "atlas"
-            ) %>%
-            group_by(query) %>%
-            summarise(!!color_var := sum(weight * !!sym(color_var))) %>%
-            rename(metacell = query)
-        df <- df %>%
-            select(-any_of(color_var)) %>%
-            left_join(proj_md, by = "metacell")
-        md_colors <- get_metadata_colors(dataset, color_var, colors = colors, color_breaks = color_breaks, metadata = atlas_metadata, atlas = TRUE)
-        palette <- circlize::colorRamp2(colors = md_colors$colors, breaks = md_colors$breaks)
-        df$color <- palette(df[[color_var]])
-        df$color_values <- df[[color_var]]
-        df <- df %>%
-            mutate(color_str = glue("{color_name}: {color_values}\nCell type: {`Cell type`}", color_values = round(!!sym(color_var), digits = 3)))
+        if (grepl("_atlas$", color_var) && !is.null(atlas_metadata) && has_name(atlas_metadata, sub("_atlas$", "", color_var))) {
+            req(atlas_metadata)
+            proj_w <- get_mc_data(dataset, "proj_weights")
+            req(proj_w)
+            color_var <- sub("_atlas$", "", color_var)
+            color_name <- color_var
+            proj_md <- proj_w %>%
+                left_join(
+                    atlas_metadata %>%
+                        select(atlas = metacell, !!color_var),
+                    by = "atlas"
+                ) %>%
+                group_by(query) %>%
+                summarise(!!color_var := sum(weight * !!sym(color_var))) %>%
+                rename(metacell = query)
+
+            df <- df %>%
+                select(-any_of(color_var)) %>%
+                left_join(proj_md, by = "metacell")
+
+            md_colors <- get_metadata_colors(dataset, color_var, colors = colors, color_breaks = color_breaks, metadata = atlas_metadata, atlas = TRUE)
+        } else {
+            req(query_metadata)
+            df <- df %>%
+                select(-any_of(color_var)) %>%
+                left_join(query_metadata %>% select(metacell, !!color_var), by = "metacell")
+            md_colors <- get_metadata_colors(dataset, color_var, colors = colors, color_breaks = color_breaks, metadata = query_metadata)
+            categorical_md <- !is_numeric_field(query_metadata, color_var)
+        }
+
+        if (categorical_md) {
+            df <- df %>%
+                mutate(color = !!sym(color_var), color_values = !!sym(color_var)) %>%
+                mutate(color_str = glue("{color_name}: {color_values}"))
+        } else {
+            palette <- circlize::colorRamp2(colors = md_colors$colors, breaks = md_colors$breaks)
+            df$color <- palette(df[[color_var]])
+            df$color_values <- df[[color_var]]
+            df <- df %>%
+                mutate(color_str = glue("{color_name}: {color_values}\nCell type: {`Cell type`}", color_values = round(!!sym(color_var), digits = 3)))
+        }
     } else if (color_type == "Gene") {
         egc_color <- get_gene_egc(color_var, dataset) + egc_epsilon
         df <- df %>%
@@ -777,6 +796,11 @@ plot_obs_proj_scatter <- function(dataset,
         p <- p +
             geom_point(size = point_size, shape = 21, stroke = stroke, color = "black") +
             scale_fill_manual(values = col_to_ct) +
+            guides(color = "none")
+    } else if (categorical_md) {
+        p <- p +
+            geom_point(size = point_size, shape = 21, stroke = stroke, color = "black") +
+            scale_fill_manual(name = color_var, values = md_colors) +
             guides(color = "none")
     } else {
         p <- p +
