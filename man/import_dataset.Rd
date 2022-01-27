@@ -30,8 +30,7 @@ import_dataset(
 
 \item{cell_type_field}{name of a field in the anndata \code{object$obs} which contains a cell type (optional).
 If the field doesn't exist and \code{metacell_types_file} is missing, MCView would first look
-for a field named 'type', 'cell_type' or 'cluster' at \code{object$obs}, and if it doesn't exists
-MCView would cluster the metacell matrix using kmeans++ algorithm (from the \code{tglkmeans} package).}
+for a field named 'projected_type', 'type', 'cell_type' or 'cluster' at \code{object$obs} (in this order), and if it doesn't exists MCView would cluster the metacell matrix using kmeans++ algorithm (from the \code{tglkmeans} package).}
 
 \item{metacell_types_file}{path to a tabular file (csv,tsv) with cell type assignement for
 each metacell. The file should have a column named "metacell" with the metacell ids and another
