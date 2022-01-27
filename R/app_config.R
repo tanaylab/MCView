@@ -94,11 +94,6 @@ init_tab_defs <- function() {
             module_name = "proj_fold",
             icon = "cloud-moon-rain"
         ),
-        "Consistency-fold" = list(
-            title = "Consistency-fold",
-            module_name = "consistency_fold",
-            icon = "vector-square"
-        ),
         "Genes" = list(
             title = "Genes",
             module_name = "gene_mc",

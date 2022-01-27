@@ -55,7 +55,6 @@ app_server <- function(input, output, session) {
         load_tab("query", mod_query_server)
         load_tab("atlas", mod_atlas_server)
         load_tab("proj_fold", mod_proj_fold_server)
-        load_tab("consistency_fold", mod_consistency_fold_server)
     }
 
     load_tab("mc_mc", mod_mc_mc_server)

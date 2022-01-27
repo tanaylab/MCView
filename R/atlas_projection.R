@@ -128,13 +128,6 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
 
     serialize_shiny_data(query$uns$project_max_projection_fold_factor, "project_max_projection_fold_factor", dataset = dataset, cache_dir = cache_dir)
 
-    consistency_fold <- Matrix::t(query$layers[["consistency_fold"]])
-    serialize_shiny_data(consistency_fold, "consistency_fold", dataset = dataset, cache_dir = cache_dir)
-    marker_genes_consistency <- select_top_fold_genes(consistency_fold[!forbidden, ], minimal_relative_log_fraction = -Inf, use_abs = TRUE, genes_per_metacell = 50)
-    serialize_shiny_data(marker_genes_consistency, "marker_genes_consistency", dataset = dataset, cache_dir = cache_dir)
-
-    serialize_shiny_data(query$uns$project_max_consistency_fold_factor, "project_max_consistency_fold_factor", dataset = dataset, cache_dir = cache_dir)
-
     # disjoined genes
     atlas_mat <- get_mc_data(dataset, "mc_mat", atlas = TRUE)
     query_mat <- get_mc_data(dataset, "mc_mat")

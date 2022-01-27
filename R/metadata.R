@@ -365,7 +365,8 @@ load_metadata <- function(metadata, metadata_fields, metacells, adata = NULL) {
     if (!is.null(metadata_fields)) {
         if (length(metadata_fields) == 1 && metadata_fields == "all") {
             metadata_fields <- colnames(adata$obs)
-            forbidden_fields <- c("metacell", "pile", "candidate", "grouped", "umap_x", "umap_y", "umap_u", "umap_v", "umap_w", "hidden", "type", "cell_type")
+            # forbidden_fields <- c("metacell", "pile", "candidate", "grouped", "umap_x", "umap_y", "umap_u", "umap_v", "umap_w", "hidden")
+            forbidden_fields <- c("metacell")
             metadata_fields <- metadata_fields[!(metadata_fields %in% forbidden_fields)]
         } else {
             purrr::walk(metadata_fields, ~ {

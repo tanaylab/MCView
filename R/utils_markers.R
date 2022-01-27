@@ -264,13 +264,6 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
         mc_fp <- mc_fp[intersect(markers, rownames(mc_fp)), ]
         epsilon <- 1e-5
         log_transform <- FALSE
-    } else if (mode == "Consistency") {
-        mc_fp <- get_mc_data(dataset, "consistency_fold")
-        req(mc_fp)
-        mc_fp <- as.matrix(mc_fp[abs(Matrix::rowSums(mc_fp)) > 0, ])
-        mc_fp <- mc_fp[intersect(markers, rownames(mc_fp)), ]
-        epsilon <- 1e-5
-        log_transform <- FALSE
     } else if (mode == "Markers") {
         mc_fp <- get_mc_fp(dataset, markers)
         epsilon <- 0
@@ -328,14 +321,6 @@ get_marker_genes <- function(dataset, mode = "Markers") {
             req(FALSE)
         }
         return(get_mc_data(dataset, "marker_genes_projected"))
-    } else if (mode == "Consistency") {
-        if (is.null(get_mc_data(dataset, "consistency_fold"))) {
-            if ("Consistency-fold" %in% config$original_tabs) {
-                showNotification(glue("Consistency-fold matrix was not computed. Please compute it in python using the metacells package and rerun the import"), type = "error")
-            }
-            req(FALSE)
-        }
-        return(get_mc_data(dataset, "marker_genes_consistency"))
     } else {
         return(get_markers(dataset))
     }
@@ -437,11 +422,12 @@ heatmap_reactives <- function(ns, input, output, session, dataset, metacell_type
             mode = mode,
             notify_var_genes = TRUE
         )
-    }) %>% bindCache(dataset(), metacell_types(), cell_type_colors(), markers(), input$selected_cell_types, input$force_cell_type)
+    }) %>% bindCache(dataset(), metacell_types(), cell_type_colors(), markers(), input$selected_cell_types, input$force_cell_type, mode)
 
 
     observeEvent(input$update_markers, {
         req(metacell_types())
+        req(cell_type_colors())
         req(is.null(input$selected_cell_types) || all(input$selected_cell_types %in% c(cell_type_colors()$cell_type, "(Missing)")))
 
         if (!is.null(input$selected_cell_types)) {
@@ -462,6 +448,11 @@ heatmap_reactives <- function(ns, input, output, session, dataset, metacell_type
 
         req(input$max_gene_num)
         new_markers <- choose_markers(markers_df, input$max_gene_num, dataset = dataset(), add_systematic = mode == "Proj")
+
+        # If we did not choose all the cell types
+        if (!is.null(input$selected_cell_types) && length(input$selected_cell_types) != nrow(cell_type_colors())) {
+            browser()
+        }
 
         markers(new_markers)
     })
@@ -547,7 +538,7 @@ heatmap_reactives <- function(ns, input, output, session, dataset, metacell_type
             col_names = ncol(mat) <= 100,
             top_cell_type_bar = ncol(mat) <= 100,
             interleave = nrow(mat) > 80,
-            vertial_gridlines = mode %in% c("Inner", "Proj", "Consistency")
+            vertial_gridlines = mode %in% c("Inner", "Proj")
         )
     }) %>% bindCache(dataset(), metacell_types(), cell_type_colors(), lfp_range(), input$plot_legend, input$selected_md, markers(), input$selected_cell_types, input$force_cell_type, input$high_color, input$low_color, input$mid_color, input$midpoint)
 }

@@ -18,8 +18,7 @@
 #' @param anndata_file path to \code{h5ad} file which contains the output of metacell2 pipeline (metacells python package).
 #' @param cell_type_field name of a field in the anndata \code{object$obs} which contains a cell type (optional).
 #' If the field doesn't exist and \code{metacell_types_file} is missing, MCView would first look
-#' for a field named 'type', 'cell_type' or 'cluster' at \code{object$obs}, and if it doesn't exists
-#' MCView would cluster the metacell matrix using kmeans++ algorithm (from the \code{tglkmeans} package).
+#' for a field named 'projected_type', 'type', 'cell_type' or 'cluster' at \code{object$obs} (in this order), and if it doesn't exists MCView would cluster the metacell matrix using kmeans++ algorithm (from the \code{tglkmeans} package).
 #' @param metacell_types_file path to a tabular file (csv,tsv) with cell type assignement for
 #' each metacell. The file should have a column named "metacell" with the metacell ids and another
 #' column named "cell_type", or "cluster" with the cell type assignment. Metacell ids that do
@@ -199,8 +198,8 @@ import_dataset <- function(project,
                 select(cell_type = !!cell_type_field) %>%
                 rownames_to_column("metacell") %>%
                 as_tibble()
-        } else if (any(c("type", "cell_type", "cluster") %in% colnames(adata$obs))) {
-            cell_type_field <- colnames(adata$obs)[colnames(adata$obs) %in% c("type", "cell_type", "cluster")]
+        } else if (any(c("projected_type", "type", "cell_type", "cluster") %in% colnames(adata$obs))) {
+            cell_type_field <- colnames(adata$obs)[colnames(adata$obs) %in% c("projected_type", "type", "cell_type", "cluster")]
             cell_type_field <- cell_type_field[1]
             cli_alert_info("Taking cell type annotations from {.field {cell_type_field}} field in the anndata object")
             metacell_types <- adata$obs %>%
