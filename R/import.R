@@ -232,7 +232,7 @@ import_dataset <- function(project,
     } else {
         if (!is.null(atlas_dataset) && !is.null(atlas_project)) { # use atlas colors
             atlas_colors <- fread(fs::path(project_cache_dir(atlas_project), atlas_dataset, "cell_type_colors.tsv")) %>% as_tibble()
-            # if we are using the atlas cell types - use their colors            
+            # if we are using the atlas cell types - use their colors
             if (all(metacell_types$cell_type %in% atlas_colors$cell_type)) {
                 cli_alert_info("Loading cell type color annotations from {.field atlas}")
                 cell_type_colors <- atlas_colors

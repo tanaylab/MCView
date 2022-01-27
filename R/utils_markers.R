@@ -165,11 +165,15 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
         return(1)
     }
 
-    zero_mcs <- colSums(feat > 0) == 0
+    zero_mcs <- colSums(abs(feat) > 0) < 2
     if (any(zero_mcs)) {
         feat_all <- feat
         feat <- feat_all[, !zero_mcs]
         feat_zero <- feat_all[, zero_mcs]
+    }
+
+    if (ncol(feat) == 0) { # all the metacells do not have enough non-zero values
+        return(1:ncol(feat_all))
     }
 
     hc <- hclust(tgs_dist(tgs_cor(feat, pairwise.complete.obs = TRUE)), method = "ward.D2")
@@ -290,10 +294,10 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
         mat <- log2(mat)
     }
 
+    metacells <- colnames(mat)
+
     gene_ord <- order(apply(mat, 1, which.max))
     mat <- mat[gene_ord, ]
-
-    metacells <- colnames(mat)
 
     # matrix has only a single metacell
     if (!is.matrix(mat)) {

@@ -32,7 +32,7 @@ plot_markers_mat <- function(mat,
         )) %>%
         pull(color)
 
-    if (col_names){
+    if (col_names) {
         col_names <- colnames(mat)
     }
 
