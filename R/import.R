@@ -232,12 +232,13 @@ import_dataset <- function(project,
     } else {
         if (!is.null(atlas_dataset) && !is.null(atlas_project)) { # use atlas colors
             atlas_colors <- fread(fs::path(project_cache_dir(atlas_project), atlas_dataset, "cell_type_colors.tsv")) %>% as_tibble()
-            # if we are using the atlas cell types - use their colors
+            # if we are using the atlas cell types - use their colors            
             if (all(metacell_types$cell_type %in% atlas_colors$cell_type)) {
                 cli_alert_info("Loading cell type color annotations from {.field atlas}")
                 cell_type_colors <- atlas_colors
             } else {
-                cell_type_colors <- color_cell_types(adata, mc_egc, metacell_types)
+                genes_without_colors <- paste(setdiff(unique(metacell_types$cell_type), atlas_colors$cell_type), collapse = ", ")
+                cli_abort("The following cell types do not have colors at the atlas: {.field {genes_without_colors}}. To fix it either provide {.code cell_type_colors_file} or add the cell type(s) to the atlas colors.")
             }
         } else {
             cell_type_colors <- color_cell_types(adata, mc_egc, metacell_types)
