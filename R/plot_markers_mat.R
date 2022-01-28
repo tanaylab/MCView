@@ -58,6 +58,8 @@ plot_markers_mat <- function(mat,
         left_join(metacell_types %>% select("metacell", "cell_type"), by = "metacell") %>%
         left_join(cell_type_colors, by = "cell_type")
 
+    p_mat <- p_mat + theme(legend.position = "top")
+
     if (plot_legend) {
         legend_point_size <- max(1, min(10, 250 / nrow(cell_type_colors)))
         legend <- cowplot::get_legend(cell_type_colors %>%
@@ -65,15 +67,15 @@ plot_markers_mat <- function(mat,
             geom_point() +
             scale_color_manual("", values = deframe(cell_type_colors)) +
             guides(color = guide_legend(override.aes = list(size = legend_point_size), ncol = 1)))
-        p_mat <- p_mat + theme(legend.position = "top")
 
         p <- add_markers_colorbars(p_mat, mc_types, dataset, top_cell_type_bar, metadata)
 
-        cowplot::ggdraw(cowplot::plot_grid(p, legend, nrow = 1, rel_widths = c(0.8, 0.15)))
+        # cowplot::ggdraw(cowplot::plot_grid(p, legend, nrow = 1, rel_widths = c(0.8, 0.15)))
+        return(list(p = p_mat, gtable = p, legend = legend))
     } else {
         p <- add_markers_colorbars(p_mat, mc_types, dataset, top_cell_type_bar, metadata)
-
-        cowplot::ggdraw(p)
+        return(list(p = p_mat, gtable = p))
+        # cowplot::ggdraw(p)
     }
 }
 

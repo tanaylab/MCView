@@ -339,30 +339,32 @@ heatmap_box <- function(ns,
                         low_color = "blue",
                         mid_color = "white",
                         high_color = "red") {
-    shinydashboardPlus::box(
-        id = ns("markers_heatmap_box"),
-        title = title,
-        status = "primary",
-        solidHeader = TRUE,
-        collapsible = TRUE,
-        closable = FALSE,
-        width = 12,
-        height = "80vh",
-        sidebar = shinydashboardPlus::boxSidebar(
-            startOpen = FALSE,
-            width = 25,
-            id = ns("markers_heatmap_sidebar"),
-            checkboxInput(ns("force_cell_type"), "Force cell type", value = TRUE),
-            shinyWidgets::numericRangeInput(ns("lfp_range"), "Fold change range", fold_change_range, width = "80%", separator = " to "),
-            numericInput(ns("midpoint"), "Midpoint", midpoint),
-            colourpicker::colourInput(ns("low_color"), "Low color", low_color),
-            colourpicker::colourInput(ns("high_color"), "High color", high_color),
-            colourpicker::colourInput(ns("mid_color"), "Mid color", mid_color),
-            checkboxInput(ns("plot_legend"), "Plot legend", value = TRUE)
+    div(
+        shinydashboardPlus::box(
+            id = ns("markers_heatmap_box"),
+            title = title,
+            status = "primary",
+            solidHeader = TRUE,
+            collapsible = TRUE,
+            closable = FALSE,
+            width = 12,
+            height = "80vh",
+            sidebar = shinydashboardPlus::boxSidebar(
+                startOpen = FALSE,
+                width = 25,
+                id = ns("markers_heatmap_sidebar"),
+                checkboxInput(ns("force_cell_type"), "Force cell type", value = TRUE),
+                shinyWidgets::numericRangeInput(ns("lfp_range"), "Fold change range", fold_change_range, width = "80%", separator = " to "),
+                numericInput(ns("midpoint"), "Midpoint", midpoint),
+                colourpicker::colourInput(ns("low_color"), "Low color", low_color),
+                colourpicker::colourInput(ns("high_color"), "High color", high_color),
+                colourpicker::colourInput(ns("mid_color"), "Mid color", mid_color),
+                checkboxInput(ns("plot_legend"), "Plot legend", value = TRUE)
+            ),
+            uiOutput(ns("plotting_area"))
         ),
-        shinycssloaders::withSpinner(
-            plotOutput(ns("markers_heatmap"), height = "80vh")
-        )
+        style = "position:relative",
+        uiOutput(ns("hover_info"), style = "pointer-events: none")
     )
 }
 
@@ -497,6 +499,47 @@ heatmap_reactives <- function(ns, input, output, session, dataset, metacell_type
         shinyWidgets::updatePickerInput(session = session, inputId = "genes_to_add", selected = character(0))
     })
 
+    output$plotting_area <- renderUI({
+        heatmap <- plotOutput(
+            ns("markers_heatmap"),
+            height = "80vh",
+            click = clickOpts(ns("markers_heatmap_click")),
+            hover = hoverOpts(ns("markers_heatmap_hover"), delay = 500, delayType = "debounce")
+        )
+
+
+        if (!is.null(input$plot_legend) && input$plot_legend) {
+            legend_column <- column(
+                width = 2,
+                plotOutput(ns("markers_legend"))
+            )
+            heatmap_column <- column(
+                width = 10,
+                heatmap
+            )
+            shinycssloaders::withSpinner(
+                fluidRow(heatmap_column, legend_column)
+            )
+        } else {
+            shinycssloaders::withSpinner(
+                heatmap
+            )
+        }
+    })
+
+    output$markers_legend <- renderPlot({
+        req(cell_type_colors())
+        req(input$plot_legend)
+        legend_point_size <- max(1, min(10, 250 / nrow(cell_type_colors())))
+        legend <- cowplot::get_legend(cell_type_colors() %>%
+            ggplot(aes(x = cell_type, color = cell_type, y = 1)) +
+            geom_point() +
+            scale_color_manual("", values = deframe(cell_type_colors() %>% select(cell_type, color))) +
+            guides(color = guide_legend(override.aes = list(size = legend_point_size), ncol = 1)) +
+            theme(legend.position = c(0.5, 0.5)))
+        cowplot::ggdraw(legend)
+    }) %>% bindCache(dataset(), cell_type_colors(), input$plot_legend)
+
     output$markers_heatmap <- renderPlot({
         req(dataset())
         req(lfp_range())
@@ -523,14 +566,14 @@ heatmap_reactives <- function(ns, input, output, session, dataset, metacell_type
         forbidden_genes <- get_mc_data(dataset(), "forbidden_genes")
         systematic_genes <- get_mc_data(dataset(), "systematic_genes")
 
-        plot_markers_mat(
+        res <- plot_markers_mat(
             mat,
             metacell_types(),
             cell_type_colors(),
             dataset(),
             min_lfp = lfp_range()[1],
-            max_lfp = lfp_range()[2],
-            plot_legend = input$plot_legend %||% TRUE,
+            max_lfp = lfp_range()[2],            
+            plot_legend = FALSE,
             high_color =  input$high_color,
             low_color =  input$low_color,
             mid_color =  input$mid_color,
@@ -544,5 +587,75 @@ heatmap_reactives <- function(ns, input, output, session, dataset, metacell_type
             interleave = nrow(mat) > 80,
             vertial_gridlines = mode %in% c("Inner", "Proj")
         )
-    }) %>% bindCache(dataset(), metacell_types(), cell_type_colors(), lfp_range(), input$plot_legend, input$selected_md, markers(), input$selected_cell_types, input$force_cell_type, input$high_color, input$low_color, input$mid_color, input$midpoint)
+
+        return(structure(list(p = res$p, gtable = res$gtable), class = "gt_custom"))
+    })  %>% bindCache(dataset(), metacell_types(), cell_type_colors(), lfp_range(), input$plot_legend, input$selected_md, markers(), input$selected_cell_types, input$force_cell_type, input$high_color, input$low_color, input$mid_color, input$midpoint)
+
+    observeEvent(input$markers_heatmap_click, {
+        gene <- rownames(markers_matrix())[round(input$markers_heatmap_click$y)]
+        metacell <- colnames(markers_matrix())[round(input$markers_heatmap_click$x)]
+        cell_type <- metacell_types() %>%
+            filter(metacell == !!metacell) %>%
+            pull(cell_type)
+        print(gene)
+        print(metacell)
+        print(cell_type)
+        print(input$markers_heatmap_click$y)
+        print(input$markers_heatmap_click$x)
+    })
+
+    output$hover_info <- renderUI({
+        req(markers_matrix())
+        req(input$markers_heatmap_hover)
+        req(metacell_types())
+        req(cell_type_colors())
+
+        hover <- input$markers_heatmap_hover
+
+        gene <- rownames(markers_matrix())[round(hover$y)]
+        metacell <- colnames(markers_matrix())[round(hover$x)]
+
+        req(metacell)
+        req(gene)
+
+        # taken from https://gitlab.com/-/snippets/16220
+        left_px <- hover$coords_css$x
+        top_px <- hover$coords_css$y
+
+        mcell_stats <- metacell_types() %>%
+            filter(metacell == !!metacell)
+
+        style <- glue(
+            "position:absolute; z-index:100; left: {left_px + 2}px; top: {top_px + 2}px;"
+        )
+
+        top_genes <- mcell_stats %>%
+            glue::glue_data("{top1_gene} ({round(top1_lfp, digits=2)}), {top2_gene} ({round(top2_lfp, digits=2)})")
+
+        mcell_tooltip <- paste(
+            glue("Gene: {gene}"),
+            glue("Metacell: {metacell}"),
+            glue("Cell type: {mcell_stats$cell_type}"),
+            glue("Top genes: {top_genes}"),
+            ifelse(has_name(mcell_stats, "mc_age"), glue("Metacell age (E[t]): {round(mcell_stats$mc_age, digits=2)}"), ""),
+            sep = "<br/>"
+        )
+
+        wellPanel(
+            style = style,
+            p(HTML(mcell_tooltip))
+        )
+    })
+}
+
+print.gt_custom <<- function(x) {
+    build <- ggplot_build(x$p)
+
+    grid::grid.newpage()
+    grid::grid.draw(x$gtable)
+
+    structure(list(
+        build = build,
+        gtable = x$gtable
+    ), class = "ggplot_build_gtable")
 }
