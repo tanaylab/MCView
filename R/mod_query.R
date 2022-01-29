@@ -192,6 +192,8 @@ mod_query_server <- function(input, output, session, dataset, metacell_types, ce
     metacell_names <- metacell_names_reactive(dataset)
     metacell_colors <- metacell_colors_reactive(dataset, metacell_names, metacell_types)
 
+    mod_query_globals_observers(input, session, globals, dataset)
+
     picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE)
 
     output$gene_selector <- renderUI({
@@ -414,6 +416,28 @@ mod_query_server <- function(input, output, session, dataset, metacell_types, ce
         )
     )
 }
+
+mod_query_globals_observers <- function(input, session, globals, dataset, notification_suffix = " in \"Query\" tab") {
+    observe({
+        req(globals$selected_query_gene)
+        req(input$axis_type == "Gene")
+        req(input$axis_var)
+        shinyWidgets::updatePickerInput(session, "axis_var", selected = globals$selected_query_gene)
+
+        showNotification(glue("Selected {globals$selected_query_gene}{notification_suffix}"))
+        globals$selected_query_gene <- NULL
+    })
+
+    observe({
+        req(input$mode == "MC")
+        req(input$metacell1)
+        req(globals$selected_query_metacell)
+        shinyWidgets::updatePickerInput(session, "metacell1", selected = globals$selected_query_metacell)
+        showNotification(glue("Selected {globals$selected_query_metacell}{notification_suffix}"))
+        globals$selected_query_metacell <- NULL
+    })
+}
+
 
 metacell_selectors_mod_query <- function(input, output, session, dataset, ns, metacell_names, metacell_colors, metacell_types, cell_type_colors, group) {
     output$diff_select <- renderUI({

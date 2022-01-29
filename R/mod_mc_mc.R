@@ -119,6 +119,7 @@ mod_mc_mc_server <- function(input, output, session, dataset, metacell_types, ce
     mc_mc_gene_scatter_df <- mc_mc_gene_scatter_df_reactive(dataset, input, output, session, metacell_types, cell_type_colors, groupA, groupB)
 
     diff_expr_switch_metacells(dataset, input, output, session, groupA, groupB)
+    mod_mc_mc_globals_observers(input, session, globals)
 
     output$projection_color_selectors <- renderUI({
         req(input$mode)
@@ -188,6 +189,26 @@ mod_mc_mc_server <- function(input, output, session, dataset, metacell_types, ce
     # Output priorities
     outputOptions(output, "plot_mc_proj_2d", priority = 6)
     outputOptions(output, "plot_mc_mc_gene_scatter", priority = 5)
+}
+
+mod_mc_mc_globals_observers <- function(input, session, globals, notification_suffix = " in \"Diff. Expr\" tab") {
+    observe({
+        req(input$mode == "MCs")
+        req(globals$selected_metacellA)
+        req(input$metacell1)
+        shinyWidgets::updatePickerInput(session, "metacell1", selected = globals$selected_metacellA)
+        showNotification(glue("Selected {globals$selected_metacellA}{notification_suffix}"))
+        globals$selected_metacellA <- NULL
+    })
+
+    observe({
+        req(input$mode == "MCs")
+        req(globals$selected_metacellB)
+        req(input$metacell2)
+        shinyWidgets::updatePickerInput(session, "metacell2", selected = globals$selected_metacellB)
+        showNotification(glue("Selected {globals$selected_metacellB}{notification_suffix}"))
+        globals$selected_metacellB <- NULL
+    })
 }
 
 metacell_selectors <- function(input, output, session, dataset, ns, metacell_names, metacell_colors, metacell_types, cell_type_colors, groupA, groupB) {

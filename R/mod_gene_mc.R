@@ -108,6 +108,7 @@ mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, 
 
     top_correlated_selectors(input, output, session, dataset, ns)
     mod_gene_mc_plotly_observers(input, session)
+    mod_gene_mc_globals_observers(input, session, globals, dataset)
 
     picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE)
 
@@ -220,10 +221,39 @@ mod_gene_mc_plotly_observers <- function(input, session, source = "mc_mc_plot", 
         el <- plotly::event_data("plotly_click", source = source)
 
         gene <- el$customdata
-        if (input$x_axis_type == "Gene") {
-            shinyWidgets::updatePickerInput(session, "x_axis_var", selected = gene)
-        }
+        req(input$x_axis_type == "Gene")
+        shinyWidgets::updatePickerInput(session, "x_axis_var", selected = gene)
         showNotification(glue("Selected {gene}{notification_suffix}"))
+    })
+}
+
+mod_gene_mc_globals_observers <- function(input, session, globals, dataset, notification_suffix = " in \"Genes\" tab") {
+    observe({
+        req(globals$selected_gene_x_axis)
+        req(input$x_axis_type == "Gene")
+        req(input$x_axis_var)
+        shinyWidgets::updatePickerInput(session, "x_axis_var", selected = globals$selected_gene_x_axis)
+
+        if (has_atlas(dataset())) {
+            shinyWidgets::updatePickerInput(session, "atlas_x_axis_var", selected = globals$selected_gene_x_axis)
+        }
+
+        showNotification(glue("Selected {globals$selected_gene_x_axis}{notification_suffix}"))
+        globals$selected_gene_x_axis <- NULL
+    })
+
+    observe({
+        req(globals$selected_gene_y_axis)
+        req(input$y_axis_type == "Gene")
+        req(input$y_axis_var)
+        shinyWidgets::updatePickerInput(session, "y_axis_var", selected = globals$selected_gene_y_axis)
+
+        if (has_atlas(dataset())) {
+            shinyWidgets::updatePickerInput(session, "atlas_y_axis_var", selected = globals$selected_gene_y_axis)
+        }
+
+        showNotification(glue("Selected {globals$selected_gene_y_axis}{notification_suffix}"))
+        globals$selected_gene_y_axis <- NULL
     })
 }
 
