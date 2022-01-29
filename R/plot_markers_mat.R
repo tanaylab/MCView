@@ -19,7 +19,8 @@ plot_markers_mat <- function(mat,
                              disjoined_color = "#00b7ff",
                              col_names = FALSE,
                              interleave = TRUE,
-                             vertial_gridlines = FALSE) {
+                             vertial_gridlines = FALSE,
+                             separate_gtable = FALSE) {
     min_lfp <- min_lfp %||% -3
     max_lfp <- max_lfp %||% 3
 
@@ -70,12 +71,19 @@ plot_markers_mat <- function(mat,
 
         p <- add_markers_colorbars(p_mat, mc_types, dataset, top_cell_type_bar, metadata)
 
-        # cowplot::ggdraw(cowplot::plot_grid(p, legend, nrow = 1, rel_widths = c(0.8, 0.15)))
-        return(list(p = p_mat, gtable = p, legend = legend))
+        if (separate_gtable) {
+            return(list(p = p_mat, gtable = p, legend = legend))
+        }
+
+        cowplot::ggdraw(cowplot::plot_grid(p, legend, nrow = 1, rel_widths = c(0.8, 0.15)))
     } else {
         p <- add_markers_colorbars(p_mat, mc_types, dataset, top_cell_type_bar, metadata)
-        return(list(p = p_mat, gtable = p))
-        # cowplot::ggdraw(p)
+
+        if (separate_gtable) {
+            return(list(p = p_mat, gtable = p))
+        }
+
+        cowplot::ggdraw(p)
     }
 }
 

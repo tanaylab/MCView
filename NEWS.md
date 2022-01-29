@@ -1,6 +1,7 @@
 # MCView 0.2.2
 
 * Added support for atlas projections ('Atlas', 'Query' and 'Projected-fold' tabs)
+* Added tooltip and interactive clicks to heatmaps ('Markers' and 'Projected-fold' tabs)
 * Homogenzie Annotate, Diff. Expr and Genes tabs. 
 * Added 'Cell types' tab. 
 * Added support for cell metadata using the 'Samples' tab. 
