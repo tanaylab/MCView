@@ -299,7 +299,7 @@ heatmap_reactives <- function(ns, input, output, session, dataset, metacell_type
     observeEvent(input$heatmap_brush, {
         m <- filter_heatmap_by_metacell(mat(), metacell_filter())
         range <- round(input$heatmap_brush$xmin):round(input$heatmap_brush$xmax)
-        req(all(range > 0) && all(range) <= ncol(m))
+        req(all(range > 0) && all(range <= ncol(m)))
         metacells <- colnames(m)[range]
         metacell_filter(metacells)
     })
