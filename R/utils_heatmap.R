@@ -7,7 +7,7 @@ heatmap_box <- function(ns,
                         high_color = "red") {
     div(
         shinydashboardPlus::box(
-            id = ns("markers_heatmap_box"),
+            id = ns("heatmap_box"),
             title = title,
             status = "primary",
             solidHeader = TRUE,
@@ -18,7 +18,7 @@ heatmap_box <- function(ns,
             sidebar = shinydashboardPlus::boxSidebar(
                 startOpen = FALSE,
                 width = 25,
-                id = ns("markers_heatmap_sidebar"),
+                id = ns("heatmap_sidebar"),
                 checkboxInput(ns("force_cell_type"), "Force cell type", value = TRUE),
                 shinyWidgets::numericRangeInput(ns("lfp_range"), "Fold change range", fold_change_range, width = "80%", separator = " to "),
                 numericInput(ns("midpoint"), "Midpoint", midpoint),
@@ -28,7 +28,7 @@ heatmap_box <- function(ns,
                 checkboxInput(ns("plot_legend"), "Plot legend", value = TRUE),
                 shinyWidgets::prettyRadioButtons(
                     inputId = ns("gene_select"),
-                    label = "Select on click (gene)",
+                    label = "Select on double-click (gene)",
                     choices = c("X axis", "Y axis"),
                     inline = TRUE,
                     status = "danger",
@@ -36,7 +36,7 @@ heatmap_box <- function(ns,
                 ),
                 shinyWidgets::prettyRadioButtons(
                     inputId = ns("metacell_select"),
-                    label = "Select on click (metacell)",
+                    label = "Select on double-click (metacell)",
                     choices = c("Metacell A", "Metacell B"),
                     inline = TRUE,
                     status = "danger",
@@ -52,9 +52,10 @@ heatmap_box <- function(ns,
 
 heatmap_sidebar <- function(ns) {
     list(
+        uiOutput(ns("reset_zoom_ui")),
         uiOutput(ns("cell_type_list")),
         uiOutput(ns("metadata_list")),
-        shinyWidgets::actionGroupButtons(ns("update_markers"), labels = "Update genes", size = "sm"),
+        shinyWidgets::actionGroupButtons(ns("update_genes"), labels = "Update genes", size = "sm"),
         numericInput(ns("max_gene_num"), "Maximal number of genes", value = 100),
         uiOutput(ns("add_genes_ui")),
         uiOutput(ns("marker_genes_list"))
@@ -66,6 +67,7 @@ heatmap_reactives <- function(ns, input, output, session, dataset, metacell_type
 
     markers <- reactiveVal()
     lfp_range <- reactiveVal()
+    metacell_filter <- reactiveVal()
 
     output$cell_type_list <- cell_type_selector(dataset, ns, id = "selected_cell_types", label = "Cell types", selected = "all", cell_type_colors = cell_type_colors)
 
@@ -75,7 +77,7 @@ heatmap_reactives <- function(ns, input, output, session, dataset, metacell_type
         tagList(
             selectInput(
                 ns("selected_marker_genes"),
-                "Marker genes",
+                "Genes",
                 choices = markers(),
                 selected = NULL,
                 multiple = TRUE,
@@ -84,6 +86,18 @@ heatmap_reactives <- function(ns, input, output, session, dataset, metacell_type
             ),
             shinyWidgets::actionGroupButtons(ns("remove_genes"), labels = "Remove selected genes", size = "sm")
         )
+    })
+
+    output$reset_zoom_ui <- renderUI({
+        shinyWidgets::actionGroupButtons(ns("reset_zoom"), labels = "Reset zoom", size = "sm")
+    })
+
+    observe({
+        shinyjs::toggle(id = "reset_zoom_ui", condition = !is.null(metacell_filter()) && length(metacell_filter()) > 0)
+    })
+
+    observeEvent(input$reset_zoom, {
+        metacell_filter(NULL)
     })
 
     observe({
@@ -96,7 +110,7 @@ heatmap_reactives <- function(ns, input, output, session, dataset, metacell_type
         lfp_range(input$lfp_range)
     })
 
-    markers_matrix <- reactive({
+    mat <- reactive({
         req(markers())
         req(metacell_types())
         req(is.null(input$selected_cell_types) || all(input$selected_cell_types %in% c(cell_type_colors()$cell_type, "(Missing)")))
@@ -113,7 +127,7 @@ heatmap_reactives <- function(ns, input, output, session, dataset, metacell_type
     }) %>% bindCache(dataset(), metacell_types(), cell_type_colors(), markers(), input$selected_cell_types, input$force_cell_type, mode)
 
 
-    observeEvent(input$update_markers, {
+    observeEvent(input$update_genes, {
         req(metacell_types())
         req(cell_type_colors())
         req(is.null(input$selected_cell_types) || all(input$selected_cell_types %in% c(cell_type_colors()$cell_type, "(Missing)")))
@@ -183,10 +197,15 @@ heatmap_reactives <- function(ns, input, output, session, dataset, metacell_type
 
     output$plotting_area <- renderUI({
         heatmap <- plotOutput(
-            ns("markers_heatmap"),
+            ns("heatmap"),
             height = "80vh",
-            click = clickOpts(ns("markers_heatmap_click")),
-            hover = hoverOpts(ns("markers_heatmap_hover"), delay = 500, delayType = "debounce")
+            dblclick = dblclickOpts(ns("heatmap_dblclick"), clip = TRUE),
+            hover = hoverOpts(ns("heatmap_hover"), delay = 500, delayType = "debounce"),
+            brush = brushOpts(
+                id = ns("heatmap_brush"),
+                direction = "x",
+                resetOnNew = TRUE
+            )
         )
 
 
@@ -222,7 +241,7 @@ heatmap_reactives <- function(ns, input, output, session, dataset, metacell_type
         cowplot::ggdraw(legend)
     }) %>% bindCache(dataset(), cell_type_colors(), input$plot_legend)
 
-    output$markers_heatmap <- renderPlot({
+    output$heatmap <- renderPlot({
         req(dataset())
         req(lfp_range())
         req(metacell_types())
@@ -234,8 +253,10 @@ heatmap_reactives <- function(ns, input, output, session, dataset, metacell_type
         req(input$midpoint > lfp_range()[1])
         req(input$midpoint < lfp_range()[2])
 
-        mat <- markers_matrix()
-        req(mat)
+        m <- mat()
+        req(m)
+
+        m <- filter_heatmap_by_metacell(mat(), metacell_filter())
 
         if (!is.null(input$selected_md)) {
             metadata <- get_mc_data(dataset(), "metadata") %>%
@@ -249,7 +270,7 @@ heatmap_reactives <- function(ns, input, output, session, dataset, metacell_type
         systematic_genes <- get_mc_data(dataset(), "systematic_genes")
 
         res <- plot_markers_mat(
-            mat,
+            m,
             metacell_types(),
             cell_type_colors(),
             dataset(),
@@ -264,20 +285,29 @@ heatmap_reactives <- function(ns, input, output, session, dataset, metacell_type
             forbidden_genes = forbidden_genes,
             systematic_genes = systematic_genes,
             disjoined_genes = disjoined_genes,
-            col_names = ncol(mat) <= 100,
-            top_cell_type_bar = ncol(mat) <= 100,
-            interleave = nrow(mat) > 80,
+            col_names = ncol(m) <= 100,
+            top_cell_type_bar = ncol(m) <= 100,
+            interleave = nrow(m) > 80,
             vertial_gridlines = mode %in% c("Inner", "Proj"),
             separate_gtable = TRUE
         )
 
         # we are returning the gtable and ggplot object separatly in order to allow shiny to infer positions correctly.
         return(structure(list(p = res$p, gtable = res$gtable), class = "gt_custom"))
-    }) %>% bindCache(dataset(), metacell_types(), cell_type_colors(), lfp_range(), input$plot_legend, input$selected_md, markers(), input$selected_cell_types, input$force_cell_type, input$high_color, input$low_color, input$mid_color, input$midpoint)
+    }) %>% bindCache(dataset(), metacell_types(), cell_type_colors(), lfp_range(), metacell_filter(), input$plot_legend, input$selected_md, markers(), input$selected_cell_types, input$force_cell_type, input$high_color, input$low_color, input$mid_color, input$midpoint)
 
-    observeEvent(input$markers_heatmap_click, {
-        gene <- rownames(markers_matrix())[round(input$markers_heatmap_click$y)]
-        metacell <- colnames(markers_matrix())[round(input$markers_heatmap_click$x)]
+    observeEvent(input$heatmap_brush, {
+        m <- filter_heatmap_by_metacell(mat(), metacell_filter())
+        range <- round(input$heatmap_brush$xmin):round(input$heatmap_brush$xmax)
+        req(all(range > 0) && all(range) <= ncol(m))
+        metacells <- colnames(m)[range]
+        metacell_filter(metacells)
+    })
+
+    observeEvent(input$heatmap_dblclick, {
+        m <- filter_heatmap_by_metacell(mat(), metacell_filter())
+        gene <- get_gene_by_heatmap_coord(m, input$heatmap_dblclick$y)
+        metacell <- get_metacell_by_heatmap_coord(m, input$heatmap_dblclick$x)
 
         if (input$gene_select == "X axis") {
             globals$selected_gene_x_axis <- gene
@@ -296,16 +326,16 @@ heatmap_reactives <- function(ns, input, output, session, dataset, metacell_type
     })
 
     output$hover_info <- renderUI({
-        req(markers_matrix())
-        req(input$markers_heatmap_hover)
+        req(mat())
+        req(input$heatmap_hover)
         req(metacell_types())
         req(cell_type_colors())
 
-        hover <- input$markers_heatmap_hover
-
-        gene <- rownames(markers_matrix())[round(hover$y)]
-        metacell <- colnames(markers_matrix())[round(hover$x)]
-        value <- markers_matrix()[gene, metacell]
+        hover <- input$heatmap_hover
+        m <- filter_heatmap_by_metacell(mat(), metacell_filter())
+        gene <- get_gene_by_heatmap_coord(m, hover$y)
+        metacell <- get_metacell_by_heatmap_coord(m, hover$x)
+        value <- m[gene, metacell]
 
         req(metacell)
         req(gene)
@@ -354,4 +384,27 @@ print.gt_custom <<- function(x) {
         build = build,
         gtable = x$gtable
     ), class = "ggplot_build_gtable")
+}
+
+filter_heatmap_by_metacell <- function(m, f) {
+    if (!is.null(f) && length(f) > 0) {
+        m <- m[, f]
+        if (is.null(ncol(m))) { # a single metacell
+            m <- as.matrix(m)
+            colnames(m) <- f
+        }
+    }
+    return(m)
+}
+
+get_gene_by_heatmap_coord <- function(m, coord) {
+    y_coord <- round(coord)
+    req(y_coord > 0 & y_coord <= nrow(m))
+    return(rownames(m)[y_coord])
+}
+
+get_metacell_by_heatmap_coord <- function(m, coord) {
+    x_coord <- round(coord)
+    req(x_coord > 0 & x_coord <= ncol(m))
+    return(colnames(m)[x_coord])
 }
