@@ -8,8 +8,8 @@
 <meta name="description" content="MCView">
 <title>Getting started with MCView • MCView</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.1.0/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.1.0/bootstrap.bundle.min.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
+<link href="../deps/bootstrap-5.1.3/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.1.3/bootstrap.bundle.min.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
 <!-- bootstrap-toc --><script src="https://cdn.rawgit.com/afeld/bootstrap-toc/v1.0.1/dist/bootstrap-toc.min.js"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- search --><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/autocomplete.js/0.38.0/autocomplete.jquery.min.js" integrity="sha512-GU9ayf+66Xx2TmpxqJpliWbT5PiGYxpaG8rfnBEk1LL8l1KGkRShhngwdXK1UgqhAzWpZHSiYPc09/NwDQIGyg==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js" integrity="sha512-5CYOlHXGh6QpOFA/TeTylKLWfB3ftPsde7AnmhuitiTX4K5SqCLBeKro6sPS8ilsz1Q4NRx3v8Ko2IBiszzdww==" crossorigin="anonymous"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Getting started with MCView">
 <meta property="og:description" content="MCView">
@@ -33,7 +33,7 @@
       <span class="navbar-toggler-icon"></span>
     </button>
 
-    <div id="navbar" class="collapse navbar-collapse ms-3">
+    <div id="navbar" class="collapse navbar-collapse ms-2">
       <ul class="navbar-nav me-auto">
 <li class="active nav-item">
   <a class="nav-link" href="../articles/MCView.html">Get started</a>
@@ -70,9 +70,7 @@
   </div>
 </nav><div class="container template-article">
 
-
-
-<script src="MCView_files/accessible-code-block-0.0.1/empty-anchor.js"></script><div class="row">
+<div class="row">
   <main id="main"><div class="page-header">
       <img src="" class="logo" alt=""><h1>Getting started with MCView</h1>
             
@@ -87,36 +85,36 @@
 <h2 id="setup">Setup<a class="anchor" aria-label="anchor" href="#setup"></a>
 </h2>
 <p>We would start by downloading a PBMC dataset that was pre-processed using the <code>metacells</code> python package.</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tanaylab.github.io/MCView" class="external-link">MCView</a></span><span class="op">)</span></code></pre></div>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="st">"raw"</span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/r/utils/download.file.html" class="external-link">download.file</a></span><span class="op">(</span><span class="st">"http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz"</span>, <span class="st">"raw/PBMC_processed.tar.gz"</span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/r/utils/untar.html" class="external-link">untar</a></span><span class="op">(</span><span class="st">"raw/PBMC_processed.tar.gz"</span>, exdir <span class="op">=</span> <span class="st">"raw"</span><span class="op">)</span></code></pre></div>
-<p>The above commands end result are two files named “raw/pbmc_metacells.h5ad” and “raw/cluster-colors.csv” which we would import to <strong>MCView</strong> in the next steps.</p>
+<p>The above commands end result are two files named "raw/pbmc_metacells.h5ad" and "raw/cluster-colors.csv" which we would import to <strong>MCView</strong> in the next steps.</p>
 </div>
 <div class="section level2">
 <h2 id="create-a-project">Create a project<a class="anchor" aria-label="anchor" href="#create-a-project"></a>
 </h2>
 <p>The first step in running <strong>MCView</strong> is generating a project directory structure:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="../reference/create_project.html">create_project</a></span><span class="op">(</span><span class="st">"PBMC"</span>, title <span class="op">=</span> <span class="st">"PBMC"</span><span class="op">)</span></code></pre></div>
 <p>A text editor would be opened with <code>PBMC/config/config.yaml</code> file:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1"></a><span class="fu">title</span><span class="kw">:</span><span class="at"> PBMC</span></span>
-<span id="cb4-2"><a href="#cb4-2"></a><span class="fu">tabs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">"Manifold"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Genes"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Markers"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Diff. Expression"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Cell types"</span><span class="kw">,</span><span class="st">"Annotate"</span><span class="kw">,</span><span class="at"> </span><span class="st">"About"</span><span class="kw">]</span><span class="co"> # which tabs to show</span></span>
-<span id="cb4-3"><a href="#cb4-3"></a><span class="fu">help</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span><span class="co"> # set to true to show introjs help on start</span></span>
-<span id="cb4-4"><a href="#cb4-4"></a><span class="co"># selected_gene1: Foxc1 # Default selected gene1</span></span>
-<span id="cb4-5"><a href="#cb4-5"></a><span class="co"># selected_gene2: Twist1 # Default selected gene2</span></span>
-<span id="cb4-6"><a href="#cb4-6"></a><span class="fu">selected_mc1</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="co"> # Default selected metacell1 </span></span>
-<span id="cb4-7"><a href="#cb4-7"></a><span class="fu">selected_mc2</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span><span class="co"> # Default selected metacell2</span></span></code></pre></div>
-<p>The configuration file was generated using <code>create_project</code> paramters, but we can edit them if we want, or add parameters per dataset, see the <a href="https://tanaylab.github.io/MCView/articles/Architecture.html" class="external-link">architecture</a> vignette for a full description of the config parameters.</p>
+<div class="sourceCode"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">title:</span><span class="at"> PBMC</span>
+<span class="fu">tabs:</span><span class="at"> </span><span class="kw">[</span><span class="st">"Manifold"</span><span class="kw">,</span> <span class="st">"Genes"</span><span class="kw">,</span> <span class="st">"Markers"</span><span class="kw">,</span> <span class="st">"Diff. Expression"</span><span class="kw">,</span> <span class="st">"Cell types"</span><span class="kw">,</span><span class="st">"Annotate"</span><span class="kw">,</span> <span class="st">"About"</span><span class="kw">]</span><span class="at"> </span><span class="co"># which tabs to show</span>
+<span class="fu">help:</span><span class="at"> false </span><span class="co"># set to true to show introjs help on start</span>
+<span class="co"># selected_gene1: Foxc1 # Default selected gene1</span>
+<span class="co"># selected_gene2: Twist1 # Default selected gene2</span>
+<span class="fu">selected_mc1:</span><span class="at"> 1 </span><span class="co"># Default selected metacell1 </span>
+<span class="fu">selected_mc2:</span><span class="at"> 2 </span><span class="co"># Default selected metacell2</span></code></pre></div>
+<p>The configuration file was generated using <code>create_project</code> parameters, but we can edit them if we want, or add parameters per dataset, see the <a href="https://tanaylab.github.io/MCView/articles/Architecture.html" class="external-link">architecture</a> vignette for a full description of the config parameters.</p>
 </div>
 <div class="section level2">
 <h2 id="import">Import<a class="anchor" aria-label="anchor" href="#import"></a>
 </h2>
 <p>Next, we would import the PBMC dataset to the project we created. A project can contain multiple dataset, and switching between them can be done from the right sidebar.</p>
 <p>This would pre-process the metacell dataset in order to view it in the shiny app:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="../reference/import_dataset.html">import_dataset</a></span><span class="op">(</span>project <span class="op">=</span> <span class="st">"PBMC"</span>, 
                dataset <span class="op">=</span> <span class="st">"PBMC163k"</span>, 
                anndata_file <span class="op">=</span> <span class="st">"raw/metacells.h5ad"</span>, 
@@ -130,11 +128,11 @@
 <div class="section level2">
 <h2 id="run-the-app">Run the app<a class="anchor" aria-label="anchor" href="#run-the-app"></a>
 </h2>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="../reference/run_app.html">run_app</a></span><span class="op">(</span>project <span class="op">=</span> <span class="st">"PBMC"</span>, launch.browser <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></code></pre></div>
 <p>A browser window would be opened with the app.</p>
 <p>You can also specify the port or host, or do not launch the browser window, e.g.:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="../reference/run_app.html">run_app</a></span><span class="op">(</span>project <span class="op">=</span> <span class="st">"PBMC"</span>, port <span class="op">=</span> <span class="fl">5555</span>, host <span class="op">=</span> <span class="st">"127.0.0.1"</span>, launch.browser <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></code></pre></div>
 </div>
 <div class="section level2">
@@ -142,23 +140,23 @@
 </h2>
 <p>After working a bit on the initial metacell model, we would usually want to update the default dataset annotations with the ones we created using <strong>MCView</strong>. This can be done by:</p>
 <ol style="list-style-type: decimal">
-<li>Pressing the “export” button in the upper left of “Annotate” screen and saving the file.</li>
+<li>Pressing the "export" button in the upper left of "Annotate" screen and saving the file.</li>
 <li>Running:</li>
 </ol>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="../reference/update_metacell_types.html">update_metacell_types</a></span><span class="op">(</span><span class="st">"PBMC"</span>, <span class="st">"PBMC163k"</span>, <span class="st">"/path/to/metacell_types_file"</span><span class="op">)</span></code></pre></div>
-<p>Where “/path/to/metacell_types_file” is the path of the exported file.</p>
+<p>Where "/path/to/metacell_types_file" is the path of the exported file.</p>
 <p>The same can be done for cell type colors, which has a different export button:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="../reference/update_cell_type_colors.html">update_cell_type_colors</a></span><span class="op">(</span><span class="st">"PBMC"</span>, <span class="st">"PBMC163k"</span>, <span class="st">"/path/to/cell_type_colors_file"</span><span class="op">)</span></code></pre></div>
 <p>You can now rerun the app and the types/colors would be updated.</p>
-<p>Note that if you changed cell type <strong>names</strong> you should update both <code>cell_type_colors</code> and <code>metacell_types</code>, as otherwise metacells with the old name would appear with a “(Missing)” cell type tag.</p>
+<p>Note that if you changed cell type <strong>names</strong> you should update both <code>cell_type_colors</code> and <code>metacell_types</code>, as otherwise metacells with the old name would appear with a "(Missing)" cell type tag.</p>
 </div>
 <div class="section level2">
 <h2 id="metadata">Metadata<a class="anchor" aria-label="anchor" href="#metadata"></a>
 </h2>
 <p>You can load numeric metadata fields for each metacell using the <code>metadata</code> parameter in <code>import_dataset</code> command:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="../reference/import_dataset.html">import_dataset</a></span><span class="op">(</span>project <span class="op">=</span> <span class="st">"PBMC"</span>, 
                dataset <span class="op">=</span> <span class="st">"PBMC163k"</span>, 
                anndata_file <span class="op">=</span> <span class="st">"raw/metacells.h5ad"</span>, 
@@ -169,7 +167,7 @@
 <p>The format is a data frame (or a delimited filename) with a column named <code>metacell</code> and the annotation fields. The metadata fields can be either numeric or categorical.</p>
 <p>You can use the <code>metadata_colors</code> parameter to set the breaks and colors for each numerical metadata field, and color for each category for categorical fields.</p>
 <p>If you want to change the metadata fields or colors after the import, you can use the <code>update_metadata</code> and <code>update_metadata_colors</code> functions:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="../reference/update_metadata.html">update_metadata</a></span><span class="op">(</span>project <span class="op">=</span> <span class="st">"PBMC"</span>, 
                dataset <span class="op">=</span> <span class="st">"PBMC163k"</span>, 
                metadata <span class="op">=</span> <span class="st">"new_metadata.csv"</span><span class="op">)</span>
@@ -182,12 +180,12 @@
 <h2 id="deploy">Deploy<a class="anchor" aria-label="anchor" href="#deploy"></a>
 </h2>
 <p>Create a deployment ready bundle by running:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="../reference/create_bundle.html">create_bundle</a></span><span class="op">(</span>project <span class="op">=</span> <span class="st">"PBMC"</span>, path <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/getwd.html" class="external-link">getwd</a></span><span class="op">(</span><span class="op">)</span>, name <span class="op">=</span> <span class="st">"PBMC_bundle"</span><span class="op">)</span></code></pre></div>
 <p>You can then upload the bundle to <a href="https://docs.rstudio.com/shinyapps.io/getting-started.html#deploying-applications" class="external-link">shinyapps.io</a> by running:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu">rsconnect</span><span class="fu">::</span><span class="fu">deployApp</span><span class="op">(</span>appDir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/getwd.html" class="external-link">getwd</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"PBMC_bundle"</span><span class="op">)</span><span class="op">)</span></code></pre></div>
-<p>Or to any shiny-server hosting service by uploading the “PBMC_bundle” directory to the service.</p>
+<div class="sourceCode"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu">rsconnect</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/rsconnect/man/deployApp.html" class="external-link">deployApp</a></span><span class="op">(</span>appDir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/getwd.html" class="external-link">getwd</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"PBMC_bundle"</span><span class="op">)</span><span class="op">)</span></code></pre></div>
+<p>Or to any shiny-server hosting service by uploading the "PBMC_bundle" directory to the service.</p>
 <blockquote>
 <p>Note that you might need to set your hosting service to allow higher memory than the default - <strong>MCView</strong> keeps the metacell matrix in-memory and therefore needs around 1GB of RAM for small datasets such as PBMC, but up to 2-4GB for large datasets such as MOCA.</p>
 </blockquote>
@@ -210,7 +208,7 @@
 
 <div class="pkgdown-footer-right">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.1.</p>
 </div>
 
     </footer>
