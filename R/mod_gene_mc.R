@@ -65,10 +65,11 @@ mod_gene_mc_ui <- function(id) {
                         axis_selector("x_axis", "Gene", ns),
                         axis_selector("y_axis", "Gene", ns),
                         axis_selector("color_by", "Metadata", ns),
-                        uiOutput(ns("gene_gene_point_size_ui")),
-                        uiOutput(ns("gene_gene_stroke_ui")),
+                        uiOutput(ns("gene_gene_xyline_ui")),
                         uiOutput(ns("gene_gene_fixed_limits_ui")),
-                        uiOutput(ns("use_atlas_limits_ui"))
+                        uiOutput(ns("use_atlas_limits_ui")),
+                        uiOutput(ns("gene_gene_point_size_ui")),
+                        uiOutput(ns("gene_gene_stroke_ui"))
                     ),
                     shinycssloaders::withSpinner(
                         plotly::plotlyOutput(ns("plot_gene_gene_mc"))
@@ -217,7 +218,8 @@ mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, 
             plot_text = FALSE,
             x_limits = x_limits,
             y_limits = y_limits,
-            fixed_limits = input$gene_gene_fixed_limits
+            fixed_limits = input$gene_gene_fixed_limits,
+            xyline = input$gene_gene_xyline %||% FALSE
         ) %>%
             plotly::ggplotly(tooltip = "tooltip_text", source = "md_md_plot") %>%
             sanitize_for_WebGL() %>%
@@ -236,7 +238,7 @@ mod_gene_mc_server <- function(input, output, session, dataset, metacell_types, 
         }
 
         return(fig)
-    }) %>% bindCache(dataset(), input$x_axis_var, input$x_axis_type, input$y_axis_var, input$y_axis_type, input$color_by_type, input$color_by_var, metacell_types(), cell_type_colors(), input$gene_gene_point_size, input$gene_gene_stroke, input$use_atlas_limits, input$gene_gene_fixed_limits)
+    }) %>% bindCache(dataset(), input$x_axis_var, input$x_axis_type, input$y_axis_var, input$y_axis_type, input$color_by_type, input$color_by_var, metacell_types(), cell_type_colors(), input$gene_gene_point_size, input$gene_gene_stroke, input$use_atlas_limits, input$gene_gene_fixed_limits, input$gene_gene_xyline)
 
     atlas_gene_gene(input, output, session, dataset, metacell_types, cell_type_colors, globals, ns)
 }
@@ -301,10 +303,11 @@ atlas_gene_gene <- function(input, output, session, dataset, metacell_types, cel
                 axis_selector("atlas_x_axis", "Gene", ns),
                 axis_selector("atlas_y_axis", "Gene", ns),
                 axis_selector("atlas_color_by", "Metadata", ns),
-                uiOutput(ns("atlas_gene_gene_point_size_ui")),
-                uiOutput(ns("atlas_gene_gene_stroke_ui")),
+                uiOutput(ns("atlas_gene_gene_xyline_ui")),
                 uiOutput(ns("atlas_gene_gene_fixed_limits_ui")),
-                checkboxInput(ns("use_query_limits"), label = "Use query limits", value = FALSE)
+                checkboxInput(ns("use_query_limits"), label = "Use query limits", value = FALSE),
+                uiOutput(ns("atlas_gene_gene_point_size_ui")),
+                uiOutput(ns("atlas_gene_gene_stroke_ui"))
             ),
             shinycssloaders::withSpinner(
                 plotly::plotlyOutput(ns("atlas_plot_gene_gene_mc"))
@@ -369,7 +372,8 @@ atlas_gene_gene <- function(input, output, session, dataset, metacell_types, cel
             atlas = TRUE,
             x_limits = x_limits,
             y_limits = y_limits,
-            fixed_limits = input$atlas_gene_gene_fixed_limits
+            fixed_limits = input$atlas_gene_gene_fixed_limits,
+            xyline = input$atlas_gene_gene_xyline %||% FALSE
         ) %>%
             plotly::ggplotly(tooltip = "tooltip_text", source = "atlas_md_md_plot") %>%
             sanitize_for_WebGL() %>%
@@ -388,5 +392,5 @@ atlas_gene_gene <- function(input, output, session, dataset, metacell_types, cel
         }
 
         return(fig)
-    }) %>% bindCache(dataset(), input$atlas_x_axis_var, input$atlas_x_axis_type, input$atlas_y_axis_var, input$atlas_y_axis_type, input$atlas_color_by_type, input$atlas_color_by_var, input$atlas_gene_gene_point_size, input$atlas_gene_gene_stroke, input$use_query_limits, input$atlas_gene_gene_fixed_limits)
+    }) %>% bindCache(dataset(), input$atlas_x_axis_var, input$atlas_x_axis_type, input$atlas_y_axis_var, input$atlas_y_axis_type, input$atlas_color_by_type, input$atlas_color_by_var, input$atlas_gene_gene_point_size, input$atlas_gene_gene_stroke, input$use_query_limits, input$atlas_gene_gene_fixed_limits, input$atlas_gene_gene_xyline)
 }

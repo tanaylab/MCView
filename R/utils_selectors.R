@@ -221,6 +221,10 @@ scatter_selectors <- function(ns, dataset, output, globals, prefix = "gene_gene"
     output[[glue("{prefix}_fixed_limits_ui")]] <- renderUI({
         checkboxInput(ns(glue("{prefix}_fixed_limits")), label = "X axis limits = Y axis limits", value = FALSE)
     })
+
+    output[[glue("{prefix}_xyline_ui")]] <- renderUI({
+        checkboxInput(ns(glue("{prefix}_xyline")), label = "Show X = Y line", value = FALSE)
+    })
 }
 
 projection_selectors <- function(ns, dataset, output, input, globals, weight = 1, atlas = FALSE) {

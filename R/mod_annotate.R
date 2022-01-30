@@ -70,9 +70,10 @@ mod_annotate_ui <- function(id) {
                                 axis_selector("x_axis", "Gene", ns),
                                 axis_selector("y_axis", "Gene", ns),
                                 axis_selector("color_by", "Metadata", ns),
+                                uiOutput(ns("gene_gene_xyline_ui")),
+                                uiOutput(ns("gene_gene_fixed_limits_ui")),
                                 uiOutput(ns("gene_gene_point_size_ui")),
-                                uiOutput(ns("gene_gene_stroke_ui")),
-                                uiOutput(ns("gene_gene_fixed_limits_ui"))
+                                uiOutput(ns("gene_gene_stroke_ui"))
                             ),
                             shinycssloaders::withSpinner(
                                 plotly::plotlyOutput(ns("plot_gene_gene_mc"))
@@ -628,7 +629,8 @@ mod_annotate_server <- function(input, output, session, dataset, metacell_types,
             point_size = input$gene_gene_point_size,
             stroke = input$gene_gene_stroke,
             plot_text = FALSE,
-            fixed_limits = input$gene_gene_fixed_limits
+            fixed_limits = input$gene_gene_fixed_limits,
+            xyline = input$gene_gene_xyline %||% FALSE
         ) %>%
             plotly::ggplotly(tooltip = "tooltip_text", source = "gene_gene_plot_annot") %>%
             sanitize_for_WebGL() %>%
@@ -648,7 +650,7 @@ mod_annotate_server <- function(input, output, session, dataset, metacell_types,
         }
 
         return(fig)
-    }) %>% bindCache(dataset(), input$x_axis_var, input$x_axis_type, input$y_axis_var, input$y_axis_type, input$color_by_type, input$color_by_var, metacell_types(), cell_type_colors(), input$gene_gene_point_size, input$gene_gene_stroke, input$gene_gene_fixed_limits)
+    }) %>% bindCache(dataset(), input$x_axis_var, input$x_axis_type, input$y_axis_var, input$y_axis_type, input$color_by_type, input$color_by_var, metacell_types(), cell_type_colors(), input$gene_gene_point_size, input$gene_gene_stroke, input$gene_gene_fixed_limits, input$gene_gene_xyline)
 
 
 

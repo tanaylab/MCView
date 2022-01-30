@@ -10,6 +10,7 @@
 * Moved flow graphs to their own tab named 'Flow'. 
 * `create_project` and `import_dataset` now accept the config file parameters. 
 * Added option to force x and y limits to be the same in gene/gene plots.
+* Added an option to show x=y line in gene/gene plots.
 
 # MCView 0.2.1
 

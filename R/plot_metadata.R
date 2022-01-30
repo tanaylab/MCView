@@ -193,7 +193,8 @@ plot_mc_scatter <- function(dataset,
                             atlas = FALSE,
                             x_limits = NULL,
                             y_limits = NULL,
-                            fixed_limits = FALSE) {
+                            fixed_limits = FALSE,
+                            xyline = FALSE) {
     metadata <- get_mc_data(dataset, "metadata", atlas = atlas)
     if (!is.null(metadata)) {
         metadata <- metadata %>% mutate(metacell = as.character(metacell))
@@ -304,6 +305,10 @@ plot_mc_scatter <- function(dataset,
     ) +
         xlab(x_var) +
         ylab(y_var)
+
+    if (xyline) {
+        p <- p + geom_abline(linetype = "dashed")
+    }
 
     # set color plotting
     if (is.null(color_var)) {
