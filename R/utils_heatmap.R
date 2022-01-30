@@ -26,6 +26,7 @@ heatmap_box <- function(ns,
                 colourpicker::colourInput(ns("high_color"), "High color", high_color),
                 colourpicker::colourInput(ns("mid_color"), "Mid color", mid_color),
                 checkboxInput(ns("plot_legend"), "Plot legend", value = TRUE),
+                numericInput(ns("legend_width"), "Legend width", min = 1, max = 11, step = 1, value = 2),
                 shinyWidgets::prettyRadioButtons(
                     inputId = ns("gene_select"),
                     label = "Select on double-click (gene)",
@@ -210,12 +211,13 @@ heatmap_reactives <- function(ns, input, output, session, dataset, metacell_type
 
 
         if (!is.null(input$plot_legend) && input$plot_legend) {
+            req(input$legend_width)
             legend_column <- column(
-                width = 3,
+                width = input$legend_width,
                 plotOutput(ns("markers_legend"), height = "80vh")
             )
             heatmap_column <- column(
-                width = 9,
+                width = 12 - input$legend_width,
                 heatmap
             )
             shinycssloaders::withSpinner(
