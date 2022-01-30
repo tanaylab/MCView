@@ -4,7 +4,6 @@ test_that("import_dataset works with metadata dataframe", {
     set.seed(60427)
     dataset <- "PBMC163k_md"
     metadata_df <- get_test_metadata(raw_dir)
-    browser()
 
     MCView::import_dataset(
         project = project_dir,

@@ -7,6 +7,7 @@
 * Added support for cell metadata using the 'Samples' tab. 
 * Allow coloring by categorical metadata annotations. 
 * Moved flow graphs to their own tab named 'Flow'. 
+* `create_project` and `import_dataset` now accept the config file paramters. 
 
 # MCView 0.2.1
 

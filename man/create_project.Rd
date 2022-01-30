@@ -4,18 +4,45 @@
 \alias{create_project}
 \title{Create a configuration folder for a project}
 \usage{
-create_project(project, edit_config = TRUE, atlas = FALSE)
+create_project(
+  project,
+  title = "MCView",
+  tabs = NULL,
+  help = FALSE,
+  selected_gene1 = NULL,
+  selected_gene2 = NULL,
+  selected_mc1 = NULL,
+  selected_mc2 = NULL,
+  datasets = NULL,
+  other_params = NULL,
+  edit_config = TRUE,
+  atlas = FALSE
+)
 }
 \arguments{
 \item{project}{path of the project}
 
+\item{title}{The title of the app. This would be shown on the top left of the screen.}
+
+\item{tabs}{Controls which tabs to show in the left sidebar and their order. Options are: "Manifold", "Genes", "Query", "Atlas", "Markers", "Projected-fold", "Diff. Expression", "Cell types", "Flow", "Annotate", "About". When NULL - default tabs would be set. For projects with atlas projections, please set \code{atlas} to TRUE.}
+
+\item{help}{Controls wether to start the app with a help modal (from introjs). Help messages can be edited in help.yaml file (see 'Architecture' vignette).}
+
+\item{selected_gene1, selected_gene2}{The default genes that would be selected (in any screen with gene selection). If this parameter is missing, the 2 genes with highest max(expr)-min(expr) in the first dataset would be chosen.}
+
+\item{selected_mc1, selected_mc2}{The default metacells that would be selected in the Diff. Expression tab.}
+
+\item{datasets}{A named list with additional per-dataset parameters. Current parameters include default visualization properties of projection and scatter plots.}
+
+\item{other_params}{Named list of additional parameters such as projection_point_size, projection_point_stroke, scatters_point_size and scatters_stroke_size}
+
 \item{edit_config}{open file editor for config file editing}
 
-\item{atlas}{use default configuration for atlas projections}
+\item{atlas}{use default configuration for atlas projections (relevant only when \code{tabs} is NULL)}
 }
 \description{
 Create a project directory with the default configuration files and directory structure.
-A text editor would be opened in order to edit the project \code{config.yaml} file.
+If \code{edit_config == TRUE}, a text editor would be opened in order to edit the project \code{config.yaml} file.
 }
 \examples{
 \dontrun{

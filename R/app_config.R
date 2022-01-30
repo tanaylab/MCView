@@ -3,9 +3,7 @@ verify_config_file <- function(config) {
     required_fields <- c(
         "title",
         "tabs",
-        "help",
-        "selected_mc1",
-        "selected_mc2"
+        "help"
     )
 
     for (field in required_fields) {

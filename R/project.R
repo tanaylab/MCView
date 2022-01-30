@@ -22,10 +22,10 @@ project_cache_dir <- function(path) {
     fs::path(path, "cache")
 }
 
-verify_project_dir <- function(path, create = FALSE, atlas = FALSE) {
+verify_project_dir <- function(path, create = FALSE, atlas = FALSE, ...) {
     if (!dir.exists(path)) {
         if (create) {
-            create_project(project = path, edit_config = FALSE, atlas = atlas)
+            create_project(project = path, edit_config = FALSE, atlas = atlas, ...)
         } else {
             cli_abort("{.path path} does not exist. Maybe there is a typo? You can start a new project by running {.code MCView::create_project}.")
         }
@@ -50,7 +50,7 @@ create_project_dirs <- function(project_dir, atlas = FALSE) {
         defaults_dir <- app_sys("default-config")
     }
 
-    files <- c("config.yaml", "help.yaml", "about.Rmd")
+    files <- c("help.yaml", "about.Rmd")
     for (file in files) {
         if (!fs::file_exists(fs::path(project_dir, "config", file))) {
             fs::file_copy(fs::path(defaults_dir, file), fs::path(project_dir, "config", file))
@@ -60,15 +60,56 @@ create_project_dirs <- function(project_dir, atlas = FALSE) {
     return(project_dir)
 }
 
+create_project_config_file <- function(project_dir,
+                                       title = "MCView",
+                                       tabs = NULL,
+                                       help = FALSE,
+                                       selected_gene1 = NULL,
+                                       selected_gene2 = NULL,
+                                       selected_mc1 = NULL,
+                                       selected_mc2 = NULL,
+                                       datasets = NULL,
+                                       other_params = NULL,
+                                       edit_config = TRUE,
+                                       atlas = FALSE) {
+    config <- list()
+    config$title <- title
+    if (is.null(tabs)) {
+        if (atlas) {
+            tabs <- c("Manifold", "Genes", "Query", "Atlas", "Markers", "Projected-fold", "Diff. Expression", "Cell types", "Annotate", "About")
+        } else {
+            tabs <- c("Manifold", "Genes", "Markers", "Diff. Expression", "Cell types", "Annotate", "About")
+        }
+    }
+    config$tabs <- tabs
+    config$help <- help
+    config$selected_gene1 <- selected_gene1
+    config$selected_gene2 <- selected_gene2
+    config$selected_mc1 <- selected_mc1
+    config$selected_mc2 <- selected_mc2
+    if (!is.null(other_params)) {
+        config <- c(config, other_params)
+    }
+    config$datasets <- datasets
+    yaml::write_yaml(config, fs::path(project_dir, "config", "config.yaml"))
+}
+
 
 #' Create a configuration folder for a project
 #'
 #' Create a project directory with the default configuration files and directory structure.
-#' A text editor would be opened in order to edit the project \code{config.yaml} file.
+#' If \code{edit_config == TRUE}, a text editor would be opened in order to edit the project \code{config.yaml} file.
 #'
 #' @param project path of the project
+#' @param title The title of the app. This would be shown on the top left of the screen.
+#' @param tabs Controls which tabs to show in the left sidebar and their order. Options are: "Manifold", "Genes", "Query", "Atlas", "Markers", "Projected-fold", "Diff. Expression", "Cell types", "Flow", "Annotate", "About". When NULL - default tabs would be set. For projects with atlas projections, please set \code{atlas} to TRUE.
+#' @param help Controls wether to start the app with a help modal (from introjs). Help messages can be edited in help.yaml file (see 'Architecture' vignette).
+#' @param selected_gene1,selected_gene2 The default genes that would be selected (in any screen with gene selection). If this parameter is missing, the 2 genes with highest max(expr)-min(expr) in the first dataset would be chosen.
+#' @param selected_mc1,selected_mc2 The default metacells that would be selected in the Diff. Expression tab.
+#' @param datasets A named list with additional per-dataset parameters. Current parameters include default visualization properties of projection and scatter plots.
+#' @param other_params Named list of additional parameters such as projection_point_size, projection_point_stroke, scatters_point_size and scatters_stroke_size
 #' @param edit_config open file editor for config file editing
-#' @param atlas use default configuration for atlas projections
+#' @param atlas use default configuration for atlas projections (relevant only when \code{tabs} is NULL)
 #'
 #' @examples
 #' \dontrun{
@@ -79,14 +120,38 @@ create_project_dirs <- function(project_dir, atlas = FALSE) {
 #' }
 #'
 #' @export
-create_project <- function(project, edit_config = TRUE, atlas = FALSE) {
+create_project <- function(project,
+                           title = "MCView",
+                           tabs = NULL,
+                           help = FALSE,
+                           selected_gene1 = NULL,
+                           selected_gene2 = NULL,
+                           selected_mc1 = NULL,
+                           selected_mc2 = NULL,
+                           datasets = NULL,
+                           other_params = NULL,
+                           edit_config = TRUE,
+                           atlas = FALSE) {
     project_dir <- create_project_dirs(project, atlas = atlas)
+    config <- create_project_config_file(
+        project,
+        title,
+        tabs,
+        help,
+        selected_gene1,
+        selected_gene2,
+        selected_mc1,
+        selected_mc2,
+        datasets,
+        other_params,
+        atlas
+    )
     project_dir <- fs::path(project_dir, "config")
 
     if (rlang::is_interactive() && edit_config) {
         utils::file.edit(fs::path(project_dir, "config.yaml"))
     }
-    cli_alert("please edit {.file {fs::path(project_dir, 'config.yaml')}}")
+    cli_alert("You can edit the app configuration at {.file {fs::path(project_dir, 'config.yaml')}}")
 }
 
 #' Generate a 'deployment ready' bundle of the a project app
@@ -118,6 +183,7 @@ create_project <- function(project, edit_config = TRUE, atlas = FALSE) {
 #' parameter to NULL in order to include the current development version
 #' ('master' branch), or set it to any other branch in the 'tanaylab/MCView' github
 #' repository.
+#' @param restart add a file named 'restart.txt' to the bundle. This would force shiny-server to restart the app when updated.
 #'
 #'
 #' @examples
@@ -135,7 +201,7 @@ create_project <- function(project, edit_config = TRUE, atlas = FALSE) {
 #' }
 #'
 #' @export
-create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overwrite = FALSE, self_contained = FALSE, branch = "latest_release") {
+create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overwrite = FALSE, self_contained = FALSE, branch = "latest_release", restart = overwrite) {
     bundle_dir <- fs::path(path, name)
     if (!(fs::dir_exists(project))) {
         cli::cli_abort("{.path {project}} does not exists.")
@@ -172,6 +238,10 @@ create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overw
 
     fs::file_copy(app_sys("app.R"), fs::path(bundle_dir, "app.R"))
     fs::dir_copy(project, fs::path(bundle_dir, "project"))
+
+    if (restart) {
+        fs::file_touch(fs::path(bundle_dir, "restart.txt"))
+    }
 
     cli::cat_line("Bundle files:")
     fs::dir_tree(bundle_dir)
