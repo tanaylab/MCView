@@ -371,10 +371,17 @@ heatmap_reactives <- function(ns, input, output, session, dataset, metacell_type
     })
 }
 
-# we are overriding the print function, similiar to the one at shiny/render-plot.R:
-# https://github.com/rstudio/shiny/blob/main/R/render-plot.R
-# in order to provide a separate ggplot_build and gtable objects
-print.gt_custom <<- function(x) {
+
+#' Print method for "gt_custom" class
+#' we are overriding the print function, similiar to the one at shiny/render-plot.R:
+#' https://github.com/rstudio/shiny/blob/main/R/render-plot.R
+#' in order to provide a separate ggplot_build and gtable objects
+#'
+#' @param x An object of class "gt_custom"
+#'
+#' @export print.gt_custom
+#' @export
+print.gt_custom <- function(x) {
     build <- ggplot_build(x$p)
 
     grid::grid.newpage()
