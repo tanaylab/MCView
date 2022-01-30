@@ -2,12 +2,14 @@
 
 * Added support for atlas projections ('Atlas', 'Query' and 'Projected-fold' tabs)
 * Added tooltip and interactive clicks to heatmaps ('Markers' and 'Projected-fold' tabs)
+* Added zoom for heatmaps. 
 * Homogenzie Annotate, Diff. Expr and Genes tabs. 
 * Added 'Cell types' tab. 
 * Added support for cell metadata using the 'Samples' tab. 
 * Allow coloring by categorical metadata annotations. 
 * Moved flow graphs to their own tab named 'Flow'. 
-* `create_project` and `import_dataset` now accept the config file paramters. 
+* `create_project` and `import_dataset` now accept the config file parameters. 
+* Added option to force x and y limits to be the same in gene/gene plots.
 
 # MCView 0.2.1
 

@@ -69,7 +69,7 @@ create_project_config_file <- function(project_dir,
                                        selected_mc1 = NULL,
                                        selected_mc2 = NULL,
                                        datasets = NULL,
-                                       other_params = NULL,                                       
+                                       other_params = NULL,
                                        atlas = FALSE) {
     config <- list()
     config$title <- title

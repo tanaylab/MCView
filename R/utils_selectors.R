@@ -217,6 +217,10 @@ scatter_selectors <- function(ns, dataset, output, globals, prefix = "gene_gene"
     output[[glue("{prefix}_stroke_ui")]] <- renderUI({
         numericInput(ns(glue("{prefix}_stroke")), label = "Stroke width", value = initial_scatters_stroke(dataset()), min = 0, max = 3, step = 0.01)
     })
+
+    output[[glue("{prefix}_fixed_limits_ui")]] <- renderUI({
+        checkboxInput(ns(glue("{prefix}_fixed_limits")), label = "X axis limits = Y axis limits", value = FALSE)
+    })
 }
 
 projection_selectors <- function(ns, dataset, output, input, globals, weight = 1, atlas = FALSE) {
