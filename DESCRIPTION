@@ -36,6 +36,7 @@ Imports:
     future,
     gert,
     ggnewscale,
+    grid,    
     ggplot2,
     ggrepel,
     grDevices,

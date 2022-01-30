@@ -211,11 +211,11 @@ heatmap_reactives <- function(ns, input, output, session, dataset, metacell_type
 
         if (!is.null(input$plot_legend) && input$plot_legend) {
             legend_column <- column(
-                width = 2,
-                plotOutput(ns("markers_legend"))
+                width = 3,
+                plotOutput(ns("markers_legend"), height = "80vh")
             )
             heatmap_column <- column(
-                width = 10,
+                width = 9,
                 heatmap
             )
             shinycssloaders::withSpinner(
