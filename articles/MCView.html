@@ -100,16 +100,16 @@
 </h2>
 <p>The first step in running <strong>MCView</strong> is generating a project directory structure:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/create_project.html">create_project</a></span><span class="op">(</span><span class="st">"PBMC"</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span class="fu"><a href="../reference/create_project.html">create_project</a></span><span class="op">(</span><span class="st">"PBMC"</span>, title <span class="op">=</span> <span class="st">"PBMC"</span><span class="op">)</span></code></pre></div>
 <p>A text editor would be opened with <code>PBMC/config/config.yaml</code> file:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1"></a><span class="fu">title</span><span class="kw">:</span><span class="at"> MCView</span></span>
+<div class="sourceCode" id="cb4"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1"></a><span class="fu">title</span><span class="kw">:</span><span class="at"> PBMC</span></span>
 <span id="cb4-2"><a href="#cb4-2"></a><span class="fu">tabs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">"Manifold"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Genes"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Markers"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Diff. Expression"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Cell types"</span><span class="kw">,</span><span class="st">"Annotate"</span><span class="kw">,</span><span class="at"> </span><span class="st">"About"</span><span class="kw">]</span><span class="co"> # which tabs to show</span></span>
 <span id="cb4-3"><a href="#cb4-3"></a><span class="fu">help</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span><span class="co"> # set to true to show introjs help on start</span></span>
 <span id="cb4-4"><a href="#cb4-4"></a><span class="co"># selected_gene1: Foxc1 # Default selected gene1</span></span>
 <span id="cb4-5"><a href="#cb4-5"></a><span class="co"># selected_gene2: Twist1 # Default selected gene2</span></span>
 <span id="cb4-6"><a href="#cb4-6"></a><span class="fu">selected_mc1</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="co"> # Default selected metacell1 </span></span>
 <span id="cb4-7"><a href="#cb4-7"></a><span class="fu">selected_mc2</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span><span class="co"> # Default selected metacell2</span></span></code></pre></div>
-<p>We can edit some of the parameters if we want, or add parameters per dataset, see the <a href="https://tanaylab.github.io/MCView/articles/Architecture.html" class="external-link">architecture</a> vignette for a full description of the config parameters.</p>
+<p>The configuration file was generated using <code>create_project</code> paramters, but we can edit them if we want, or add parameters per dataset, see the <a href="https://tanaylab.github.io/MCView/articles/Architecture.html" class="external-link">architecture</a> vignette for a full description of the config parameters.</p>
 </div>
 <div class="section level2">
 <h2 id="import">Import<a class="anchor" aria-label="anchor" href="#import"></a>

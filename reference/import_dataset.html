@@ -81,7 +81,8 @@ which can be in the app using the right sidebar.</p>
   atlas_project <span class="op">=</span> <span class="cn">NULL</span>,
   atlas_dataset <span class="op">=</span> <span class="cn">NULL</span>,
   projection_weights_file <span class="op">=</span> <span class="cn">NULL</span>,
-  copy_atlas <span class="op">=</span> <span class="cn">TRUE</span>
+  copy_atlas <span class="op">=</span> <span class="cn">TRUE</span>,
+  <span class="va">...</span>
 <span class="op">)</span></code></pre></div>
     </div>
 
@@ -137,6 +138,42 @@ would be missing from the app.</p></dd>
 <dd><p>name of the atlas dataset</p></dd>
 <dt>copy_atlas</dt>
 <dd><p>copy atlas MCView to the current project. If FALSE - a symbolic link would be created instaed.</p></dd>
+<dt>...</dt>
+<dd><p>Arguments passed on to <code><a href="create_project.html">create_project</a></code></p><dl><dt><code>title</code></dt>
+<dd><p>The title of the app. This would be shown on the top left of the screen.</p></dd>
+
+    <dt><code>tabs</code></dt>
+<dd><p>Controls which tabs to show in the left sidebar and their order. Options are: "Manifold", "Genes", "Query", "Atlas", "Markers", "Projected-fold", "Diff. Expression", "Cell types", "Flow", "Annotate", "About". When NULL - default tabs would be set. For projects with atlas projections, please set <code>atlas</code> to TRUE.</p></dd>
+
+    <dt><code>help</code></dt>
+<dd><p>Controls wether to start the app with a help modal (from introjs). Help messages can be edited in help.yaml file (see 'Architecture' vignette).</p></dd>
+
+    <dt><code>selected_gene1</code></dt>
+<dd><p>The default genes that would be selected (in any screen with gene selection). If this parameter is missing, the 2 genes with highest max(expr)-min(expr) in the first dataset would be chosen.</p></dd>
+
+    <dt><code>selected_gene2</code></dt>
+<dd><p>The default genes that would be selected (in any screen with gene selection). If this parameter is missing, the 2 genes with highest max(expr)-min(expr) in the first dataset would be chosen.</p></dd>
+
+    <dt><code>selected_mc1</code></dt>
+<dd><p>The default metacells that would be selected in the Diff. Expression tab.</p></dd>
+
+    <dt><code>selected_mc2</code></dt>
+<dd><p>The default metacells that would be selected in the Diff. Expression tab.</p></dd>
+
+    <dt><code>datasets</code></dt>
+<dd><p>A named list with additional per-dataset parameters. Current parameters include default visualization properties of projection and scatter plots.</p></dd>
+
+    <dt><code>other_params</code></dt>
+<dd><p>Named list of additional parameters such as projection_point_size, projection_point_stroke, scatters_point_size and scatters_stroke_size</p></dd>
+
+    <dt><code>edit_config</code></dt>
+<dd><p>open file editor for config file editing</p></dd>
+
+    <dt><code>atlas</code></dt>
+<dd><p>use default configuration for atlas projections (relevant only when <code>tabs</code> is NULL)</p></dd>
+
+  
+</dl></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>

@@ -67,7 +67,8 @@
   name <span class="op">=</span> <span class="st">"MCView_bundle"</span>,
   overwrite <span class="op">=</span> <span class="cn">FALSE</span>,
   self_contained <span class="op">=</span> <span class="cn">FALSE</span>,
-  branch <span class="op">=</span> <span class="st">"latest_release"</span>
+  branch <span class="op">=</span> <span class="st">"latest_release"</span>,
+  restart <span class="op">=</span> <span class="va">overwrite</span>
 <span class="op">)</span></code></pre></div>
     </div>
 
@@ -94,6 +95,8 @@ other options.</p></dd>
 parameter to NULL in order to include the current development version
 ('master' branch), or set it to any other branch in the 'tanaylab/MCView' github
 repository.</p></dd>
+<dt>restart</dt>
+<dd><p>add a file named 'restart.txt' to the bundle. This would force shiny-server to restart the app when updated.</p></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
