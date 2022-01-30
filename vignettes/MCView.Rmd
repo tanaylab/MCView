@@ -50,7 +50,7 @@ selected_mc1: 1 # Default selected metacell1
 selected_mc2: 2 # Default selected metacell2
 ```
 
-The configuration file was generated using `create_project` paramters, but we can edit them if we want, or add parameters per dataset, see the [architecture](https://tanaylab.github.io/MCView/articles/Architecture.html) vignette for a full description of the config parameters. 
+The configuration file was generated using `create_project` parameters, but we can edit them if we want, or add parameters per dataset, see the [architecture](https://tanaylab.github.io/MCView/articles/Architecture.html) vignette for a full description of the config parameters. 
 
 
 ## Import 
