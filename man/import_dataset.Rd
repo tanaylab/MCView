@@ -18,7 +18,8 @@ import_dataset(
   atlas_project = NULL,
   atlas_dataset = NULL,
   projection_weights_file = NULL,
-  copy_atlas = TRUE
+  copy_atlas = TRUE,
+  ...
 )
 }
 \arguments{
@@ -71,6 +72,22 @@ would be missing from the app.}
 \item{atlas_dataset}{name of the atlas dataset}
 
 \item{copy_atlas}{copy atlas MCView to the current project. If FALSE - a symbolic link would be created instaed.}
+
+\item{...}{
+  Arguments passed on to \code{\link[=create_project]{create_project}}
+  \describe{
+    \item{\code{title}}{The title of the app. This would be shown on the top left of the screen.}
+    \item{\code{tabs}}{Controls which tabs to show in the left sidebar and their order. Options are: "Manifold", "Genes", "Query", "Atlas", "Markers", "Projected-fold", "Diff. Expression", "Cell types", "Flow", "Annotate", "About". When NULL - default tabs would be set. For projects with atlas projections, please set \code{atlas} to TRUE.}
+    \item{\code{help}}{Controls wether to start the app with a help modal (from introjs). Help messages can be edited in help.yaml file (see 'Architecture' vignette).}
+    \item{\code{selected_gene1}}{The default genes that would be selected (in any screen with gene selection). If this parameter is missing, the 2 genes with highest max(expr)-min(expr) in the first dataset would be chosen.}
+    \item{\code{selected_gene2}}{The default genes that would be selected (in any screen with gene selection). If this parameter is missing, the 2 genes with highest max(expr)-min(expr) in the first dataset would be chosen.}
+    \item{\code{selected_mc1}}{The default metacells that would be selected in the Diff. Expression tab.}
+    \item{\code{selected_mc2}}{The default metacells that would be selected in the Diff. Expression tab.}
+    \item{\code{datasets}}{A named list with additional per-dataset parameters. Current parameters include default visualization properties of projection and scatter plots.}
+    \item{\code{other_params}}{Named list of additional parameters such as projection_point_size, projection_point_stroke, scatters_point_size and scatters_stroke_size}
+    \item{\code{edit_config}}{open file editor for config file editing}
+    \item{\code{atlas}}{use default configuration for atlas projections (relevant only when \code{tabs} is NULL)}
+  }}
 }
 \value{
 invisibly returns an \code{AnnDataR6} object of the read \code{anndata_file}

@@ -190,7 +190,11 @@ plot_mc_scatter <- function(dataset,
                             stroke = initial_scatters_stroke(dataset),
                             expr_colors = c("#053061", "#2166AC", "#4393C3", "#92C5DE", "#D1E5F0", "#F7F7F7", "#FDDBC7", "#F4A582", "#D6604D", "#B2182B", "#67001F"),
                             plot_text = TRUE,
-                            atlas = FALSE) {
+                            atlas = FALSE,
+                            x_limits = NULL,
+                            y_limits = NULL,
+                            fixed_limits = FALSE,
+                            xyline = FALSE) {
     metadata <- get_mc_data(dataset, "metadata", atlas = atlas)
     if (!is.null(metadata)) {
         metadata <- metadata %>% mutate(metacell = as.character(metacell))
@@ -302,6 +306,10 @@ plot_mc_scatter <- function(dataset,
         xlab(x_var) +
         ylab(y_var)
 
+    if (xyline) {
+        p <- p + geom_abline(linetype = "dashed")
+    }
+
     # set color plotting
     if (is.null(color_var)) {
         if (atlas) {
@@ -333,9 +341,17 @@ plot_mc_scatter <- function(dataset,
     # arrange axis for gene expression
     xylims <- expr_breaks
 
+    if (fixed_limits && x_type == "Gene" && y_type == "Gene") {
+        x_limits <- x_limits %||% c(min(egc_x), max(egc_x))
+        y_limits <- y_limits %||% c(min(egc_y), max(egc_y))
+        x_limits <- c(min(c(x_limits[1], y_limits[1])), max(c(x_limits[2], y_limits[2])))
+        y_limits <- x_limits
+    }
+
     if (x_type == "Gene") {
-        xmax <- min(c(1:length(xylims))[xylims >= max(egc_x)])
-        xmin <- max(c(1:length(xylims))[xylims <= min(egc_x)])
+        x_limits <- x_limits %||% c(min(egc_x), max(egc_x))
+        xmax <- min(c(1:length(xylims))[xylims >= x_limits[2]])
+        xmin <- max(c(1:length(xylims))[xylims <= x_limits[1]])
         p <- p +
             scale_x_continuous(limits = c(xylims[xmin], xylims[xmax]), trans = "log2", breaks = xylims[xmin:xmax], labels = scales::scientific(xylims[xmin:xmax])) +
             xlab(glue("{x_var} Expression")) +
@@ -343,8 +359,9 @@ plot_mc_scatter <- function(dataset,
     }
 
     if (y_type == "Gene") {
-        ymax <- min(c(1:length(xylims))[xylims >= max(egc_y)])
-        ymin <- max(c(1:length(xylims))[xylims <= min(egc_y)])
+        y_limits <- y_limits %||% c(min(egc_y), max(egc_y))
+        ymax <- min(c(1:length(xylims))[xylims >= y_limits[2]])
+        ymin <- max(c(1:length(xylims))[xylims <= y_limits[1]])
         p <- p +
             scale_y_continuous(limits = c(xylims[ymin], xylims[ymax]), trans = "log2", breaks = xylims[ymin:ymax], labels = scales::scientific(xylims[ymin:ymax])) +
             ylab(glue("{y_var} Expression"))

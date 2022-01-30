@@ -13,9 +13,7 @@ test_that("create_project works", {
     required_fields <- c(
         "title",
         "tabs",
-        "help",
-        "selected_mc1",
-        "selected_mc2"
+        "help"
     )
 
     purrr::walk(required_fields, ~ expect_true(rlang::has_name(config, .x)))
