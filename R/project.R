@@ -44,11 +44,7 @@ create_project_dirs <- function(project_dir, atlas = FALSE) {
     fs::dir_create(project_cache_dir(project_dir))
     fs::dir_create(fs::path(project_dir, "config"))
 
-    if (atlas) {
-        defaults_dir <- app_sys("atlas-proj-config")
-    } else {
-        defaults_dir <- app_sys("default-config")
-    }
+    defaults_dir <- app_sys("default-config")    
 
     files <- c("help.yaml", "about.Rmd")
     for (file in files) {
