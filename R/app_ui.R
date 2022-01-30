@@ -108,6 +108,7 @@ app_ui <- function(request) {
     }
 
     dashboard_page <- shinydashboardPlus::dashboardPage(
+        title = app_title,
         shinydashboardPlus::dashboardHeader(
             title = app_title,
             tags$li(

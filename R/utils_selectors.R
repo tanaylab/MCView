@@ -28,7 +28,7 @@ metacell_selector <- function(dataset, ns, id, label, selected = NULL, atlas = F
         metacell_names <- colnames(get_mc_data(dataset(), "mc_mat", atlas = atlas))
         shinyWidgets::pickerInput(ns(id), label,
             choices = metacell_names,
-            selected = selected %||% config$selected_mc1,
+            selected = selected %||% config$selected_mc1 %||% metacell_names[1],
             multiple = FALSE,
             options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", ...)
         )
@@ -42,7 +42,7 @@ colored_metacell_selector <- function(dataset, ns, id, label, metacell_colors, m
         cell_types_hex <- col2hex(metacell_colors())
         shinyWidgets::pickerInput(ns(id), label,
             choices = metacell_names(),
-            selected = selected %||% config$selected_mc1,
+            selected = selected %||% config$selected_mc1 %||% metacell_names()[1],
             multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith"),
             choicesOpt = list(
                 style = paste0("color: ", cell_types_hex, ";")
@@ -216,6 +216,14 @@ scatter_selectors <- function(ns, dataset, output, globals, prefix = "gene_gene"
 
     output[[glue("{prefix}_stroke_ui")]] <- renderUI({
         numericInput(ns(glue("{prefix}_stroke")), label = "Stroke width", value = initial_scatters_stroke(dataset()), min = 0, max = 3, step = 0.01)
+    })
+
+    output[[glue("{prefix}_fixed_limits_ui")]] <- renderUI({
+        checkboxInput(ns(glue("{prefix}_fixed_limits")), label = "X axis limits = Y axis limits", value = FALSE)
+    })
+
+    output[[glue("{prefix}_xyline_ui")]] <- renderUI({
+        checkboxInput(ns(glue("{prefix}_xyline")), label = "Show X = Y line", value = FALSE)
     })
 }
 

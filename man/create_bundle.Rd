@@ -10,7 +10,8 @@ create_bundle(
   name = "MCView_bundle",
   overwrite = FALSE,
   self_contained = FALSE,
-  branch = "latest_release"
+  branch = "latest_release",
+  restart = overwrite
 )
 }
 \arguments{
@@ -34,6 +35,8 @@ other options.}
 parameter to NULL in order to include the current development version
 ('master' branch), or set it to any other branch in the 'tanaylab/MCView' github
 repository.}
+
+\item{restart}{add a file named 'restart.txt' to the bundle. This would force shiny-server to restart the app when updated.}
 }
 \description{
 Generate a 'deployment ready' bundle of the a project app

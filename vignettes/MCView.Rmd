@@ -35,13 +35,13 @@ The above commands end result are two files named "raw/pbmc_metacells.h5ad" and 
 The first step in running __MCView__ is generating a project directory structure: 
 
 ```{r, eval=FALSE}
-create_project("PBMC")
+create_project("PBMC", title = "PBMC")
 ```
 
 A text editor would be opened with `PBMC/config/config.yaml` file:
 
 ```yaml
-title: MCView
+title: PBMC
 tabs: ["Manifold", "Genes", "Markers", "Diff. Expression", "Cell types","Annotate", "About"] # which tabs to show
 help: false # set to true to show introjs help on start
 # selected_gene1: Foxc1 # Default selected gene1
@@ -50,7 +50,7 @@ selected_mc1: 1 # Default selected metacell1
 selected_mc2: 2 # Default selected metacell2
 ```
 
-We can edit some of the parameters if we want, or add parameters per dataset, see the [architecture](https://tanaylab.github.io/MCView/articles/Architecture.html) vignette for a full description of the config parameters. 
+The configuration file was generated using `create_project` paramters, but we can edit them if we want, or add parameters per dataset, see the [architecture](https://tanaylab.github.io/MCView/articles/Architecture.html) vignette for a full description of the config parameters. 
 
 
 ## Import 

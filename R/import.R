@@ -66,6 +66,7 @@
 #' import_dataset("PBMC", "PBMC163k", "raw/metacells.h5ad")
 #' }
 #'
+#' @inheritDotParams create_project
 #' @export
 import_dataset <- function(project,
                            dataset,
@@ -80,9 +81,10 @@ import_dataset <- function(project,
                            atlas_project = NULL,
                            atlas_dataset = NULL,
                            projection_weights_file = NULL,
-                           copy_atlas = TRUE) {
+                           copy_atlas = TRUE,
+                           ...) {
     verbose <- !is.null(getOption("MCView.verbose")) && getOption("MCView.verbose")
-    verify_project_dir(project, create = TRUE, atlas = !is.null(atlas_project))
+    verify_project_dir(project, create = TRUE, atlas = !is.null(atlas_project), ...)
 
     cli_alert_info("Importing {.field {dataset}}")
 
@@ -312,6 +314,8 @@ import_dataset <- function(project,
     }
 
     cli_alert_success("{.field {dataset}} dataset imported succesfully to {.path {project}} project")
+    cli::cli_bullets("You can now run the app using: {.code run_app(\"{project}\"})}")
+    cli::cli_bullets("or create a bundle using: {.code create_bundle(\"{project}\"})}")
     invisible(adata)
 }
 
