@@ -69,8 +69,7 @@ create_project_config_file <- function(project_dir,
                                        selected_mc1 = NULL,
                                        selected_mc2 = NULL,
                                        datasets = NULL,
-                                       other_params = NULL,
-                                       edit_config = TRUE,
+                                       other_params = NULL,                                       
                                        atlas = FALSE) {
     config <- list()
     config$title <- title
@@ -134,17 +133,17 @@ create_project <- function(project,
                            atlas = FALSE) {
     project_dir <- create_project_dirs(project, atlas = atlas)
     config <- create_project_config_file(
-        project,
-        title,
-        tabs,
-        help,
-        selected_gene1,
-        selected_gene2,
-        selected_mc1,
-        selected_mc2,
-        datasets,
-        other_params,
-        atlas
+        project = project,
+        title = title,
+        tabs = tabs,
+        help = help,
+        selected_gene1 = selected_gene1,
+        selected_gene2 = selected_gene2,
+        selected_mc1 = selected_mc1,
+        selected_mc2 = selected_mc2,
+        datasets = datasets,
+        other_params = other_params,
+        atlas = atlas
     )
     project_dir <- fs::path(project_dir, "config")
 
