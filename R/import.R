@@ -314,6 +314,8 @@ import_dataset <- function(project,
     }
 
     cli_alert_success("{.field {dataset}} dataset imported succesfully to {.path {project}} project")
+    cli::cli_bullets("You can now run the app using: {.code run_app(\"{project}\"})}")
+    cli::cli_bullets("or create a bundle using: {.code create_bundle(\"{project}\"})}")
     invisible(adata)
 }
 
