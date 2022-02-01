@@ -49,6 +49,7 @@
 #' would be missing from the app.
 #' @param atlas_project path to and \code{MCView} project which contains the atlas.
 #' @param atlas_dataset name of the atlas dataset
+#' @param projection_weights_file Path to a tabular file (csv, tsv) with the following fields "query", "atlas" and "weight". The file is an output of \code{metacells} projection algorithm.
 #' @param copy_atlas copy atlas MCView to the current project. If FALSE - a symbolic link would be created instaed.
 #'
 #' @return invisibly returns an \code{AnnDataR6} object of the read \code{anndata_file}

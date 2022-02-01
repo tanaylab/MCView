@@ -71,6 +71,8 @@ would be missing from the app.}
 
 \item{atlas_dataset}{name of the atlas dataset}
 
+\item{projection_weights_file}{Path to a tabular file (csv, tsv) with the following fields "query", "atlas" and "weight". The file is an output of \code{metacells} projection algorithm.}
+
 \item{copy_atlas}{copy atlas MCView to the current project. If FALSE - a symbolic link would be created instaed.}
 
 \item{...}{
