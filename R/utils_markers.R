@@ -5,32 +5,36 @@
 #' (in log fraction units - normalized egc) above this threshold
 #' @param minimal_relative_log_fraction take only genes with relative
 #' log fraction (mc_fp) above this this value
+#' @param use_abs take top k that are both enriched and anti-enriched
 #'
 #' @noRd
 calc_marker_genes <- function(mc_egc,
                               genes_per_metacell = 2,
                               minimal_max_log_fraction = -10,
                               minimal_relative_log_fraction = 2,
-                              fold_change_reg = 0.1) {
+                              fold_change_reg = 0.1,
+                              use_abs = TRUE) {
+    mc_egc <- log2(mc_egc + 1e-5)
+
     max_log_fractions_of_genes <- apply(mc_egc, 1, max)
 
     interesting_genes_mask <- (max_log_fractions_of_genes
     >= minimal_max_log_fraction)
 
-    mc_egc_norm <- mc_egc + 1e-5
-    mc_fp <- mc_egc_norm / apply(mc_egc_norm, 1, median, na.rm = TRUE)
+    mc_fp <- sweep(mc_egc, 1, matrixStats::rowMedians(mc_egc, na.rm = TRUE))
 
     mc_top_genes <- select_top_fold_genes(
         mc_fp[interesting_genes_mask, ],
         genes_per_metacell = genes_per_metacell,
         minimal_relative_log_fraction = minimal_relative_log_fraction,
-        fold_change_reg = fold_change_reg
+        fold_change_reg = fold_change_reg,
+        use_abs = use_abs
     )
 
     return(mc_top_genes)
 }
 
-select_top_fold_genes <- function(fold_matrix, genes_per_metacell = 2, minimal_relative_log_fraction = 2, fold_change_reg = 0.1, use_abs = FALSE) {
+select_top_fold_genes <- function(fold_matrix, genes_per_metacell = 2, minimal_relative_log_fraction = 2, fold_change_reg = 0.1, use_abs = TRUE) {
     fold_matrix <- fold_matrix + fold_change_reg
     fold_matrix[fold_matrix < minimal_relative_log_fraction] <- NA
 
