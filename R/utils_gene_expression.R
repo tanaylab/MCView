@@ -3,7 +3,7 @@ get_mc_egc <- function(dataset, genes = NULL, atlas = FALSE) {
     mc_sum <- get_mc_data(dataset, "mc_sum", atlas = atlas)
 
     if (!is.null(genes)) {
-        mc_mat <- mc_mat[genes, ]
+        mc_mat <- mc_mat[genes, , drop = FALSE]
     }
 
     return(t(t(mc_mat) / mc_sum))
@@ -49,13 +49,7 @@ filter_mat_by_cell_types <- function(mat, cell_types, metacell_types) {
         filter(cell_type %in% cell_types) %>%
         pull(metacell)
 
-    mat <- mat[, metacells]
-
-    # cell type has only a single metacell
-    if (!is.matrix(mat)) {
-        mat <- as.matrix(mat)
-        colnames(mat) <- metacells
-    }
+    mat <- mat[, metacells, drop = FALSE]
 
     return(mat)
 }
@@ -105,13 +99,7 @@ get_cell_types_mat <- function(cell_types, metacell_types, dataset, projected = 
         select(metacell, cell_type) %>%
         deframe()
 
-    mc_mat <- mc_mat[, names(mc_types)]
-
-    if (is.null(dim(mc_mat))) {
-        ct_mat <- as.matrix(mc_mat)
-        colnames(ct_mat) <- mc_types
-        return(ct_mat)
-    }
+    mc_mat <- mc_mat[, names(mc_types), drop = FALSE]
 
     ct_mat <- t(tgs_matrix_tapply(mc_mat, mc_types, sum))
 
@@ -137,7 +125,7 @@ get_samples_mat <- function(cell_types, metacell_types, dataset) {
         select(metacell, cell_type) %>%
         deframe()
 
-    mc_mat <- mc_mat[, names(mc_types)]
+    mc_mat <- mc_mat[, names(mc_types), drop = FALSE]
     samp_mc_frac <- get_samp_mc_frac(dataset)[, names(mc_types)]
     samp_mc_frac <- samp_mc_frac / rowSums(samp_mc_frac)
 

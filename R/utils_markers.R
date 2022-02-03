@@ -23,8 +23,8 @@ calc_marker_genes <- function(mc_egc,
 
     mc_fp <- sweep(mc_egc, 1, matrixStats::rowMedians(mc_egc, na.rm = TRUE))
 
-    mc_top_genes <- select_top_fold_genes_per_metacell(
-        mc_fp[interesting_genes_mask, ],
+    mc_top_genes <- select_top_fold_genes(
+        mc_fp[interesting_genes_mask, , drop = FALSE],
         genes_per_metacell = genes_per_metacell,
         minimal_relative_log_fraction = minimal_relative_log_fraction,
         fold_change_reg = fold_change_reg,
@@ -95,7 +95,7 @@ add_systematic_markers <- function(dataset, markers) {
     systematic_genes <- get_mc_data(dataset, "systematic_genes")
     if (!is.null(systematic_genes)) {
         m <- get_mc_data(dataset, "projected_fold")
-        f <- Matrix::rowSums(m[intersect(rownames(m), systematic_genes), ]) > 0
+        f <- Matrix::rowSums(m[intersect(rownames(m), systematic_genes), , drop = FALSE]) > 0
         return(unique(c(systematic_genes[f], markers)))
     }
     return(markers)
@@ -116,15 +116,15 @@ filter_markers_mat <- function(gene_folds) {
         good_marks <- rownames(gene_folds)
     }
 
-    return(gene_folds[good_marks, ])
+    return(gene_folds[good_marks, , drop = FALSE])
 }
 
 get_top_marks <- function(feat, notify_var_genes = TRUE) {
     g_ncover <- apply(feat > 1, 1, sum)
     main_mark <- names(g_ncover)[which.max(g_ncover)]
-    f <- feat[main_mark, ] < 0.25
+    f <- feat[main_mark, , drop = FALSE] < 0.25
     if (sum(f) > 0.2 * ncol(feat)) {
-        g_score <- apply(feat[, f] > 1, 1, sum)
+        g_score <- apply(feat[, f, drop = FALSE] > 1, 1, sum)
     } else {
         g_score <- -apply(feat, 1, cor, feat[main_mark, ])
     }
@@ -172,8 +172,8 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
     zero_mcs <- colSums(abs(feat) > 0) < 2
     if (any(zero_mcs)) {
         feat_all <- feat
-        feat <- feat_all[, !zero_mcs]
-        feat_zero <- feat_all[, zero_mcs]
+        feat <- feat_all[, !zero_mcs, drop = FALSE]
+        feat_zero <- feat_all[, zero_mcs, drop = FALSE]
     }
 
     if (ncol(feat) == 0) { # all the metacells do not have enough non-zero values
@@ -262,14 +262,14 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
         mc_fp <- get_mc_data(dataset, "inner_fold_mat")
         req(mc_fp)
         mc_fp <- as.matrix(mc_fp[Matrix::rowSums(mc_fp) > 0, ])
-        mc_fp <- mc_fp[intersect(markers, rownames(mc_fp)), ]
+        mc_fp <- mc_fp[intersect(markers, rownames(mc_fp)), , drop = FALSE]
         epsilon <- 1e-5
         log_transform <- FALSE
     } else if (mode == "Proj") {
         mc_fp <- get_mc_data(dataset, "projected_fold")
         req(mc_fp)
         mc_fp <- as.matrix(mc_fp[abs(Matrix::rowSums(mc_fp)) > 0, ])
-        mc_fp <- mc_fp[intersect(markers, rownames(mc_fp)), ]
+        mc_fp <- mc_fp[intersect(markers, rownames(mc_fp)), , drop = FALSE]
         epsilon <- 1e-5
         log_transform <- FALSE
     } else if (mode == "Markers") {
@@ -295,23 +295,15 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
 
     if (ncol(mat) > 1) {
         mc_order <- order_mc_by_most_var_genes(mat, force_cell_type = force_cell_type, metacell_types = metacell_types, epsilon = epsilon, notify_var_genes = notify_var_genes, log_transform = log_transform)
-        mat <- mat[, mc_order]
+        mat <- mat[, mc_order, drop = FALSE]
     }
 
     if (mode %in% c("Markers", "Gene modules")) {
         mat <- log2(mat)
     }
 
-    metacells <- colnames(mat)
-
     gene_ord <- order(apply(mat, 1, which.max))
-    mat <- mat[gene_ord, ]
-
-    # matrix has only a single metacell
-    if (!is.matrix(mat)) {
-        mat <- as.matrix(mat)
-        colnames(mat) <- metacells
-    }
+    mat <- mat[gene_ord, , drop = FALSE]
 
     return(mat)
 }

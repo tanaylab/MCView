@@ -265,7 +265,7 @@ heatmap_reactives <- function(ns, input, output, session, dataset, metacell_type
         m <- mat()
         req(m)
 
-        m <- filter_heatmap_by_metacell(mat(), metacell_filter())
+        m <- filter_heatmap_by_metacell(m, metacell_filter())
 
         if (!is.null(input$selected_md)) {
             metadata <- get_mc_data(dataset(), "metadata") %>%
@@ -411,11 +411,8 @@ print.gt_custom <- function(x) {
 
 filter_heatmap_by_metacell <- function(m, f) {
     if (!is.null(f) && length(f) > 0) {
-        m <- m[, f]
-        if (is.null(ncol(m))) { # a single metacell
-            m <- as.matrix(m)
-            colnames(m) <- f
-        }
+        f <- f[f %in% colnames(m)]
+        m <- m[, f, drop = FALSE]
     }
     return(m)
 }
