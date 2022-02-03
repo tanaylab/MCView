@@ -23,7 +23,7 @@ cell_type_selector <- function(dataset, ns, id = "selected_cell_types", label = 
     })
 }
 
-gene_modules_selector <- function(dataset, gene_modules, ns, id = "selected_gene_modules", label = "Gene modules", selected = NULL) {
+gene_modules_selector <- function(dataset, gene_modules, ns, id, label = "Gene modules", selected = NULL) {
     renderUI({
         modules <- unique(gene_modules()$module)
         if (!is.null(selected) && selected == "all") {
@@ -154,7 +154,6 @@ top_correlated_selector <- function(gene_id, id, type_id, input, output, session
                 ns(glue("select_top_cor_{id}_{.x}"))
             }
         )
-        # input_ids <- c(ns(glue("select_top_cor_{id}_x")), ns(glue("select_top_cor_{id}_y")), ns(glue("select_top_cor_{id}_color")), ns(glue("select_top_cor_{id}_proj2d")))
         tagList(
             selectInput(
                 ns(glue("selected_top_{id}")),

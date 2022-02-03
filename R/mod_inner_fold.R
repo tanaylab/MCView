@@ -13,7 +13,7 @@ mod_inner_fold_ui <- function(id) {
         fluidRow(
             resizable_column(
                 width = 12,
-                heatmap_box(ns, "Inner-Fold Heatmap")
+                heatmap_box(ns("inner_fold_heatmap"), "Inner-Fold Heatmap")
             )
         )
     )
@@ -32,17 +32,21 @@ mod_inner_fold_ui <- function(id) {
 mod_inner_fold_sidebar_ui <- function(id) {
     ns <- NS(id)
     tagList(
-        heatmap_sidebar(ns)
+        heatmap_sidebar(ns("inner_fold_heatmap"))
     )
 }
 
 #' inner_fold Server Function
 #'
 #' @noRd
-mod_inner_fold_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals) {
-    ns <- session$ns
-
-    markers <- reactiveVal()
-    lfp_range <- reactiveVal()
-    heatmap_reactives(ns, input, output, session, dataset, metacell_types, gene_modules, cell_type_colors, globals, markers, lfp_range, "Inner")
+mod_inner_fold_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, globals) {
+    moduleServer(
+        id,
+        function(input, output, session) {
+            ns <- session$ns
+            markers <- reactiveVal()
+            lfp_range <- reactiveVal()
+            heatmap_reactives("inner_fold_heatmap", dataset, metacell_types, gene_modules, cell_type_colors, globals, markers, lfp_range, "Inner")
+        }
+    )
 }
