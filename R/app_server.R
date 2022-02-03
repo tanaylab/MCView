@@ -43,7 +43,7 @@ app_server <- function(input, output, session) {
     })
 
     load_tab <- function(tab_name, module) {
-        callModule(module, glue("{tab_name}_ui_1"), dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors, gene_modules = gene_modules, globals = globals)
+        module(tab_name, dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors, gene_modules = gene_modules, globals = globals)
     }
 
     load_tab("manifold", mod_manifold_server)
@@ -83,7 +83,7 @@ app_server <- function(input, output, session) {
                     "showBullets" = FALSE,
                     "nextLabel" = "next",
                     "prevLabel" = "back",
-                    steps = get_tab_steps("manifold", "manifold_ui_1")
+                    steps = get_tab_steps("manifold", "manifold")
                 )
             )
         } else if (input$tab_sidebar == "gene_mc") {
@@ -93,7 +93,7 @@ app_server <- function(input, output, session) {
                     "showBullets" = FALSE,
                     "nextLabel" = "next",
                     "prevLabel" = "back",
-                    steps = get_tab_steps("genes", "gene_mc_ui_1")
+                    steps = get_tab_steps("genes", "gene_mc")
                 )
             )
         } else if (input$tab_sidebar == "mc_mc") {
@@ -103,7 +103,7 @@ app_server <- function(input, output, session) {
                     "showBullets" = FALSE,
                     "nextLabel" = "next",
                     "prevLabel" = "back",
-                    steps = get_tab_steps("metacells", "mc_mc_ui_1")
+                    steps = get_tab_steps("metacells", "mc_mc")
                 )
             )
         } else if (input$tab_sidebar == "cell_type") {
@@ -113,7 +113,7 @@ app_server <- function(input, output, session) {
                     "showBullets" = FALSE,
                     "nextLabel" = "next",
                     "prevLabel" = "back",
-                    steps = get_tab_steps("cell_type", "cell_type_ui_1")
+                    steps = get_tab_steps("cell_type", "cell_type")
                 )
             )
         } else if (input$tab_sidebar == "samples") {
@@ -123,7 +123,7 @@ app_server <- function(input, output, session) {
                     "showBullets" = FALSE,
                     "nextLabel" = "next",
                     "prevLabel" = "back",
-                    steps = get_tab_steps("samples", "samples_ui_1")
+                    steps = get_tab_steps("samples", "samples")
                 )
             )
         } else if (input$tab_sidebar == "Query") {
@@ -133,7 +133,7 @@ app_server <- function(input, output, session) {
                     "showBullets" = FALSE,
                     "nextLabel" = "next",
                     "prevLabel" = "back",
-                    steps = get_tab_steps("query", "query_ui_1")
+                    steps = get_tab_steps("query", "query")
                 )
             )
         } else if (input$tab_sidebar == "Atlas") {
@@ -143,7 +143,7 @@ app_server <- function(input, output, session) {
                     "showBullets" = FALSE,
                     "nextLabel" = "next",
                     "prevLabel" = "back",
-                    steps = get_tab_steps("atlas", "atlas_ui_1")
+                    steps = get_tab_steps("atlas", "atlas")
                 )
             )
         } else if (input$tab_sidebar == "annotate") {
@@ -153,7 +153,7 @@ app_server <- function(input, output, session) {
                     "showBullets" = FALSE,
                     "nextLabel" = "next",
                     "prevLabel" = "back",
-                    steps = get_tab_steps("metacells", "annotate_ui_1")
+                    steps = get_tab_steps("metacells", "annotate")
                 )
             )
         }

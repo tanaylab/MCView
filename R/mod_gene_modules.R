@@ -9,11 +9,12 @@
 #' @importFrom shiny NS tagList
 mod_gene_modules_ui <- function(id) {
     ns <- NS(id)
+
     tagList(
         fluidRow(
             resizable_column(
                 width = 12,
-                heatmap_box(ns, "Gene modules Heatmap")
+                heatmap_box(ns("gene_mods"), "Gene modules Heatmap")
             )
         )
     )
@@ -44,20 +45,25 @@ mod_gene_modules_sidebar_ui <- function(id) {
 #' gene_modules Server Function
 #'
 #' @noRd
-mod_gene_modules_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals) {
-    ns <- session$ns
+mod_gene_modules_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, globals) {
+    moduleServer(
+        id,
+        function(input, output, session) {
+            ns <- session$ns
+        }
+    )
 
-    markers <- reactiveVal()
-    lfp_range <- reactiveVal()
+    # markers <- reactiveVal()
+    # lfp_range <- reactiveVal()
 
-    output$gene_module_list <- gene_modules_selector(dataset, gene_modules, ns, id = "selected_gene_modules", selected = "all")
+    # output$gene_module_list <- gene_modules_selector(dataset, gene_modules, ns, id = "selected_gene_modules", selected = "all")
 
-    observe({
-        req(input$selected_gene_modules)
-        markers(input$selected_gene_modules)
-    })
+    # observe({
+    #     req(input$selected_gene_modules)
+    #     markers(input$selected_gene_modules)
+    # })
 
-    # mat <- reactive({}) # summarise the gene modules using tgs_matrix_tapply and then divide by the median for mc_fp.
+    # # mat <- reactive({}) # summarise the gene modules using tgs_matrix_tapply and then divide by the median for mc_fp.
 
-    heatmap_reactives(ns, input, output, session, dataset, metacell_types, gene_modules, cell_type_colors, globals, markers, lfp_range, "Gene modules")
+    # heatmap_reactives(ns, input, output, session, dataset, metacell_types, gene_modules, cell_type_colors, globals, markers, lfp_range, "Gene modules")
 }
