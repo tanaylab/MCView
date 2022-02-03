@@ -23,10 +23,12 @@ app_server <- function(input, output, session) {
     # annotation reactives
     metacell_types <- reactiveVal()
     cell_type_colors <- reactiveVal()
+    gene_modules <- reactiveVal()
 
     observe({
         initial_cell_type_colors <- get_mc_data(dataset(), "cell_type_colors")
         initial_metacell_types <- get_mc_data(dataset(), "metacell_types")
+        initial_gene_modules <- get_mc_data(dataset(), "gene_modules")
 
         # remove metacell color column if exists
         initial_metacell_types$mc_col <- NULL
@@ -37,16 +39,18 @@ app_server <- function(input, output, session) {
 
         metacell_types(initial_metacell_types)
         cell_type_colors(initial_cell_type_colors)
+        gene_modules(initial_gene_modules)
     })
 
     load_tab <- function(tab_name, module) {
-        callModule(module, glue("{tab_name}_ui_1"), dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors, globals = globals)
+        callModule(module, glue("{tab_name}_ui_1"), dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors, gene_modules = gene_modules, globals = globals)
     }
 
     load_tab("manifold", mod_manifold_server)
     load_tab("gene_mc", mod_gene_mc_server)
     load_tab("flow", mod_flow_server)
     load_tab("markers", mod_markers_server)
+    load_tab("gene_modules", mod_gene_modules_server)
     load_tab("inner_fold", mod_inner_fold_server)
     load_tab("samples", mod_samples_server)
     load_tab("cell_type", mod_cell_type_server)

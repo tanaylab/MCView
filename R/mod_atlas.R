@@ -86,7 +86,7 @@ mod_atlas_sidebar_ui <- function(id) {
 #' atlas Server Function
 #'
 #' @noRd
-mod_atlas_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals) {
+mod_atlas_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals) {
     ns <- session$ns
 
     projection_selectors(ns, dataset, output, input, globals, weight = 1, atlas = TRUE)

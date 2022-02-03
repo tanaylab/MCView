@@ -204,7 +204,7 @@ mod_annotate_sidebar_ui <- function(id) {
 #' annotate Server Function
 #'
 #' @noRd
-mod_annotate_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals) {
+mod_annotate_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals) {
     ns <- session$ns
 
     # gene selectors

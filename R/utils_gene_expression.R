@@ -18,6 +18,32 @@ get_mc_fp <- function(dataset, genes = NULL, atlas = FALSE) {
     return(mc_fp)
 }
 
+get_mc_gene_modules_egc <- function(dataset, modules = NULL, gene_modules = NULL, atlas = FALSE) {
+    mc_mat <- get_mc_data(dataset, "mc_mat", atlas = atlas)
+    mc_sum <- get_mc_data(dataset, "mc_sum", atlas = atlas)
+
+    gene_modules <- gene_modules %||% get_mc_data(dataset, "gene_modules", atlas = atlas)
+    if (!is.null(modules)) {
+        gene_modules <- gene_modules %>%
+            filter(module %in% modules)
+    }
+
+    mc_mat <- mc_mat[gene_modules$gene, ]
+
+    mc_mat <- tgs_matrix_tapply(t(mc_mat), gene_modules$module, sum)
+
+    return(t(t(mc_mat) / mc_sum))
+}
+
+get_mc_gene_modules_fp <- function(dataset, modules = NULL, gene_modules = NULL, atlas = FALSE) {
+    mc_egc <- get_mc_gene_modules_egc(dataset, modules = modules, gene_modules = gene_modules, atlas = atlas)
+
+    mc_egc_norm <- mc_egc + 1e-5
+    mc_fp <- mc_egc_norm / apply(mc_egc_norm, 1, median, na.rm = TRUE)
+
+    return(mc_fp)
+}
+
 filter_mat_by_cell_types <- function(mat, cell_types, metacell_types) {
     metacells <- metacell_types %>%
         filter(cell_type %in% cell_types) %>%

@@ -107,7 +107,7 @@ mod_samples_sidebar_ui <- function(id) {
 #' samples Server Function
 #'
 #' @noRd
-mod_samples_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals) {
+mod_samples_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals) {
     ns <- session$ns
     top_correlated_selectors(input, output, session, dataset, ns, button_labels = c("X", "Y", "Color"))
 

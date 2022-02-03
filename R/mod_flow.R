@@ -103,7 +103,7 @@ mod_flow_sidebar_ui <- function(id) {
 #' gene_mc Server Function
 #'
 #' @noRd
-mod_flow_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals) {
+mod_flow_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals) {
     ns <- session$ns
 
     metacell_names <- metacell_names_reactive(dataset)

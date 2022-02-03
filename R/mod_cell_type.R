@@ -64,7 +64,7 @@ mod_cell_type_sidebar_ui <- function(id) {
 #' cell type Server Function
 #'
 #' @noRd
-mod_cell_type_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals) {
+mod_cell_type_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals) {
     ns <- session$ns
 
     # scatter_selectors(ns, dataset, output, globals, "boxplot")

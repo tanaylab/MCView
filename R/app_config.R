@@ -82,6 +82,11 @@ init_tab_defs <- function() {
             module_name = "markers",
             icon = "map-marker"
         ),
+        "Gene modules" = list(
+            title = "Gene modules",
+            module_name = "gene_modules",
+            icon = "layer-group"
+        ),
         "Inner-fold" = list(
             title = "Inner-fold",
             module_name = "inner_fold",

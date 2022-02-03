@@ -123,7 +123,7 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
 
     cli_alert_info("Calculating top atlas-query fold genes")
     forbidden <- query$var$forbidden_gene
-    marker_genes_projected <- select_top_fold_genes(projected_fold[!forbidden, ], minimal_relative_log_fraction = -Inf, use_abs = TRUE, genes_per_metacell = 50)
+    marker_genes_projected <- select_top_fold_genes_per_metacell(projected_fold[!forbidden, ], minimal_relative_log_fraction = -Inf, use_abs = TRUE, genes_per_metacell = 50)
     serialize_shiny_data(marker_genes_projected, "marker_genes_projected", dataset = dataset, cache_dir = cache_dir)
 
     serialize_shiny_data(query$uns$project_max_projection_fold_factor, "project_max_projection_fold_factor", dataset = dataset, cache_dir = cache_dir)

@@ -39,11 +39,11 @@ mod_markers_sidebar_ui <- function(id) {
 #' markers Server Function
 #'
 #' @noRd
-mod_markers_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals) {
+mod_markers_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals) {
     ns <- session$ns
 
     markers <- reactiveVal()
     lfp_range <- reactiveVal()
 
-    heatmap_reactives(ns, input, output, session, dataset, metacell_types, cell_type_colors, globals, markers, lfp_range, "Markers")
+    heatmap_reactives(ns, input, output, session, dataset, metacell_types, gene_modules, cell_type_colors, globals, markers, lfp_range, "Markers")
 }

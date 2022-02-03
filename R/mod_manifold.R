@@ -74,7 +74,7 @@ mod_manifold_sidebar_ui <- function(id) {
 #' manifold Server Function
 #'
 #' @noRd
-mod_manifold_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals) {
+mod_manifold_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals) {
     ns <- session$ns
 
     # gene selectors

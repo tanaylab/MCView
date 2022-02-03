@@ -43,6 +43,10 @@ app_ui <- function(request) {
             mod_markers_sidebar_ui("markers_ui_1")
         ),
         conditionalPanel(
+            condition = "input.tab_sidebar == 'gene_modules'",
+            mod_gene_modules_sidebar_ui("gene_modules_ui_1")
+        ),
+        conditionalPanel(
             condition = "input.tab_sidebar == 'inner_fold'",
             mod_inner_fold_sidebar_ui("inner_fold_ui_1")
         ),
@@ -91,6 +95,7 @@ app_ui <- function(request) {
             shinydashboard::tabItem(tabName = "gene_mc", mod_gene_mc_ui("gene_mc_ui_1")),
             shinydashboard::tabItem(tabName = "flow", mod_flow_ui("flow_ui_1")),
             shinydashboard::tabItem(tabName = "markers", mod_markers_ui("markers_ui_1")),
+            shinydashboard::tabItem(tabName = "gene_modules", mod_gene_modules_ui("gene_modules_ui_1")),
             shinydashboard::tabItem(tabName = "inner_fold", mod_inner_fold_ui("inner_fold_ui_1")),
             shinydashboard::tabItem(tabName = "proj_fold", mod_proj_fold_ui("proj_fold_ui_1")),
             shinydashboard::tabItem(tabName = "query", mod_query_ui("query_ui_1")),

@@ -103,7 +103,7 @@ mod_mc_mc_sidebar_ui <- function(id) {
 #' mc_mc Server Function
 #'
 #' @noRd
-mod_mc_mc_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals) {
+mod_mc_mc_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals) {
     ns <- session$ns
 
     groupA <- reactiveVal()

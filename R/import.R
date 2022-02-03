@@ -44,12 +44,14 @@
 #' If only colors are given breaks would be implicitly determined from the minimum and maximum of the metadata field.
 #' For categorical metadata columns, color can be given either as a named vector where names are the categories and the values are the colors, or as a named list where the first element named 'colors' holds the colors, and the second element
 #' called 'categories' holds the categories.
+#' @param gene_modules_file path to a tabular file (csv,tsv) with assignment of genes to gene modules. Should have a field named "gene" with the gene name and a field named "module" with the name of the gene module.
+#' @param gene_modules_k number of clusters for initial gene module calculation. If NULL - the number of clusters would be determined such that an gene module would contain 16 genes on average.
 #' @param calc_gg_cor calculate top 30 correlated and anti-correlated genes for each gene. This computation can be heavy
 #' for large datasets or weaker machines, so you can set \code{calc_gg_cor=FALSE} to skip it. Note that then this feature
 #' would be missing from the app.
 #' @param atlas_project path to and \code{MCView} project which contains the atlas.
 #' @param atlas_dataset name of the atlas dataset
-#' @param projection_weights_file Path to a tabular file (csv, tsv) with the following fields "query", "atlas" and "weight". The file is an output of \code{metacells} projection algorithm.
+#' @param projection_weights_file Path to a tabular file (csv,tsv) with the following fields "query", "atlas" and "weight". The file is an output of \code{metacells} projection algorithm.
 #' @param copy_atlas copy atlas MCView to the current project. If FALSE - a symbolic link would be created instaed.
 #'
 #' @return invisibly returns an \code{AnnDataR6} object of the read \code{anndata_file}
@@ -78,6 +80,8 @@ import_dataset <- function(project,
                            metadata_fields = NULL,
                            metadata = NULL,
                            metadata_colors = NULL,
+                           gene_modules_file = NULL,
+                           gene_modules_k = NULL,
                            calc_gg_cor = TRUE,
                            atlas_project = NULL,
                            atlas_dataset = NULL,
@@ -264,6 +268,13 @@ import_dataset <- function(project,
 
     serialize_shiny_data(metacell_types, "metacell_types", dataset = dataset, cache_dir = cache_dir, flat = TRUE)
 
+    if (!is.null(gene_modules_file)) {
+        gene_modules <- parse_gene_modules_file(gene_modules_file)
+    } else {
+        gene_modules <- calc_gene_modules(mc_mat[!forbidden, ], k = gene_modules_k)
+    }
+    serialize_shiny_data(gene_modules, "gene_modules", dataset = dataset, cache_dir = cache_dir, flat = TRUE)
+
     if (calc_gg_cor) {
         if (!is.null(adata$varp$var_similarity)) {
             cli_alert_info("Loading previously calculated 30 correlated and anti-correlated genes for each gene")
@@ -315,8 +326,8 @@ import_dataset <- function(project,
     }
 
     cli_alert_success("{.field {dataset}} dataset imported succesfully to {.path {project}} project")
-    cli::cli_bullets("You can now run the app using: {.code run_app(\"{project}\"})}")
-    cli::cli_bullets("or create a bundle using: {.code create_bundle(\"{project}\"})}")
+    cli::cli_bullets("You can now run the app using: {.code run_app(\"{project}\")}")
+    cli::cli_bullets("or create a bundle using: {.code create_bundle(\"{project}\")}")
     invisible(adata)
 }
 

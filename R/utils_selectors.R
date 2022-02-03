@@ -23,6 +23,22 @@ cell_type_selector <- function(dataset, ns, id = "selected_cell_types", label = 
     })
 }
 
+gene_modules_selector <- function(dataset, gene_modules, ns, id = "selected_gene_modules", label = "Gene modules", selected = NULL) {
+    renderUI({
+        modules <- unique(gene_modules()$module)
+        if (!is.null(selected) && selected == "all") {
+            selected <- modules
+        }
+
+        shinyWidgets::pickerInput(ns(id), label,
+            choices = modules,
+            selected = selected,
+            multiple = TRUE,
+            options = list(`actions-box` = TRUE, `dropup-auto` = FALSE)
+        )
+    })
+}
+
 metacell_selector <- function(dataset, ns, id, label, selected = NULL, atlas = FALSE, ...) {
     renderUI({
         metacell_names <- colnames(get_mc_data(dataset(), "mc_mat", atlas = atlas))
