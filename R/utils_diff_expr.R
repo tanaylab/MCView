@@ -8,12 +8,7 @@ calc_diff_expr <- function(mat, egc, columns, diff_thresh = 1.5, pval_thresh = 0
 
     f <- rownames(df)[abs(df$diff) >= diff_thresh]
 
-    m <- mat[f, columns]
-
-    if (length(f) == 1) {
-        m <- t(as.matrix(m))
-        rownames(m) <- f
-    }
+    m <- mat[f, columns, drop = FALSE]
 
     if (nrow(m) > 0) {
         tots <- colSums(m)

@@ -99,7 +99,7 @@ import_dataset <- function(project,
     adata <- anndata::read_h5ad(anndata_file)
 
     if (rlang::has_name(adata$obs, "hidden")) {
-        adata <- adata[!adata$obs$hidden, ]
+        adata <- adata[!adata$obs$hidden, , drop = FALSE]
     }
 
     cli_alert_info("Processing metacell matrix")
@@ -174,7 +174,7 @@ import_dataset <- function(project,
 
         cli_alert_info("Calculating top inner-fold genes")
         inner_fold_genes <- rownames(inner_fold_mat)[Matrix::rowSums(inner_fold_mat) > 0]
-        inner_fold_genes_vars <- matrixStats::rowVars(as.matrix(inner_fold_mat[inner_fold_genes, ]))
+        inner_fold_genes_vars <- matrixStats::rowVars(as.matrix(inner_fold_mat[inner_fold_genes, , drop = FALSE]))
         # fp here is the variance of each non-zero inner-fold gene.
         marker_genes_inner_fold <- tibble(gene = inner_fold_genes, fp = inner_fold_genes_vars)
         serialize_shiny_data(marker_genes_inner_fold, "marker_genes_inner_fold", dataset = dataset, cache_dir = cache_dir)

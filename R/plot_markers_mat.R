@@ -101,7 +101,7 @@ add_markers_colorbars <- function(p, mc_types, dataset, top_cell_type_bar = TRUE
                     tgplot_add_axis_annotation(palette(metadata[[md]]), position = "bottom", label = md)
             } else {
                 p <- p %>%
-                    tgplot_add_axis_annotation(md_colors[metadata[[md]]], position = "bottom", label = md)
+                    tgplot_add_axis_annotation(md_colors[as.character(metadata[[md]])], position = "bottom", label = md)
             }
         }
     }
