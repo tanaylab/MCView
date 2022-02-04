@@ -99,7 +99,7 @@ import_dataset <- function(project,
     adata <- anndata::read_h5ad(anndata_file)
 
     if (rlang::has_name(adata$obs, "hidden")) {
-        adata <- adata[!adata$obs$hidden, , drop = FALSE]
+        adata <- adata[!adata$obs$hidden, ]
     }
 
     cli_alert_info("Processing metacell matrix")
