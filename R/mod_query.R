@@ -632,4 +632,9 @@ group_selectors_mod_query <- function(input, output, session, dataset, ns, group
 
 
         if (is.null(group())) {
-            group(selecte
+            group(selected_metacells)
+        } else {
+            group(unique(c(group(), selected_metacells)))
+        }
+    })
+}
