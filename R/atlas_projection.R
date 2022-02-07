@@ -22,7 +22,7 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
 
     load_all_data(cache_dir, datasets = dataset)
 
-    required_fields <- c("type", "similar")
+    required_fields <- c("projected_type", "similar")
     query_md <- query$obs %>%
         rownames_to_column("metacell") %>%
         as_tibble()
@@ -41,7 +41,7 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
     }
     serialize_shiny_data(proj_weights, "proj_weights", dataset = dataset, cache_dir = cache_dir)
 
-    proj_types <- unique(query_md$type)
+    proj_types <- unique(query_md$projected_type)
     atlas_metacell_types <- get_mc_data(dataset, "metacell_types", atlas = TRUE)
 
     query_atlas_cell_type_fracs <- proj_weights %>%
@@ -59,7 +59,7 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
     serialize_shiny_data(query_atlas_cell_type_fracs, "query_atlas_cell_type_fracs", dataset = dataset, cache_dir = cache_dir, flat = TRUE)
 
     proj_metacell_types <- query_md %>%
-        select(metacell, cell_type = type, similar)
+        select(metacell, cell_type = projected_type, similar)
 
     # Take metacell metadata from the query
     query_types <- get_mc_data(dataset, "metacell_types", atlas = FALSE) %>%
@@ -157,9 +157,13 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
             forbidden_gene,
             ignored_gene,
             atlas_significant_gene,
+            correction_factor,
+            projected_correlation,
+            correlated_gene,
+            uncorrelated_gene,
             glob_biased_gene = biased_gene,
             glob_ignored_gene = ignored_gene,
-            glob_systematic_gene = systematic_gene,
+            glob_systematic_gene = systematic_gene
         ) %>%
         pivot_longer(
             contains("_of_"),
@@ -168,7 +172,7 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
         ) %>%
         spread(dtype, value) %>%
         select(
-            gene, cell_type, biased_gene, systematic_gene, ignored_gene, everything()
+            gene, cell_type, biased_gene, systematic_gene, ignored_gene, projected_correlation, correlated_gene, uncorrelated_gene, everything()
         ) %>%
         arrange(
             desc(biased_gene),

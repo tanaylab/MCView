@@ -403,17 +403,34 @@ mod_query_server <- function(input, output, session, dataset, metacell_types, ce
     })
 
     output$gene_metadata_table <- DT::renderDataTable(
-        current_gene_table(),
-        escape = FALSE,
-        server = TRUE,
-        rownames = FALSE,
-        extensions = c("FixedColumns"),
-        selection = "single",
-        options = list(
-            dom = "Bfrtip",
-            scrollX = TRUE,
-            fixedColumns = list(leftColumns = 2)
-        )
+        {
+            req(current_gene_table())
+            dt <- DT::datatable(
+                current_gene_table(),
+                escape = FALSE,
+                rownames = FALSE,
+                extensions = c("Scroller", "FixedColumns"),
+                selection = "single",
+                filter = "top",
+                options = list(
+                    dom = "Bfrtip",
+                    deferRender = TRUE,
+                    scrollY = 200,
+                    scroller = TRUE,
+                    scrollX = TRUE,
+                    fixedColumns = list(leftColumns = 2)
+                )
+            )
+
+            round_columns <- c("correction_factor", "projected_correlation")
+            round_columns <- round_columns[round_columns %in% colnames(current_gene_table())]
+            if (length(round_columns) > 0) {
+                dt <- dt %>% DT::formatRound(columns = round_columns, digits = 2)
+            }
+
+            return(dt)
+        },
+        server = TRUE
     )
 }
 
