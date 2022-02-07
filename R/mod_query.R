@@ -407,10 +407,14 @@ mod_query_server <- function(input, output, session, dataset, metacell_types, ce
         escape = FALSE,
         server = TRUE,
         rownames = FALSE,
-        extensions = c("FixedColumns"),
+        extensions = c("Scroller", "FixedColumns"),
         selection = "single",
+        filter = "top",
         options = list(
             dom = "Bfrtip",
+            deferRender = TRUE,
+            scrollY = 200,
+            scroller = TRUE,
             scrollX = TRUE,
             fixedColumns = list(leftColumns = 2)
         )
