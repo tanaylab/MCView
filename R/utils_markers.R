@@ -23,7 +23,7 @@ calc_marker_genes <- function(mc_egc,
 
     mc_fp <- sweep(mc_egc, 1, matrixStats::rowMedians(mc_egc, na.rm = TRUE))
 
-    mc_top_genes <- select_top_fold_genes(
+    mc_top_genes <- select_top_fold_genes_per_metacell(
         mc_fp[interesting_genes_mask, , drop = FALSE],
         genes_per_metacell = genes_per_metacell,
         minimal_relative_log_fraction = minimal_relative_log_fraction,
