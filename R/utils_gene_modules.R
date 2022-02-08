@@ -32,11 +32,11 @@ update_gene_modules <- function(project, dataset, gene_modules_file) {
 
 
 parse_gene_modules_file <- function(file) {
-    gene_modules <- fread(file) %>% as_tibble()
+    gene_modules <- fread(file,  colClasses = c("gene" = "character", "module" = "character")) %>% as_tibble()
 
     for (field in c("gene", "module")) {
         if (!has_name(gene_modules, field)) {
-            cli_abort("{.field {file}} should have a column named {.field {field}}")
+            cli_abort("File should have a column named {.field {field}}")
         }
     }
 
@@ -97,7 +97,8 @@ calc_gene_modules <- function(mat, k = NULL, n_genes = 1000, minimal_max_log_fra
         group_by(clust) %>%
         mutate(module = paste0("mod_", gene[which.min(rank)])) %>%
         ungroup() %>%
-        arrange(module, rank) %>%
+        add_count(module) %>% 
+        arrange(desc(n), rank) %>%
         select(gene, module)
 
     return(gene_modules)
