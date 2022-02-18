@@ -293,7 +293,7 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
         mat <- mc_fp
     }
 
-    if (ncol(mat) > 1) {
+    if (ncol(mat) > 1) {        
         mc_order <- order_mc_by_most_var_genes(mat, force_cell_type = force_cell_type, metacell_types = metacell_types, epsilon = epsilon, notify_var_genes = notify_var_genes, log_transform = log_transform)
         mat <- mat[, mc_order, drop = FALSE]
     }

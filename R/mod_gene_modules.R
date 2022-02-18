@@ -32,6 +32,9 @@ mod_gene_modules_ui <- function(id) {
                         startOpen = FALSE,
                         width = 80,
                         id = ns("gene_modules_sidebar"),
+                        actionButton(ns("remove_gene_module_modal"), "Remove module"),
+                        actionButton(ns("add_gene_module_modal"), "New module"),
+                        actionButton(ns("reset_gene_modules"), "Reset all"),
                         fileInput(ns("gene_modules_fn"),
                             label = NULL,
                             buttonLabel = "Load",
@@ -47,58 +50,29 @@ mod_gene_modules_ui <- function(id) {
                         ),
                         downloadButton(ns("gene_modules_download"), "Export", style = "align-items: left;")
                         
-                    ),                        
-                    actionButton(ns("remove_gene_module_modal"), "Remove", style = "align-items: left;"),
-                    actionButton(ns("merge_gene_module_modal"), "Merge", style = "align-items: left;"),
-                    actionButton(ns("reset_gene_modules"), "Reset", style = "align-items: left;"),                
-                    br(),
-                    shinycssloaders::withSpinner(
-                        DT::dataTableOutput(ns("gene_modules_table"))
-                    )                    
-                )
-
-            )
-        ),
-        fluidRow(
-            resizable_column(
-                width = 9,
-                style = "padding-right:0px;",
-                heatmap_box(ns("genes_heatmap"), "Genes Heatmap", legend_width = 2)
-            ),
-            resizable_column(
-                width = 3,
-                style = "padding-right:0px; padding-left:0px;",
-                shinydashboardPlus::box(
-                    id = ns("genes_box"),
-                    title = "Gene modules",
-                    status = "primary",
-                    solidHeader = TRUE,
-                    collapsible = TRUE,
-                    closable = FALSE,
-                    width = 12,                                        
-                    actionButton(ns("show_module"), "Show", style = "align-items: center;"),
-                    actionButton(ns("update_module"), "Update", style = "align-items: center;"),                    
-                    actionButton(ns("add_genes_modal"), "Add", style = "align-items: center;"),
+                    ),           
+                    uiOutput(ns("gene_module_selector")),                        
+                    actionButton(ns("update_module"), "Update", style = "align-items: center;"),
                     actionButton(ns("clear_genes"), "Clear", style = "align-items: center;"),
+                    actionButton(ns("reset_genes"), "Reset", style = "align-items: left;"),
                     br(),                    
                     br(),
-                    shinyWidgets::prettyRadioButtons(
-                            ns("gene_module_type"),  
-                            label = NULL,                           
-                            choices = c("Existing module", "New module"),
-                            inline = TRUE,                            
-                            fill = TRUE
-                    ),
-                    uiOutput(ns("gene_module_selector")),                                        
                     actionButton(ns("remove_genes"), "Remove", style = "align-items: center;"),
                     actionButton(ns("move_selected_genes_modal"), "Move", style = "align-items: left;"),
                     br(),
                     br(),
                     shinycssloaders::withSpinner(
                         DT::dataTableOutput(ns("genes_table"))
-                    )    
+                    )                    
                 )
             )
+        ),
+        fluidRow(
+            # resizable_column(
+            #     width = 9,
+            #     style = "padding-right:0px;",
+            #     heatmap_box(ns("genes_heatmap"), "Genes Heatmap", legend_width = 2)
+            # )
         )
     )
 }
@@ -119,17 +93,13 @@ mod_gene_modules_sidebar_ui <- function(id) {
     ns_genes <- NS(ns("genes_heatmap"))
     tagList(
         list(
+            HTML("<h5><b><center>Genes</center></b></h5>"),
+            uiOutput(ns("add_genes_sidebar")),
             HTML("<h5><b><center>Genes modules heatmap</center></b></h5>"),
             uiOutput(ns_heatmap("reset_zoom_ui")),
             uiOutput(ns("shown_gene_modules_ui")),
             uiOutput(ns_heatmap("cell_type_list")),
-            uiOutput(ns_heatmap("metadata_list")),
-            tags$hr(),
-            HTML("<h5><b><center>Genes heatmap</center></b></h5>"),
-            uiOutput(ns_genes("reset_zoom_ui")),
-            uiOutput(ns("selected_gene_modules_ui")),
-            uiOutput(ns_genes("cell_type_list")),
-            uiOutput(ns_genes("metadata_list"))
+            uiOutput(ns_heatmap("metadata_list"))            
         )
     )
 }
@@ -143,7 +113,7 @@ mod_gene_modules_server <- function(id, dataset, metacell_types, cell_type_color
         function(input, output, session) {
             ns <- session$ns
             shown_gene_modules <- reactiveVal()
-            genes <- reactiveVal()
+            genes <- reactiveVal() # genes to show below the gene modules
             lfp_range <- reactiveVal()
 
             output$shown_gene_modules_ui <- gene_modules_selector(
@@ -156,60 +126,115 @@ mod_gene_modules_server <- function(id, dataset, metacell_types, cell_type_color
             )
 
             observe({
-                shown_gene_modules(input$shown_gene_modules)
+                req(input$shown_gene_modules)                
+                shown_gene_modules(as.character(input$shown_gene_modules[input$shown_gene_modules %in% gene_modules()$module]))
             })
 
             heatmap_reactives("gene_modules_heatmap", dataset, metacell_types, gene_modules, cell_type_colors, globals, shown_gene_modules, lfp_range, "Gene modules")
 
-            gene_modules_table_reactives(dataset, input, output, session, gene_modules, globals)
-
-            # Genes of a specific gene module
-            output$selected_gene_modules_ui <- renderUI({
-                modules <- unique(gene_modules()$module)
-
-                shinyWidgets::pickerInput(
-                    ns("selected_gene_modules"),
-                    "Selected gene modules",
-                    choices = modules,
-                    selected = NULL,
-                    multiple = TRUE,
-                    options = shinyWidgets::pickerOptions(
-                        liveSearch = TRUE,
-                        liveSearchNormalize = TRUE,
-                        liveSearchStyle = "startsWith",
-                        `dropup-auto` = FALSE,
-                        `max-options` = 3,
-                        `max-options-text` = "Cannot choose more than 3 gene modules"
-                    )
-                )
-            })
-
-            observe({
-                if (is.null(input$selected_gene_modules) || length(input$selected_gene_modules) == 0) {
-                    genes(character(0))
-                } else {
-                    req(gene_modules())
-                    new_genes <- gene_modules() %>%
-                        filter(module %in% input$selected_gene_modules) %>%
-                        pull(gene)
-                    genes(new_genes)
-                }
-            })
-
-            heatmap_reactives("genes_heatmap", dataset, metacell_types, gene_modules, cell_type_colors, globals, genes, lfp_range, "Markers")
-
-            gene_module_reactives(dataset, input, output, session, gene_modules, globals)
+            mod_gene_module_controllers(ns, dataset, input, output, session, gene_modules, genes, globals)
         }
     )
 }
 
-gene_modules_table_reactives <- function(dataset, input, output, session, gene_modules, globals){
-    ns <- session$ns
+mod_gene_module_controllers <- function(ns, dataset, input, output, session, gene_modules, genes, globals){
 
-    values <- reactiveValues(file_status = NULL)
+    values <- reactiveValues(file_status = NULL, module_list = NULL)
+    observe({
+        req(gene_modules())
+        values$module_list <- levels(gene_modules()$module)
+    })
 
-    gene_modules_tab <- reactive({
-        gene_modules() %>% distinct(module)
+    # gene module selector
+    output$gene_module_selector <- renderUI({
+        req(values$module_list)
+        shinyWidgets::pickerInput(
+            ns("selected_gene_module"),
+            "Gene module",
+            inline = TRUE,
+            choices = values$module_list,
+            selected = NULL,
+            multiple = FALSE
+        )
+    })
+
+    # update the 'genes' reactive value when gene module changes
+    observe({
+        if (is.null(input$selected_gene_module) || length(input$selected_gene_module) == 0) {
+            genes(character(0))
+        } else {
+            req(gene_modules())
+            new_genes <- gene_modules() %>%
+                filter(module %in% input$selected_gene_module) %>%
+                pull(gene)
+            genes(new_genes)
+        }
+    })
+
+    # 'Update' button
+    observeEvent(input$update_module, {
+        req(input$selected_gene_module)
+        modules <- levels(gene_modules()$module)
+        new_gene_modules <- bind_rows(
+            gene_modules() %>%
+                filter(module != input$selected_gene_module),
+            tibble(gene = genes(), module = input$selected_gene_module)
+        ) %>%
+            mutate(module = factor(module, levels = modules))        
+        gene_modules(new_gene_modules)
+    })
+
+    # 'Remove' button
+    observeEvent(input$remove_gene_module_modal, {
+        req(input$selected_gene_module)
+        showModal({
+            modalDialog(
+                title = "Remove gene module",
+                glue("Are you sure you want to delete the following module: {input$selected_gene_module}?"),
+                footer = tagList(
+                    modalButton("Cancel"),
+                    actionButton(ns("remove_gene_module"), "OK")
+                )
+            )
+        })
+    })
+
+    observeEvent(input$remove_gene_module, {        
+        req(input$selected_gene_module)
+        new_gene_modules <- gene_modules() %>%
+            filter(module != input$selected_gene_module) %>%
+            mutate(module = forcats::fct_drop(module, only = input$selected_gene_module))
+        gene_modules(new_gene_modules)
+        removeModal()
+    })
+
+    # 'Add' button
+    observeEvent(input$add_gene_module_modal, {        
+        showModal({
+            modalDialog(
+                title = "Add a new gene module",
+                textInput(ns("new_gene_module_name"), "Gene module name"),
+                footer = tagList(
+                    modalButton("Cancel"),
+                    actionButton(ns("add_gene_module"), "OK")
+                )
+            )
+        })
+    })
+
+    observeEvent(input$add_gene_module, {
+        req(input$selected_gene_module)
+        if (input$new_gene_module_name %in% levels(gene_modules()$module)){
+            showNotification(glue("Module {input$new_gene_module_name} already exists"), type = "error")
+        } else {
+            new_gene_modules <- gene_modules() %>%
+                mutate(module = forcats::fct_expand(module, input$new_gene_module_name))
+            gene_modules(new_gene_modules)
+        }
+
+        shinyWidgets::updatePickerInput(session, "selected_gene_module", selected = input$new_gene_module_name)
+        
+        removeModal()
     })
 
     # Load gene modules file
@@ -219,8 +244,8 @@ gene_modules_table_reactives <- function(dataset, input, output, session, gene_m
 
     observe({
         req(input$gene_modules_fn)
-        req(values$file_status)        
-        
+        req(values$file_status)
+
         new_gene_modules <- fread(input$gene_modules_fn$datapath, colClasses = c("gene" = "character", "module" = "character")) %>% as_tibble()
 
         values$file_status <- NULL
@@ -243,9 +268,9 @@ gene_modules_table_reactives <- function(dataset, input, output, session, gene_m
         }
 
         gene_modules(new_gene_modules)
-        
     })
 
+    # download button
     output$gene_modules_download <- downloadHandler(
         filename = function() {
             paste("gene_modules-", Sys.Date(), ".csv", sep = "")
@@ -259,200 +284,139 @@ gene_modules_table_reactives <- function(dataset, input, output, session, gene_m
         }
     )
 
+    # 'Reset' button
     observeEvent(input$reset_gene_modules, {
         req(dataset())
         gene_modules(get_mc_data(dataset(), "gene_modules"))
         values$file_status <- NULL
     })
 
-    observeEvent(input$remove_gene_module_modal, {
-        rows <- input$gene_modules_table_rows_selected
+    # GENES
+
+    # Clear genes
+    observeEvent(input$clear_genes, {
+        genes(character(0))
+    })
+
+    # Reset genes
+    observeEvent(input$reset_genes, {
+        req(gene_modules())
+        req(input$selected_gene_module)
+        genes(gene_modules() %>% filter(module == input$selected_gene_module) %>% pull(gene))
+    })
+
+    # remove genes
+    observeEvent(input$remove_genes, {
+        rows <- input$genes_table_rows_selected
         req(!is.null(rows) && length(rows) > 0)
-        modules_to_remove <- gene_modules_tab() %>%
-            slice(rows) %>%
-            pull(module) %>%
-            paste(collapse = ", ")
+        req(genes())
+        genes_to_remove <- genes()[rows]
+        new_genes <- genes()[!(genes() %in% genes_to_remove)]
+        genes(new_genes)        
+    })
+
+    # Add genes
+    output$add_genes_sidebar <- renderUI({
+        gene_choices <- gene_names(dataset())
+        tagList(
+            shinyWidgets::pickerInput(ns("genes_to_add"),
+                choices = gene_choices,
+                selected = c(),
+                multiple = TRUE,
+                options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE)
+            ),
+            shinyWidgets::actionGroupButtons(ns("add_genes"), labels = "Add", size = "sm")
+        )
+    })
+
+    observeEvent(input$add_genes, {
+        req(genes())
+        req(input$genes_to_add)
+        to_add <- input$genes_to_add[!(input$genes_to_add %in% gene_modules()$gene)]
+        if (any(input$genes_to_add %in% gene_modules()$gene)) {
+            existing_genes <- gene_modules() %>%
+                filter(gene %in% input$genes_to_add) %>%
+                mutate(str = glue("{gene} ({module})")) %>%
+                pull(str) %>%
+                paste(collapse = ",")
+
+            showNotification(glue("The following genes already exist in other gene modules: {existing_genes}"), type = "error")            
+        } 
         
-        showModal({            
+        if (length(to_add) > 0){            
+            genes(c(to_add, genes()))
+        }
+
+        shinyWidgets::updatePickerInput(session, "genes_to_add", selected = character(0))
+    })
+
+    # Move genes
+    observeEvent(input$move_selected_genes_modal, {
+        req(input$selected_gene_module)
+        showModal({
+            req(values$module_list)
             modalDialog(
-                title = "Remove gene module(s)",
-                glue("Are you sure you want to delete the following modules: {modules_to_remove}?"),
+                title = "Move gene module",                
+                shinyWidgets::pickerInput(
+                    ns("selected_gene_module_move"),
+                    "Selected a gene module to move the gene(s) to:",
+                    inline = TRUE,
+                    choices = values$module_list,
+                    selected = NULL,
+                    multiple = FALSE
+                ),
                 footer = tagList(
                     modalButton("Cancel"),
-                    actionButton(ns("remove_gene_module"), "OK")
+                    actionButton(ns("move_genes"), "OK")
                 )
             )
         })
     })
 
-    observeEvent(input$remove_gene_module, {
-        rows <- input$gene_modules_table_rows_selected
+    observeEvent(input$move_genes, {
+        req(input$selected_gene_module_move)
+        rows <- input$genes_table_rows_selected
         req(!is.null(rows) && length(rows) > 0)
-        modules_to_remove <- gene_modules_tab() %>%
-            slice(rows) %>%
-            pull(module)
-        gene_modules(gene_modules() %>% filter(!(module %in% modules_to_remove)))   
+        req(genes())
+
+        modules <- levels(gene_modules()$module)
+
+        # get the genes to move
+        genes_to_move <- genes()[rows]
+        gene_module_genes <- gene_modules() %>%
+            filter(module == input$selected_gene_module_move) %>%
+            pull(gene)
+        genes_to_move <- genes_to_move[!(genes_to_move %in% gene_module_genes)]
+
+        # update the other gene module
+        new_gene_modules <- bind_rows(
+            gene_modules(),
+            tibble(gene = genes_to_move, module = input$selected_gene_module_move)
+        )
+        # update the current gene module
+        genes(genes()[!(genes() %in% genes_to_move)])
+        new_gene_modules <- bind_rows(
+            new_gene_modules %>%
+                filter(module != input$selected_gene_module),
+            tibble(gene = genes(), module = input$selected_gene_module)
+        ) %>%    
+            mutate(module = factor(module, levels = modules))
+
+        # update the gene modules
+        gene_modules(new_gene_modules)
         removeModal()
     })
 
-    observeEvent(input$merge_gene_module_modal, {
-        rows <- input$gene_modules_table_rows_selected
-        req(!is.null(rows) && length(rows) >= 2)     
-        showModal(gene_module_name_modal(ns, dataset, gene_modules, "merge_gene_module", "Merge gene module"))
-    })
 
-    observeEvent(input$merge_gene_module, {
-        req(input$new_gene_module_name)
-        rows <- input$gene_modules_table_rows_selected
-        req(!is.null(rows) && length(rows) >= 2)
-        modules_to_merge <- gene_modules_tab() %>%
-            slice(rows) %>%
-            pull(module)
-        if (input$new_gene_module_name %in% setdiff(gene_modules_tab()$module, modules_to_merge)){
-            showModal(gene_module_name_modal(ns, dataset, gene_modules, "merge_gene_module", "Merge gene module", name_exists = TRUE))
-        } else {        
-            new_module <- gene_modules() %>%
-                filter(module %in% modules_to_merge) %>%
-                mutate(module = input$new_gene_module_name)
-            
-            new_modules <- bind_rows(
-                gene_modules() %>% filter(!(module %in% modules_to_merge)),
-                new_module
-            )                
-            
-            gene_modules(new_modules)
-            removeModal()
-        }
-    })
-
-    gene_modules_table_proxy <- DT::dataTableProxy("gene_modules_table")
-
-    observeEvent(input$gene_modules_table_cell_edit, {
-        new_value <- input$gene_modules_table_cell_edit$value
-
-        if (new_value %in% gene_modules_tab()$module){
-            new_value <- paste0(new_value, "_1")
-            showNotification(glue("Module with the name {input$gene_modules_table_cell_edit$value} already exists. Changing name to {new_value}"), type = "warning")            
-        }
-
-        old_value <- gene_modules_tab()$module[input$gene_modules_table_cell_edit$row]        
-
-        new_gene_modules <- gene_modules() %>%
-            mutate(module = ifelse(module == old_value, new_value, module))
-
-        gene_modules(new_gene_modules)        
-    })
-
-    output$gene_modules_table <- DT::renderDataTable(
-        DT::datatable(
-            gene_modules_tab(),
-            escape = FALSE,            
-            rownames = FALSE,
-            editable = "cell",
-            colnames = "",        
-            options = list(
-                dom = "Bfrtip",
-                paging = TRUE,
-                language = list(emptyTable = "No gene modules. Load or create to get started"),
-                pageLength = 14
-            )
-        ),
-        server = FALSE        
-    )
-
-    # add_gene_module
-}
-
-gene_module_reactives <- function(dataset, input, output, session, gene_modules, globals){
-    ns <- session$ns
-    cur_module <- reactiveVal()
-
+    # Hide and show selected genes buttons
     observe({
-        cur_module <- tibble(gene = character(0))
-    })
-
-    output$gene_module_selector <- renderUI({
-        req(gene_modules())
-        shinyWidgets::pickerInput(
-            ns("existing_gene_module"),
-            "Gene module",
-            inline = TRUE,
-            choices = unique(gene_modules()$module),
-            selected = NULL,
-            multiple = FALSE
-        )
-    })
-
-    observe({
-        req(input$gene_module_type)
-        shinyjs::toggle(id = "gene_module_selector", condition = input$gene_module_type == "Existing module")
-        shinyjs::toggle(id = "show_module", condition = input$gene_module_type == "Existing module")        
-    })
-
-    observe({        
         shinyjs::toggle(id = "remove_genes", condition = !is.null(input$genes_table_rows_selected))
         shinyjs::toggle(id = "move_selected_genes_modal", condition = !is.null(input$genes_table_rows_selected))
     })
 
-    observe({
-        req(input$existing_gene_module)
-        req(input$gene_module_type == "Existing module")
-        cur_module(
-            gene_modules() %>%
-                filter(module == input$existing_gene_module) %>% 
-                select(gene)
-        )
-    })
-
-    observeEvent(input$clear_genes, {
-        cur_module(tibble(gene = character(0)))
-    })
-
-    observeEvent(input$show_module, {
-        req(input$existing_gene_module)        
-        shinyWidgets::updatePickerInput(session, "selected_gene_modules", selected = input$existing_gene_module)
-    })
-
-    observeEvent(input$update_module, {
-        req(input$gene_module_type)
-        if (input$gene_module_type == "New module"){
-            # modal etc. 
-            browser()
-        } else {
-            req(input$existing_gene_module)
-            new_gene_modules <- gene_modules() %>% filter(module != input$existing_gene_module)
-            gene_modules(
-                bind_rows(
-                    gene_modules() %>% filter(module != input$existing_gene_module),
-                    cur_module() %>%
-                        mutate(module = input$existing_gene_module) %>%
-                        select(gene, module)
-                )
-            )
-        }
-    })
-
-    observeEvent(input$remove_genes, {
-        rows <- input$genes_table_rows_selected
-        req(!is.null(rows) && length(rows) > 0)
-        genes_to_remove <- cur_module() %>%
-            slice(rows) %>%
-            pull(gene)
-
-        cur_module(
-            cur_module() %>% filter(!(gene %in% genes_to_remove))
-        )
-    })
-
-    # add_genes_modal
-    # add_gene_module_modal        
-    
-    # add_selected_genes
-    # move_selected_genes_modal
-
-
+    # Genes table
     output$genes_table <- DT::renderDataTable(
-        cur_module(),
+        tibble(gene = genes()),
         escape = FALSE,
         server = FALSE,
         rownames = FALSE,
@@ -464,21 +428,7 @@ gene_module_reactives <- function(dataset, input, output, session, gene_modules,
             pageLength = 14
         )
     )
-
-
-
+    
 }
 
-gene_module_name_modal <- function(ns, dataset, gene_modules, ok_id, title, name_exists = FALSE) {
-    modalDialog(
-        title = title,
-        textInput(ns("new_gene_module_name"), "Gene module name"),
-        if (name_exists) {
-            span(tags$b("Gene module already exists", style = "color: red;"))
-        },
-        footer = tagList(
-            modalButton("Cancel"),
-            actionButton(ns(ok_id), "OK")
-        )
-    )
-}
+

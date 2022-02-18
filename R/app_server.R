@@ -42,6 +42,14 @@ app_server <- function(input, output, session) {
         gene_modules(initial_gene_modules)
     })
 
+    observe({
+        req(gene_modules())
+        if (!is.factor(gene_modules()$module)) {
+            gene_modules(gene_modules() %>%
+                mutate(module = factor(module)))
+        }
+    })
+
     load_tab <- function(tab_name, module) {
         module(tab_name, dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors, gene_modules = gene_modules, globals = globals)
     }

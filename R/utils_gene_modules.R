@@ -81,11 +81,16 @@ calc_gene_modules <- function(mat, k = NULL, n_genes = 1000, minimal_max_log_fra
 
     m <- mat[cand_genes, , drop = FALSE]
 
+    egc <- t(t(m) / colSums(m))    
+    legc <- log2(egc + egc_epsilon)
+    legc_norm <- sweep(legc, 1, matrixStats::rowMedians(legc, na.rm = TRUE))        
+    # legc_norm <- sweep(legc, 1, matrixStats::rowSds(legc, na.rm = TRUE))
+
     cli_alert_info("Clustering in order to get gene modules. k = {.val {k}}")
     cli_alert_info("Number of genes considered = {.val {nrow(m)}}")
 
-    m_ds <- downsample_mat_rows(m, n_downsamp = n_downsamp, inflate = TRUE)
-    km <- tglkmeans::TGL_kmeans_tidy(m_ds, k = k, id_column = FALSE, verbose = verbose, seed = seed)
+    # m_ds <- downsample_mat_rows(m, n_downsamp = n_downsamp, inflate = TRUE)    
+    km <- tglkmeans::TGL_kmeans_tidy(legc_norm, k = k, id_column = FALSE, verbose = verbose, seed = seed)
 
     gene_modules <- km$cluster %>%
         select(gene = id, clust) %>%
