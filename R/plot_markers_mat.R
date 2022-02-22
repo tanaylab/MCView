@@ -1,3 +1,22 @@
+get_gene_colors <- function(genes,
+                            forbidden_genes = NULL,
+                            forbidden_color = "gray",
+                            systematic_genes = NULL,
+                            systematic_color = "purple",
+                            disjoined_genes = NULL,
+                            disjoined_color = "#00b7ff") {
+    gene_colors <- tibble(gene = genes) %>%
+        mutate(color = case_when(
+            gene %in% forbidden_genes ~ forbidden_color,
+            gene %in% disjoined_genes ~ disjoined_color,
+            gene %in% systematic_genes ~ systematic_color,
+            TRUE ~ "black"
+        )) %>%
+        deframe()
+    return(gene_colors)
+}
+
+
 plot_markers_mat <- function(mat,
                              metacell_types,
                              cell_type_colors,
@@ -11,12 +30,7 @@ plot_markers_mat <- function(mat,
                              plot_legend = TRUE,
                              top_cell_type_bar = TRUE,
                              metadata = NULL,
-                             forbidden_genes = NULL,
-                             forbidden_color = "gray",
-                             systematic_genes = NULL,
-                             systematic_color = "purple",
-                             disjoined_genes = NULL,
-                             disjoined_color = "#00b7ff",
+                             gene_colors = NULL,
                              col_names = FALSE,
                              interleave = TRUE,
                              vertial_gridlines = FALSE,
@@ -24,14 +38,8 @@ plot_markers_mat <- function(mat,
     min_lfp <- min_lfp %||% -3
     max_lfp <- max_lfp %||% 3
 
-    gene_colors <- tibble(gene = rownames(mat)) %>%
-        mutate(color = case_when(
-            gene %in% forbidden_genes ~ forbidden_color,
-            gene %in% disjoined_genes ~ disjoined_color,
-            gene %in% systematic_genes ~ systematic_color,
-            TRUE ~ "black"
-        )) %>%
-        pull(color)
+    gene_colors <- gene_colors %||% rep("black", nrow(mat))
+
 
     if (col_names) {
         col_names <- colnames(mat)

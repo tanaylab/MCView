@@ -165,12 +165,15 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
 }
 
 
-heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_type_colors, globals, markers, lfp_range, mode, height = "80vh") {
+heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_type_colors, globals, markers, lfp_range, mode, genes = NULL, highlighted_genes = NULL, highlight_color = "red", height = "80vh") {
     moduleServer(
         id,
         function(input, output, session) {
             ns <- session$ns
             metacell_filter <- reactiveVal()
+
+            genes <- genes %||% reactiveVal()
+            highlighted_genes <- highlighted_genes %||% reactiveVal()
 
             mat <- reactive({
                 req(markers())
@@ -282,9 +285,23 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                 req(nrow(m) > 0)
                 req(ncol(m) > 0)
 
-                disjoined_genes <- get_mc_data(dataset(), "disjoined_genes_no_atlas")
-                forbidden_genes <- get_mc_data(dataset(), "forbidden_genes")
-                systematic_genes <- get_mc_data(dataset(), "systematic_genes")
+                if (!is.null(genes) && length(genes()) > 0 && !is.null(input$show_genes) && input$show_genes) {
+                    m <- add_genes_to_marker_matrix(m, genes(), dataset())
+                    other_genes <- genes()
+
+                    gene_colors <- tibble(gene = rownames(m), color = ifelse(gene %in% genes(), "blue", "black")) %>% deframe()
+                } else {
+                    gene_colors <- get_gene_colors(
+                        rownames(m),
+                        forbidden_genes = get_mc_data(dataset(), "forbidden_genes"),
+                        systematic_genes = get_mc_data(dataset(), "systematic_genes"),
+                        disjoined_genes = get_mc_data(dataset(), "disjoined_genes_no_atlas")
+                    )
+                }
+
+                if (!is.null(highlighted_genes) && length(highlighted_genes()) > 0 && highlighted_genes() %in% names(gene_colors)) {
+                    gene_colors[highlighted_genes()] <- highlight_color
+                }
 
                 res <- plot_markers_mat(
                     m,
@@ -299,9 +316,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     mid_color =  input$mid_color,
                     midpoint = input$midpoint,
                     metadata = metadata,
-                    forbidden_genes = forbidden_genes,
-                    systematic_genes = systematic_genes,
-                    disjoined_genes = disjoined_genes,
+                    gene_colors = gene_colors,
                     col_names = ncol(m) <= 100,
                     top_cell_type_bar = ncol(m) <= 100,
                     interleave = nrow(m) > 80,
@@ -311,7 +326,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
 
                 # we are returning the gtable and ggplot object separatly in order to allow shiny to infer positions correctly.
                 return(structure(list(p = res$p, gtable = res$gtable), class = "gt_custom"))
-            }) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), gene_modules(), lfp_range(), metacell_filter(), input$plot_legend, input$selected_md, markers(), input$selected_cell_types, input$force_cell_type, input$high_color, input$low_color, input$mid_color, input$midpoint)
+            }) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), gene_modules(), lfp_range(), metacell_filter(), input$plot_legend, input$selected_md, markers(), input$selected_cell_types, input$force_cell_type, input$high_color, input$low_color, input$mid_color, input$midpoint, genes(), input$show_genes, highlighted_genes(), highlight_color)
 
             observeEvent(input$heatmap_brush, {
                 m <- filter_heatmap_by_metacell(mat(), metacell_filter())

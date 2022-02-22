@@ -293,7 +293,7 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
         mat <- mc_fp
     }
 
-    if (ncol(mat) > 1) {        
+    if (ncol(mat) > 1) {
         mc_order <- order_mc_by_most_var_genes(mat, force_cell_type = force_cell_type, metacell_types = metacell_types, epsilon = epsilon, notify_var_genes = notify_var_genes, log_transform = log_transform)
         mat <- mat[, mc_order, drop = FALSE]
     }
@@ -306,6 +306,13 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
     mat <- mat[gene_ord, , drop = FALSE]
 
     return(mat)
+}
+
+add_genes_to_marker_matrix <- function(mat, genes, dataset) {
+    genes_fp <- log2(get_mc_fp(dataset, genes))[, colnames(mat), drop = FALSE]
+    genes_fp <- genes_fp[rev(rownames(genes_fp)), , drop = FALSE]
+    m <- rbind(genes_fp, mat)
+    return(m)
 }
 
 get_marker_genes <- function(dataset, mode = "Markers") {

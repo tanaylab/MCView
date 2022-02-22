@@ -161,17 +161,17 @@ render_mc_mc_gene_diff_table <- function(input, output, session, ns, dataset, mc
                             list(
                                 extend = "copy",
                                 exportOptions = list(columns = 0:2)
-                            ), 
+                            ),
                             list(
                                 extend = c("csv"),
                                 exportOptions = list(columns = 0:2)
-                            ), 
+                            ),
                             list(
                                 extend = "excel",
                                 exportOptions = list(columns = 0:2)
-                            )                            
+                            )
                         )
-                    )                    
+                    )
                 ) %>%
                     DT::formatSignif(columns = c("Diff (log2)"), digits = 3) %>%
                     DT::formatSignif(columns = c("P-value"), digits = 2)

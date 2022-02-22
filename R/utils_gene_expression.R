@@ -23,9 +23,9 @@ get_mc_gene_modules_egc <- function(dataset, modules = NULL, gene_modules = NULL
     mc_sum <- get_mc_data(dataset, "mc_sum", atlas = atlas)
 
     gene_modules <- gene_modules %||% get_mc_data(dataset, "gene_modules", atlas = atlas)
-    if (!is.null(modules)) {        
+    if (!is.null(modules)) {
         gene_modules <- gene_modules %>%
-            filter(module %in% modules) %>% 
+            filter(module %in% modules) %>%
             mutate(module = forcats::fct_drop(module))
     }
 

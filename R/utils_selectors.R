@@ -26,8 +26,8 @@ cell_type_selector <- function(dataset, ns, id = "selected_cell_types", label = 
 gene_modules_selector <- function(dataset, gene_modules, ns, id, label = "Gene modules", selected = NULL, with_genes = TRUE) {
     renderUI({
         modules <- levels(gene_modules()$module)
-        if (with_genes){
-            modules <- modules[modules %in% gene_modules()$module]            
+        if (with_genes) {
+            modules <- modules[modules %in% gene_modules()$module]
         }
         if (!is.null(selected) && selected == "all") {
             selected <- modules
