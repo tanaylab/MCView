@@ -164,6 +164,12 @@ downsample_mat_rows <- function(m, n_downsamp = NULL, inflate = FALSE) {
     return(m_ds)
 }
 
+get_module_genes <- function(module, gene_modules) {
+    gene_modules %>%
+        filter(module == !!module) %>%
+        pull(gene)
+}
+
 ##' @param n_boot number of bootstrap iterations
 # bootstrap_clusters <- function(m, n_downsamp, k, n_boot){
 #     N_genes <- nrow(m)

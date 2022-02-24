@@ -36,6 +36,11 @@ get_mc_gene_modules_egc <- function(dataset, modules = NULL, gene_modules = NULL
     return(t(t(mc_mat) / mc_sum))
 }
 
+get_gene_module_egc <- function(module, dataset, gene_modules = NULL, atlas = FALSE) {
+    res <- get_mc_gene_modules_egc(dataset = dataset, modules = module, gene_modules = gene_modules, atlas = atlas)
+    return(res[module, ])
+}
+
 get_mc_gene_modules_fp <- function(dataset, modules = NULL, gene_modules = NULL, atlas = FALSE) {
     mc_egc <- get_mc_gene_modules_egc(dataset, modules = modules, gene_modules = gene_modules, atlas = atlas)
 

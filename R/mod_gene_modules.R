@@ -15,7 +15,24 @@ mod_gene_modules_ui <- function(id) {
             resizable_column(
                 width = 9,
                 style = "padding-right:0px;",
-                heatmap_box(ns("gene_modules_heatmap"), "Gene modules Heatmap", legend_width = 2)
+                heatmap_box(ns("gene_modules_heatmap"), "Gene modules Heatmap", legend_width = 2),
+                fluidRow(
+                    resizable_column(
+                        width = 6,
+                        scatter_box(ns, "gene_gene_box")
+                    ),
+                    resizable_column(
+                        width = 6,
+                        diff_expr_box(
+                            ns,
+                            "mc_mc_box",
+                            "Differential expression",
+                            c("MCs", "Types"),
+                            "Types",
+                            uiOutput(ns("add_selected_genes_button"))
+                        )
+                    )
+                )
             ),
             resizable_column(
                 width = 3,
@@ -67,13 +84,6 @@ mod_gene_modules_ui <- function(id) {
                     )
                 )
             )
-        ),
-        fluidRow(
-            # resizable_column(
-            #     width = 9,
-            #     style = "padding-right:0px;",
-            #     heatmap_box(ns("genes_heatmap"), "Genes Heatmap", legend_width = 2)
-            # )
         )
     )
 }
@@ -106,7 +116,10 @@ mod_gene_modules_sidebar_ui <- function(id) {
             ),
             uiOutput(ns("shown_gene_modules_ui")),
             uiOutput(ns_heatmap("cell_type_list")),
-            uiOutput(ns_heatmap("metadata_list"))
+            uiOutput(ns_heatmap("metadata_list")),
+            tags$hr(),
+            uiOutput(ns("top_correlated_gene_selector")),
+            uiOutput(ns("top_correlated_ui"))
         )
     )
 }
@@ -123,6 +136,9 @@ mod_gene_modules_server <- function(id, dataset, metacell_types, cell_type_color
             genes <- reactiveVal() # genes to show below the gene modules
             lfp_range <- reactiveVal()
             selected_module <- reactiveVal()
+            selected_genes <- reactiveVal() # selected genes at the diff. expr plot
+
+            scatter_selectors(ns, dataset, output, globals)
 
             output$shown_gene_modules_ui <- gene_modules_selector(
                 dataset,
@@ -138,14 +154,60 @@ mod_gene_modules_server <- function(id, dataset, metacell_types, cell_type_color
                 shown_gene_modules(as.character(input$shown_gene_modules[input$shown_gene_modules %in% gene_modules()$module]))
             })
 
+            output$top_correlated_gene_selector <- renderUI({
+                # gene_choices <- gene_names(dataset())
+                tagList(
+                    shinyWidgets::pickerInput(ns("top_correlated_gene"),
+                        label = "Top correlated to:",
+                        choices = genes(),
+                        selected = c(),
+                        multiple = FALSE,
+                        options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE)
+                    )
+                )
+            })
+
+            output$top_correlated_ui <- renderUI({
+                req(input$top_correlated_gene)
+                top_correlated_selector_multiple_genes(input, output, session, dataset, ns, "selected_top_genes", "", gene = input$top_correlated_gene, action_id = "add_genes_from_top_cor_list", action_label = "Add to gene module")
+            })
+
             heatmap_reactives("gene_modules_heatmap", dataset, metacell_types, gene_modules, cell_type_colors, globals, shown_gene_modules, lfp_range, "Gene modules", genes = genes, highlighted_genes = selected_module)
 
-            mod_gene_module_controllers(ns, dataset, input, output, session, gene_modules, genes, selected_module, globals)
+            mod_gene_module_controllers(ns, dataset, input, output, session, gene_modules, genes, selected_module, selected_genes, globals)
+
+            # Scatter plot
+            scatter_box_outputs(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, ns, plotly_source = "gene_modules_md_md_plot")
+
+            # Diff. expression
+            diff_expr_outputs(input, output, session, dataset, metacell_types, cell_type_colors, globals, ns, source_suffix = "_gene_modules", dragmode = "select", plotly_buttons = c("hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"))
+
+            output$add_selected_genes_button <- renderUI({
+                actionButton(ns("add_selected_genes"), "Add to gene module")
+            })
+
+            selected_genes_event_observer("mc_mc_plot_gene_modules", selected_genes)
+            selected_genes_event_observer("ct_ct_plot_gene_modules", selected_genes)
+            observe({
+                req(selected_genes)
+                shinyjs::toggle(id = "add_selected_genes_button", condition = length(selected_genes()) > 0)
+            })
         }
     )
 }
 
-mod_gene_module_controllers <- function(ns, dataset, input, output, session, gene_modules, genes, selected_module, globals) {
+selected_genes_event_observer <- function(source, selected_genes) {
+    observeEvent(plotly::event_data("plotly_selected", source = source), {
+        el <- plotly::event_data("plotly_selected", source = source)
+        selected_genes(unique(el$customdata))
+    })
+
+    observeEvent(plotly::event_data("plotly_deselect", source = source), {
+        selected_genes(c())
+    })
+}
+
+mod_gene_module_controllers <- function(ns, dataset, input, output, session, gene_modules, genes, selected_module, selected_genes, globals) {
     values <- reactiveValues(file_status = NULL, module_list = NULL)
     observe({
         req(gene_modules())
@@ -363,28 +425,23 @@ mod_gene_module_controllers <- function(ns, dataset, input, output, session, gen
                 multiple = TRUE,
                 options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE)
             ),
-            shinyWidgets::actionGroupButtons(ns("add_genes"), labels = "Add selcted genes", size = "sm")
+            shinyWidgets::actionGroupButtons(ns("add_genes"), labels = "Add selected genes", size = "sm")
         )
     })
 
     observeEvent(input$add_genes, {
-        req(input$genes_to_add)
-        to_add <- input$genes_to_add[!(input$genes_to_add %in% gene_modules()$gene)]
-        if (any(input$genes_to_add %in% gene_modules()$gene)) {
-            existing_genes <- gene_modules() %>%
-                filter(gene %in% input$genes_to_add) %>%
-                mutate(str = glue("{gene} ({module})")) %>%
-                pull(str) %>%
-                paste(collapse = ",")
-
-            showNotification(glue("The following genes already exist in other gene modules: {existing_genes}"), type = "error")
-        }
-
-        if (length(to_add) > 0) {
-            genes(c(to_add, genes()))
-        }
-
+        add_genes_to_gene_module(input$genes_to_add, gene_modules, genes)
         shinyWidgets::updatePickerInput(session, "genes_to_add", selected = character(0))
+    })
+
+    # Add from top-correlated list
+    observeEvent(input$add_genes_from_top_cor_list, {
+        add_genes_to_gene_module(input$selected_top_genes, gene_modules, genes)
+    })
+
+    # Add from Diff. Expr selection
+    observeEvent(input$add_selected_genes, {
+        add_genes_to_gene_module(selected_genes(), gene_modules, genes)
     })
 
     # Move genes
@@ -464,4 +521,22 @@ mod_gene_module_controllers <- function(ns, dataset, input, output, session, gen
             language = list(emptyTable = "Please select a gene module.")
         )
     )
+}
+
+add_genes_to_gene_module <- function(new_genes_input, gene_modules, genes) {
+    req(new_genes_input)
+    to_add <- new_genes_input[!(new_genes_input %in% gene_modules()$gene)]
+    if (any(new_genes_input %in% gene_modules()$gene)) {
+        existing_genes <- gene_modules() %>%
+            filter(gene %in% new_genes_input) %>%
+            mutate(str = glue("{gene} ({module})")) %>%
+            pull(str) %>%
+            paste(collapse = ",")
+
+        showNotification(glue("The following genes already exist in other gene modules: {existing_genes}"), type = "error")
+    }
+
+    if (length(to_add) > 0) {
+        genes(c(to_add, genes()))
+    }
 }

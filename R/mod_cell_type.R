@@ -26,7 +26,7 @@ mod_cell_type_ui <- function(id) {
                         startOpen = FALSE,
                         width = 50,
                         id = ns("gene_gene_sidebar"),
-                        axis_selector("boxplot_axis", "Gene", ns, choices = c("Metadata", "Gene")),
+                        axis_selector("boxplot_axis", "Gene", ns, choices = c("Metadata", "Gene", "Gene module")),
                         uiOutput(ns("confusion_color_by_selector")),
                         # axis_selector("color_by", "Metadata", ns, choices = c("Metadata", "Gene")),
                         uiOutput(ns("cell_type_list"))
@@ -72,7 +72,7 @@ mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, 
             # scatter_selectors(ns, dataset, output, globals, "boxplot")
             top_correlated_selector("boxplot_axis_var", "boxplot_axis", "boxplot_axis_type", input, output, session, dataset, ns, button_labels = c("Axes", "Color"), ids = c("boxplot_axis", "color"))
 
-            output$boxplot_axis_select <- render_axis_select_ui("boxplot_axis", "Data", md_choices = dataset_metadata_fields(dataset()), md_selected = dataset_metadata_fields(dataset())[1], selected_gene = default_gene1, input = input, ns = ns, dataset = dataset)
+            output$boxplot_axis_select <- render_axis_select_ui("boxplot_axis", "Data", md_choices = dataset_metadata_fields(dataset()), md_selected = dataset_metadata_fields(dataset())[1], selected_gene = default_gene1, input = input, ns = ns, dataset = dataset, gene_modules = gene_modules)
 
             output$cell_type_list <- cell_type_selector(dataset, ns, id = "boxplot_cell_types", label = "Cell types", selected = "all", cell_type_colors = cell_type_colors)
 
@@ -104,14 +104,23 @@ mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, 
                 req(input$boxplot_cell_types)
                 req(input$boxplot_axis_var)
 
-                if (input$boxplot_axis_type == "Gene") {
-                    req(input$boxplot_axis_var %in% gene_names(dataset()))
+                if (input$boxplot_axis_type %in% c("Gene", "Gene module")) {
+                    if (input$boxplot_axis_type == "Gene module") {
+                        req(input$boxplot_axis_var %in% levels(gene_modules()$module))
+                        genes <- get_module_genes(input$boxplot_axis_var, gene_modules())
+                        egc_gene <- colSums(get_mc_egc(dataset(), genes = genes), na.rm = TRUE) + egc_epsilon
+                    } else {
+                        req(input$boxplot_axis_var %in% gene_names(dataset()))
+                        egc_gene <- NULL
+                    }
+
                     p <- cell_type_gene_boxplot(
                         input$boxplot_axis_var,
                         dataset(),
                         cell_types = input$boxplot_cell_types,
                         metacell_types = metacell_types(),
-                        cell_type_colors = cell_type_colors()
+                        cell_type_colors = cell_type_colors(),
+                        egc_gene = egc_gene
                     )
                 } else {
                     metadata <- get_mc_data(dataset(), "metadata")

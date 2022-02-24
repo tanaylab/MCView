@@ -179,6 +179,7 @@ plot_mc_scatter <- function(dataset,
                             x_var,
                             y_var,
                             color_var = NULL,
+                            gene_modules = NULL,
                             x_type = "Metadata",
                             y_type = "Metadata",
                             color_type = NULL,
@@ -218,7 +219,11 @@ plot_mc_scatter <- function(dataset,
             left_join(metadata %>% select(metacell, !!x_var), by = "metacell") %>%
             mutate(x_str = glue("{x_name}: {x_values}", x_values = round(!!sym(x_var), digits = 3)))
     } else {
-        egc_x <- get_gene_egc(x_var, dataset, atlas = atlas) + egc_epsilon
+        if (x_type == "Gene module") {
+            egc_x <- get_gene_module_egc(x_var, dataset, gene_modules, atlas = atlas) + egc_epsilon
+        } else {
+            egc_x <- get_gene_egc(x_var, dataset, atlas = atlas) + egc_epsilon
+        }
         df <- df %>%
             mutate(!!x_var := egc_x[metacell]) %>%
             mutate(x_str = glue("{x_name} expression: {expr_text}", expr_text = scales::scientific(!!sym(x_var))))
@@ -233,7 +238,12 @@ plot_mc_scatter <- function(dataset,
             left_join(metadata %>% select(metacell, !!y_var), by = "metacell") %>%
             mutate(y_str = glue("{y_name}: {y_values}", y_values = round(!!sym(x_var), digits = 3)))
     } else {
-        egc_y <- get_gene_egc(y_var, dataset, atlas = atlas) + egc_epsilon
+        if (y_type == "Gene module") {
+            egc_y <- get_gene_module_egc(y_var, dataset, gene_modules, atlas = atlas) + egc_epsilon
+        } else {
+            egc_y <- get_gene_egc(y_var, dataset, atlas = atlas) + egc_epsilon
+        }
+
         df <- df %>%
             mutate(!!y_var := egc_y[metacell]) %>%
             mutate(y_str = glue("{y_name} expression: {expr_text}", expr_text = scales::scientific(!!sym(y_var))))
@@ -264,8 +274,12 @@ plot_mc_scatter <- function(dataset,
                 mutate(color_str = glue("{color_name}: {color_values}"))
             categorical_md <- TRUE
         }
-    } else if (color_type == "Gene") {
-        egc_color <- get_gene_egc(color_var, dataset, atlas = atlas) + egc_epsilon
+    } else if (color_type %in% c("Gene", "Gene module")) {
+        if (color_type == "Gene module") {
+            egc_color <- get_gene_module_egc(color_var, dataset, gene_modules, atlas = atlas) + egc_epsilon
+        } else {
+            egc_color <- get_gene_egc(color_var, dataset, atlas = atlas) + egc_epsilon
+        }
         df <- df %>%
             mutate(expression = log2(egc_color[df$metacell]))
         min_expr <- min(df$expression, na.rm = TRUE)

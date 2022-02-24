@@ -13,40 +13,13 @@ mod_query_ui <- function(id) {
         fluidRow(
             resizable_column(
                 width = 7,
-                shinydashboardPlus::box(
-                    id = ns("metacell_projection"),
+                projection_box(
+                    ns,
+                    "metacell_projection",
+                    uiOutput(ns("query_metadata_selector")),
+                    uiOutput(ns("atlas_metadata_selector")),
                     title = "Query 2D Projection",
-                    status = "primary",
-                    solidHeader = TRUE,
-                    collapsible = TRUE,
-                    closable = FALSE,
-                    width = 12,
-                    sidebar = shinydashboardPlus::boxSidebar(
-                        startOpen = FALSE,
-                        width = 80,
-                        shinyWidgets::prettyRadioButtons(
-                            ns("color_proj"),
-                            label = "Color by:",
-                            choices = c("Cell type", "Similarity", "Query Metadata", "Atlas Metadata", "Gene", "Selected"),
-                            inline = TRUE,
-                            status = "danger",
-                            fill = TRUE
-                        ),
-                        id = ns("gene_projection_sidebar"),
-                        uiOutput(ns("gene_selector")),
-                        uiOutput(ns("query_metadata_selector")),
-                        uiOutput(ns("atlas_metadata_selector")),
-                        uiOutput(ns("proj_stat_ui")),
-                        uiOutput(ns("set_range_ui")),
-                        uiOutput(ns("expr_range_ui")),
-                        uiOutput(ns("enrich_range_ui")),
-                        uiOutput(ns("point_size_ui")),
-                        uiOutput(ns("stroke_ui")),
-                        uiOutput(ns("edge_distance_ui"))
-                    ),
-                    shinycssloaders::withSpinner(
-                        plotly::plotlyOutput(ns("plot_mc_proj_2d"))
-                    )
+                    color_choices = c("Cell type", "Similarity", "Query Metadata", "Atlas Metadata", "Gene", "Gene module", "Selected")
                 )
             ),
             resizable_column(
@@ -199,18 +172,6 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
 
             picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE)
 
-            output$gene_selector <- renderUI({
-                shinyWidgets::pickerInput(
-                    ns("color_proj_gene"),
-                    label = "Gene:",
-                    choices = gene_names(dataset()),
-                    selected = default_gene1,
-                    width = "70%",
-                    multiple = FALSE,
-                    options = picker_options
-                )
-            })
-
             output$query_metadata_selector <- renderUI({
                 if (!has_metadata(dataset())) {
                     print(glue("Query doesn't have any metadata."))
@@ -245,14 +206,13 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
 
             observe({
                 req(input$color_proj)
-                shinyjs::toggle(id = "gene_selector", condition = input$color_proj == "Gene")
                 shinyjs::toggle(id = "query_metadata_selector", condition = input$color_proj == "Query Metadata")
                 shinyjs::toggle(id = "atlas_metadata_selector", condition = input$color_proj == "Atlas Metadata")
             })
 
 
             scatter_selectors(ns, dataset, output, globals)
-            projection_selectors(ns, dataset, output, input, globals, weight = 0.6)
+            projection_selectors(ns, dataset, output, input, gene_modules, globals, weight = 0.6)
             top_correlated_selector("axis_var", "axis", "axis_type", input, output, session, dataset, ns, button_labels = c("Axes", "Color"), ids = c("axis", "color"))
 
             group_selectors_mod_query(input, output, session, dataset, ns, group, metacell_types, cell_type_colors)
@@ -295,7 +255,7 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
             })
 
             # Projection plots
-            output$plot_mc_proj_2d <- render_2d_plotly(input, output, session, dataset, projected_metacell_types, atlas_colors, group = group, source = "proj_mc_plot_proj_tab")
+            output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, projected_metacell_types, atlas_colors, gene_modules, group = group, source = "proj_mc_plot_proj_tab")
 
             # connect_gene_plots(input, output, session, ns, source = "proj_mc_plot_proj_tab")
 
@@ -308,7 +268,7 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
             output$diff_expr_table <- render_mc_mc_gene_diff_table(input, output, session, ns, dataset, mc_mc_gene_scatter_df)
 
             # Scatter
-            output$axis_select <- render_axis_select_ui("axis", "Data", md_choices = dataset_metadata_fields_numeric(dataset(), atlas = TRUE), md_selected = dataset_metadata_fields_numeric(dataset(), atlas = TRUE)[1], selected_gene = default_gene1, input = input, ns = ns, dataset = dataset) %>% bindCache(dataset(), ns, ns("axis"), input$axis_type)
+            output$axis_select <- render_axis_select_ui("axis", "Data", md_choices = dataset_metadata_fields_numeric(dataset(), atlas = TRUE), md_selected = dataset_metadata_fields_numeric(dataset(), atlas = TRUE)[1], selected_gene = default_gene1, input = input, ns = ns, dataset = dataset, gene_modules = gene_modules) %>% bindCache(dataset(), ns, ns("axis"), input$axis_type)
 
             output$color_by_select <- render_axis_select_ui(
                 "color_by",
@@ -322,7 +282,8 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
                 selected_gene = default_gene1,
                 input = input,
                 ns = ns,
-                dataset = dataset
+                dataset = dataset,
+                gene_modules = gene_modules
             ) %>% bindCache(dataset(), ns, ns("color_by"), input$color_by_type)
 
             output$plot_gene_gene_mc <- plotly::renderPlotly({
@@ -332,7 +293,7 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
                 req(input$color_by_type)
                 req(input$gene_gene_point_size)
                 req(input$gene_gene_stroke)
-                req(axis_vars_ok(dataset(), input, "metadata", axes = c("axis", "color_by"), atlas = TRUE) || axis_vars_ok(dataset(), input, "metadata", axes = c("axis", "color_by"), atlas = FALSE))
+                req(axis_vars_ok(dataset(), input, "metadata", gene_modules, axes = c("axis", "color_by"), atlas = TRUE) || axis_vars_ok(dataset(), input, "metadata", axes = c("axis", "color_by"), atlas = FALSE))
 
                 color_var <- input$color_by_var
                 if (input$color_by_var == "Cell type") {
