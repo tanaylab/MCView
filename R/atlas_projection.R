@@ -156,7 +156,7 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
             contains("_of_"),
             forbidden_gene,
             ignored_gene,
-            atlas_significant_gene,
+            any_of("atlas_significant_gene"),
             correction_factor,
             projected_correlation,
             correlated_gene,
