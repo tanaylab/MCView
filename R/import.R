@@ -44,9 +44,8 @@
 #' If only colors are given breaks would be implicitly determined from the minimum and maximum of the metadata field.
 #' For categorical metadata columns, color can be given either as a named vector where names are the categories and the values are the colors, or as a named list where the first element named 'colors' holds the colors, and the second element
 #' called 'categories' holds the categories.
-#' @param calc_gg_cor calculate top 30 correlated and anti-correlated genes for each gene. This computation can be heavy
-#' for large datasets or weaker machines, so you can set \code{calc_gg_cor=FALSE} to skip it. Note that then this feature
-#' would be missing from the app.
+#' @param calc_gg_cor Calculate top 30 correlated and anti-correlated genes for each gene. This computation can be heavy for large datasets or weaker machines, so you can set \code{calc_gg_cor=FALSE} to skip it. Note that then this feature would be missing from the app.
+#' @param gene_names use alternative gene names (optional). A data frame with a column called 'gene_name' with the original gene name (as it appears at the 'h5ad' file) and another column called 'alt_name' with the gene name to use in MCView. Genes that do not appear at the table would not be changed.
 #' @param atlas_project path to and \code{MCView} project which contains the atlas.
 #' @param atlas_dataset name of the atlas dataset
 #' @param projection_weights_file Path to a tabular file (csv, tsv) with the following fields "query", "atlas" and "weight". The file is an output of \code{metacells} projection algorithm.
@@ -79,6 +78,7 @@ import_dataset <- function(project,
                            metadata = NULL,
                            metadata_colors = NULL,
                            calc_gg_cor = TRUE,
+                           gene_names = NULL,
                            atlas_project = NULL,
                            atlas_dataset = NULL,
                            projection_weights_file = NULL,
@@ -104,6 +104,8 @@ import_dataset <- function(project,
 
     cli_alert_info("Processing metacell matrix")
     mc_mat <- t(adata$X)
+    rownames(mc_mat) <- motify_gene_names(rownames(mc_mat), gene_names)
+
     serialize_shiny_data(mc_mat, "mc_mat", dataset = dataset, cache_dir = cache_dir)
 
     metacells <- colnames(mc_mat)
@@ -157,6 +159,7 @@ import_dataset <- function(project,
     } else {
         forbidden <- adata$var$forbidden_gene
         forbidden_genes <- rownames(adata$var)[adata$var$forbidden_gene]
+        forbidden_genes <- motify_gene_names(forbidden_genes, gene_names)
     }
 
     serialize_shiny_data(forbidden_genes, "forbidden_genes", dataset = dataset, cache_dir = cache_dir)
@@ -293,6 +296,8 @@ import_dataset <- function(project,
                 gg_mc_top_cor_neg
             ) %>%
                 arrange(gene1, desc(cor))
+            gg_mc_top_cor <- gg_mc_top_cor %>%
+                mutate(gene1 = motify_gene_names(gene1, gene_names), gene2 = motify_gene_names(gene2, gene_names))
         } else {
             cli_alert_info("Calculating top 30 correlated and anti-correlated genes for each gene")
             gg_mc_top_cor <- calc_gg_mc_top_cor(mc_egc, k = 30)
@@ -311,12 +316,16 @@ import_dataset <- function(project,
             cli_abort("Please provide {.code projection_weights_file}")
         }
 
+        if (!is.null(gene_names)) {
+            cli_abort("Using {.field gene_names} with atlases is currently not supported")
+        }
+
         import_atlas(adata, atlas_project, atlas_dataset, projection_weights_file, dataset = dataset, cache_dir = cache_dir, copy_atlas)
     }
 
     cli_alert_success("{.field {dataset}} dataset imported succesfully to {.path {project}} project")
-    cli::cli_bullets("You can now run the app using: {.code run_app(\"{project}\"})}")
-    cli::cli_bullets("or create a bundle using: {.code create_bundle(\"{project}\"})}")
+    cli::cli_ul("You can now run the app using: {.field run_app(\"{project}\")}")
+    cli::cli_ul("or create a bundle using: {.field create_bundle(\"{project}\")}")
     invisible(adata)
 }
 
