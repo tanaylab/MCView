@@ -78,6 +78,7 @@ which can be in the app using the right sidebar.</p>
   metadata <span class="op">=</span> <span class="cn">NULL</span>,
   metadata_colors <span class="op">=</span> <span class="cn">NULL</span>,
   calc_gg_cor <span class="op">=</span> <span class="cn">TRUE</span>,
+  gene_names <span class="op">=</span> <span class="cn">NULL</span>,
   atlas_project <span class="op">=</span> <span class="cn">NULL</span>,
   atlas_dataset <span class="op">=</span> <span class="cn">NULL</span>,
   projection_weights_file <span class="op">=</span> <span class="cn">NULL</span>,
@@ -129,9 +130,9 @@ If only colors are given breaks would be implicitly determined from the minimum 
 For categorical metadata columns, color can be given either as a named vector where names are the categories and the values are the colors, or as a named list where the first element named 'colors' holds the colors, and the second element
 called 'categories' holds the categories.</p></dd>
 <dt>calc_gg_cor</dt>
-<dd><p>calculate top 30 correlated and anti-correlated genes for each gene. This computation can be heavy
-for large datasets or weaker machines, so you can set <code>calc_gg_cor=FALSE</code> to skip it. Note that then this feature
-would be missing from the app.</p></dd>
+<dd><p>Calculate top 30 correlated and anti-correlated genes for each gene. This computation can be heavy for large datasets or weaker machines, so you can set <code>calc_gg_cor=FALSE</code> to skip it. Note that then this feature would be missing from the app.</p></dd>
+<dt>gene_names</dt>
+<dd><p>use alternative gene names (optional). A data frame with a column called 'gene_name' with the original gene name (as it appears at the 'h5ad' file) and another column called 'alt_name' with the gene name to use in MCView. Genes that do not appear at the table would not be changed.</p></dd>
 <dt>atlas_project</dt>
 <dd><p>path to and <code>MCView</code> project which contains the atlas.</p></dd>
 <dt>atlas_dataset</dt>
