@@ -15,6 +15,7 @@ import_dataset(
   metadata = NULL,
   metadata_colors = NULL,
   calc_gg_cor = TRUE,
+  gene_names = NULL,
   atlas_project = NULL,
   atlas_dataset = NULL,
   projection_weights_file = NULL,
@@ -63,9 +64,9 @@ If only colors are given breaks would be implicitly determined from the minimum 
 For categorical metadata columns, color can be given either as a named vector where names are the categories and the values are the colors, or as a named list where the first element named 'colors' holds the colors, and the second element
 called 'categories' holds the categories.}
 
-\item{calc_gg_cor}{calculate top 30 correlated and anti-correlated genes for each gene. This computation can be heavy
-for large datasets or weaker machines, so you can set \code{calc_gg_cor=FALSE} to skip it. Note that then this feature
-would be missing from the app.}
+\item{calc_gg_cor}{Calculate top 30 correlated and anti-correlated genes for each gene. This computation can be heavy for large datasets or weaker machines, so you can set \code{calc_gg_cor=FALSE} to skip it. Note that then this feature would be missing from the app.}
+
+\item{gene_names}{use alternative gene names (optional). A data frame with a column called 'gene_name' with the original gene name (as it appears at the 'h5ad' file) and another column called 'alt_name' with the gene name to use in MCView. Genes that do not appear at the table would not be changed.}
 
 \item{atlas_project}{path to and \code{MCView} project which contains the atlas.}
 
