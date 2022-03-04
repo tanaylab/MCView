@@ -28,6 +28,8 @@ Note that the exported file from the __MCView__ app contains additional fields
 which will be ignored in this function.
 
 Under the hood - MCView updates a file named "metacell_types.tsv" under \code{project/cache/dataset}, which can also be edited manually.
+
+If the file contains an additional 'color' field, the cell type colors would be updated as well.
 }
 \examples{
 \dontrun{

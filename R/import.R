@@ -25,11 +25,14 @@
 #' not exists in the data would be ignored.
 #' If this parameter and \code{cell_type_field} are missing, MCView would cluster the
 #' metacell matrix using kmeans++ algorithm (from the \code{tglkmeans} package).
+#' If the file has a field named 'color' and \code{cell_type_colors_file=NULL}, the cell types colors would
+#' be used.
 #' @param cell_type_colors_file path to a tabular file (csv,tsv) with color assignement for
 #' each cell type. The file should have a column named "cell_type" or "cluster" with the
 #' cell types and another column named "color" with the color assignment. Cell types that do not
 #' exist in the metacell types would be ignored.
-#' If this is missing, MCView would use the \code{chameleon} package to assign a color for each cell type.
+#' If this is missing, and \code{metacell_types_file} did not have a 'color' field, MCView would use the \code
+#' {chameleon} package to assign a color for each cell type.
 #' When an atlas is given (using \code{atlas_project} and \code{atlas_dataset}), if the cell types
 #' are the same as the atlas, the atlas colors would be used.
 #' @param metadata_fields names of fields in the anndata \code{object$obs} which contains metadata for each metacell.
@@ -191,12 +194,20 @@ import_dataset <- function(project,
 
     colnames(mc_genes_top2) <- c("metacell", "top1_gene", "top2_gene", "top1_lfp", "top2_lfp")
 
+    cell_type_colors <- NULL
     if (!is.null(metacell_types_file)) {
         if (!is.null(cell_type_field)) {
             cli_alert_warning("{.field cell_type_field} was ignored since {.field metacell_types_file} was set.")
         }
         cli_alert_info("Loading metacell type annotations from {.file {metacell_types_file}}")
-        metacell_types <- parse_metacell_types(metacell_types_file, metacells)
+        metacell_types <- fread(metacell_types_file)
+        if (has_name(metacell_types, "color")) {
+            if (is.null(cell_type_colors_file)) {
+                cli_alert_info("Loading cell type colors from the 'color' field at {.file {metacell_types_file}}")
+                cell_type_colors <- parse_cell_type_colors(metacell_types)
+            }
+        }
+        metacell_types <- parse_metacell_types(metacell_types, metacells)
     } else {
         if (!is.null(cell_type_field) && !is.null(adata$obs[[cell_type_field]])) {
             cli_alert_info("Taking cell type annotations from {.field {cell_type_field}} field in the anndata object")
@@ -235,7 +246,7 @@ import_dataset <- function(project,
     if (!is.null(cell_type_colors_file)) {
         cli_alert_info("Loading cell type color annotations from {.file {cell_type_colors_file}}")
         cell_type_colors <- parse_cell_type_colors(cell_type_colors_file)
-    } else {
+    } else if (is.null(cell_type_colors)) {
         if (!is.null(atlas_dataset) && !is.null(atlas_project)) { # use atlas colors
             atlas_colors <- fread(fs::path(project_cache_dir(atlas_project), atlas_dataset, "cell_type_colors.tsv")) %>% as_tibble()
             # if we are using the atlas cell types - use their colors

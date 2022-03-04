@@ -39,13 +39,16 @@ each metacell. The file should have a column named "metacell" with the metacell 
 column named "cell_type", or "cluster" with the cell type assignment. Metacell ids that do
 not exists in the data would be ignored.
 If this parameter and \code{cell_type_field} are missing, MCView would cluster the
-metacell matrix using kmeans++ algorithm (from the \code{tglkmeans} package).}
+metacell matrix using kmeans++ algorithm (from the \code{tglkmeans} package).
+If the file has a field named 'color' and \code{cell_type_colors_file=NULL}, the cell types colors would
+be used.}
 
 \item{cell_type_colors_file}{path to a tabular file (csv,tsv) with color assignement for
 each cell type. The file should have a column named "cell_type" or "cluster" with the
 cell types and another column named "color" with the color assignment. Cell types that do not
 exist in the metacell types would be ignored.
-If this is missing, MCView would use the \code{chameleon} package to assign a color for each cell type.
+If this is missing, and \code{metacell_types_file} did not have a 'color' field, MCView would use the \code
+{chameleon} package to assign a color for each cell type.
 When an atlas is given (using \code{atlas_project} and \code{atlas_dataset}), if the cell types
 are the same as the atlas, the atlas colors would be used.}
 

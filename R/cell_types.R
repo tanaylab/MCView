@@ -11,6 +11,8 @@
 #'
 #' Under the hood - MCView updates a file named "metacell_types.tsv" under \code{project/cache/dataset}, which can also be edited manually.
 #'
+#' If the file contains an additional 'color' field, the cell type colors would be updated as well.
+#'
 #' @param project path to the project directory
 #' @param dataset name for the dataset, e.g. "PBMC"
 #' @param metacell_types_file path to a tabular file (csv,tsv) with cell type assignement for
@@ -34,7 +36,8 @@ update_metacell_types <- function(project, dataset, metacell_types_file) {
     prev_metacell_types <- prev_metacell_types %>%
         mutate(metacell = as.character(metacell))
 
-    metacell_types <- parse_metacell_types(metacell_types_file)
+    raw_df <- fread(metacell_types_file)
+    metacell_types <- parse_metacell_types(raw_df)
 
     metacell_types <- prev_metacell_types %>%
         select(-cell_type) %>%
@@ -43,6 +46,11 @@ update_metacell_types <- function(project, dataset, metacell_types_file) {
     serialize_shiny_data(metacell_types, "metacell_types", dataset = dataset, cache_dir = project_cache_dir(project), flat = TRUE)
 
     cli_alert_success("Succesfully changed metacell cell type assignments")
+
+    if (has_name(raw_df, "color")) {
+        cli_alert_info("File has a field named 'color', updating also cell type colors.")
+        update_cell_type_colors(project, dataset, raw_df)
+    }
 }
 
 
@@ -88,8 +96,11 @@ update_cell_type_colors <- function(project, dataset, cell_type_colors_file) {
 }
 
 
-parse_cell_type_colors <- function(file) {
-    cell_type_colors <- fread(file) %>% as_tibble()
+parse_cell_type_colors <- function(cell_type_colors) {
+    if (is.character(cell_type_colors)) {
+        cell_type_colors <- fread(cell_type_colors) %>% as_tibble()
+    }
+
 
     if (!has_name(cell_type_colors, "cell_type") && !has_name(cell_type_colors, "cluster")) {
         cli_abort("{.field {file}} should have a column named {.field cell_type} or {.field cluster}")
@@ -102,6 +113,9 @@ parse_cell_type_colors <- function(file) {
     if (rlang::has_name(cell_type_colors, "cluster")) {
         cell_type_colors <- cell_type_colors %>% rename(cell_type = cluster)
     }
+
+    cell_type_colors <- cell_type_colors %>%
+        distinct(cell_type, .keep_all = TRUE)
 
     if (!has_name(cell_type_colors, "order")) {
         cell_type_colors <- cell_type_colors %>% mutate(order = 1:n())
@@ -123,8 +137,10 @@ parse_cell_type_colors <- function(file) {
 }
 
 
-parse_metacell_types <- function(file, metacells = NULL) {
-    metacell_types <- fread(file) %>% as_tibble()
+parse_metacell_types <- function(metacell_types, metacells = NULL) {
+    if (is.character(metacell_types)) {
+        metacell_types <- fread(metacell_types) %>% as_tibble()
+    }
 
     if (!has_name(metacell_types, "metacell")) {
         cli_abort("{.field {file}} should have a column named {.field metacell}")
