@@ -2,8 +2,9 @@ cell_type_gene_boxplot <- function(gene,
                                    dataset,
                                    cell_types = NULL,
                                    metacell_types = get_mc_data(dataset, "metacell_types"),
-                                   cell_type_colors = get_mc_data(dataset, "cell_type_colors")) {
-    egc_gene <- get_gene_egc(gene, dataset) + egc_epsilon
+                                   cell_type_colors = get_mc_data(dataset, "cell_type_colors"),
+                                   egc_gene = NULL) {
+    egc_gene <- egc_gene %||% get_gene_egc(gene, dataset) + egc_epsilon
 
     df <- metacell_types %>%
         mutate(

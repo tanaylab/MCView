@@ -57,13 +57,14 @@ mod_manifold_sidebar_ui <- function(id) {
             shinyWidgets::prettyRadioButtons(
                 ns("color_proj"),
                 label = "Color by:",
-                choices = c("Cell type", "Gene A", "Gene B", "Metadata"),
+                choices = c("Cell type", "Gene A", "Gene B", "Gene module", "Metadata"),
                 inline = FALSE,
                 status = "danger",
                 fill = TRUE
             ),
             shinycssloaders::withSpinner(uiOutput(ns("metadata_selector"))),
             shinycssloaders::withSpinner(uiOutput(ns("gene_selectors"))),
+            shinycssloaders::withSpinner(uiOutput(ns("proj_gene_module_selector"))),
             shinycssloaders::withSpinner(uiOutput(ns("top_correlated_select_gene1"))),
             shinycssloaders::withSpinner(uiOutput(ns("top_correlated_select_gene2"))),
             shinycssloaders::withSpinner(uiOutput(ns("genecards_buttons")))
@@ -74,40 +75,59 @@ mod_manifold_sidebar_ui <- function(id) {
 #' manifold Server Function
 #'
 #' @noRd
-mod_manifold_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals) {
-    ns <- session$ns
+mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, globals) {
+    moduleServer(
+        id,
+        function(input, output, session) {
+            ns <- session$ns
 
-    # gene selectors
-    manifold_tab_gene_selectors(input, output, session, dataset, ns)
+            # gene selectors
+            manifold_tab_gene_selectors(input, output, session, dataset, ns)
 
-    picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE)
+            picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE)
 
-    output$metadata_selector <- renderUI({
-        if (!has_metadata(dataset())) {
-            print(glue("Dataset doesn't have any metadata."))
-        } else {
-            shinyWidgets::pickerInput(
-                ns("color_proj_metadata"),
-                label = "Metadata:",
-                choices = dataset_metadata_fields(dataset()),
-                selected = dataset_metadata_fields(dataset())[1],
-                width = "70%",
-                multiple = FALSE,
-                options = picker_options
-            )
+            output$metadata_selector <- renderUI({
+                if (!has_metadata(dataset())) {
+                    print(glue("Dataset doesn't have any metadata."))
+                } else {
+                    shinyWidgets::pickerInput(
+                        ns("color_proj_metadata"),
+                        label = "Metadata:",
+                        choices = dataset_metadata_fields(dataset()),
+                        selected = dataset_metadata_fields(dataset())[1],
+                        width = "70%",
+                        multiple = FALSE,
+                        options = picker_options
+                    )
+                }
+            })
+
+            output$proj_gene_module_selector <- renderUI({
+                req(gene_modules())
+                req(levels(gene_modules()$module))
+                shinyWidgets::pickerInput(
+                    ns("color_proj_gene_module"),
+                    "Gene module:",
+                    choices = levels(gene_modules()$module),
+                    selected = NULL,
+                    multiple = FALSE,
+                    options = picker_options
+                )
+            })
+
+            observe({
+                req(input$color_proj)
+                shinyjs::toggle(id = "metadata_selector", condition = input$color_proj == "Metadata")
+                shinyjs::toggle(id = "proj_gene_module_selector", condition = input$color_proj == "Gene module")
+            })
+
+            projection_selectors(ns, dataset, output, input, gene_modules, globals, weight = 1)
+
+            # Projection plots
+            output$plot_manifold_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, source = "proj_manifold_plot") %>%
+                bindCache(dataset(), input$gene1, input$gene2, input$color_proj, metacell_types(), cell_type_colors(), input$point_size, input$stroke, input$min_edge_size, input$show_selected_metacells, input$metacell1, input$metacell2, input$proj_stat, input$expr_range, input$lfp, input$set_range, input$color_proj_metadata, input$color_proj_gene_module)
         }
-    })
-
-    observe({
-        req(input$color_proj)
-        shinyjs::toggle(id = "metadata_selector", condition = input$color_proj == "Metadata")
-    })
-
-    projection_selectors(ns, dataset, output, input, globals, weight = 1)
-
-    # Projection plots
-    output$plot_manifold_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, source = "proj_manifold_plot") %>%
-        bindCache(dataset(), input$gene1, input$gene2, input$color_proj, metacell_types(), cell_type_colors(), input$point_size, input$stroke, input$min_edge_size, input$show_selected_metacells, input$metacell1, input$metacell2, input$proj_stat, input$expr_range, input$lfp, input$set_range, input$color_proj_metadata)
+    )
 }
 
 manifold_tab_gene_selectors <- function(input, output, session, dataset, ns) {

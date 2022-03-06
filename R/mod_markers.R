@@ -13,7 +13,7 @@ mod_markers_ui <- function(id) {
         fluidRow(
             resizable_column(
                 width = 12,
-                heatmap_box(ns, "Markers Heatmap")
+                heatmap_box(ns("markers_heatmap"), "Markers Heatmap")
             )
         )
     )
@@ -32,18 +32,22 @@ mod_markers_ui <- function(id) {
 mod_markers_sidebar_ui <- function(id) {
     ns <- NS(id)
     tagList(
-        heatmap_sidebar(ns)
+        heatmap_sidebar(ns("markers_heatmap"))
     )
 }
 
 #' markers Server Function
 #'
 #' @noRd
-mod_markers_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals) {
-    ns <- session$ns
+mod_markers_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, globals) {
+    moduleServer(
+        id,
+        function(input, output, session) {
+            ns <- session$ns
+            markers <- reactiveVal()
+            lfp_range <- reactiveVal()
 
-    markers <- reactiveVal()
-    lfp_range <- reactiveVal()
-
-    heatmap_reactives(ns, input, output, session, dataset, metacell_types, cell_type_colors, globals, markers, lfp_range, "Markers")
+            heatmap_reactives("markers_heatmap", dataset, metacell_types, gene_modules, cell_type_colors, globals, markers, lfp_range, "Markers")
+        }
+    )
 }

@@ -10,7 +10,7 @@
 #' @noRd
 calc_marker_genes <- function(mc_egc,
                               genes_per_metacell = 2,
-                              minimal_max_log_fraction = -10,
+                              minimal_max_log_fraction = -13,
                               minimal_relative_log_fraction = 2,
                               fold_change_reg = 0.1,
                               use_abs = TRUE) {
@@ -23,7 +23,7 @@ calc_marker_genes <- function(mc_egc,
 
     mc_fp <- sweep(mc_egc, 1, matrixStats::rowMedians(mc_egc, na.rm = TRUE))
 
-    mc_top_genes <- select_top_fold_genes(
+    mc_top_genes <- select_top_fold_genes_per_metacell(
         mc_fp[interesting_genes_mask, , drop = FALSE],
         genes_per_metacell = genes_per_metacell,
         minimal_relative_log_fraction = minimal_relative_log_fraction,
@@ -34,7 +34,7 @@ calc_marker_genes <- function(mc_egc,
     return(mc_top_genes)
 }
 
-select_top_fold_genes <- function(fold_matrix, genes_per_metacell = 2, minimal_relative_log_fraction = 2, fold_change_reg = 0.1, use_abs = TRUE) {
+select_top_fold_genes_per_metacell <- function(fold_matrix, genes_per_metacell = 2, minimal_relative_log_fraction = 2, fold_change_reg = 0.1, use_abs = TRUE) {
     fold_matrix <- fold_matrix + fold_change_reg
     fold_matrix[fold_matrix < minimal_relative_log_fraction] <- NA
 
@@ -257,7 +257,7 @@ get_markers <- function(dataset) {
     return(marker_genes)
 }
 
-get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_types = NULL, force_cell_type = TRUE, mode = "Markers", notify_var_genes = FALSE) {
+get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_types = NULL, gene_modules = NULL, force_cell_type = TRUE, mode = "Markers", notify_var_genes = FALSE) {
     if (mode == "Inner") {
         mc_fp <- get_mc_data(dataset, "inner_fold_mat")
         req(mc_fp)
@@ -274,6 +274,10 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
         log_transform <- FALSE
     } else if (mode == "Markers") {
         mc_fp <- get_mc_fp(dataset, markers)
+        epsilon <- 0
+        log_transform <- TRUE
+    } else if (mode == "Gene modules") {
+        mc_fp <- get_mc_gene_modules_fp(dataset, markers, gene_modules)
         epsilon <- 0
         log_transform <- TRUE
     } else {
@@ -294,7 +298,7 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
         mat <- mat[, mc_order, drop = FALSE]
     }
 
-    if (mode == "Markers") {
+    if (mode %in% c("Markers", "Gene modules")) {
         mat <- log2(mat)
     }
 
@@ -302,6 +306,13 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
     mat <- mat[gene_ord, , drop = FALSE]
 
     return(mat)
+}
+
+add_genes_to_marker_matrix <- function(mat, genes, dataset) {
+    genes_fp <- log2(get_mc_fp(dataset, genes))[, colnames(mat), drop = FALSE]
+    genes_fp <- genes_fp[rev(rownames(genes_fp)), , drop = FALSE]
+    m <- rbind(genes_fp, mat)
+    return(m)
 }
 
 get_marker_genes <- function(dataset, mode = "Markers") {

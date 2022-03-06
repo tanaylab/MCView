@@ -71,9 +71,9 @@ create_project_config_file <- function(project_dir,
     config$title <- title
     if (is.null(tabs)) {
         if (atlas) {
-            tabs <- c("Manifold", "Genes", "Query", "Atlas", "Markers", "Projected-fold", "Diff. Expression", "Cell types", "Annotate", "About")
+            tabs <- c("Manifold", "Genes", "Query", "Atlas", "Markers", "Gene modules", "Projected-fold", "Diff. Expression", "Cell types", "Annotate", "About")
         } else {
-            tabs <- c("Manifold", "Genes", "Markers", "Diff. Expression", "Cell types", "Annotate", "About")
+            tabs <- c("Manifold", "Genes", "Markers", "Gene modules", "Diff. Expression", "Cell types", "Annotate", "About")
         }
     }
     config$tabs <- tabs
@@ -97,7 +97,7 @@ create_project_config_file <- function(project_dir,
 #'
 #' @param project path of the project
 #' @param title The title of the app. This would be shown on the top left of the screen.
-#' @param tabs Controls which tabs to show in the left sidebar and their order. Options are: "Manifold", "Genes", "Query", "Atlas", "Markers", "Projected-fold", "Diff. Expression", "Cell types", "Flow", "Annotate", "About". When NULL - default tabs would be set. For projects with atlas projections, please set \code{atlas} to TRUE.
+#' @param tabs Controls which tabs to show in the left sidebar and their order. Options are: "Manifold", "Genes", "Query", "Atlas", "Markers", "Gene modules", "Projected-fold", "Diff. Expression", "Cell types", "Flow", "Annotate", "About". When NULL - default tabs would be set. For projects with atlas projections, please set \code{atlas} to TRUE.
 #' @param help Controls wether to start the app with a help modal (from introjs). Help messages can be edited in help.yaml file (see 'Architecture' vignette).
 #' @param selected_gene1,selected_gene2 The default genes that would be selected (in any screen with gene selection). If this parameter is missing, the 2 genes with highest max(expr)-min(expr) in the first dataset would be chosen.
 #' @param selected_mc1,selected_mc2 The default metacells that would be selected in the Diff. Expression tab.

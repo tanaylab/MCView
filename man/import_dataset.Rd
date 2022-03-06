@@ -14,6 +14,8 @@ import_dataset(
   metadata_fields = NULL,
   metadata = NULL,
   metadata_colors = NULL,
+  gene_modules_file = NULL,
+  gene_modules_k = NULL,
   calc_gg_cor = TRUE,
   gene_names = NULL,
   atlas_project = NULL,
@@ -67,6 +69,10 @@ If only colors are given breaks would be implicitly determined from the minimum 
 For categorical metadata columns, color can be given either as a named vector where names are the categories and the values are the colors, or as a named list where the first element named 'colors' holds the colors, and the second element
 called 'categories' holds the categories.}
 
+\item{gene_modules_file}{path to a tabular file (csv,tsv) with assignment of genes to gene modules. Should have a field named "gene" with the gene name and a field named "module" with the name of the gene module.}
+
+\item{gene_modules_k}{number of clusters for initial gene module calculation. If NULL - the number of clusters would be determined such that an gene module would contain 16 genes on average.}
+
 \item{calc_gg_cor}{Calculate top 30 correlated and anti-correlated genes for each gene. This computation can be heavy for large datasets or weaker machines, so you can set \code{calc_gg_cor=FALSE} to skip it. Note that then this feature would be missing from the app.}
 
 \item{gene_names}{use alternative gene names (optional). A data frame with a column called 'gene_name' with the original gene name (as it appears at the 'h5ad' file) and another column called 'alt_name' with the gene name to use in MCView. Genes that do not appear at the table would not be changed.}
@@ -75,7 +81,7 @@ called 'categories' holds the categories.}
 
 \item{atlas_dataset}{name of the atlas dataset}
 
-\item{projection_weights_file}{Path to a tabular file (csv, tsv) with the following fields "query", "atlas" and "weight". The file is an output of \code{metacells} projection algorithm.}
+\item{projection_weights_file}{Path to a tabular file (csv,tsv) with the following fields "query", "atlas" and "weight". The file is an output of \code{metacells} projection algorithm.}
 
 \item{copy_atlas}{copy atlas MCView to the current project. If FALSE - a symbolic link would be created instaed.}
 
@@ -83,7 +89,7 @@ called 'categories' holds the categories.}
   Arguments passed on to \code{\link[=create_project]{create_project}}
   \describe{
     \item{\code{title}}{The title of the app. This would be shown on the top left of the screen.}
-    \item{\code{tabs}}{Controls which tabs to show in the left sidebar and their order. Options are: "Manifold", "Genes", "Query", "Atlas", "Markers", "Projected-fold", "Diff. Expression", "Cell types", "Flow", "Annotate", "About". When NULL - default tabs would be set. For projects with atlas projections, please set \code{atlas} to TRUE.}
+    \item{\code{tabs}}{Controls which tabs to show in the left sidebar and their order. Options are: "Manifold", "Genes", "Query", "Atlas", "Markers", "Gene modules", "Projected-fold", "Diff. Expression", "Cell types", "Flow", "Annotate", "About". When NULL - default tabs would be set. For projects with atlas projections, please set \code{atlas} to TRUE.}
     \item{\code{help}}{Controls wether to start the app with a help modal (from introjs). Help messages can be edited in help.yaml file (see 'Architecture' vignette).}
     \item{\code{selected_gene1}}{The default genes that would be selected (in any screen with gene selection). If this parameter is missing, the 2 genes with highest max(expr)-min(expr) in the first dataset would be chosen.}
     \item{\code{selected_gene2}}{The default genes that would be selected (in any screen with gene selection). If this parameter is missing, the 2 genes with highest max(expr)-min(expr) in the first dataset would be chosen.}

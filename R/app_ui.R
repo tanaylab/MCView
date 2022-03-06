@@ -24,55 +24,59 @@ app_ui <- function(request) {
         tags$hr(),
         conditionalPanel(
             condition = "input.tab_sidebar == 'about'",
-            mod_about_sidebar_ui("about_ui_1")
+            mod_about_sidebar_ui("about")
         ),
         conditionalPanel(
             condition = "input.tab_sidebar == 'manifold'",
-            mod_manifold_sidebar_ui("manifold_ui_1")
+            mod_manifold_sidebar_ui("manifold")
         ),
         conditionalPanel(
             condition = "input.tab_sidebar == 'gene_mc'",
-            mod_gene_mc_sidebar_ui("gene_mc_ui_1")
+            mod_gene_mc_sidebar_ui("gene_mc")
         ),
         conditionalPanel(
             condition = "input.tab_sidebar == 'flow'",
-            mod_flow_sidebar_ui("flow_ui_1")
+            mod_flow_sidebar_ui("flow")
         ),
         conditionalPanel(
             condition = "input.tab_sidebar == 'markers'",
-            mod_markers_sidebar_ui("markers_ui_1")
+            mod_markers_sidebar_ui("markers")
+        ),
+        conditionalPanel(
+            condition = "input.tab_sidebar == 'gene_modules'",
+            mod_gene_modules_sidebar_ui("gene_modules")
         ),
         conditionalPanel(
             condition = "input.tab_sidebar == 'inner_fold'",
-            mod_inner_fold_sidebar_ui("inner_fold_ui_1")
+            mod_inner_fold_sidebar_ui("inner_fold")
         ),
         conditionalPanel(
             condition = "input.tab_sidebar == 'proj_fold'",
-            mod_proj_fold_sidebar_ui("proj_fold_ui_1")
+            mod_proj_fold_sidebar_ui("proj_fold")
         ),
         conditionalPanel(
             condition = "input.tab_sidebar == 'query'",
-            mod_query_sidebar_ui("query_ui_1")
+            mod_query_sidebar_ui("query")
         ),
         conditionalPanel(
             condition = "input.tab_sidebar == 'atlas'",
-            mod_atlas_sidebar_ui("atlas_ui_1")
+            mod_atlas_sidebar_ui("atlas")
         ),
         conditionalPanel(
             condition = "input.tab_sidebar == 'cell_type'",
-            mod_cell_type_sidebar_ui("cell_type_ui_1")
+            mod_cell_type_sidebar_ui("cell_type")
         ),
         conditionalPanel(
             condition = "input.tab_sidebar == 'samples'",
-            mod_samples_sidebar_ui("samples_ui_1")
+            mod_samples_sidebar_ui("samples")
         ),
         conditionalPanel(
             condition = "input.tab_sidebar == 'mc_mc'",
-            mod_mc_mc_sidebar_ui("mc_mc_ui_1")
+            mod_mc_mc_sidebar_ui("mc_mc")
         ),
         conditionalPanel(
             condition = "input.tab_sidebar == 'annotate'",
-            mod_annotate_sidebar_ui("annotate_ui_1")
+            mod_annotate_sidebar_ui("annotate")
         )
     )
 
@@ -86,19 +90,20 @@ app_ui <- function(request) {
 
     body <- shinydashboard::dashboardBody(
         shinydashboard::tabItems(
-            shinydashboard::tabItem(tabName = "about", mod_about_ui("about_ui_1")),
-            shinydashboard::tabItem(tabName = "manifold", mod_manifold_ui("manifold_ui_1")),
-            shinydashboard::tabItem(tabName = "gene_mc", mod_gene_mc_ui("gene_mc_ui_1")),
-            shinydashboard::tabItem(tabName = "flow", mod_flow_ui("flow_ui_1")),
-            shinydashboard::tabItem(tabName = "markers", mod_markers_ui("markers_ui_1")),
-            shinydashboard::tabItem(tabName = "inner_fold", mod_inner_fold_ui("inner_fold_ui_1")),
-            shinydashboard::tabItem(tabName = "proj_fold", mod_proj_fold_ui("proj_fold_ui_1")),
-            shinydashboard::tabItem(tabName = "query", mod_query_ui("query_ui_1")),
-            shinydashboard::tabItem(tabName = "atlas", mod_atlas_ui("atlas_ui_1")),
-            shinydashboard::tabItem(tabName = "mc_mc", mod_mc_mc_ui("mc_mc_ui_1")),
-            shinydashboard::tabItem(tabName = "samples", mod_samples_ui("samples_ui_1")),
-            shinydashboard::tabItem(tabName = "cell_type", mod_cell_type_ui("cell_type_ui_1")),
-            shinydashboard::tabItem(tabName = "annotate", mod_annotate_ui("annotate_ui_1"))
+            shinydashboard::tabItem(tabName = "about", mod_about_ui("about")),
+            shinydashboard::tabItem(tabName = "manifold", mod_manifold_ui("manifold")),
+            shinydashboard::tabItem(tabName = "gene_mc", mod_gene_mc_ui("gene_mc")),
+            shinydashboard::tabItem(tabName = "flow", mod_flow_ui("flow")),
+            shinydashboard::tabItem(tabName = "markers", mod_markers_ui("markers")),
+            shinydashboard::tabItem(tabName = "gene_modules", mod_gene_modules_ui("gene_modules")),
+            shinydashboard::tabItem(tabName = "inner_fold", mod_inner_fold_ui("inner_fold")),
+            shinydashboard::tabItem(tabName = "proj_fold", mod_proj_fold_ui("proj_fold")),
+            shinydashboard::tabItem(tabName = "query", mod_query_ui("query")),
+            shinydashboard::tabItem(tabName = "atlas", mod_atlas_ui("atlas")),
+            shinydashboard::tabItem(tabName = "mc_mc", mod_mc_mc_ui("mc_mc")),
+            shinydashboard::tabItem(tabName = "samples", mod_samples_ui("samples")),
+            shinydashboard::tabItem(tabName = "cell_type", mod_cell_type_ui("cell_type")),
+            shinydashboard::tabItem(tabName = "annotate", mod_annotate_ui("annotate"))
         )
     )
 

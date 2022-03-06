@@ -47,11 +47,13 @@
 #' If only colors are given breaks would be implicitly determined from the minimum and maximum of the metadata field.
 #' For categorical metadata columns, color can be given either as a named vector where names are the categories and the values are the colors, or as a named list where the first element named 'colors' holds the colors, and the second element
 #' called 'categories' holds the categories.
+#' @param gene_modules_file path to a tabular file (csv,tsv) with assignment of genes to gene modules. Should have a field named "gene" with the gene name and a field named "module" with the name of the gene module.
+#' @param gene_modules_k number of clusters for initial gene module calculation. If NULL - the number of clusters would be determined such that an gene module would contain 16 genes on average.
 #' @param calc_gg_cor Calculate top 30 correlated and anti-correlated genes for each gene. This computation can be heavy for large datasets or weaker machines, so you can set \code{calc_gg_cor=FALSE} to skip it. Note that then this feature would be missing from the app.
 #' @param gene_names use alternative gene names (optional). A data frame with a column called 'gene_name' with the original gene name (as it appears at the 'h5ad' file) and another column called 'alt_name' with the gene name to use in MCView. Genes that do not appear at the table would not be changed.
 #' @param atlas_project path to and \code{MCView} project which contains the atlas.
 #' @param atlas_dataset name of the atlas dataset
-#' @param projection_weights_file Path to a tabular file (csv, tsv) with the following fields "query", "atlas" and "weight". The file is an output of \code{metacells} projection algorithm.
+#' @param projection_weights_file Path to a tabular file (csv,tsv) with the following fields "query", "atlas" and "weight". The file is an output of \code{metacells} projection algorithm.
 #' @param copy_atlas copy atlas MCView to the current project. If FALSE - a symbolic link would be created instaed.
 #'
 #' @return invisibly returns an \code{AnnDataR6} object of the read \code{anndata_file}
@@ -80,6 +82,8 @@ import_dataset <- function(project,
                            metadata_fields = NULL,
                            metadata = NULL,
                            metadata_colors = NULL,
+                           gene_modules_file = NULL,
+                           gene_modules_k = NULL,
                            calc_gg_cor = TRUE,
                            gene_names = NULL,
                            atlas_project = NULL,
@@ -149,7 +153,7 @@ import_dataset <- function(project,
     graph <- graph %>% mutate(i = rownames(adata$obs)[i], j = rownames(adata$obs)[j])
 
     purrr::walk(c("umap_x", "umap_y"), ~ {
-        if (is.null(adata$obs[[.x]])){
+        if (is.null(adata$obs[[.x]])) {
             cli_abort_compute_for_mcview("$obs${.x}")
         }
     })
@@ -287,13 +291,20 @@ import_dataset <- function(project,
 
     serialize_shiny_data(metacell_types, "metacell_types", dataset = dataset, cache_dir = cache_dir, flat = TRUE)
 
+    if (!is.null(gene_modules_file)) {
+        gene_modules <- parse_gene_modules_file(gene_modules_file)
+    } else {
+        gene_modules <- calc_gene_modules(mc_mat[!forbidden, ], k = gene_modules_k)
+    }
+    serialize_shiny_data(gene_modules, "gene_modules", dataset = dataset, cache_dir = cache_dir, flat = TRUE)
+
     if (calc_gg_cor) {
         if (!is.null(adata$varp$var_similarity)) {
-            if (!methods::is(adata$varp$var_similarity, "sparseMatrix"))){
+            if (!methods::is(adata$varp$var_similarity, "sparseMatrix")) {
                 cli_abort("{.field var_similarity} matrix is not a sparse matrix. This probably means that you are running an old version of the {.field metacells} python moudle. Please update the module, rerun {.field compute_for_mcview} and try again.")
             }
             cli_alert_info("Loading previously calculated 30 correlated and anti-correlated genes for each gene")
-            
+
             gg_mc_top_cor <- Matrix::summary(adata$varp$var_similarity) %>%
                 rlang::set_names(c("gene1", "gene2", "cor")) %>%
                 mutate(
@@ -448,6 +459,6 @@ cli_alert_success_verbose <- function(...) {
     }
 }
 
-cli_abort_compute_for_mcview <- function(field){
+cli_abort_compute_for_mcview <- function(field) {
     cli_abort("{.field {{field}} is missing from the h5ad file. Did you remember to run {.code compute_for_mcview} using the metacells python package?", call = parent.env(1))
 }

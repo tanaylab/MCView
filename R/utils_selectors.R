@@ -23,6 +23,25 @@ cell_type_selector <- function(dataset, ns, id = "selected_cell_types", label = 
     })
 }
 
+gene_modules_selector <- function(dataset, gene_modules, ns, id, label = "Gene modules", selected = NULL, with_genes = TRUE) {
+    renderUI({
+        modules <- levels(gene_modules()$module)
+        if (with_genes) {
+            modules <- modules[modules %in% gene_modules()$module]
+        }
+        if (!is.null(selected) && selected == "all") {
+            selected <- modules
+        }
+
+        shinyWidgets::pickerInput(ns(id), label,
+            choices = modules,
+            selected = selected,
+            multiple = TRUE,
+            options = list(`actions-box` = TRUE, `dropup-auto` = FALSE)
+        )
+    })
+}
+
 metacell_selector <- function(dataset, ns, id, label, selected = NULL, atlas = FALSE, ...) {
     renderUI({
         metacell_names <- colnames(get_mc_data(dataset(), "mc_mat", atlas = atlas))
@@ -66,63 +85,24 @@ metadata_selector <- function(dataset, ns, id = "selected_md", label = "Metadata
 }
 
 
-axis_selector <- function(axis, selected, ns, choices = c("Metadata", "Gene")) {
-    fluidRow(
-        column(
-            width = 9,
-            uiOutput(ns(glue("{axis}_select")))
+top_correlated_selector_multiple_genes <- function(input, output, session, dataset, ns, id, label, gene, action_id, action_label = "Add") {
+    req(has_gg_mc_top_cor(project, dataset()))
+    tagList(
+        selectInput(
+            ns(id),
+            label,
+            choices = c(get_top_cor_gene(dataset(), gene, type = "pos"), rev(get_top_cor_gene(dataset(), gene, type = "neg"))),
+            selected = NULL,
+            size = 10,
+            selectize = FALSE,
+            multiple = TRUE
         ),
-        column(
-            width = 3,
-            shinyWidgets::prettyRadioButtons(
-                ns(glue("{axis}_type")),
-                label = "",
-                choices = choices,
-                inline = TRUE,
-                status = "danger",
-                fill = TRUE,
-                selected = selected
-            )
+        shinyWidgets::actionGroupButtons(ns(action_id), labels = action_label, size = "sm"),
+        shiny::actionButton(
+            inputId = ns(glue("genecards_{id}")), label = glue("GeneCards: {gene}"),
+            size = "sm", onclick = glue("window.open('https://www.genecards.org/cgi-bin/carddisp.pl?gene={gene}')")
         )
     )
-}
-
-render_axis_select_ui <- function(axis, title, md_choices, md_selected, selected_gene, ns, input, dataset, cell_types = NULL, cell_type_selected = NULL) {
-    picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE)
-
-    renderUI({
-        req(dataset())
-        req(input[[glue("{axis}_type")]])
-        if (input[[glue("{axis}_type")]] == "Metadata") {
-            shinyWidgets::pickerInput(
-                ns(glue("{axis}_var")),
-                title,
-                choices = md_choices,
-                selected = md_selected,
-                multiple = FALSE,
-                options = picker_options
-            )
-        } else if (input[[glue("{axis}_type")]] == "Gene") {
-            shinyWidgets::pickerInput(
-                ns(glue("{axis}_var")),
-                title,
-                choices = gene_names(dataset()),
-                selected = selected_gene,
-                multiple = FALSE,
-                options = picker_options
-            )
-        } else if (input[[glue("{axis}_type")]] == "Cell type") {
-            req(cell_types)
-            shinyWidgets::pickerInput(
-                ns(glue("{axis}_var")),
-                title,
-                choices = cell_types,
-                selected = cell_type_selected %||% cell_types[1],
-                multiple = FALSE,
-                options = picker_options
-            )
-        }
-    })
 }
 
 top_correlated_selector <- function(gene_id, id, type_id, input, output, session, dataset, ns, button_labels = c("X", "Y", "Color", "2D"), ids = c("x", "y", "color", "proj2d")) {
@@ -138,7 +118,6 @@ top_correlated_selector <- function(gene_id, id, type_id, input, output, session
                 ns(glue("select_top_cor_{id}_{.x}"))
             }
         )
-        # input_ids <- c(ns(glue("select_top_cor_{id}_x")), ns(glue("select_top_cor_{id}_y")), ns(glue("select_top_cor_{id}_color")), ns(glue("select_top_cor_{id}_proj2d")))
         tagList(
             selectInput(
                 ns(glue("selected_top_{id}")),
@@ -185,89 +164,4 @@ top_correlated_selectors <- function(input, output, session, dataset, ns, button
     top_correlated_selector("y_axis_var", "y_axis", "y_axis_type", input, output, session, dataset, ns, button_labels = button_labels)
     top_correlated_selector("color_by_var", "color_by", "color_by_type", input, output, session, dataset, ns, button_labels = button_labels)
     top_correlated_selector("color_proj_gene", "color_proj", "color_proj", input, output, session, dataset, ns, button_labels = button_labels)
-}
-
-axis_vars_ok <- function(dataset, input, md_id, axes = c("x_axis", "y_axis", "color_by"), atlas = FALSE) {
-    metadata <- get_mc_data(dataset, md_id, atlas = atlas)
-    vars_ok <- purrr::map_lgl(axes, function(v) {
-        type <- input[[glue("{v}_type")]]
-        var <- input[[glue("{v}_var")]]
-        if (type == "Metadata" && (var %in% c(colnames(metadata), "None", "Cell type"))) {
-            return(TRUE)
-        } else if (type == "Metadata" && atlas && var %in% paste0(colnames(metadata), "_atlas")) {
-            return(TRUE)
-        } else if (type == "Gene" && var %in% gene_names(dataset)) {
-            return(TRUE)
-        } else if (type == "Cell type" && (var %in% names(get_cell_type_colors(dataset)))) {
-            return(TRUE)
-        } else {
-            return(FALSE)
-        }
-    })
-    return(all(vars_ok))
-}
-
-scatter_selectors <- function(ns, dataset, output, globals, prefix = "gene_gene") {
-    output[[glue("{prefix}_point_size_ui")]] <- renderUI({
-        req(globals$screen_width)
-        req(globals$screen_height)
-        numericInput(ns(glue("{prefix}_point_size")), label = "Point size", value = initial_scatters_point_size(dataset(), globals$screen_width, globals$screen_height), min = 0.05, max = 3, step = 0.1)
-    })
-
-    output[[glue("{prefix}_stroke_ui")]] <- renderUI({
-        numericInput(ns(glue("{prefix}_stroke")), label = "Stroke width", value = initial_scatters_stroke(dataset()), min = 0, max = 3, step = 0.01)
-    })
-
-    output[[glue("{prefix}_fixed_limits_ui")]] <- renderUI({
-        checkboxInput(ns(glue("{prefix}_fixed_limits")), label = "X axis limits = Y axis limits", value = FALSE)
-    })
-
-    output[[glue("{prefix}_xyline_ui")]] <- renderUI({
-        checkboxInput(ns(glue("{prefix}_xyline")), label = "Show X = Y line", value = FALSE)
-    })
-}
-
-projection_selectors <- function(ns, dataset, output, input, globals, weight = 1, atlas = FALSE) {
-    output$proj_stat_ui <- renderUI({
-        req(input$color_proj == "Gene" || input$color_proj == "Gene A" || input$color_proj == "Gene B")
-        selectInput(ns("proj_stat"), label = "Statistic", choices = c("Expression" = "expression", "Enrichment" = "enrichment"), selected = "Expression", multiple = FALSE, selectize = FALSE)
-    })
-
-    # Expression range
-    output$set_range_ui <- renderUI({
-        req(input$color_proj == "Gene" || input$color_proj == "Gene A" || input$color_proj == "Gene B")
-        req(input$proj_stat == "expression")
-        checkboxInput(ns("set_range"), "Manual range", value = FALSE)
-    })
-
-    output$expr_range_ui <- renderUI({
-        req(input$color_proj == "Gene" || input$color_proj == "Gene A" || input$color_proj == "Gene B")
-        req(input$proj_stat == "expression")
-        req(input$set_range)
-        shinyWidgets::numericRangeInput(ns("expr_range"), "Expression range", c(-18, -5), width = "80%", separator = " to ")
-    })
-
-    # Enrichment range
-    output$enrich_range_ui <- renderUI({
-        req(input$color_proj == "Gene" || input$color_proj == "Gene A" || input$color_proj == "Gene B")
-        req(input$proj_stat == "enrichment")
-        shinyWidgets::numericRangeInput(ns("lfp"), "Enrichment range", c(-3, 3), width = "80%", separator = " to ")
-    })
-
-    # Point size selectors
-    output$point_size_ui <- renderUI({
-        req(globals$screen_height)
-        req(globals$screen_width)
-        req(dataset())
-        numericInput(ns("point_size"), label = "Point size", value = initial_proj_point_size(dataset(), globals$screen_width, globals$screen_height, weight = weight, atlas = atlas), min = 0.1, max = 3, step = 0.1)
-    })
-
-    output$stroke_ui <- renderUI({
-        numericInput(ns("stroke"), label = "Stroke width", value = initial_proj_stroke(dataset()), min = 0, max = 3, step = 0.01)
-    })
-
-    # Minimal edge length selector
-    output$edge_distance_ui <- renderUI({
-        sliderInput(ns("min_edge_size"), label = "Min edge length", min = 0, max = 0.3, value = min_edge_length(dataset()), step = 0.001)
-    })
 }

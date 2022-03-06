@@ -1,10 +1,15 @@
-heatmap_box <- function(ns,
+heatmap_box <- function(id,
                         title = "Heatmap",
                         fold_change_range = c(-3, 3),
                         midpoint = 0,
                         low_color = "blue",
                         mid_color = "white",
-                        high_color = "red") {
+                        high_color = "red",
+                        gene_select_label = "Select on double-click (gene)",
+                        gene_select_choices = c("X axis", "Y axis"),
+                        legend_width = 2,
+                        height = "80vh") {
+    ns <- NS(id)
     div(
         shinydashboardPlus::box(
             id = ns("heatmap_box"),
@@ -14,7 +19,7 @@ heatmap_box <- function(ns,
             collapsible = TRUE,
             closable = FALSE,
             width = 12,
-            height = "80vh",
+            height = height,
             sidebar = shinydashboardPlus::boxSidebar(
                 startOpen = FALSE,
                 width = 25,
@@ -26,11 +31,11 @@ heatmap_box <- function(ns,
                 colourpicker::colourInput(ns("high_color"), "High color", high_color),
                 colourpicker::colourInput(ns("mid_color"), "Mid color", mid_color),
                 checkboxInput(ns("plot_legend"), "Plot legend", value = TRUE),
-                numericInput(ns("legend_width"), "Legend width", min = 1, max = 11, step = 1, value = 2),
+                numericInput(ns("legend_width"), "Legend width", min = 1, max = 11, step = 1, value = legend_width),
                 shinyWidgets::prettyRadioButtons(
                     inputId = ns("gene_select"),
-                    label = "Select on double-click (gene)",
-                    choices = c("X axis", "Y axis"),
+                    label = gene_select_label,
+                    choices = gene_select_choices,
                     inline = TRUE,
                     status = "danger",
                     fill = TRUE
@@ -51,7 +56,8 @@ heatmap_box <- function(ns,
     )
 }
 
-heatmap_sidebar <- function(ns) {
+heatmap_sidebar <- function(id) {
+    ns <- NS(id)
     list(
         uiOutput(ns("reset_zoom_ui")),
         uiOutput(ns("cell_type_list")),
@@ -63,17 +69,7 @@ heatmap_sidebar <- function(ns) {
     )
 }
 
-heatmap_reactives <- function(ns, input, output, session, dataset, metacell_types, cell_type_colors, globals, markers, lfp_range, mode) {
-    ns <- session$ns
-
-    markers <- reactiveVal()
-    lfp_range <- reactiveVal()
-    metacell_filter <- reactiveVal()
-
-    output$cell_type_list <- cell_type_selector(dataset, ns, id = "selected_cell_types", label = "Cell types", selected = "all", cell_type_colors = cell_type_colors)
-
-    output$metadata_list <- metadata_selector(dataset, ns, id = "selected_md", label = "Metadata", metadata_id = "metadata")
-
+heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metacell_types, cell_type_colors, globals, markers, lfp_range, mode) {
     output$marker_genes_list <- renderUI({
         tagList(
             selectInput(
@@ -89,18 +85,6 @@ heatmap_reactives <- function(ns, input, output, session, dataset, metacell_type
         )
     })
 
-    output$reset_zoom_ui <- renderUI({
-        shinyWidgets::actionGroupButtons(ns("reset_zoom"), labels = "Reset zoom", size = "sm")
-    })
-
-    observe({
-        shinyjs::toggle(id = "reset_zoom_ui", condition = !is.null(metacell_filter()) && length(metacell_filter()) > 0)
-    })
-
-    observeEvent(input$reset_zoom, {
-        metacell_filter(NULL)
-    })
-
     observe({
         if (is.null(markers())) {
             req(input$max_gene_num)
@@ -110,23 +94,6 @@ heatmap_reactives <- function(ns, input, output, session, dataset, metacell_type
 
         lfp_range(input$lfp_range)
     })
-
-    mat <- reactive({
-        req(markers())
-        req(metacell_types())
-        req(is.null(input$selected_cell_types) || all(input$selected_cell_types %in% c(cell_type_colors()$cell_type, "(Missing)")))
-
-        get_marker_matrix(
-            dataset(),
-            markers(),
-            input$selected_cell_types,
-            metacell_types(),
-            force_cell_type = input$force_cell_type,
-            mode = mode,
-            notify_var_genes = TRUE
-        )
-    }) %>% bindCache(dataset(), metacell_types(), cell_type_colors(), markers(), input$selected_cell_types, input$force_cell_type, mode)
-
 
     observeEvent(input$update_genes, {
         req(metacell_types())
@@ -154,12 +121,12 @@ heatmap_reactives <- function(ns, input, output, session, dataset, metacell_type
 
         # If we did not choose all the cell types
         if (!is.null(input$selected_cell_types) && length(input$selected_cell_types) != nrow(cell_type_colors())) {
+            # TODO: add also genes that are distictive for the specific cell type (although not variable within it)
             # browser()
         }
 
         markers(new_markers)
     })
-
 
     observeEvent(input$remove_genes, {
         req(markers())
@@ -195,182 +162,254 @@ heatmap_reactives <- function(ns, input, output, session, dataset, metacell_type
         markers(new_markers)
         shinyWidgets::updatePickerInput(session = session, inputId = "genes_to_add", selected = character(0))
     })
-
-    output$plotting_area <- renderUI({
-        heatmap <- plotOutput(
-            ns("heatmap"),
-            height = "80vh",
-            dblclick = dblclickOpts(ns("heatmap_dblclick"), clip = TRUE),
-            hover = hoverOpts(ns("heatmap_hover"), delay = 500, delayType = "debounce"),
-            brush = brushOpts(
-                id = ns("heatmap_brush"),
-                direction = "x",
-                resetOnNew = TRUE
-            )
-        )
+}
 
 
-        if (!is.null(input$plot_legend) && input$plot_legend) {
-            req(input$legend_width)
-            legend_column <- column(
-                width = input$legend_width,
-                plotOutput(ns("markers_legend"), height = "80vh")
-            )
-            heatmap_column <- column(
-                width = 12 - input$legend_width,
-                heatmap
-            )
-            shinycssloaders::withSpinner(
-                fluidRow(heatmap_column, legend_column)
-            )
-        } else {
-            shinycssloaders::withSpinner(
-                heatmap
-            )
+heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_type_colors, globals, markers, lfp_range, mode, genes = NULL, highlighted_genes = NULL, highlight_color = "red", height = "80vh") {
+    moduleServer(
+        id,
+        function(input, output, session) {
+            ns <- session$ns
+            metacell_filter <- reactiveVal()
+
+            genes <- genes %||% reactiveVal()
+            highlighted_genes <- highlighted_genes %||% reactiveVal()
+
+            mat <- reactive({
+                req(markers())
+                req(metacell_types())
+                req(is.null(input$selected_cell_types) || all(input$selected_cell_types %in% c(cell_type_colors()$cell_type, "(Missing)")))
+
+                get_marker_matrix(
+                    dataset(),
+                    markers(),
+                    input$selected_cell_types,
+                    metacell_types(),
+                    gene_modules(),
+                    force_cell_type = input$force_cell_type,
+                    mode = mode,
+                    notify_var_genes = TRUE
+                )
+            }) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), markers(), gene_modules(), input$selected_cell_types, input$force_cell_type, mode)
+
+            heatmap_matrix_reactives(ns, input, output, session, dataset, metacell_types, cell_type_colors, globals, markers, lfp_range, mode)
+
+            output$cell_type_list <- cell_type_selector(dataset, ns, id = "selected_cell_types", label = "Cell types", selected = "all", cell_type_colors = cell_type_colors)
+
+            output$metadata_list <- metadata_selector(dataset, ns, id = "selected_md", label = "Metadata", metadata_id = "metadata")
+
+
+            output$reset_zoom_ui <- renderUI({
+                shinyWidgets::actionGroupButtons(ns("reset_zoom"), labels = "Reset zoom", size = "sm")
+            })
+
+            observe({
+                shinyjs::toggle(id = "reset_zoom_ui", condition = !is.null(metacell_filter()) && length(metacell_filter()) > 0)
+            })
+
+            observeEvent(input$reset_zoom, {
+                metacell_filter(NULL)
+            })
+
+            output$plotting_area <- renderUI({
+                heatmap <- plotOutput(
+                    ns("heatmap"),
+                    height = height,
+                    dblclick = dblclickOpts(ns("heatmap_dblclick"), clip = TRUE),
+                    hover = hoverOpts(ns("heatmap_hover"), delay = 500, delayType = "debounce"),
+                    brush = brushOpts(
+                        id = ns("heatmap_brush"),
+                        direction = "x",
+                        resetOnNew = TRUE
+                    )
+                )
+
+
+                if (!is.null(input$plot_legend) && input$plot_legend) {
+                    req(input$legend_width)
+                    legend_column <- column(
+                        width = input$legend_width,
+                        plotOutput(ns("markers_legend"), height = height)
+                    )
+                    heatmap_column <- column(
+                        width = 12 - input$legend_width,
+                        heatmap
+                    )
+                    shinycssloaders::withSpinner(
+                        fluidRow(heatmap_column, legend_column)
+                    )
+                } else {
+                    shinycssloaders::withSpinner(
+                        heatmap
+                    )
+                }
+            })
+
+            output$markers_legend <- renderPlot({
+                req(cell_type_colors())
+                req(input$plot_legend)
+                legend_point_size <- max(1, min(10, 250 / nrow(cell_type_colors())))
+                legend <- cowplot::get_legend(cell_type_colors() %>%
+                    ggplot(aes(x = cell_type, color = cell_type, y = 1)) +
+                    geom_point() +
+                    scale_color_manual("", values = deframe(cell_type_colors() %>% select(cell_type, color))) +
+                    guides(color = guide_legend(override.aes = list(size = legend_point_size), ncol = 1)) +
+                    theme(legend.position = c(0.5, 0.5)))
+                cowplot::ggdraw(legend)
+            }) %>% bindCache(id, dataset(), cell_type_colors(), input$plot_legend)
+
+            output$heatmap <- renderPlot({
+                req(dataset())
+                req(lfp_range())
+                req(metacell_types())
+                req(cell_type_colors())
+                req(input$midpoint)
+                req(input$low_color)
+                req(input$high_color)
+                req(input$mid_color)
+                req(input$midpoint > lfp_range()[1])
+                req(input$midpoint < lfp_range()[2])
+
+                m <- mat()
+                req(m)
+
+                m <- filter_heatmap_by_metacell(m, metacell_filter())
+
+                if (!is.null(input$selected_md)) {
+                    metadata <- get_mc_data(dataset(), "metadata") %>%
+                        select(metacell, one_of(input$selected_md))
+                } else {
+                    metadata <- NULL
+                }
+
+                req(nrow(m) > 0)
+                req(ncol(m) > 0)
+
+                if (!is.null(genes) && length(genes()) > 0 && !is.null(input$show_genes) && input$show_genes) {
+                    m <- add_genes_to_marker_matrix(m, genes(), dataset())
+                    other_genes <- genes()
+
+                    gene_colors <- tibble(gene = rownames(m), color = ifelse(gene %in% genes(), "blue", "black")) %>% deframe()
+                } else {
+                    gene_colors <- get_gene_colors(
+                        rownames(m),
+                        forbidden_genes = get_mc_data(dataset(), "forbidden_genes"),
+                        systematic_genes = get_mc_data(dataset(), "systematic_genes"),
+                        disjoined_genes = get_mc_data(dataset(), "disjoined_genes_no_atlas")
+                    )
+                }
+
+                if (!is.null(highlighted_genes) && length(highlighted_genes()) > 0 && highlighted_genes() %in% names(gene_colors)) {
+                    gene_colors[highlighted_genes()] <- highlight_color
+                }
+
+                res <- plot_markers_mat(
+                    m,
+                    metacell_types(),
+                    cell_type_colors(),
+                    dataset(),
+                    min_lfp = lfp_range()[1],
+                    max_lfp = lfp_range()[2],
+                    plot_legend = FALSE,
+                    high_color =  input$high_color,
+                    low_color =  input$low_color,
+                    mid_color =  input$mid_color,
+                    midpoint = input$midpoint,
+                    metadata = metadata,
+                    gene_colors = gene_colors,
+                    col_names = ncol(m) <= 100,
+                    top_cell_type_bar = ncol(m) <= 100,
+                    interleave = nrow(m) > 80,
+                    vertial_gridlines = mode %in% c("Inner", "Proj"),
+                    separate_gtable = TRUE
+                )
+
+                # we are returning the gtable and ggplot object separatly in order to allow shiny to infer positions correctly.
+                return(structure(list(p = res$p, gtable = res$gtable), class = "gt_custom"))
+            }) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), gene_modules(), lfp_range(), metacell_filter(), input$plot_legend, input$selected_md, markers(), input$selected_cell_types, input$force_cell_type, input$high_color, input$low_color, input$mid_color, input$midpoint, genes(), input$show_genes, highlighted_genes(), highlight_color)
+
+            observeEvent(input$heatmap_brush, {
+                m <- filter_heatmap_by_metacell(mat(), metacell_filter())
+                range <- max(1, round(input$heatmap_brush$xmin)):min(ncol(m), round(input$heatmap_brush$xmax))
+                req(all(range >= 1) && all(range <= ncol(m)))
+                metacells <- colnames(m)[range]
+                metacell_filter(metacells)
+            })
+
+            observeEvent(input$heatmap_dblclick, {
+                m <- filter_heatmap_by_metacell(mat(), metacell_filter())
+                gene <- get_gene_by_heatmap_coord(m, input$heatmap_dblclick$y)
+                metacell <- get_metacell_by_heatmap_coord(m, input$heatmap_dblclick$x)
+
+                if (gene %in% gene_names(dataset())) {
+                    if (input$gene_select == "X axis") {
+                        globals$selected_gene_x_axis <- gene
+                    } else {
+                        globals$selected_gene_y_axis <- gene
+                    }
+                    globals$selected_query_gene <- gene
+                }
+
+                if (input$metacell_select == "Metacell A") {
+                    globals$selected_metacellA <- metacell
+                } else {
+                    globals$selected_metacellB <- metacell
+                }
+
+                globals$selected_query_metacell <- metacell
+            })
+
+            output$hover_info <- renderUI({
+                req(mat())
+                req(input$heatmap_hover)
+                req(metacell_types())
+                req(cell_type_colors())
+
+                hover <- input$heatmap_hover
+                m <- filter_heatmap_by_metacell(mat(), metacell_filter())
+                gene <- get_gene_by_heatmap_coord(m, hover$y)
+                metacell <- get_metacell_by_heatmap_coord(m, hover$x)
+                value <- m[gene, metacell]
+
+                req(metacell)
+                req(gene)
+
+                # taken from https://gitlab.com/-/snippets/16220
+                left_px <- hover$coords_css$x
+                top_px <- hover$coords_css$y
+
+                mcell_stats <- metacell_types() %>%
+                    filter(metacell == !!metacell)
+
+                style <- glue(
+                    "position:absolute; z-index:100; left: {left_px + 2}px; top: {top_px + 2}px;"
+                )
+
+                top_genes <- mcell_stats %>%
+                    glue::glue_data("{top1_gene} ({round(top1_lfp, digits=2)}), {top2_gene} ({round(top2_lfp, digits=2)})")
+
+                if (mode == "Gene modules") {
+                    gene_prefix <- "Gene module:"
+                } else {
+                    gene_prefix <- "Gene"
+                }
+                mcell_tooltip <- paste(
+                    glue("{gene_prefix}: {gene}"),
+                    glue("Metacell: {metacell}"),
+                    glue("Value: {round(value, digits=2)}"),
+                    glue("Cell type: {mcell_stats$cell_type}"),
+                    glue("Top genes: {top_genes}"),
+                    ifelse(has_name(mcell_stats, "mc_age"), glue("Metacell age (E[t]): {round(mcell_stats$mc_age, digits=2)}"), ""),
+                    sep = "<br/>"
+                )
+
+                wellPanel(
+                    style = style,
+                    p(HTML(mcell_tooltip))
+                )
+            })
         }
-    })
-
-    output$markers_legend <- renderPlot({
-        req(cell_type_colors())
-        req(input$plot_legend)
-        legend_point_size <- max(1, min(10, 250 / nrow(cell_type_colors())))
-        legend <- cowplot::get_legend(cell_type_colors() %>%
-            ggplot(aes(x = cell_type, color = cell_type, y = 1)) +
-            geom_point() +
-            scale_color_manual("", values = deframe(cell_type_colors() %>% select(cell_type, color))) +
-            guides(color = guide_legend(override.aes = list(size = legend_point_size), ncol = 1)) +
-            theme(legend.position = c(0.5, 0.5)))
-        cowplot::ggdraw(legend)
-    }) %>% bindCache(dataset(), cell_type_colors(), input$plot_legend)
-
-    output$heatmap <- renderPlot({
-        req(dataset())
-        req(lfp_range())
-        req(metacell_types())
-        req(cell_type_colors())
-        req(input$midpoint)
-        req(input$low_color)
-        req(input$high_color)
-        req(input$mid_color)
-        req(input$midpoint > lfp_range()[1])
-        req(input$midpoint < lfp_range()[2])
-
-        m <- mat()
-        req(m)
-
-        m <- filter_heatmap_by_metacell(m, metacell_filter())
-
-        if (!is.null(input$selected_md)) {
-            metadata <- get_mc_data(dataset(), "metadata") %>%
-                select(metacell, one_of(input$selected_md))
-        } else {
-            metadata <- NULL
-        }
-
-        disjoined_genes <- get_mc_data(dataset(), "disjoined_genes_no_atlas")
-        forbidden_genes <- get_mc_data(dataset(), "forbidden_genes")
-        systematic_genes <- get_mc_data(dataset(), "systematic_genes")
-
-        res <- plot_markers_mat(
-            m,
-            metacell_types(),
-            cell_type_colors(),
-            dataset(),
-            min_lfp = lfp_range()[1],
-            max_lfp = lfp_range()[2],
-            plot_legend = FALSE,
-            high_color =  input$high_color,
-            low_color =  input$low_color,
-            mid_color =  input$mid_color,
-            midpoint = input$midpoint,
-            metadata = metadata,
-            forbidden_genes = forbidden_genes,
-            systematic_genes = systematic_genes,
-            disjoined_genes = disjoined_genes,
-            col_names = ncol(m) <= 100,
-            top_cell_type_bar = ncol(m) <= 100,
-            interleave = nrow(m) > 80,
-            vertial_gridlines = mode %in% c("Inner", "Proj"),
-            separate_gtable = TRUE
-        )
-
-        # we are returning the gtable and ggplot object separatly in order to allow shiny to infer positions correctly.
-        return(structure(list(p = res$p, gtable = res$gtable), class = "gt_custom"))
-    }) %>% bindCache(dataset(), metacell_types(), cell_type_colors(), lfp_range(), metacell_filter(), input$plot_legend, input$selected_md, markers(), input$selected_cell_types, input$force_cell_type, input$high_color, input$low_color, input$mid_color, input$midpoint)
-
-    observeEvent(input$heatmap_brush, {
-        m <- filter_heatmap_by_metacell(mat(), metacell_filter())
-        range <- round(input$heatmap_brush$xmin):round(input$heatmap_brush$xmax)
-        req(all(range > 0) && all(range <= ncol(m)))
-        metacells <- colnames(m)[range]
-        metacell_filter(metacells)
-    })
-
-    observeEvent(input$heatmap_dblclick, {
-        m <- filter_heatmap_by_metacell(mat(), metacell_filter())
-        gene <- get_gene_by_heatmap_coord(m, input$heatmap_dblclick$y)
-        metacell <- get_metacell_by_heatmap_coord(m, input$heatmap_dblclick$x)
-
-        if (input$gene_select == "X axis") {
-            globals$selected_gene_x_axis <- gene
-        } else {
-            globals$selected_gene_y_axis <- gene
-        }
-        globals$selected_query_gene <- gene
-
-        if (input$metacell_select == "Metacell A") {
-            globals$selected_metacellA <- metacell
-        } else {
-            globals$selected_metacellB <- metacell
-        }
-
-        globals$selected_query_metacell <- metacell
-    })
-
-    output$hover_info <- renderUI({
-        req(mat())
-        req(input$heatmap_hover)
-        req(metacell_types())
-        req(cell_type_colors())
-
-        hover <- input$heatmap_hover
-        m <- filter_heatmap_by_metacell(mat(), metacell_filter())
-        gene <- get_gene_by_heatmap_coord(m, hover$y)
-        metacell <- get_metacell_by_heatmap_coord(m, hover$x)
-        value <- m[gene, metacell]
-
-        req(metacell)
-        req(gene)
-
-        # taken from https://gitlab.com/-/snippets/16220
-        left_px <- hover$coords_css$x
-        top_px <- hover$coords_css$y
-
-        mcell_stats <- metacell_types() %>%
-            filter(metacell == !!metacell)
-
-        style <- glue(
-            "position:absolute; z-index:100; left: {left_px + 2}px; top: {top_px + 2}px;"
-        )
-
-        top_genes <- mcell_stats %>%
-            glue::glue_data("{top1_gene} ({round(top1_lfp, digits=2)}), {top2_gene} ({round(top2_lfp, digits=2)})")
-
-        mcell_tooltip <- paste(
-            glue("Gene: {gene}"),
-            glue("Metacell: {metacell}"),
-            glue("Value: {round(value, digits=2)}"),
-            glue("Cell type: {mcell_stats$cell_type}"),
-            glue("Top genes: {top_genes}"),
-            ifelse(has_name(mcell_stats, "mc_age"), glue("Metacell age (E[t]): {round(mcell_stats$mc_age, digits=2)}"), ""),
-            sep = "<br/>"
-        )
-
-        wellPanel(
-            style = style,
-            p(HTML(mcell_tooltip))
-        )
-    })
+    )
 }
 
 

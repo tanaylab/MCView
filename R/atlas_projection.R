@@ -108,7 +108,7 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
         cli_abort("Query h5ad is missing the '{.file projected}' layer")
     }
 
-    if (!methods::is(query$layers[["projected"]], "sparseMatrix")){
+    if (!methods::is(query$layers[["projected"]], "sparseMatrix")) {
         cli_abort("{.field projected} matrix is not a sparse matrix. This probably means that you are running an old version of the {.field metacells} python moudle. Please update the module, rerun {.field compute_for_mcview} and try again.")
     }
     projected_mat <- Matrix::t(query$layers[["projected"]])
@@ -129,7 +129,7 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
 
     cli_alert_info("Calculating top atlas-query fold genes")
     forbidden <- query$var$forbidden_gene
-    marker_genes_projected <- select_top_fold_genes(projected_fold[!forbidden, ], minimal_relative_log_fraction = -Inf, use_abs = TRUE, genes_per_metacell = 50)
+    marker_genes_projected <- select_top_fold_genes_per_metacell(projected_fold[!forbidden, ], minimal_relative_log_fraction = -Inf, use_abs = TRUE, genes_per_metacell = 50)
     serialize_shiny_data(marker_genes_projected, "marker_genes_projected", dataset = dataset, cache_dir = cache_dir)
 
     serialize_shiny_data(query$uns$project_max_projection_fold_factor, "project_max_projection_fold_factor", dataset = dataset, cache_dir = cache_dir)

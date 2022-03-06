@@ -103,92 +103,97 @@ mod_mc_mc_sidebar_ui <- function(id) {
 #' mc_mc Server Function
 #'
 #' @noRd
-mod_mc_mc_server <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals) {
-    ns <- session$ns
+mod_mc_mc_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, globals) {
+    moduleServer(
+        id,
+        function(input, output, session) {
+            ns <- session$ns
 
-    groupA <- reactiveVal()
-    groupB <- reactiveVal()
+            groupA <- reactiveVal()
+            groupB <- reactiveVal()
 
-    metacell_names <- metacell_names_reactive(dataset)
-    metacell_colors <- metacell_colors_reactive(dataset, metacell_names, metacell_types)
+            metacell_names <- metacell_names_reactive(dataset)
+            metacell_colors <- metacell_colors_reactive(dataset, metacell_names, metacell_types)
 
-    projection_selectors(ns, dataset, output, input, globals, weight = 0.6)
-    group_selectors(input, output, session, dataset, ns, groupA, groupB, metacell_types, cell_type_colors)
-    metacell_selectors(input, output, session, dataset, ns, metacell_names, metacell_colors, metacell_types, cell_type_colors, groupA, groupB)
+            projection_selectors(ns, dataset, output, input, gene_modules, globals, weight = 0.6)
+            group_selectors(input, output, session, dataset, ns, groupA, groupB, metacell_types, cell_type_colors)
+            metacell_selectors(input, output, session, dataset, ns, metacell_names, metacell_colors, metacell_types, cell_type_colors, groupA, groupB)
 
-    mc_mc_gene_scatter_df <- mc_mc_gene_scatter_df_reactive(dataset, input, output, session, metacell_types, cell_type_colors, groupA, groupB)
+            mc_mc_gene_scatter_df <- mc_mc_gene_scatter_df_reactive(dataset, input, output, session, metacell_types, cell_type_colors, groupA, groupB)
 
-    diff_expr_switch_metacells(dataset, input, output, session, groupA, groupB)
-    mod_mc_mc_globals_observers(input, session, globals)
+            diff_expr_switch_metacells(dataset, input, output, session, groupA, groupB)
+            mod_mc_mc_globals_observers(input, session, globals)
 
-    output$projection_color_selectors <- renderUI({
-        req(input$mode)
-        if (input$mode == "MCs") {
-            color_choices <- c("Cell type")
-        } else if (input$mode == "Types") {
-            color_choices <- c("Cell type")
-        } else if (input$mode == "Groups") {
-            color_choices <- c("Cell type", "Selected")
-        } else {
-            req(FALSE)
+            output$projection_color_selectors <- renderUI({
+                req(input$mode)
+                if (input$mode == "MCs") {
+                    color_choices <- c("Cell type")
+                } else if (input$mode == "Types") {
+                    color_choices <- c("Cell type")
+                } else if (input$mode == "Groups") {
+                    color_choices <- c("Cell type", "Selected")
+                } else {
+                    req(FALSE)
+                }
+
+                shinyWidgets::prettyRadioButtons(
+                    ns("color_proj"),
+                    label = "Color by:",
+                    choices = color_choices,
+                    inline = TRUE,
+                    status = "danger",
+                    fill = TRUE
+                )
+            })
+
+            output$projection_selectors <- renderUI({
+                req(input$mode)
+                if (input$mode == "MCs") {
+                    choices <- c("Metacell A", "Metacell B")
+                    label <- "Select on click:"
+                } else if (input$mode == "Types") {
+                    choices <- c("Cell type A", "Cell type B")
+                    label <- "Select on click:"
+                } else if (input$mode == "Groups") {
+                    choices <- c("Group A", "Group B")
+                    label <- "Select:"
+                } else {
+                    req(FALSE)
+                }
+
+                shinyWidgets::prettyRadioButtons(
+                    inputId = ns("proj_select_main"),
+                    label = label,
+                    choices = choices,
+                    inline = TRUE,
+                    status = "danger",
+                    fill = TRUE
+                )
+            })
+
+            # Differential expression
+            output$plot_mc_mc_gene_scatter <- render_mc_mc_gene_plotly(input, output, session, ns, dataset, mc_mc_gene_scatter_df, metacell_names(), cell_type_colors())
+
+            output$diff_expr_table <- render_mc_mc_gene_diff_table(input, output, session, ns, dataset, mc_mc_gene_scatter_df)
+
+            # Projection plots
+            output$plot_mc_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, groupA = groupA, groupB = groupB, source = "proj_mc_plot")
+
+
+            # metacell click observers
+            metacell_click_observer("proj_manifold_plot", session)
+            metacell_click_observer("md_md_plot", session)
+            metacell_click_observer("gene_gene_plot", session)
+            metacell_click_observer("proj_metadata_plot", session)
+            metacell_click_observer("proj_mc_plot_gene_tab", session)
+            metacell_click_observer("gene_time_mc_plot1", session)
+            metacell_click_observer("gene_time_mc_plot2", session)
+
+            # Output priorities
+            outputOptions(output, "plot_mc_proj_2d", priority = 6)
+            outputOptions(output, "plot_mc_mc_gene_scatter", priority = 5)
         }
-
-        shinyWidgets::prettyRadioButtons(
-            ns("color_proj"),
-            label = "Color by:",
-            choices = color_choices,
-            inline = TRUE,
-            status = "danger",
-            fill = TRUE
-        )
-    })
-
-    output$projection_selectors <- renderUI({
-        req(input$mode)
-        if (input$mode == "MCs") {
-            choices <- c("Metacell A", "Metacell B")
-            label <- "Select on click:"
-        } else if (input$mode == "Types") {
-            choices <- c("Cell type A", "Cell type B")
-            label <- "Select on click:"
-        } else if (input$mode == "Groups") {
-            choices <- c("Group A", "Group B")
-            label <- "Select:"
-        } else {
-            req(FALSE)
-        }
-
-        shinyWidgets::prettyRadioButtons(
-            inputId = ns("proj_select_main"),
-            label = label,
-            choices = choices,
-            inline = TRUE,
-            status = "danger",
-            fill = TRUE
-        )
-    })
-
-    # Differential expression
-    output$plot_mc_mc_gene_scatter <- render_mc_mc_gene_plotly(input, output, session, ns, dataset, mc_mc_gene_scatter_df, metacell_names(), cell_type_colors())
-
-    output$diff_expr_table <- render_mc_mc_gene_diff_table(input, output, session, ns, dataset, mc_mc_gene_scatter_df)
-
-    # Projection plots
-    output$plot_mc_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, groupA = groupA, groupB = groupB, source = "proj_mc_plot")
-
-
-    # metacell click observers
-    metacell_click_observer("proj_manifold_plot", session)
-    metacell_click_observer("md_md_plot", session)
-    metacell_click_observer("gene_gene_plot", session)
-    metacell_click_observer("proj_metadata_plot", session)
-    metacell_click_observer("proj_mc_plot_gene_tab", session)
-    metacell_click_observer("gene_time_mc_plot1", session)
-    metacell_click_observer("gene_time_mc_plot2", session)
-
-    # Output priorities
-    outputOptions(output, "plot_mc_proj_2d", priority = 6)
-    outputOptions(output, "plot_mc_mc_gene_scatter", priority = 5)
+    )
 }
 
 mod_mc_mc_globals_observers <- function(input, session, globals, notification_suffix = " in \"Diff. Expr\" tab") {

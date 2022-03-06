@@ -94,15 +94,21 @@ mc2d_plot_ggp <- function(dataset, highlight = NULL, point_size = initial_proj_p
 #' @param dataset name of metacell object
 #'
 #' @noRd
-mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_size(dataset), min_d = min_edge_length(dataset), stroke = initial_proj_stroke(dataset), graph_color = "black", graph_width = 0.1, id = NULL, max_lfp = NULL, min_lfp = NULL, max_expr = NULL, min_expr = NULL, scale_edges = FALSE, stat = "expression", atlas = FALSE) {
+mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_size(dataset), min_d = min_edge_length(dataset), stroke = initial_proj_stroke(dataset), graph_color = "black", graph_width = 0.1, id = NULL, max_lfp = NULL, min_lfp = NULL, max_expr = NULL, min_expr = NULL, scale_edges = FALSE, stat = "expression", atlas = FALSE, gene_name = NULL) {
     mc2d <- get_mc_data(dataset, "mc2d", atlas = atlas)
     metacell_types <- get_mc_data(dataset, "metacell_types", atlas = atlas)
     min_lfp <- min_lfp %||% -3
     max_lfp <- max_lfp %||% 3
-
-    mc_fp <- get_gene_fp(gene, dataset, atlas = atlas)
-
-    lfp <- get_gene_egc(gene, dataset, atlas = atlas) + egc_epsilon
+    if (length(gene) > 1) {
+        lfp <- colSums(get_mc_egc(dataset, genes = gene, atlas = atlas), na.rm = TRUE) + egc_epsilon
+        mc_fp <- lfp / median(lfp, na.rm = TRUE)
+        gene <- gene_name %||% gene[1]
+    } else if (length(gene) == 1) {
+        mc_fp <- get_gene_fp(gene, dataset, atlas = atlas)
+        lfp <- get_gene_egc(gene, dataset, atlas = atlas) + egc_epsilon
+    } else {
+        stop("gene paramater should have at least one gene")
+    }
 
     metacell_names <- mc2d_to_df(mc2d)$metacell
 
@@ -197,7 +203,7 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
     return(p)
 }
 
-render_2d_plotly <- function(input, output, session, dataset, metacell_types, cell_type_colors, source, buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL, refresh_on_gene_change = FALSE, atlas = FALSE, query_types = NULL, group = NULL, groupA = NULL, groupB = NULL, selected_metacell_types = NULL) {
+render_2d_plotly <- function(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, source, buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL, refresh_on_gene_change = FALSE, atlas = FALSE, query_types = NULL, group = NULL, groupA = NULL, groupB = NULL, selected_metacell_types = NULL) {
     plotly::renderPlotly({
         req(input$color_proj)
         req(input$point_size)
@@ -216,7 +222,7 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
             highlight <- NULL
         }
 
-        plot_2d_gene <- function(gene) {
+        plot_2d_gene <- function(gene, gene_name = NULL) {
             req(input$proj_stat)
             if (input$proj_stat == "enrichment") {
                 req(input$lfp)
@@ -239,7 +245,8 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
                 point_size = input$point_size,
                 min_d = input$min_edge_size,
                 stat = input$proj_stat,
-                atlas = atlas
+                atlas = atlas,
+                gene_name = gene_name
             ) %>%
                 plotly::ggplotly(tooltip = "tooltip_text", source = source) %>%
                 rm_plotly_grid()
@@ -361,6 +368,10 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
         } else if (input$color_proj == "Gene") {
             req(input$color_proj_gene)
             fig <- plot_2d_gene(input$color_proj_gene)
+        } else if (input$color_proj == "Gene module") {
+            req(input$color_proj_gene_module)
+            genes <- get_module_genes(input$color_proj_gene_module, gene_modules())
+            fig <- plot_2d_gene(genes, gene_name = input$color_proj_gene_module)
         } else if (input$color_proj == "Sample") {
             req(input$samp1)
             fig <- plot_2d_metadata(paste0("samp_id: ", input$samp1))
