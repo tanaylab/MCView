@@ -140,10 +140,19 @@ import_dataset <- function(project,
 
 
     cli_alert_info("Processing 2d projection")
+    if (is.null(adata$obsp$obs_outgoing_weights)) {
+        cli_abort_compute_for_mcview("$obsp$obs_outgoing_weights")
+    }
     graph <- Matrix::summary(adata$obsp$obs_outgoing_weights) %>%
         as.data.frame()
 
     graph <- graph %>% mutate(i = rownames(adata$obs)[i], j = rownames(adata$obs)[j])
+
+    purrr::walk(c("umap_x", "umap_y"), ~ {
+        if (is.null(adata$obs[[.x]])){
+            cli_abort_compute_for_mcview("$obs${.x}")
+        }
+    })
 
     mc2d_list <- list(
         graph = tibble(mc1 = graph[, 1], mc2 = graph[, 2], weight = graph[, 3]),
@@ -280,7 +289,11 @@ import_dataset <- function(project,
 
     if (calc_gg_cor) {
         if (!is.null(adata$varp$var_similarity)) {
+            if (!methods::is(adata$varp$var_similarity, "sparseMatrix"))){
+                cli_abort("{.field var_similarity} matrix is not a sparse matrix. This probably means that you are running an old version of the {.field metacells} python moudle. Please update the module, rerun {.field compute_for_mcview} and try again.")
+            }
             cli_alert_info("Loading previously calculated 30 correlated and anti-correlated genes for each gene")
+            
             gg_mc_top_cor <- Matrix::summary(adata$varp$var_similarity) %>%
                 rlang::set_names(c("gene1", "gene2", "cor")) %>%
                 mutate(
@@ -433,4 +446,8 @@ cli_alert_success_verbose <- function(...) {
     if (verbose) {
         cli_alert_success(...)
     }
+}
+
+cli_abort_compute_for_mcview <- function(field){
+    cli_abort("{.field {{field}} is missing from the h5ad file. Did you remember to run {.code compute_for_mcview} using the metacells python package?", call = parent.env(1))
 }
