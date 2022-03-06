@@ -80,8 +80,8 @@ mod_annotate_ui <- function(id) {
                     splitLayout(
                         actionButton(ns("reset_cell_type_colors"), "Reset", style = "align-items: center;"),
                         downloadButton(ns("cell_type_colors_download"), "Export", style = "align-items: center;"),
-                        actionButton(ns("delete_cell_type_colors"), "Delete"),
-                        actionButton(ns("add_cell_type_colors"), "Add")
+                        actionButton(ns("delete_cell_type_colors_modal"), "Delete"),
+                        actionButton(ns("add_cell_type_modal"), "Add")
                     ),
                     uiOutput(ns("annot_color_picker")),
                     shinycssloaders::withSpinner(
@@ -220,7 +220,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
             last_chosen_cell_type <- reactiveVal("(Missing)")
 
             observeEvent(input$reset_metacell_types, {
-                metacell_types(get_mc_data(dataset(), "metacell_types"))
+                metacell_types(get_metacell_types_data(dataset()))
                 selected_metacell_types(tibble(metacell = character(), cell_type = character()))
                 to_show(NULL)
                 last_chosen_cell_type("(Missing)")
@@ -228,7 +228,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
             })
 
             observeEvent(input$reset_cell_type_colors, {
-                cell_type_colors(get_mc_data(dataset(), "cell_type_colors"))
+                cell_type_colors(get_cell_type_data(dataset()))
             })
 
             output$annotation_box <- renderUI({
@@ -349,8 +349,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
             observeEvent(input$cell_type_table_cell_edit, {
                 # fix column number to be 1 based
                 new_input <- input$cell_type_table_cell_edit %>% mutate(col = col + 1)
-                edited_data <- DT::editData(cell_type_colors() %>% select(cell_type, color), new_input, "cell_type_table")
-
+                edited_data <- DT::editData(cell_type_colors() %>% select(cell_type, color), new_input)
                 # the data table was given only cell_type and color columns so we add the rest
                 edited_data <- bind_cols(
                     cell_type_colors() %>%
@@ -367,10 +366,30 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                     metacell_types(new_metacell_types)
                 }
 
+                if (!any(duplicated(edited_data$cell_type))) {
+                    cell_type_colors(edited_data)
+                } else {
+                    dups <- paste(edited_data$cell_type[duplicated(edited_data$cell_type)], collapse = ", ")
+                    showNotification("Cell types cannot be duplicated: {dups}")
+                }
 
-                cell_type_colors(edited_data)
+                DT::replaceData(cell_type_table_proxy, cell_type_colors() %>% select(cell_type, color), resetPaging = FALSE, rownames = FALSE)
+            })
 
-                DT::replaceData(cell_type_table_proxy, cell_type_colors() %>% select(cell_type, color), resetPaging = FALSE)
+            observeEvent(input$delete_cell_type_colors_modal, {
+                req(input$cell_type_table_rows_selected)
+
+                cell_types <- paste(cell_type_colors()$cell_type[input$cell_type_table_rows_selected], collapse = ", ")
+                showModal({
+                    modalDialog(
+                        title = "Remove cell type(s)",
+                        glue("Are you sure you want to delete the following cell types: {cell_types}?"),
+                        footer = tagList(
+                            modalButton("Cancel"),
+                            actionButton(ns("delete_cell_type_colors"), "OK")
+                        )
+                    )
+                })
             })
 
             observeEvent(input$delete_cell_type_colors, {
@@ -386,9 +405,32 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                             )
                     )
                 }
+                removeModal()
             })
 
-            observeEvent(input$add_cell_type_colors, {
+            observeEvent(input$add_cell_type_modal, {
+                showModal({
+                    modalDialog(
+                        title = "Add a new cell type",
+                        textInput(ns("new_cell_type_name"), "Cell type name"),
+                        colourpicker::colourInput(ns("new_cell_type_color"), NULL, "red"),
+                        footer = tagList(
+                            modalButton("Cancel"),
+                            actionButton(ns("add_cell_type"), "OK")
+                        )
+                    )
+                })
+            })
+
+            observeEvent(input$add_cell_type, {
+                req(input$new_cell_type_name)
+                req(input$new_cell_type_color)
+                if (input$new_cell_type_name %in% cell_type_colors()$cell_type) {
+                    showNotification(glue("Cell type {input$new_cell_type_name} already exists"), type = "error")
+                    removeModal()
+                    req(FALSE)
+                }
+
                 rows <- input$cell_type_table_rows_selected
                 if (!is.null(rows) && length(rows) > 0) {
                     place <- rows[1] + 1
@@ -396,15 +438,9 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                     place <- 1
                 }
 
-                # TODO: allow creation of more than one new row without editing (e.g. by adding a suffix to cell_type)
                 new_data <- cell_type_colors() %>% arrange(order)
 
-                new_name <- vctrs::vec_as_names(c("Cell type", new_data$cell_type), repair = "unique") %>%
-                    setdiff(new_data$cell_type) %>%
-                    sort() %>%
-                    tail(1)
-
-                new_row <- tibble(cell_type = new_name, color = "red", order = place)
+                new_row <- tibble(cell_type = input$new_cell_type_name, color = input$new_cell_type_color, order = place)
                 new_data <- bind_rows(
                     new_data %>% filter(order < place),
                     new_row,
@@ -416,6 +452,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                     distinct(cell_type, .keep_all = TRUE) %>%
                     mutate(order = 1:n())
                 cell_type_colors(new_data)
+                removeModal()
             })
 
             output$annot_color_picker <- renderUI({

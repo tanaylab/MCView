@@ -162,7 +162,7 @@ mod_flow_server <- function(id, dataset, metacell_types, cell_type_colors, gene_
                     gene <- NULL
                 }
 
-                cell_type_colors <- get_mc_data(dataset(), "cell_type_colors")
+                cell_type_colors <- get_cell_type_data(dataset())
 
                 color_order <- cell_type_colors$color
                 if (input$vein_gene_foc_type == "All") {
