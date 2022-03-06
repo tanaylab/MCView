@@ -26,8 +26,8 @@ app_server <- function(input, output, session) {
     gene_modules <- reactiveVal()
 
     observe({
-        initial_cell_type_colors <- get_mc_data(dataset(), "cell_type_colors")
-        initial_metacell_types <- get_mc_data(dataset(), "metacell_types")
+        initial_cell_type_colors <- get_cell_type_data(dataset())
+        initial_metacell_types <- get_metacell_types_data(dataset())
         initial_gene_modules <- get_mc_data(dataset(), "gene_modules")
 
         # remove metacell color column if exists

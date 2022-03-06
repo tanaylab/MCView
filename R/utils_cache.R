@@ -122,6 +122,7 @@ get_cell_type_data <- function(dataset, atlas = FALSE) {
     }
 
     cell_type_colors <- cell_type_colors %>%
+        filter(!is.na(cell_type)) %>%
         mutate(cell_type = as.character(cell_type))
     return(cell_type_colors)
 }
