@@ -25,11 +25,14 @@
 #' not exists in the data would be ignored.
 #' If this parameter and \code{cell_type_field} are missing, MCView would cluster the
 #' metacell matrix using kmeans++ algorithm (from the \code{tglkmeans} package).
+#' If the file has a field named 'color' and \code{cell_type_colors_file=NULL}, the cell types colors would
+#' be used.
 #' @param cell_type_colors_file path to a tabular file (csv,tsv) with color assignement for
 #' each cell type. The file should have a column named "cell_type" or "cluster" with the
 #' cell types and another column named "color" with the color assignment. Cell types that do not
 #' exist in the metacell types would be ignored.
-#' If this is missing, MCView would use the \code{chameleon} package to assign a color for each cell type.
+#' If this is missing, and \code{metacell_types_file} did not have a 'color' field, MCView would use the \code
+#' {chameleon} package to assign a color for each cell type.
 #' When an atlas is given (using \code{atlas_project} and \code{atlas_dataset}), if the cell types
 #' are the same as the atlas, the atlas colors would be used.
 #' @param metadata_fields names of fields in the anndata \code{object$obs} which contains metadata for each metacell.
@@ -46,9 +49,8 @@
 #' called 'categories' holds the categories.
 #' @param gene_modules_file path to a tabular file (csv,tsv) with assignment of genes to gene modules. Should have a field named "gene" with the gene name and a field named "module" with the name of the gene module.
 #' @param gene_modules_k number of clusters for initial gene module calculation. If NULL - the number of clusters would be determined such that an gene module would contain 16 genes on average.
-#' @param calc_gg_cor calculate top 30 correlated and anti-correlated genes for each gene. This computation can be heavy
-#' for large datasets or weaker machines, so you can set \code{calc_gg_cor=FALSE} to skip it. Note that then this feature
-#' would be missing from the app.
+#' @param calc_gg_cor Calculate top 30 correlated and anti-correlated genes for each gene. This computation can be heavy for large datasets or weaker machines, so you can set \code{calc_gg_cor=FALSE} to skip it. Note that then this feature would be missing from the app.
+#' @param gene_names use alternative gene names (optional). A data frame with a column called 'gene_name' with the original gene name (as it appears at the 'h5ad' file) and another column called 'alt_name' with the gene name to use in MCView. Genes that do not appear at the table would not be changed.
 #' @param atlas_project path to and \code{MCView} project which contains the atlas.
 #' @param atlas_dataset name of the atlas dataset
 #' @param projection_weights_file Path to a tabular file (csv,tsv) with the following fields "query", "atlas" and "weight". The file is an output of \code{metacells} projection algorithm.
@@ -83,6 +85,7 @@ import_dataset <- function(project,
                            gene_modules_file = NULL,
                            gene_modules_k = NULL,
                            calc_gg_cor = TRUE,
+                           gene_names = NULL,
                            atlas_project = NULL,
                            atlas_dataset = NULL,
                            projection_weights_file = NULL,
@@ -108,6 +111,8 @@ import_dataset <- function(project,
 
     cli_alert_info("Processing metacell matrix")
     mc_mat <- t(adata$X)
+    rownames(mc_mat) <- motify_gene_names(rownames(mc_mat), gene_names)
+
     serialize_shiny_data(mc_mat, "mc_mat", dataset = dataset, cache_dir = cache_dir)
 
     metacells <- colnames(mc_mat)
@@ -139,10 +144,19 @@ import_dataset <- function(project,
 
 
     cli_alert_info("Processing 2d projection")
+    if (is.null(adata$obsp$obs_outgoing_weights)) {
+        cli_abort_compute_for_mcview("$obsp$obs_outgoing_weights")
+    }
     graph <- Matrix::summary(adata$obsp$obs_outgoing_weights) %>%
         as.data.frame()
 
     graph <- graph %>% mutate(i = rownames(adata$obs)[i], j = rownames(adata$obs)[j])
+
+    purrr::walk(c("umap_x", "umap_y"), ~ {
+        if (is.null(adata$obs[[.x]])) {
+            cli_abort_compute_for_mcview("$obs${.x}")
+        }
+    })
 
     mc2d_list <- list(
         graph = tibble(mc1 = graph[, 1], mc2 = graph[, 2], weight = graph[, 3]),
@@ -161,6 +175,7 @@ import_dataset <- function(project,
     } else {
         forbidden <- adata$var$forbidden_gene
         forbidden_genes <- rownames(adata$var)[adata$var$forbidden_gene]
+        forbidden_genes <- motify_gene_names(forbidden_genes, gene_names)
     }
 
     serialize_shiny_data(forbidden_genes, "forbidden_genes", dataset = dataset, cache_dir = cache_dir)
@@ -192,12 +207,20 @@ import_dataset <- function(project,
 
     colnames(mc_genes_top2) <- c("metacell", "top1_gene", "top2_gene", "top1_lfp", "top2_lfp")
 
+    cell_type_colors <- NULL
     if (!is.null(metacell_types_file)) {
         if (!is.null(cell_type_field)) {
             cli_alert_warning("{.field cell_type_field} was ignored since {.field metacell_types_file} was set.")
         }
         cli_alert_info("Loading metacell type annotations from {.file {metacell_types_file}}")
-        metacell_types <- parse_metacell_types(metacell_types_file, metacells)
+        metacell_types <- fread(metacell_types_file)
+        if (has_name(metacell_types, "color")) {
+            if (is.null(cell_type_colors_file)) {
+                cli_alert_info("Loading cell type colors from the 'color' field at {.file {metacell_types_file}}")
+                cell_type_colors <- parse_cell_type_colors(metacell_types)
+            }
+        }
+        metacell_types <- parse_metacell_types(metacell_types, metacells)
     } else {
         if (!is.null(cell_type_field) && !is.null(adata$obs[[cell_type_field]])) {
             cli_alert_info("Taking cell type annotations from {.field {cell_type_field}} field in the anndata object")
@@ -236,7 +259,7 @@ import_dataset <- function(project,
     if (!is.null(cell_type_colors_file)) {
         cli_alert_info("Loading cell type color annotations from {.file {cell_type_colors_file}}")
         cell_type_colors <- parse_cell_type_colors(cell_type_colors_file)
-    } else {
+    } else if (is.null(cell_type_colors)) {
         if (!is.null(atlas_dataset) && !is.null(atlas_project)) { # use atlas colors
             atlas_colors <- fread(fs::path(project_cache_dir(atlas_project), atlas_dataset, "cell_type_colors.tsv")) %>% as_tibble()
             # if we are using the atlas cell types - use their colors
@@ -277,7 +300,11 @@ import_dataset <- function(project,
 
     if (calc_gg_cor) {
         if (!is.null(adata$varp$var_similarity)) {
+            if (!methods::is(adata$varp$var_similarity, "sparseMatrix")) {
+                cli_abort("{.field var_similarity} matrix is not a sparse matrix. This probably means that you are running an old version of the {.field metacells} python moudle. Please update the module, rerun {.field compute_for_mcview} and try again.")
+            }
             cli_alert_info("Loading previously calculated 30 correlated and anti-correlated genes for each gene")
+
             gg_mc_top_cor <- Matrix::summary(adata$varp$var_similarity) %>%
                 rlang::set_names(c("gene1", "gene2", "cor")) %>%
                 mutate(
@@ -304,6 +331,8 @@ import_dataset <- function(project,
                 gg_mc_top_cor_neg
             ) %>%
                 arrange(gene1, desc(cor))
+            gg_mc_top_cor <- gg_mc_top_cor %>%
+                mutate(gene1 = motify_gene_names(gene1, gene_names), gene2 = motify_gene_names(gene2, gene_names))
         } else {
             cli_alert_info("Calculating top 30 correlated and anti-correlated genes for each gene")
             gg_mc_top_cor <- calc_gg_mc_top_cor(mc_egc, k = 30)
@@ -322,12 +351,16 @@ import_dataset <- function(project,
             cli_abort("Please provide {.code projection_weights_file}")
         }
 
+        if (!is.null(gene_names)) {
+            cli_abort("Using {.field gene_names} with atlases is currently not supported")
+        }
+
         import_atlas(adata, atlas_project, atlas_dataset, projection_weights_file, dataset = dataset, cache_dir = cache_dir, copy_atlas)
     }
 
     cli_alert_success("{.field {dataset}} dataset imported succesfully to {.path {project}} project")
-    cli::cli_bullets("You can now run the app using: {.code run_app(\"{project}\")}")
-    cli::cli_bullets("or create a bundle using: {.code create_bundle(\"{project}\")}")
+    cli::cli_ul("You can now run the app using: {.field run_app(\"{project}\")}")
+    cli::cli_ul("or create a bundle using: {.field create_bundle(\"{project}\")}")
     invisible(adata)
 }
 
@@ -424,4 +457,8 @@ cli_alert_success_verbose <- function(...) {
     if (verbose) {
         cli_alert_success(...)
     }
+}
+
+cli_abort_compute_for_mcview <- function(field) {
+    cli_abort("{.field {{field}} is missing from the h5ad file. Did you remember to run {.code compute_for_mcview} using the metacells python package?", call = parent.env(1))
 }

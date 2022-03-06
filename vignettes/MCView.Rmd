@@ -73,6 +73,8 @@ You can see that we also specified a field in the `h5ad` object that has pre-com
 
 Note that the import part might take a few minutes, depending (mostly) on the number of metacells. If you see that it takes too long - set `calc_gg_cor` to `FALSE` in order to skip calculating correlation between all genes. This would save significant amount of import time but would make this feature unavailable in the app. 
 
+In addition, some features would only be available if you ran `compute_for_mcview` in the `metacells` python package, so try to remember running it before importing to __MCView__.  
+
 __MCView__ supports also importing datasets from the old R `metacell` package, see `import_dataset_metacell1` for details.
 
 ## Run the app
@@ -102,19 +104,17 @@ update_metacell_types("PBMC", "PBMC163k", "/path/to/metacell_types_file")
 
 Where "/path/to/metacell_types_file" is the path of the exported file. 
 
-The same can be done for cell type colors, which has a different export button: 
+You can now rerun the app and the types/colors would be updated. 
+
+If you only want to update the cell type colors you can run: 
 
 ```{r, eval=FALSE}
 update_cell_type_colors("PBMC", "PBMC163k", "/path/to/cell_type_colors_file")
 ```
 
-You can now rerun the app and the types/colors would be updated. 
-
-Note that if you changed cell type __names__ you should update both `cell_type_colors` and `metacell_types`, as otherwise metacells with the old name would appear with a "(Missing)" cell type tag. 
-
 ## Metadata
 
-You can load numeric metadata fields for each metacell using the `metadata` parameter in `import_dataset` command:
+You can load metadata fields for each metacell using the `metadata` parameter in `import_dataset` command:
 
 ```{r, eval=FALSE}
 import_dataset(project = "PBMC", 
@@ -130,7 +130,7 @@ The format is a data frame (or a delimited filename) with a column named `metace
 
 You can use the `metadata_colors` parameter to set the breaks and colors for each numerical metadata field, and color for each category for categorical fields. 
 
-If you want to change the metadata fields or colors after the import, you can use the  `update_metadata` and `update_metadata_colors` functions:
+If you want to change the metadata fields or colors after the import, you can use the `update_metadata` and `update_metadata_colors` functions:
 
 ```{r, eval=FALSE}
 update_metadata(project = "PBMC", 
