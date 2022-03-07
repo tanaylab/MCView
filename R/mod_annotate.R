@@ -78,11 +78,12 @@ mod_annotate_ui <- function(id) {
                     closable = FALSE,
                     width = 12,
                     splitLayout(
-                        actionButton(ns("reset_cell_type_colors"), "Reset", style = "align-items: center;"),
-                        downloadButton(ns("cell_type_colors_download"), "Export", style = "align-items: center;"),
-                        actionButton(ns("delete_cell_type_colors_modal"), "Delete"),
-                        actionButton(ns("add_cell_type_modal"), "Add")
+                        actionButton(ns("reset_cell_type_colors"), "Reset", style = "align-items: left;"),
+                        downloadButton(ns("cell_type_colors_download"), "Export", style = "align-items: left;"),
+                        actionButton(ns("add_cell_type_modal"), "Add", style = "align-items: left;")
                     ),
+                    br(),
+                    br(),
                     uiOutput(ns("annot_color_picker")),
                     shinycssloaders::withSpinner(
                         DT::dataTableOutput(ns("cell_type_table"))
@@ -376,6 +377,53 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 DT::replaceData(cell_type_table_proxy, cell_type_colors() %>% select(cell_type, color), resetPaging = FALSE, rownames = FALSE)
             })
 
+            observeEvent(input$merge_cell_types_modal, {
+                rows <- input$cell_type_table_rows_selected
+                req(rows)
+                cell_types <- cell_type_colors()$cell_type[input$cell_type_table_rows_selected]
+                default_color <- cell_type_colors()$color[input$cell_type_table_rows_selected[1]]
+                showModal({
+                    modalDialog(
+                        title = "Merge cell types",
+                        textInput(ns("new_merged_cell_type_name"), "Cell type name"),
+                        colourpicker::colourInput(ns("new_merged_cell_type_color"), NULL, default_color),
+                        glue("Are you sure you want to merge the following cell types: {paste(cell_types, collapse = ',')}?"),
+                        footer = tagList(
+                            modalButton("Cancel"),
+                            actionButton(ns("merge_cell_types"), "OK")
+                        )
+                    )
+                })
+            })
+
+            observeEvent(input$merge_cell_types, {
+                rows <- input$cell_type_table_rows_selected
+                req(rows)
+                cell_types <- cell_type_colors()$cell_type[input$cell_type_table_rows_selected]
+                req(input$new_merged_cell_type_name)
+                req(input$new_merged_cell_type_color)
+                if (input$new_merged_cell_type_name %in% cell_type_colors()$cell_type[-rows]) {
+                    showNotification(glue("Cell type {input$new_merged_cell_type_name} already exists"), type = "error")
+                    removeModal()
+                    req(FALSE)
+                }
+
+                new_cell_type_colors <- cell_type_colors() %>%
+                    filter(!(cell_type %in% cell_types)) %>%
+                    tibble::add_row(cell_type = input$new_merged_cell_type_name, color = input$new_merged_cell_type_color, order = rows[1], .before = rows[1]) %>%
+                    arrange(order) %>%
+                    distinct(cell_type, .keep_all = TRUE) %>%
+                    mutate(order = 1:n())
+
+                cell_type_colors(new_cell_type_colors)
+
+                new_metacell_types <- metacell_types() %>%
+                    mutate(cell_type = ifelse(cell_type %in% cell_types, input$new_merged_cell_type_name, cell_type))
+                metacell_types(new_metacell_types)
+
+                removeModal()
+            })
+
             observeEvent(input$delete_cell_type_colors_modal, {
                 req(input$cell_type_table_rows_selected)
 
@@ -457,9 +505,18 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
 
             output$annot_color_picker <- renderUI({
                 fluidRow(
-                    column(6, actionButton(ns("submit_new_color"), "Change color")),
-                    column(6, colourpicker::colourInput(ns("selected_new_color"), NULL, "black"))
+                    column(3, actionButton(ns("submit_new_color"), "Change color")),
+                    column(3, colourpicker::colourInput(ns("selected_new_color"), NULL, "black")),
+                    column(3, actionButton(ns("delete_cell_type_colors_modal"), "Delete")),
+                    column(3, actionButton(ns("merge_cell_types_modal"), "Merge"))
                 )
+            })
+
+            observe({
+                shinyjs::toggle(id = "submit_new_color", condition = !is.null(input$cell_type_table_rows_selected))
+                shinyjs::toggle(id = "selected_new_color", condition = !is.null(input$cell_type_table_rows_selected))
+                shinyjs::toggle(id = "delete_cell_type_colors_modal", condition = !is.null(input$cell_type_table_rows_selected))
+                shinyjs::toggle(id = "merge_cell_types_modal", condition = !is.null(input$cell_type_table_rows_selected) && length(input$cell_type_table_rows_selected) > 1)
             })
 
             observe({
