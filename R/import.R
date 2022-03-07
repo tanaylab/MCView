@@ -31,8 +31,7 @@
 #' each cell type. The file should have a column named "cell_type" or "cluster" with the
 #' cell types and another column named "color" with the color assignment. Cell types that do not
 #' exist in the metacell types would be ignored.
-#' If this is missing, and \code{metacell_types_file} did not have a 'color' field, MCView would use the \code
-#' {chameleon} package to assign a color for each cell type.
+#' If this is missing, and \code{metacell_types_file} did not have a 'color' field, MCView would use the \code{chameleon} package to assign a color for each cell type.
 #' When an atlas is given (using \code{atlas_project} and \code{atlas_dataset}), if the cell types
 #' are the same as the atlas, the atlas colors would be used.
 #' @param metadata_fields names of fields in the anndata \code{object$obs} which contains metadata for each metacell.
