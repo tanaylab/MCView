@@ -85,8 +85,10 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
             }
             metadata <- prev_metadata
         } else {
-            metadata <- prev_metadata %>% left_join(
-                proj_metacell_types %>% select(metacell, similar),
+            metadata <- prev_metadata %>% 
+                mutate(metacell = as.character(metacell)) %>% 
+                left_join(
+                proj_metacell_types %>% mutate(metacell = as.character(metacell)) %>% select(metacell, similar) ,
                 by = "metacell"
             )
         }
@@ -107,11 +109,7 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
     if (is.null(query$layers[["projected"]])) {
         cli_abort("Query h5ad is missing the '{.file projected}' layer")
     }
-
-    if (!methods::is(query$layers[["projected"]], "sparseMatrix")) {
-        cli_abort("{.field projected} matrix is not a sparse matrix. This probably means that you are running an old version of the {.field metacells} python moudle. Please update the module, rerun {.field compute_for_mcview} and try again.")
-    }
-    projected_mat <- Matrix::t(query$layers[["projected"]])
+    projected_mat <- t(query$layers[["projected"]])
     serialize_shiny_data(projected_mat, "projected_mat", dataset = dataset, cache_dir = cache_dir)
 
     projected_mat_sum <- colSums(projected_mat)
@@ -121,10 +119,7 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
         cli_abort("Query h5ad is missing the '{.file projected_fold}' layer")
     }
 
-    if (!methods::is(query$layers[["projected_fold"]], "sparseMatrix")) {
-        cli_abort("{.field projected_fold} matrix is not a sparse matrix. This probably means that you are running an old version of the {.field metacells} python moudle. Please update the module, rerun {.field compute_for_mcview} and try again.")
-    }
-    projected_fold <- Matrix::t(query$layers[["projected_fold"]])
+    projected_fold <- t(query$layers[["projected_fold"]])
     serialize_shiny_data(projected_fold, "projected_fold", dataset = dataset, cache_dir = cache_dir)
 
     cli_alert_info("Calculating top atlas-query fold genes")

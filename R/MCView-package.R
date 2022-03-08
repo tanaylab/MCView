@@ -10,6 +10,7 @@
 #' @import tgstat
 #' @import tgutil
 #' @import cli
+#' @importFrom Matrix t rowSums
 #' @importFrom rlang has_name
 #' @importFrom rintrojs introBox
 #' @importFrom glue glue

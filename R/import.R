@@ -185,7 +185,7 @@ import_dataset <- function(project,
     # serialize the inner fold matrix (if exists)
     if (!is.null(adata$layers[["inner_fold"]])) {
         cli_alert_info("Processing inner-folds matrix")
-        inner_fold_mat <- Matrix::t(adata$layers[["inner_fold"]])
+        inner_fold_mat <- t(adata$layers[["inner_fold"]])
         rownames(inner_fold_mat) <- rownames(mc_mat)
         colnames(inner_fold_mat) <- colnames(mc_mat)
         serialize_shiny_data(inner_fold_mat, "inner_fold_mat", dataset = dataset, cache_dir = cache_dir)
