@@ -177,10 +177,11 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
 
             mat <- reactive({
                 req(markers())
+                req(dataset())
                 req(metacell_types())
                 req(is.null(input$selected_cell_types) || all(input$selected_cell_types %in% c(cell_type_colors()$cell_type, "(Missing)")))
 
-                get_marker_matrix(
+                m <- get_marker_matrix(
                     dataset(),
                     markers(),
                     input$selected_cell_types,
@@ -190,7 +191,14 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     mode = mode,
                     notify_var_genes = TRUE
                 )
-            }) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), markers(), gene_modules(), input$selected_cell_types, input$force_cell_type, mode)
+
+                # Add genes to the matrix if exists
+                if (!is.null(genes) && length(genes()) > 0 && !is.null(input$show_genes) && input$show_genes) {
+                    m <- add_genes_to_marker_matrix(m, genes(), dataset())
+                }
+
+                return(m)
+            }) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), markers(), gene_modules(), input$selected_cell_types, input$force_cell_type, genes(), input$show_genes, mode)
 
             heatmap_matrix_reactives(ns, input, output, session, dataset, metacell_types, cell_type_colors, globals, markers, lfp_range, mode)
 
@@ -286,7 +294,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                 req(ncol(m) > 0)
 
                 if (!is.null(genes) && length(genes()) > 0 && !is.null(input$show_genes) && input$show_genes) {
-                    m <- add_genes_to_marker_matrix(m, genes(), dataset())
+                    # m <- add_genes_to_marker_matrix(m, genes(), dataset())
                     other_genes <- genes()
 
                     gene_colors <- tibble(gene = rownames(m), color = ifelse(gene %in% genes(), "blue", "black")) %>% deframe()
@@ -388,11 +396,11 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                 top_genes <- mcell_stats %>%
                     glue::glue_data("{top1_gene} ({round(top1_lfp, digits=2)}), {top2_gene} ({round(top2_lfp, digits=2)})")
 
-                if (mode == "Gene modules") {
-                    gene_prefix <- "Gene module:"
-                } else {
-                    gene_prefix <- "Gene"
+                gene_prefix <- "Gene"
+                if (mode == "Gene modules" && !(gene %in% genes())) {
+                    gene_prefix <- "Gene module"
                 }
+
                 mcell_tooltip <- paste(
                     glue("{gene_prefix}: {gene}"),
                     glue("Metacell: {metacell}"),

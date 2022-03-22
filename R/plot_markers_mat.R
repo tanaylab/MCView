@@ -51,7 +51,7 @@ plot_markers_mat <- function(mat,
         col_names_orient = "slanted",
         interleave = interleave
     ) +
-        scale_fill_gradient2(name = "", low = low_color, high = high_color, mid = mid_color, midpoint = midpoint, limits = c(min_lfp, max_lfp)) 
+        scale_fill_gradient2(name = "", low = low_color, high = high_color, mid = mid_color, midpoint = midpoint, limits = c(min_lfp, max_lfp))
 
     p_mat <- suppressWarnings(
         p_mat +
