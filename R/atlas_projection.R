@@ -85,12 +85,12 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
             }
             metadata <- prev_metadata
         } else {
-            metadata <- prev_metadata %>% 
-                mutate(metacell = as.character(metacell)) %>% 
+            metadata <- prev_metadata %>%
+                mutate(metacell = as.character(metacell)) %>%
                 left_join(
-                proj_metacell_types %>% mutate(metacell = as.character(metacell)) %>% select(metacell, similar) ,
-                by = "metacell"
-            )
+                    proj_metacell_types %>% mutate(metacell = as.character(metacell)) %>% select(metacell, similar),
+                    by = "metacell"
+                )
         }
     }
     metadata <- metadata %>%
