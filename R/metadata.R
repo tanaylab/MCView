@@ -382,11 +382,11 @@ load_metadata <- function(metadata, metadata_fields, metacells, adata = NULL) {
         metadata_df_obs <- parse_metadata(metadata_df_obs, metacells)
 
         if (!is.null(metadata_df)) {
-            duplicated_metadata <- intersect(colnames(metadata), colnames(metadata_df))
+            duplicated_metadata <- intersect(colnames(metadata_df), colnames(metadata_df_obs))
             duplicated_metadata <- duplicated_metadata[duplicated_metadata != "metacell"]
             if (length(duplicated_metadata) > 0) {
                 fields <- paste(duplicated_metadata, collapse = ", ")
-                cli_abort("The metadata fields {.field {fields}} appear both in {.code metadata} and {.code metadata_fields}")
+                cli_abort("The metadata fields {.field {fields}} appear both in {.code metadata} (file or dataframe) and {.code metadata_fields} (h5ad file)")
             }
 
             metadata <- metadata_df_obs %>% full_join(metadata_df, by = "metacell")
