@@ -1,4 +1,4 @@
-scatter_box <- function(ns, id, title = "Gene/Gene") {
+scatter_box <- function(ns, id, title = "Gene/Gene", x_selected = "Gene", y_selected = "Gene", color_selected = "Metadata") {
     shinydashboardPlus::box(
         id = ns(id),
         title = title,
@@ -11,9 +11,9 @@ scatter_box <- function(ns, id, title = "Gene/Gene") {
             startOpen = FALSE,
             width = 100,
             id = ns("gene_gene_sidebar"),
-            axis_selector("x_axis", "Gene", ns),
-            axis_selector("y_axis", "Gene", ns),
-            axis_selector("color_by", "Metadata", ns),
+            axis_selector("x_axis", x_selected, ns),
+            axis_selector("y_axis", y_selected, ns),
+            axis_selector("color_by", color_selected, ns),
             uiOutput(ns("gene_gene_xyline_ui")),
             uiOutput(ns("gene_gene_fixed_limits_ui")),
             uiOutput(ns("use_atlas_limits_ui")),

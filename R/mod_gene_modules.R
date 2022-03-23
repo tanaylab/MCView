@@ -19,7 +19,7 @@ mod_gene_modules_ui <- function(id) {
                 fluidRow(
                     resizable_column(
                         width = 6,
-                        scatter_box(ns, "gene_gene_box")
+                        scatter_box(ns, "gene_gene_box", x_selected = "Gene module", y_selected = "Gene")
                     ),
                     resizable_column(
                         width = 6,
