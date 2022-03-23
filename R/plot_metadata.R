@@ -355,14 +355,14 @@ plot_mc_scatter <- function(dataset,
     # arrange axis for gene expression
     xylims <- expr_breaks
 
-    if (fixed_limits && x_type == "Gene" && y_type == "Gene") {
+    if (fixed_limits && x_type %in% c("Gene", "Gene module") && y_type %in% c("Gene", "Gene module")) {
         x_limits <- x_limits %||% c(min(egc_x), max(egc_x))
         y_limits <- y_limits %||% c(min(egc_y), max(egc_y))
         x_limits <- c(min(c(x_limits[1], y_limits[1])), max(c(x_limits[2], y_limits[2])))
         y_limits <- x_limits
     }
 
-    if (x_type == "Gene") {
+    if (x_type %in% c("Gene", "Gene module")) {
         x_limits <- x_limits %||% c(min(egc_x), max(egc_x))
         xmax <- min(c(1:length(xylims))[xylims >= x_limits[2]])
         xmin <- max(c(1:length(xylims))[xylims <= x_limits[1]])
@@ -372,7 +372,7 @@ plot_mc_scatter <- function(dataset,
             theme(axis.text.x = element_text(angle = 30, vjust = 0.5, hjust = 1))
     }
 
-    if (y_type == "Gene") {
+    if (y_type %in% c("Gene", "Gene module")) {
         y_limits <- y_limits %||% c(min(egc_y), max(egc_y))
         ymax <- min(c(1:length(xylims))[xylims >= y_limits[2]])
         ymin <- max(c(1:length(xylims))[xylims <= y_limits[1]])
@@ -643,7 +643,7 @@ plot_sample_scatter <- function(dataset,
     # arrange axis for gene expression
     xylims <- expr_breaks
 
-    if (x_type == "Gene") {
+    if (x_type %in% c("Gene", "Gene module")) {
         xmax <- min(c(1:length(xylims))[xylims >= max(egc_x)])
         xmin <- max(c(1:length(xylims))[xylims <= min(egc_x)])
         p <- p +
@@ -655,7 +655,7 @@ plot_sample_scatter <- function(dataset,
             scale_x_continuous(labels = scales::percent)
     }
 
-    if (y_type == "Gene") {
+    if (y_type %in% c("Gene", "Gene module")) {
         ymax <- min(c(1:length(xylims))[xylims >= max(egc_y)])
         ymin <- max(c(1:length(xylims))[xylims <= min(egc_y)])
         p <- p +
@@ -847,7 +847,7 @@ plot_obs_proj_scatter <- function(dataset,
     # arrange axis for gene expression
     xylims <- expr_breaks
 
-    if (axis_type == "Gene") {
+    if (axis_type %in% c("Gene", "Gene module")) {
         xmax <- min(c(1:length(xylims))[xylims >= max(egc_obs)])
         xmin <- max(c(1:length(xylims))[xylims <= min(egc_obs)])
         ymax <- min(c(1:length(xylims))[xylims >= max(egc_proj)])
