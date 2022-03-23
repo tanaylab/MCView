@@ -11,7 +11,8 @@ create_bundle(
   overwrite = FALSE,
   self_contained = FALSE,
   branch = "latest_release",
-  restart = overwrite
+  restart = overwrite,
+  permissions = NULL
 )
 }
 \arguments{
@@ -37,6 +38,9 @@ parameter to NULL in order to include the current development version
 repository.}
 
 \item{restart}{add a file named 'restart.txt' to the bundle. This would force shiny-server to restart the app when updated.}
+
+\item{permissions}{change the file permissions of the bundle after creation, e.g. "777". When NULL -
+permissions would not be changed.}
 }
 \description{
 Generate a 'deployment ready' bundle of the a project app

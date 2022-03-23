@@ -179,6 +179,8 @@ create_project <- function(project,
 #' ('master' branch), or set it to any other branch in the 'tanaylab/MCView' github
 #' repository.
 #' @param restart add a file named 'restart.txt' to the bundle. This would force shiny-server to restart the app when updated.
+#' @param permissions change the file permissions of the bundle after creation, e.g. "777". When NULL -
+#' permissions would not be changed.
 #'
 #'
 #' @examples
@@ -196,7 +198,7 @@ create_project <- function(project,
 #' }
 #'
 #' @export
-create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overwrite = FALSE, self_contained = FALSE, branch = "latest_release", restart = overwrite) {
+create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overwrite = FALSE, self_contained = FALSE, branch = "latest_release", restart = overwrite, permissions = NULL) {
     bundle_dir <- fs::path(path, name)
     if (!(fs::dir_exists(project))) {
         cli::cli_abort("{.path {project}} does not exists.")
@@ -205,6 +207,7 @@ create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overw
         if (overwrite) {
             fs::dir_delete(bundle_dir)
             fs::dir_create(bundle_dir)
+            cli::cli_li("Removing previous bundle ({.field overwrite = TRUE})")
         } else {
             cli::cli_abort("{.path {bundle_dir}} already exists. Run with {.code overwrite=TRUE} to force overwriting it.")
         }
@@ -236,12 +239,18 @@ create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overw
 
     if (restart) {
         fs::file_touch(fs::path(bundle_dir, "restart.txt"))
+        cli::cli_li("Adding a file called {.field restart.txt}")
     }
 
-    cli::cat_line("Bundle files:")
+    if (!is.null(permissions)) {
+        fs::file_chmod(c(bundle_dir, fs::dir_ls(bundle_dir, recurse = TRUE)), mode = permissions)
+        cli::cli_li("Changing permissions to {.field {permissions}}")
+    }
+
+    cli::cli_li("Bundle files:")
     fs::dir_tree(bundle_dir)
     cli::cat_line("")
     cli::cli_alert_success("created a bundle at {bundle_dir}")
-    cli::cli_bullets("To deploy to shinyapps.io, run: {.code rsconnect::deployApp(appDir = '{bundle_dir}')}\n")
-    cli::cli_bullets("To deploy to another shiny-server service, upload {.path {bundle_dir}} to the service.")
+    cli::cli_li("To deploy to shinyapps.io, run: {.field rsconnect::deployApp(appDir = \"{as.character(bundle_dir)}\")}")
+    cli::cli_li("To deploy to another shiny-server service, upload {.path {bundle_dir}} to the service.")
 }
