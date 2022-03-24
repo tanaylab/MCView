@@ -10,6 +10,7 @@ import_cell_metadata(
   cell_metadata,
   cell_to_metacell,
   summarise_md = FALSE,
+  add_samples_tab = TRUE,
   ...
 )
 }
@@ -24,10 +25,22 @@ another column named "metacell" with the metacell the cell is part of, or a
 name of a delimited file which contains such data frame.}
 
 \item{summarise_md}{summarise cell metadata to the metacell level.}
+
+\item{add_samples_tab}{add the 'Samples' tab to the config file if it doesn't exist}
+
+\item{...}{
+  Arguments passed on to \code{\link[=cell_metadata_to_metacell]{cell_metadata_to_metacell}}
+  \describe{
+    \item{\code{func}}{summary function for the cell metadata for non categorical metadata columns
+(e.g. mean, median, sum)}
+    \item{\code{categorical}}{a vector with names of categorical variables. The returned data frame would have
+a column for each category where the values are the fraction of cells with the
+category in each metacell.}
+  }}
 }
 \description{
 Import metadata which is at the cell level to MCView. The metadata can be summarised to the metacell level
 by setting \code{summarise_md} to TRUE, in which case it could be shown at the "Genes" and "Markers" tabs.
-In order to view data at the samples level, an additional sample identifier shuold be given as a column named
+In order to view data at the samples level, an additional sample identifier should be given as a column named
 "samp_id" in the \code{cell_metadata} data frame.
 }

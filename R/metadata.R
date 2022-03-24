@@ -115,17 +115,18 @@ update_metadata_colors <- function(project,
 #' another column named "metacell" with the metacell the cell is part of, or a
 #' name of a delimited file which contains such data frame.
 #' @param summarise_md summarise cell metadata to the metacell level.
+#' @param add_samples_tab add the 'Samples' tab to the config file if it doesn't exist
 #'
 #' @description
 #' Import metadata which is at the cell level to MCView. The metadata can be summarised to the metacell level
 #' by setting \code{summarise_md} to TRUE, in which case it could be shown at the "Genes" and "Markers" tabs.
-#' In order to view data at the samples level, an additional sample identifier shuold be given as a column named
+#' In order to view data at the samples level, an additional sample identifier should be given as a column named
 #' "samp_id" in the \code{cell_metadata} data frame.
 #'
-#' @inheritParams cell_metadata_to_metacell
+#' @inheritDotParams cell_metadata_to_metacell
 #'
 #' @export
-import_cell_metadata <- function(project, dataset, cell_metadata, cell_to_metacell, summarise_md = FALSE, ...) {
+import_cell_metadata <- function(project, dataset, cell_metadata, cell_to_metacell, summarise_md = FALSE, add_samples_tab = TRUE, ...) {
     if (is.character(cell_metadata)) {
         cell_metadata <- tgutil::fread(cell_metadata) %>% as_tibble()
     }
@@ -143,13 +144,24 @@ import_cell_metadata <- function(project, dataset, cell_metadata, cell_to_metace
     }
 
     cache_dir <- project_cache_dir(project)
+    metacells <- get_metacell_ids(project, dataset)
+    non_existing_metacells <- unique(cell_to_metacell$metacell[!(cell_to_metacell$metacell %in% metacells)])
+    if (length(non_existing_metacells) > 0) {
+        mcs <- paste(non_existing_metacells, collapse = ",")
+        cli_alert_warning("The following metacells from {.field cell_to_metacell} do not exist in the dataset: {.file {mcs}}")
+    }
 
     cell_metadata <- cell_metadata %>%
         left_join(cell_to_metacell, by = "cell_id")
 
-    serialize_shiny_data(cell_metadata, "cell_metadata", dataset = dataset, cache_dir = cache_dir, flat = TRUE)
+    cell_metadata <- cell_metadata %>%
+        filter(metacell %in% metacells)
 
-    cli_alert_info("imported cell metadata")
+    if (nrow(cell_metadata) == 0) {
+        cli_abort("No cells left after filtering non-existing metacells. Please check your {.field cell_to_metacell} data frame.")
+    }
+
+    serialize_shiny_data(cell_metadata, "cell_metadata", dataset = dataset, cache_dir = cache_dir, flat = TRUE)
 
     if (summarise_md) {
         md <- cell_metadata %>%
@@ -157,9 +169,25 @@ import_cell_metadata <- function(project, dataset, cell_metadata, cell_to_metace
             select(cell_id, everything())
 
         md <- cell_metadata_to_metacell(md, cell_to_metacell, ...)
-        update_metadata(project, dataset, md, overwrite = TRUE)
-        cli_alert_info("imported metacell metadata")
+    } else {
+        if (has_name(cell_metadata, "samp_id")) {
+            md <- cell_metadata_to_metacell(cell_metadata %>% select(cell_id, samp_id), cell_to_metacell, ...)
+            update_metadata(project, dataset, md, overwrite = TRUE)
+        }
     }
+
+    if (add_samples_tab && has_name(cell_metadata, "samp_id")) {
+        config_file <- project_config_file(project)
+        config <- yaml::read_yaml(config_file)
+        tabs <- config$tabs
+        if (!("Samples" %in% tabs)) {
+            config$tabs <- c(tabs, "Samples")
+        }
+        yaml::write_yaml(config, config_file)
+        cli_alert("Added the {.field Samples} tab to the config file. To change the tab order to remove it - edit the {.field tabs} section at: {.file {config_file}}")
+    }
+
+    cli_alert_success("Imported cell metadata")
 }
 
 
@@ -456,7 +484,7 @@ parse_metadata_colors <- function(metadata_colors, metadata) {
             if (length(.x) > 1) {
                 breaks <- .x[[2]]
                 if (length(breaks) != length(colors)) {
-                    cli_abort("In metadata colors field {.field {.y}}: length of {.code breaks} shuold be equal to {.code colors}")
+                    cli_abort("In metadata colors field {.field {.y}}: length of {.code breaks} should be equal to {.code colors}")
                 }
                 return(list(
                     colors = colors,
