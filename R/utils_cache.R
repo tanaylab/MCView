@@ -350,7 +350,7 @@ is_numeric_field <- function(df, field) {
 }
 
 get_metacell_ids <- function(project, dataset) {
-    names(get_mc_data(dataset, "mc_sum"))
+    names(load_shiny_data("mc_sum", dataset, project_cache_dir(project)))
 }
 
 has_gg_mc_top_cor <- function(project, dataset) {
