@@ -305,6 +305,8 @@ includeRMarkdown <- function(path) {
     rmarkdown::render(
         path,
         output_format = "md_document",
+        intermediates_dir = tempdir(),
+        knit_root_dir = tempdir(),
         output_dir = tempdir(),
         output_file = md, quiet = TRUE
     )

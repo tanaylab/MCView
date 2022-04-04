@@ -71,6 +71,7 @@
 #' }
 #'
 #' @inheritDotParams create_project
+#' @inheritParams import_cell_metadata
 #' @export
 import_dataset <- function(project,
                            dataset,
@@ -81,6 +82,8 @@ import_dataset <- function(project,
                            metadata_fields = NULL,
                            metadata = NULL,
                            metadata_colors = NULL,
+                           cell_metadata = NULL,
+                           cell_to_metacell = NULL,
                            gene_modules_file = NULL,
                            gene_modules_k = NULL,
                            calc_gg_cor = TRUE,
@@ -140,7 +143,6 @@ import_dataset <- function(project,
         metadata_colors <- parse_metadata_colors(metadata_colors, metadata)
         serialize_shiny_data(metadata_colors, "metadata_colors", dataset = dataset, cache_dir = cache_dir)
     }
-
 
     cli_alert_info("Processing 2d projection")
     if (is.null(adata$obsp$obs_outgoing_weights)) {
@@ -340,6 +342,14 @@ import_dataset <- function(project,
     } else {
         cli_alert_info("Skipping calculation of top 30 correlated and anti-correlated genes for each gene. Some features in the app would not be available")
     }
+
+    if (!is.null(cell_metadata)) {
+        if (is.null(cell_to_metacell)) {
+            cli_abort("Please provide also {.field cell_to_metacell} in order to import {.field cell_metadata}")
+        }
+        import_cell_metadata(project, dataset, cell_metadata, cell_to_metacell)
+    }
+
 
     if (!is.null(atlas_project)) {
         if (is.null(atlas_dataset)) {

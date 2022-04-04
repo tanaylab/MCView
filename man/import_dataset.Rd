@@ -14,6 +14,8 @@ import_dataset(
   metadata_fields = NULL,
   metadata = NULL,
   metadata_colors = NULL,
+  cell_metadata = NULL,
+  cell_to_metacell = NULL,
   gene_modules_file = NULL,
   gene_modules_k = NULL,
   calc_gg_cor = TRUE,
@@ -67,6 +69,15 @@ For numerical metadata columns, colors should be given as a list where the first
 If only colors are given breaks would be implicitly determined from the minimum and maximum of the metadata field.
 For categorical metadata columns, color can be given either as a named vector where names are the categories and the values are the colors, or as a named list where the first element named 'colors' holds the colors, and the second element
 called 'categories' holds the categories.}
+
+\item{cell_metadata}{data frame with a column named "cell_id" with
+the cell id and other metadata columns, or a name of a delimited file which
+contains such data frame. For activating the "Samples" tab, the data frame should have an additional
+column named "samp_id" with a sample identifier per cell (e.g., batch id, patient etc.)}
+
+\item{cell_to_metacell}{data frame with a column named "cell_id" with cell id and
+another column named "metacell" with the metacell the cell is part of, or a
+name of a delimited file which contains such data frame.}
 
 \item{gene_modules_file}{path to a tabular file (csv,tsv) with assignment of genes to gene modules. Should have a field named "gene" with the gene name and a field named "module" with the name of the gene module.}
 

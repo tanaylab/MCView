@@ -152,7 +152,7 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
                 choices = gene_choices,
                 selected = c(),
                 multiple = TRUE,
-                options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
+                options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE)
             )
         )
     })

@@ -132,7 +132,7 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
 
 manifold_tab_gene_selectors <- function(input, output, session, dataset, ns) {
     output$gene_selectors <- renderUI({
-        picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith")
+        picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE)
         div(
             id = ns("sidebar_select"),
             shinyWidgets::pickerInput(ns("gene1"), "Gene A",

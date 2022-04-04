@@ -165,7 +165,6 @@ get_samples_egc <- function(cell_types, metacell_types, dataset) {
 
 get_samples_gene_egc <- function(gene, dataset, metacells = NULL) {
     g <- get_gene_egc(gene, dataset)
-
     samp_mc_frac <- get_samp_mc_frac(dataset)
     if (!is.null(metacells)) {
         g <- g[metacells]

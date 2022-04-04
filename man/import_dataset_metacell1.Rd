@@ -13,6 +13,9 @@ import_dataset_metacell1(
   mc2d,
   metacell_types_file,
   cell_type_colors_file,
+  gene_modules_file = NULL,
+  gene_modules_k = NULL,
+  calc_gg_cor = TRUE,
   network = NULL,
   time_annotation_file = NULL,
   time_bin_field = NULL
@@ -41,6 +44,12 @@ not exists in the data would be ignored. In addition, the file can have a column
 each cell type. The file should have a column named "cell_type" or "cluster" with the
 cell types and another column named "color" with the color assignment. Cell types that do not
 exist in the metacell types would be ignored.}
+
+\item{gene_modules_file}{path to a tabular file (csv,tsv) with assignment of genes to gene modules. Should have a field named "gene" with the gene name and a field named "module" with the name of the gene module.}
+
+\item{gene_modules_k}{number of clusters for initial gene module calculation. If NULL - the number of clusters would be determined such that an gene module would contain 16 genes on average.}
+
+\item{calc_gg_cor}{Calculate top 30 correlated and anti-correlated genes for each gene. This computation can be heavy for large datasets or weaker machines, so you can set \code{calc_gg_cor=FALSE} to skip it. Note that then this feature would be missing from the app.}
 
 \item{network}{name of the network object to use (optional)}
 
