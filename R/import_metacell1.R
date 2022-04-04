@@ -69,6 +69,9 @@ import_dataset_metacell1 <- function(project,
                                      mc2d,
                                      metacell_types_file,
                                      cell_type_colors_file,
+                                     gene_modules_file = NULL,
+                                     gene_modules_k = NULL,
+                                     calc_gg_cor = TRUE,
                                      network = NULL,
                                      time_annotation_file = NULL,
                                      time_bin_field = NULL) {
@@ -162,10 +165,20 @@ import_dataset_metacell1 <- function(project,
 
     serialize_shiny_data(metacell_types, "metacell_types", dataset = dataset, cache_dir = cache_dir, flat = TRUE)
 
-    # Top 30 correlated and anti-correlated genes for each gene
-    gg_mc_top_cor <- calc_gg_mc_top_cor(mc@e_gc, k = 30)
+    if (calc_gg_cor) {
+        # Top 30 correlated and anti-correlated genes for each gene
+        gg_mc_top_cor <- calc_gg_mc_top_cor(mc@e_gc, k = 30)
+        serialize_shiny_data(gg_mc_top_cor, "gg_mc_top_cor", dataset = dataset, cache_dir = cache_dir)
+    } else {
+        cli_alert_info("Skipping calculation of top 30 correlated and anti-correlated genes for each gene. Some features in the app would not be available")
+    }
 
-    serialize_shiny_data(gg_mc_top_cor, "gg_mc_top_cor", dataset = dataset, cache_dir = cache_dir)
+    if (!is.null(gene_modules_file)) {
+        gene_modules <- parse_gene_modules_file(gene_modules_file)
+    } else {
+        gene_modules <- calc_gene_modules(mc_mat, k = gene_modules_k)
+    }
+    serialize_shiny_data(gene_modules, "gene_modules", dataset = dataset, cache_dir = cache_dir, flat = TRUE)
 
     if (!is.null(time_bin_field)) {
         mc_ag <- table(mc@mc, mat@cell_metadata[names(mc@mc), time_bin_field])

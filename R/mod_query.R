@@ -449,7 +449,7 @@ metacell_selectors_mod_query <- function(input, output, session, dataset, ns, me
                 choices = cell_types,
                 selected = cell_types[1],
                 multiple = FALSE,
-                options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith"),
+                options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE),
                 choicesOpt = list(
                     style = paste0("color: ", cell_types_hex, ";")
                 )
@@ -461,7 +461,7 @@ metacell_selectors_mod_query <- function(input, output, session, dataset, ns, me
             tagList(
                 shinyWidgets::pickerInput(ns("metacell"), "Metacell",
                     choices = metacell_names(),
-                    selected = config$selected_mc1 %||% metacell_names()[1], multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith"),
+                    selected = config$selected_mc1 %||% metacell_names()[1], multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE),
                     choicesOpt = list(
                         style = paste0("color: ", cell_types_hex, ";")
                     )

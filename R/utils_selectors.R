@@ -49,7 +49,7 @@ metacell_selector <- function(dataset, ns, id, label, selected = NULL, atlas = F
             choices = metacell_names,
             selected = selected %||% config$selected_mc1 %||% metacell_names[1],
             multiple = FALSE,
-            options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", ...)
+            options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE, ...)
         )
     })
 }
@@ -62,7 +62,7 @@ colored_metacell_selector <- function(dataset, ns, id, label, metacell_colors, m
         shinyWidgets::pickerInput(ns(id), label,
             choices = metacell_names(),
             selected = selected %||% config$selected_mc1 %||% metacell_names()[1],
-            multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith"),
+            multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE),
             choicesOpt = list(
                 style = paste0("color: ", cell_types_hex, ";")
             )
