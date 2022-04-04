@@ -73,6 +73,9 @@ metacell dataset to MCView.</p>
   <span class="va">mc2d</span>,
   <span class="va">metacell_types_file</span>,
   <span class="va">cell_type_colors_file</span>,
+  gene_modules_file <span class="op">=</span> <span class="cn">NULL</span>,
+  gene_modules_k <span class="op">=</span> <span class="cn">NULL</span>,
+  calc_gg_cor <span class="op">=</span> <span class="cn">TRUE</span>,
   network <span class="op">=</span> <span class="cn">NULL</span>,
   time_annotation_file <span class="op">=</span> <span class="cn">NULL</span>,
   time_bin_field <span class="op">=</span> <span class="cn">NULL</span>
@@ -104,6 +107,12 @@ not exists in the data would be ignored. In addition, the file can have a column
 each cell type. The file should have a column named "cell_type" or "cluster" with the
 cell types and another column named "color" with the color assignment. Cell types that do not
 exist in the metacell types would be ignored.</p></dd>
+<dt>gene_modules_file</dt>
+<dd><p>path to a tabular file (csv,tsv) with assignment of genes to gene modules. Should have a field named "gene" with the gene name and a field named "module" with the name of the gene module.</p></dd>
+<dt>gene_modules_k</dt>
+<dd><p>number of clusters for initial gene module calculation. If NULL - the number of clusters would be determined such that an gene module would contain 16 genes on average.</p></dd>
+<dt>calc_gg_cor</dt>
+<dd><p>Calculate top 30 correlated and anti-correlated genes for each gene. This computation can be heavy for large datasets or weaker machines, so you can set <code>calc_gg_cor=FALSE</code> to skip it. Note that then this feature would be missing from the app.</p></dd>
 <dt>network</dt>
 <dd><p>name of the network object to use (optional)</p></dd>
 <dt>time_annotation_file</dt>
