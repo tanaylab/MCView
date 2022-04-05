@@ -1,6 +1,7 @@
 # MCView 0.2.3
 
 * Added support for gene modules ('Gene modules' tab). 
+* Added 'Outliers' tab.
 * Bug fix: heatmaps crashed when only a single gene was chosen.  
 
 # MCView 0.2.2
