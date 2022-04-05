@@ -3,6 +3,7 @@
 * Added support for gene modules ('Gene modules' tab). 
 * Added support for alternative gene names. 
 * Added control over the number of clusters / whether to cluster at all in the import phase.
+* Added new selection controls to Annotate tab ('Gears' symbol on the upper right of 'Metacell Annotation' box).
 * Bug fix: heatmaps crashed when only a single gene was chosen.  
 * Bug fix: automatically color cell types missing from cell type colors file.
 * Bug fix: Diff expr. crashed when there was only a single cell type.
