@@ -12,8 +12,8 @@ update_metadata_colors(project, dataset, metadata_colors, overwrite = FALSE)
 \item{dataset}{name for the dataset, e.g. "PBMC"}
 
 \item{metadata_colors}{a named list with colors for each metadata column, or a name of a yaml file with such list.
-For numerical metadata columns, colors should be given as a list where the first element is a vector of colors and the second element is a vector of breaks.
-If only colors are given breaks would be implicitly determined from the minimum and maximum of the metadata field.
+For numerical metadata columns, colors should be given as a list where the first element is a vector of colors and the second element is a vector of breaks. \cr
+If only colors are given breaks would be implicitly determined from the minimum and maximum of the metadata field. \cr
 For categorical metadata columns, color can be given either as a named vector where names are the categories and the values are the colors, or as a named list where the first element named 'colors' holds the colors, and the second element
 called 'categories' holds the categories.}
 

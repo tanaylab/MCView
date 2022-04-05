@@ -42,6 +42,13 @@ mod_annotate_ui <- function(id) {
                     collapsible = TRUE,
                     closable = FALSE,
                     width = 12,
+                    sidebar = shinydashboardPlus::boxSidebar(
+                        startOpen = FALSE,
+                        width = 50,
+                        id = ns("metacell_types_box_sidebar"),
+                        checkboxInput(ns("add_to_selection"), label = "Add to\ncurrent selection", value = TRUE),
+                        checkboxInput(ns("reset_on_apply"), label = "Reset selection\non apply", value = FALSE)
+                    ),
                     splitLayout(
                         fileInput(ns("metacell_types_fn"),
                             label = NULL,
@@ -291,6 +298,12 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
 
                 if (changed) {
                     metacell_types(new_metacell_types)
+                }
+
+                req(input$reset_on_apply)
+                if (input$reset_on_apply) {
+                    selected_metacell_types(tibble(metacell = character(), cell_type = character()))
+                    to_show(NULL)
                 }
             })
 
@@ -607,11 +620,15 @@ observer_mc_select_event <- function(source, input, cell_type_colors, metacell_t
         selected_metacells <- unique(el$customdata)
 
         new_selected_annot <- metacell_types() %>% filter(metacell %in% selected_metacells)
-        selected_metacell_types(
-            bind_rows(
-                selected_metacell_types(),
-                new_selected_annot
-            ) %>% distinct(metacell, cell_type)
-        )
+        if (!is.null(input$add_to_selection) && input$add_to_selection) {
+            selected_metacell_types(
+                bind_rows(
+                    selected_metacell_types(),
+                    new_selected_annot
+                ) %>% distinct(metacell, cell_type)
+            )
+        } else {
+            selected_metacell_types(new_selected_annot %>% distinct(metacell, cell_type))
+        }
     })
 }
