@@ -74,6 +74,8 @@ which can be in the app using the right sidebar.</p>
   cell_type_field <span class="op">=</span> <span class="cn">NULL</span>,
   metacell_types_file <span class="op">=</span> <span class="cn">NULL</span>,
   cell_type_colors_file <span class="op">=</span> <span class="cn">NULL</span>,
+  cluster_metacells <span class="op">=</span> <span class="cn">TRUE</span>,
+  cluster_k <span class="op">=</span> <span class="cn">NULL</span>,
   metadata_fields <span class="op">=</span> <span class="cn">NULL</span>,
   metadata <span class="op">=</span> <span class="cn">NULL</span>,
   metadata_colors <span class="op">=</span> <span class="cn">NULL</span>,
@@ -107,23 +109,27 @@ for a field named 'projected_type', 'type', 'cell_type' or 'cluster' at <code>ob
 <dd><p>path to a tabular file (csv,tsv) with cell type assignement for
 each metacell. The file should have a column named "metacell" with the metacell ids and another
 column named "cell_type", or "cluster" with the cell type assignment. Metacell ids that do
-not exists in the data would be ignored.
-If this parameter and <code>cell_type_field</code> are missing, MCView would cluster the
-metacell matrix using kmeans++ algorithm (from the <code>tglkmeans</code> package).
+not exists in the data would be ignored. <br>
+If this parameter and <code>cell_type_field</code> are missing and <code>cluster_metacells=TRUE</code>, MCView would cluster the
+metacell matrix using kmeans++ algorithm (from the <code>tglkmeans</code> package). <br>
 If the file has a field named 'color' and <code>cell_type_colors_file=NULL</code>, the cell types colors would
 be used.</p></dd>
 <dt>cell_type_colors_file</dt>
 <dd><p>path to a tabular file (csv,tsv) with color assignement for
 each cell type. The file should have a column named "cell_type" or "cluster" with the
-cell types and another column named "color" with the color assignment. Cell types that do not
-exist in the metacell types would be ignored.
-If this is missing, and <code>metacell_types_file</code> did not have a 'color' field, MCView would use the <code>chameleon</code> package to assign a color for each cell type.
+cell types and another column named "color" with the color assignment. <br>
+In case the metacell types (given by a file or from the <code>anndata_file</code>) contain types which are not present in the cell type colors file, MCView would use the <code>chameleon</code> package to assign a color for them in addition to the cell type colors. <br>
+If this is missing, and <code>metacell_types_file</code> did not have a 'color' field, MCView would use the <code>chameleon</code> package to assign a color for each cell type. <br>
 When an atlas is given (using <code>atlas_project</code> and <code>atlas_dataset</code>), if the cell types
 are the same as the atlas, the atlas colors would be used.</p></dd>
+<dt>cluster_metacells</dt>
+<dd><p>When TRUE and no metacell type is given (via <code>metacell_types_file</code> or <code>cell_type_field</code>), MCView would cluster the metacell matrix using kmeans++ algorithm (from the <code>tglkmeans</code> package).</p></dd>
+<dt>cluster_k</dt>
+<dd><p>number of clusters for initial metacell clustering. If NULL - the number of clusters would be determined such that a metacell would contain 16 cells on average.</p></dd>
 <dt>metadata_fields</dt>
-<dd><p>names of fields in the anndata <code>object$obs</code> which contains metadata for each metacell.
+<dd><p>names of fields in the anndata <code>object$obs</code> which contains metadata for each metacell. <br>
 The fields should can be either numeric or categorical, but currently
-categorical annotations are only supported at the 'Cell type' tabs.
+categorical annotations are only supported at the 'Cell type' tabs. <br>
  You can use <code>cell_metadata_to_metacell</code> with <code>categorical=TRUE</code> to convert from categorical to a numeric score (e.g. by using fraction of the category). You can use 'all' in order to import all the fields
  of the anndata object.</p></dd>
 <dt>metadata</dt>
@@ -131,8 +137,8 @@ categorical annotations are only supported at the 'Cell type' tabs.
 or a name of a delimited file which contains such data frame. See <code>metadata_fields</code> for other details.</p></dd>
 <dt>metadata_colors</dt>
 <dd><p>a named list with colors for each metadata column, or a name of a yaml file with such list.
-For numerical metadata columns, colors should be given as a list where the first element is a vector of colors and the second element is a vector of breaks.
-If only colors are given breaks would be implicitly determined from the minimum and maximum of the metadata field.
+For numerical metadata columns, colors should be given as a list where the first element is a vector of colors and the second element is a vector of breaks. <br>
+If only colors are given breaks would be implicitly determined from the minimum and maximum of the metadata field. <br>
 For categorical metadata columns, color can be given either as a named vector where names are the categories and the values are the colors, or as a named list where the first element named 'colors' holds the colors, and the second element
 called 'categories' holds the categories.</p></dd>
 <dt>cell_metadata</dt>
