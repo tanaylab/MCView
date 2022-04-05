@@ -1,7 +1,9 @@
 # MCView 0.2.3
 
 * Added support for gene modules ('Gene modules' tab). 
+* Added support for alternative gene names. 
 * Bug fix: heatmaps crashed when only a single gene was chosen.  
+* Bug fix: automatically color cell types missing from cell type colors file.
 
 # MCView 0.2.2
 

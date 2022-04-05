@@ -22,28 +22,30 @@
 #' @param metacell_types_file path to a tabular file (csv,tsv) with cell type assignement for
 #' each metacell. The file should have a column named "metacell" with the metacell ids and another
 #' column named "cell_type", or "cluster" with the cell type assignment. Metacell ids that do
-#' not exists in the data would be ignored.
-#' If this parameter and \code{cell_type_field} are missing, MCView would cluster the
-#' metacell matrix using kmeans++ algorithm (from the \code{tglkmeans} package).
+#' not exists in the data would be ignored. \cr
+#' If this parameter and \code{cell_type_field} are missing and \code{cluster_metacells=TRUE}, MCView would cluster the
+#' metacell matrix using kmeans++ algorithm (from the \code{tglkmeans} package). \cr
 #' If the file has a field named 'color' and \code{cell_type_colors_file=NULL}, the cell types colors would
 #' be used.
 #' @param cell_type_colors_file path to a tabular file (csv,tsv) with color assignement for
 #' each cell type. The file should have a column named "cell_type" or "cluster" with the
-#' cell types and another column named "color" with the color assignment. Cell types that do not
-#' exist in the metacell types would be ignored.
-#' If this is missing, and \code{metacell_types_file} did not have a 'color' field, MCView would use the \code{chameleon} package to assign a color for each cell type.
+#' cell types and another column named "color" with the color assignment. \cr
+#' In case the metacell types (given by a file or from the \code{anndata_file}) contain types which are not present in the cell type colors file, MCView would use the \code{chameleon} package to assign a color for them in addition to the cell type colors. \cr
+#' If this is missing, and \code{metacell_types_file} did not have a 'color' field, MCView would use the \code{chameleon} package to assign a color for each cell type. \cr
 #' When an atlas is given (using \code{atlas_project} and \code{atlas_dataset}), if the cell types
 #' are the same as the atlas, the atlas colors would be used.
-#' @param metadata_fields names of fields in the anndata \code{object$obs} which contains metadata for each metacell.
+#' @param cluster_metacells When TRUE and no metacell type is given (via \code{metacell_types_file} or \code{cell_type_field}), MCView would cluster the metacell matrix using kmeans++ algorithm (from the \code{tglkmeans} package).
+#' @param cluster_k number of clusters for initial metacell clustering. If NULL - the number of clusters would be determined such that a metacell would contain 16 cells on average.
+#' @param metadata_fields names of fields in the anndata \code{object$obs} which contains metadata for each metacell. \cr
 #' The fields should can be either numeric or categorical, but currently
-#' categorical annotations are only supported at the 'Cell type' tabs.
+#' categorical annotations are only supported at the 'Cell type' tabs. \cr
 #'  You can use \code{cell_metadata_to_metacell} with \code{categorical=TRUE} to convert from categorical to a numeric score (e.g. by using fraction of the category). You can use 'all' in order to import all the fields
 #'  of the anndata object.
 #' @param metadata can be either a data frame with a column named "metacell" with the metacell id and other metadata columns
 #' or a name of a delimited file which contains such data frame. See \code{metadata_fields} for other details.
 #' @param metadata_colors a named list with colors for each metadata column, or a name of a yaml file with such list.
-#' For numerical metadata columns, colors should be given as a list where the first element is a vector of colors and the second element is a vector of breaks.
-#' If only colors are given breaks would be implicitly determined from the minimum and maximum of the metadata field.
+#' For numerical metadata columns, colors should be given as a list where the first element is a vector of colors and the second element is a vector of breaks. \cr
+#' If only colors are given breaks would be implicitly determined from the minimum and maximum of the metadata field. \cr
 #' For categorical metadata columns, color can be given either as a named vector where names are the categories and the values are the colors, or as a named list where the first element named 'colors' holds the colors, and the second element
 #' called 'categories' holds the categories.
 #' @param gene_modules_file path to a tabular file (csv,tsv) with assignment of genes to gene modules. Should have a field named "gene" with the gene name and a field named "module" with the name of the gene module.
@@ -79,6 +81,8 @@ import_dataset <- function(project,
                            cell_type_field = NULL,
                            metacell_types_file = NULL,
                            cell_type_colors_file = NULL,
+                           cluster_metacells = TRUE,
+                           cluster_k = NULL,
                            metadata_fields = NULL,
                            metadata = NULL,
                            metadata_colors = NULL,
@@ -110,6 +114,9 @@ import_dataset <- function(project,
     if (rlang::has_name(adata$obs, "hidden")) {
         adata <- adata[!adata$obs$hidden, ]
     }
+
+    # sort the gene names lexycographically
+    adata <- adata[, sort(colnames(adata$X))]
 
     cli_alert_info("Processing metacell matrix")
     mc_mat <- t(adata$X)
@@ -237,7 +244,7 @@ import_dataset <- function(project,
                 select(cell_type = !!cell_type_field) %>%
                 rownames_to_column("metacell") %>%
                 as_tibble()
-        } else {
+        } else if (cluster_metacells) {
             cli_alert_info("Clustering in order to get initial annotation.")
             # we generate clustering as initial annotation
             if (rlang::has_name(adata$var, "top_feature_gene")) {
@@ -248,10 +255,12 @@ import_dataset <- function(project,
                 cli_abort("{anndata_file} object doesn't have a 'var' field named 'top_feature_gene' or 'feature_gene'")
             }
 
-            km <- cluster_egc(feat_mat, verbose = verbose)
+            km <- cluster_egc(feat_mat, verbose = verbose, k = cluster_k)
             metacell_types <- km$clusters %>%
                 rename(cell_type = cluster) %>%
                 mutate(cell_type = as.character(cell_type))
+        } else {
+            metacell_types <- tibble(metacell = metacells, cell_type = NA)
         }
     }
 
@@ -260,6 +269,24 @@ import_dataset <- function(project,
     if (!is.null(cell_type_colors_file)) {
         cli_alert_info("Loading cell type color annotations from {.file {cell_type_colors_file}}")
         cell_type_colors <- parse_cell_type_colors(cell_type_colors_file)
+
+        # Add cell types that are missing
+        missing_cell_types <- setdiff(unique(metacell_types$cell_type), cell_type_colors$cell_type)
+        missing_cell_types <- missing_cell_types[missing_cell_types != "(Missing)"]
+
+        if (length(missing_cell_types) > 0) {
+            cli_alert_warning("The following cell types are missing from the color annotations: {.field {missing_cell_types}}. Adding them to the color annotations with random colors.")
+
+            new_cell_type_colors <- color_cell_types(adata, mc_egc, metacell_types) %>%
+                filter(cell_type %in% missing_cell_types)
+
+            cell_type_colors <- bind_rows(
+                cell_type_colors,
+                new_cell_type_colors
+            ) %>%
+                distinct(cell_type, color) %>%
+                mutate(order = 1:n())
+        }
     } else if (is.null(cell_type_colors)) {
         if (!is.null(atlas_dataset) && !is.null(atlas_project)) { # use atlas colors
             atlas_colors <- fread(fs::path(project_cache_dir(atlas_project), atlas_dataset, "cell_type_colors.tsv")) %>% as_tibble()
@@ -268,8 +295,8 @@ import_dataset <- function(project,
                 cli_alert_info("Loading cell type color annotations from {.field atlas}")
                 cell_type_colors <- atlas_colors
             } else {
-                genes_without_colors <- paste(setdiff(unique(metacell_types$cell_type), atlas_colors$cell_type), collapse = ", ")
-                cli_abort("The following cell types do not have colors at the atlas: {.field {genes_without_colors}}. To fix it either provide {.code cell_type_colors_file} or add the cell type(s) to the atlas colors.")
+                types_without_colors <- paste(setdiff(unique(metacell_types$cell_type), atlas_colors$cell_type), collapse = ", ")
+                cli_abort("The following cell types do not have colors at the atlas: {.field {types_without_colors}}. To fix it either provide {.code cell_type_colors_file} or add the cell type(s) to the atlas colors.")
             }
         } else {
             cell_type_colors <- color_cell_types(adata, mc_egc, metacell_types)
