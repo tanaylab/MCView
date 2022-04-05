@@ -5,6 +5,7 @@
 * Added control over the number of clusters / whether to cluster at all in the import phase.
 * Bug fix: heatmaps crashed when only a single gene was chosen.  
 * Bug fix: automatically color cell types missing from cell type colors file.
+* Bug fix: Diff expr. crashed when there was only a single cell type.
 
 # MCView 0.2.2
 
