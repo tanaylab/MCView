@@ -51,6 +51,10 @@ app_ui <- function(request) {
             mod_inner_fold_sidebar_ui("inner_fold")
         ),
         conditionalPanel(
+            condition = "input.tab_sidebar == 'outliers'",
+            mod_outliers_sidebar_ui("outliers")
+        ),
+        conditionalPanel(
             condition = "input.tab_sidebar == 'proj_fold'",
             mod_proj_fold_sidebar_ui("proj_fold")
         ),
@@ -97,6 +101,7 @@ app_ui <- function(request) {
             shinydashboard::tabItem(tabName = "markers", mod_markers_ui("markers")),
             shinydashboard::tabItem(tabName = "gene_modules", mod_gene_modules_ui("gene_modules")),
             shinydashboard::tabItem(tabName = "inner_fold", mod_inner_fold_ui("inner_fold")),
+            shinydashboard::tabItem(tabName = "outliers", mod_outliers_ui("outliers")),
             shinydashboard::tabItem(tabName = "proj_fold", mod_proj_fold_ui("proj_fold")),
             shinydashboard::tabItem(tabName = "query", mod_query_ui("query")),
             shinydashboard::tabItem(tabName = "atlas", mod_atlas_ui("atlas")),

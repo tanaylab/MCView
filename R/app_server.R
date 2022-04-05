@@ -60,6 +60,7 @@ app_server <- function(input, output, session) {
     load_tab("markers", mod_markers_server)
     load_tab("gene_modules", mod_gene_modules_server)
     load_tab("inner_fold", mod_inner_fold_server)
+    load_tab("outliers", mod_outliers_server)
     load_tab("samples", mod_samples_server)
     load_tab("cell_type", mod_cell_type_server)
 

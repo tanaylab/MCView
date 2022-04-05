@@ -1,6 +1,6 @@
 get_gene_colors <- function(genes,
                             forbidden_genes = NULL,
-                            forbidden_color = "gray",
+                            forbidden_color = "darkgray",
                             systematic_genes = NULL,
                             systematic_color = "purple",
                             disjoined_genes = NULL,

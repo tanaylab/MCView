@@ -11,6 +11,7 @@ import_dataset(
   cell_type_field = NULL,
   metacell_types_file = NULL,
   cell_type_colors_file = NULL,
+  outliers_anndata_file = NULL,
   metadata_fields = NULL,
   metadata = NULL,
   metadata_colors = NULL,
@@ -55,6 +56,9 @@ If this is missing, and \code{metacell_types_file} did not have a 'color' field,
 When an atlas is given (using \code{atlas_project} and \code{atlas_dataset}), if the cell types
 are the same as the atlas, the atlas colors would be used.}
 
+\item{outliers_anndata_file}{path to anndata file with outliers (optional). This would enable, by default,
+the following tabs: ["Outliers", "Similar-fold", "Deviant-fold"]. See the metacells python package for more details.}
+
 \item{metadata_fields}{names of fields in the anndata \code{object$obs} which contains metadata for each metacell.
 The fields should can be either numeric or categorical, but currently
 categorical annotations are only supported at the 'Cell type' tabs.
@@ -93,7 +97,7 @@ name of a delimited file which contains such data frame.}
 
 \item{projection_weights_file}{Path to a tabular file (csv,tsv) with the following fields "query", "atlas" and "weight". The file is an output of \code{metacells} projection algorithm.}
 
-\item{copy_atlas}{copy atlas MCView to the current project. If FALSE - a symbolic link would be created instaed.}
+\item{copy_atlas}{copy atlas MCView to the current project. If FALSE - a symbolic link would be created instead.}
 
 \item{...}{
   Arguments passed on to \code{\link[=create_project]{create_project}}

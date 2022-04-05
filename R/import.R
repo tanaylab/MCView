@@ -34,6 +34,8 @@
 #' If this is missing, and \code{metacell_types_file} did not have a 'color' field, MCView would use the \code{chameleon} package to assign a color for each cell type.
 #' When an atlas is given (using \code{atlas_project} and \code{atlas_dataset}), if the cell types
 #' are the same as the atlas, the atlas colors would be used.
+#' @param outliers_anndata_file path to anndata file with outliers (optional). This would enable, by default,
+#' the following tabs: ["Outliers", "Similar-fold", "Deviant-fold"]. See the metacells python package for more details.
 #' @param metadata_fields names of fields in the anndata \code{object$obs} which contains metadata for each metacell.
 #' The fields should can be either numeric or categorical, but currently
 #' categorical annotations are only supported at the 'Cell type' tabs.
@@ -53,7 +55,7 @@
 #' @param atlas_project path to and \code{MCView} project which contains the atlas.
 #' @param atlas_dataset name of the atlas dataset
 #' @param projection_weights_file Path to a tabular file (csv,tsv) with the following fields "query", "atlas" and "weight". The file is an output of \code{metacells} projection algorithm.
-#' @param copy_atlas copy atlas MCView to the current project. If FALSE - a symbolic link would be created instaed.
+#' @param copy_atlas copy atlas MCView to the current project. If FALSE - a symbolic link would be created instead.
 #'
 #' @return invisibly returns an \code{AnnDataR6} object of the read \code{anndata_file}
 #'
@@ -79,6 +81,7 @@ import_dataset <- function(project,
                            cell_type_field = NULL,
                            metacell_types_file = NULL,
                            cell_type_colors_file = NULL,
+                           outliers_anndata_file = NULL,
                            metadata_fields = NULL,
                            metadata = NULL,
                            metadata_colors = NULL,
@@ -194,10 +197,12 @@ import_dataset <- function(project,
 
         cli_alert_info("Calculating top inner-fold genes")
         inner_fold_genes <- rownames(inner_fold_mat)[Matrix::rowSums(inner_fold_mat) > 0]
-        inner_fold_genes_vars <- matrixStats::rowVars(as.matrix(inner_fold_mat[inner_fold_genes, , drop = FALSE]))
-        # fp here is the variance of each non-zero inner-fold gene.
-        marker_genes_inner_fold <- tibble(gene = inner_fold_genes, fp = inner_fold_genes_vars)
+        inner_fold_gene_metacells <- matrixStats::rowSums2(as.matrix(inner_fold_mat[inner_fold_genes, , drop = FALSE]) > 0)
+        # fp here is the number of non-zero entries per gene
+        marker_genes_inner_fold <- tibble(gene = inner_fold_genes, fp = inner_fold_gene_metacells) %>%
+            arrange(desc(fp))
         serialize_shiny_data(marker_genes_inner_fold, "marker_genes_inner_fold", dataset = dataset, cache_dir = cache_dir)
+        cli_alert_info("Add the {.field \"Inner-fold\"} tab to your config file to view the inner-fold matrix")
     }
 
     mc_genes_top2 <- marker_genes %>%
@@ -350,6 +355,10 @@ import_dataset <- function(project,
         import_cell_metadata(project, dataset, cell_metadata, cell_to_metacell)
     }
 
+    if (!is.null(outliers_anndata_file)) {
+        load_outliers(outliers_anndata_file, project, dataset, gene_names = gene_names)
+    }
+
 
     if (!is.null(atlas_project)) {
         if (is.null(atlas_dataset)) {
@@ -361,7 +370,7 @@ import_dataset <- function(project,
         }
 
         if (!is.null(gene_names)) {
-            cli_abort("Using {.field gene_names} with atlases is currently not supported")
+            cli_abort("Using {.field gene_names} with atlas is currently not supported")
         }
 
         import_atlas(adata, atlas_project, atlas_dataset, projection_weights_file, dataset = dataset, cache_dir = cache_dir, copy_atlas)
@@ -369,7 +378,7 @@ import_dataset <- function(project,
 
     cli_alert_success("{.field {dataset}} dataset imported succesfully to {.path {project}} project")
     cli::cli_ul("You can now run the app using: {.field run_app(\"{project}\")}")
-    cli::cli_ul("or create a bundle using: {.field create_bundle(\"{project}\")}")
+    cli::cli_ul("or create a bundle using: {.field create_bundle(\"{project}\", name = \"name_of_bundle\")}")
     invisible(adata)
 }
 
