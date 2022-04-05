@@ -32,7 +32,10 @@ mod_outliers_ui <- function(id) {
 mod_outliers_sidebar_ui <- function(id) {
     ns <- NS(id)
     tagList(
-        heatmap_sidebar(ns("outliers_heatmap"))
+        heatmap_sidebar(
+            ns("outliers_heatmap"),
+            checkboxInput(NS(ns("outliers_heatmap"))("use_markers"), "Use Markers", value = FALSE)
+        )
     )
 }
 

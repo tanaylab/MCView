@@ -56,12 +56,13 @@ heatmap_box <- function(id,
     )
 }
 
-heatmap_sidebar <- function(id) {
+heatmap_sidebar <- function(id, ...) {
     ns <- NS(id)
     list(
         uiOutput(ns("reset_zoom_ui")),
         uiOutput(ns("cell_type_list")),
         uiOutput(ns("metadata_list")),
+        ...,
         shinyWidgets::actionGroupButtons(ns("update_genes"), labels = "Update genes", size = "sm"),
         numericInput(ns("max_gene_num"), "Maximal number of genes", value = 100),
         uiOutput(ns("add_genes_ui")),
@@ -107,8 +108,14 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
             markers_df <- metacell_types()
         }
 
-        new_markers_df <- get_marker_genes(dataset(), mode = mode)
-        if (has_name(new_markers_df, "metacell")) {
+        if (!is.null(input$use_markers) && input$use_markers) {
+            new_markers_df <- get_marker_genes(dataset(), mode = "Markers")
+        } else {
+            new_markers_df <- get_marker_genes(dataset(), mode = mode)
+        }
+
+
+        if (has_name(new_markers_df, "metacell") && mode != "Outliers") {
             markers_df <- markers_df %>%
                 select(metacell) %>%
                 inner_join(new_markers_df, by = "metacell")

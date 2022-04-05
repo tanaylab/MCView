@@ -32,7 +32,10 @@ mod_inner_fold_ui <- function(id) {
 mod_inner_fold_sidebar_ui <- function(id) {
     ns <- NS(id)
     tagList(
-        heatmap_sidebar(ns("inner_fold_heatmap"))
+        heatmap_sidebar(
+            ns("inner_fold_heatmap"),
+            checkboxInput(NS(ns("inner_fold_heatmap"))("use_markers"), "Use Markers", value = FALSE)
+        )
     )
 }
 
