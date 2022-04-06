@@ -18,6 +18,7 @@
 #' @importFrom promises future_promise
 #' @importFrom shiny shinyApp
 #' @importFrom golem with_golem_options
+#' @importFrom Matrix t
 # The following block is used by usethis to automatically manage
 # roxygen namespace tags. Modify with care!
 ## usethis namespace: start

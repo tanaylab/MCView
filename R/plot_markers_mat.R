@@ -40,7 +40,6 @@ plot_markers_mat <- function(mat,
 
     gene_colors <- gene_colors %||% rep("black", nrow(mat))
 
-
     if (col_names) {
         col_names <- colnames(mat)
     }
@@ -53,10 +52,16 @@ plot_markers_mat <- function(mat,
     ) +
         scale_fill_gradient2(name = "", low = low_color, high = high_color, mid = mid_color, midpoint = midpoint, limits = c(min_lfp, max_lfp))
 
-    p_mat <- suppressWarnings(
-        p_mat +
-            theme(axis.text.y = element_text(color = gene_colors))
-    ) # we suppress the warning 'Vectorized input to `element_text()` is not officially supported.'
+    if (interleave) {
+        p_mat <- p_mat +
+            theme(
+                axis.text.y.right = ggtext::element_markdown(color = gene_colors[seq(2, length(gene_colors), 2)]),
+                axis.text.y.left =  ggtext::element_markdown(color = gene_colors[seq(1, length(gene_colors), 2)])
+            )
+    } else {
+        p_mat <- p_mat +
+            theme(axis.text.y = ggtext::element_markdown(color = gene_colors))
+    }
 
     if (vertial_gridlines) {
         p_mat <- p_mat + geom_hline(yintercept = 1:nrow(mat) - 0.5, color = "gray", size = 0.1)
