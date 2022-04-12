@@ -280,6 +280,13 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
         mc_fp <- get_mc_gene_modules_fp(dataset, markers, gene_modules)
         epsilon <- 0
         log_transform <- TRUE
+    } else if (mode == "Outliers") {
+        mc_fp <- get_mc_data(dataset, "deviant_fold_mat")
+        req(mc_fp)
+        mc_fp <- as.matrix(mc_fp[Matrix::rowSums(mc_fp) > 0, ])
+        mc_fp <- mc_fp[intersect(markers, rownames(mc_fp)), , drop = FALSE]
+        epsilon <- 1e-5
+        log_transform <- FALSE
     } else {
         stop("unknown mode")
     }
@@ -332,6 +339,14 @@ get_marker_genes <- function(dataset, mode = "Markers") {
             req(FALSE)
         }
         return(get_mc_data(dataset, "marker_genes_projected"))
+    } else if (mode == "Outliers") {
+        if (is.null(get_mc_data(dataset, "deviant_fold_mat"))) {
+            if ("Outliers" %in% config$original_tabs) {
+                showNotification(glue("Outliers matrix was not imported. Please use outliers_anndata_file paramter to import it and re-run the app"), type = "error")
+            }
+            req(FALSE)
+        }
+        return(get_mc_data(dataset, "marker_genes_deviant_fold"))
     } else {
         return(get_markers(dataset))
     }

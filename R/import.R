@@ -34,6 +34,8 @@
 #' If this is missing, and \code{metacell_types_file} did not have a 'color' field, MCView would use the \code{chameleon} package to assign a color for each cell type. \cr
 #' When an atlas is given (using \code{atlas_project} and \code{atlas_dataset}), if the cell types
 #' are the same as the atlas, the atlas colors would be used.
+#' @param outliers_anndata_file path to anndata file with outliers (optional). This would enable, by default,
+#' the following tabs: ["Outliers", "Similar-fold", "Deviant-fold"]. See the metacells python package for more details.
 #' @param cluster_metacells When TRUE and no metacell type is given (via \code{metacell_types_file} or \code{cell_type_field}), MCView would cluster the metacell matrix using kmeans++ algorithm (from the \code{tglkmeans} package).
 #' @param cluster_k number of clusters for initial metacell clustering. If NULL - the number of clusters would be determined such that a metacell would contain 16 cells on average.
 #' @param metadata_fields names of fields in the anndata \code{object$obs} which contains metadata for each metacell. \cr
@@ -55,7 +57,7 @@
 #' @param atlas_project path to and \code{MCView} project which contains the atlas.
 #' @param atlas_dataset name of the atlas dataset
 #' @param projection_weights_file Path to a tabular file (csv,tsv) with the following fields "query", "atlas" and "weight". The file is an output of \code{metacells} projection algorithm.
-#' @param copy_atlas copy atlas MCView to the current project. If FALSE - a symbolic link would be created instaed.
+#' @param copy_atlas copy atlas MCView to the current project. If FALSE - a symbolic link would be created instead.
 #'
 #' @return invisibly returns an \code{AnnDataR6} object of the read \code{anndata_file}
 #'
@@ -81,6 +83,7 @@ import_dataset <- function(project,
                            cell_type_field = NULL,
                            metacell_types_file = NULL,
                            cell_type_colors_file = NULL,
+                           outliers_anndata_file = NULL,
                            cluster_metacells = TRUE,
                            cluster_k = NULL,
                            metadata_fields = NULL,
@@ -201,10 +204,12 @@ import_dataset <- function(project,
 
         cli_alert_info("Calculating top inner-fold genes")
         inner_fold_genes <- rownames(inner_fold_mat)[Matrix::rowSums(inner_fold_mat) > 0]
-        inner_fold_genes_vars <- matrixStats::rowVars(as.matrix(inner_fold_mat[inner_fold_genes, , drop = FALSE]))
-        # fp here is the variance of each non-zero inner-fold gene.
-        marker_genes_inner_fold <- tibble(gene = inner_fold_genes, fp = inner_fold_genes_vars)
+        inner_fold_gene_metacells <- matrixStats::rowSums2(as.matrix(inner_fold_mat[inner_fold_genes, , drop = FALSE]) > 0)
+        # fp here is the number of non-zero entries per gene
+        marker_genes_inner_fold <- tibble(gene = inner_fold_genes, fp = inner_fold_gene_metacells) %>%
+            arrange(desc(fp))
         serialize_shiny_data(marker_genes_inner_fold, "marker_genes_inner_fold", dataset = dataset, cache_dir = cache_dir)
+        cli_alert_info("Add the {.field \"Inner-fold\"} tab to your config file to view the inner-fold matrix")
     }
 
     mc_genes_top2 <- marker_genes %>%
@@ -326,55 +331,62 @@ import_dataset <- function(project,
     }
     serialize_shiny_data(gene_modules, "gene_modules", dataset = dataset, cache_dir = cache_dir, flat = TRUE)
 
-    if (calc_gg_cor) {
-        if (!is.null(adata$varp$var_similarity)) {
-            if (!methods::is(adata$varp$var_similarity, "sparseMatrix")) {
-                cli_abort("{.field var_similarity} matrix is not a sparse matrix. This probably means that you are running an old version of the {.field metacells} python moudle. Please update the module, rerun {.field compute_for_mcview} and try again.")
-            }
-            cli_alert_info("Loading previously calculated 30 correlated and anti-correlated genes for each gene")
 
-            gg_mc_top_cor <- Matrix::summary(adata$varp$var_similarity) %>%
-                rlang::set_names(c("gene1", "gene2", "cor")) %>%
-                mutate(
-                    gene1 = adata$var_names[gene1],
-                    gene2 = adata$var_names[gene2]
-                ) %>%
-                filter(gene1 != gene2) %>%
-                as.data.frame()
-
-            gg_mc_top_cor_pos <- gg_mc_top_cor %>%
-                arrange(gene1, desc(cor)) %>%
-                group_by(gene1) %>%
-                slice(1:15) %>%
-                ungroup() %>%
-                mutate(type = "pos")
-            gg_mc_top_cor_neg <- gg_mc_top_cor %>%
-                arrange(gene1, cor) %>%
-                group_by(gene1) %>%
-                slice(1:15) %>%
-                ungroup() %>%
-                mutate(type = "neg")
-            gg_mc_top_cor <- bind_rows(
-                gg_mc_top_cor_pos,
-                gg_mc_top_cor_neg
-            ) %>%
-                arrange(gene1, desc(cor))
-            gg_mc_top_cor <- gg_mc_top_cor %>%
-                mutate(gene1 = motify_gene_names(gene1, gene_names), gene2 = motify_gene_names(gene2, gene_names))
-        } else {
-            cli_alert_info("Calculating top 30 correlated and anti-correlated genes for each gene")
-            gg_mc_top_cor <- calc_gg_mc_top_cor(mc_egc, k = 30)
+    if (!is.null(adata$varp$var_similarity)) {
+        if (!methods::is(adata$varp$var_similarity, "sparseMatrix")) {
+            cli_abort("{.field var_similarity} matrix is not a sparse matrix. This probably means that you are running an old version of the {.field metacells} python moudle. Please update the module, rerun {.field compute_for_mcview} and try again.")
         }
+        cli_alert_info("Loading previously calculated 30 correlated and anti-correlated genes for each gene")
+
+        gg_mc_top_cor <- Matrix::summary(adata$varp$var_similarity) %>%
+            rlang::set_names(c("gene1", "gene2", "cor")) %>%
+            mutate(
+                gene1 = adata$var_names[gene1],
+                gene2 = adata$var_names[gene2]
+            ) %>%
+            filter(gene1 != gene2) %>%
+            as.data.frame()
+
+        gg_mc_top_cor_pos <- gg_mc_top_cor %>%
+            arrange(gene1, desc(cor)) %>%
+            group_by(gene1) %>%
+            slice(1:15) %>%
+            ungroup() %>%
+            mutate(type = "pos")
+        gg_mc_top_cor_neg <- gg_mc_top_cor %>%
+            arrange(gene1, cor) %>%
+            group_by(gene1) %>%
+            slice(1:15) %>%
+            ungroup() %>%
+            mutate(type = "neg")
+        gg_mc_top_cor <- bind_rows(
+            gg_mc_top_cor_pos,
+            gg_mc_top_cor_neg
+        ) %>%
+            arrange(gene1, desc(cor))
+        gg_mc_top_cor <- gg_mc_top_cor %>%
+            mutate(gene1 = motify_gene_names(gene1, gene_names), gene2 = motify_gene_names(gene2, gene_names))
         serialize_shiny_data(gg_mc_top_cor, "gg_mc_top_cor", dataset = dataset, cache_dir = cache_dir)
     } else {
-        cli_alert_info("Skipping calculation of top 30 correlated and anti-correlated genes for each gene. Some features in the app would not be available")
+        if (calc_gg_cor) {
+            cli_alert_info("Calculating top 30 correlated and anti-correlated genes for each gene")
+            gg_mc_top_cor <- calc_gg_mc_top_cor(mc_egc, k = 30)
+            serialize_shiny_data(gg_mc_top_cor, "gg_mc_top_cor", dataset = dataset, cache_dir = cache_dir)
+        } else {
+            cli_alert_info("Skipping calculation of top 30 correlated and anti-correlated genes for each gene. Some features in the app would not be available")
+        }
     }
+
 
     if (!is.null(cell_metadata)) {
         if (is.null(cell_to_metacell)) {
             cli_abort("Please provide also {.field cell_to_metacell} in order to import {.field cell_metadata}")
         }
         import_cell_metadata(project, dataset, cell_metadata, cell_to_metacell)
+    }
+
+    if (!is.null(outliers_anndata_file)) {
+        load_outliers(outliers_anndata_file, project, dataset, gene_names = gene_names)
     }
 
 
@@ -388,7 +400,7 @@ import_dataset <- function(project,
         }
 
         if (!is.null(gene_names)) {
-            cli_abort("Using {.field gene_names} with atlases is currently not supported")
+            cli_abort("Using {.field gene_names} with atlas is currently not supported")
         }
 
         import_atlas(adata, atlas_project, atlas_dataset, projection_weights_file, dataset = dataset, cache_dir = cache_dir, copy_atlas)
@@ -396,7 +408,7 @@ import_dataset <- function(project,
 
     cli_alert_success("{.field {dataset}} dataset imported succesfully to {.path {project}} project")
     cli::cli_ul("You can now run the app using: {.field run_app(\"{project}\")}")
-    cli::cli_ul("or create a bundle using: {.field create_bundle(\"{project}\")}")
+    cli::cli_ul("or create a bundle using: {.field create_bundle(\"{project}\", name = \"name_of_bundle\")}")
     invisible(adata)
 }
 

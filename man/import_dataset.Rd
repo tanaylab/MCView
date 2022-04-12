@@ -11,6 +11,7 @@ import_dataset(
   cell_type_field = NULL,
   metacell_types_file = NULL,
   cell_type_colors_file = NULL,
+  outliers_anndata_file = NULL,
   cluster_metacells = TRUE,
   cluster_k = NULL,
   metadata_fields = NULL,
@@ -57,6 +58,9 @@ If this is missing, and \code{metacell_types_file} did not have a 'color' field,
 When an atlas is given (using \code{atlas_project} and \code{atlas_dataset}), if the cell types
 are the same as the atlas, the atlas colors would be used.}
 
+\item{outliers_anndata_file}{path to anndata file with outliers (optional). This would enable, by default,
+the following tabs: ["Outliers", "Similar-fold", "Deviant-fold"]. See the metacells python package for more details.}
+
 \item{cluster_metacells}{When TRUE and no metacell type is given (via \code{metacell_types_file} or \code{cell_type_field}), MCView would cluster the metacell matrix using kmeans++ algorithm (from the \code{tglkmeans} package).}
 
 \item{cluster_k}{number of clusters for initial metacell clustering. If NULL - the number of clusters would be determined such that a metacell would contain 16 cells on average.}
@@ -99,7 +103,7 @@ name of a delimited file which contains such data frame.}
 
 \item{projection_weights_file}{Path to a tabular file (csv,tsv) with the following fields "query", "atlas" and "weight". The file is an output of \code{metacells} projection algorithm.}
 
-\item{copy_atlas}{copy atlas MCView to the current project. If FALSE - a symbolic link would be created instaed.}
+\item{copy_atlas}{copy atlas MCView to the current project. If FALSE - a symbolic link would be created instead.}
 
 \item{...}{
   Arguments passed on to \code{\link[=create_project]{create_project}}

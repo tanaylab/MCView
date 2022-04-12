@@ -92,6 +92,11 @@ init_tab_defs <- function() {
             module_name = "inner_fold",
             icon = "cloud-sun-rain"
         ),
+        "Outliers" = list(
+            title = "Outliers",
+            module_name = "outliers",
+            icon = "user-astronaut"
+        ),
         "Projected-fold" = list(
             title = "Projected-fold",
             module_name = "proj_fold",

@@ -56,12 +56,13 @@ heatmap_box <- function(id,
     )
 }
 
-heatmap_sidebar <- function(id) {
+heatmap_sidebar <- function(id, ...) {
     ns <- NS(id)
     list(
         uiOutput(ns("reset_zoom_ui")),
         uiOutput(ns("cell_type_list")),
         uiOutput(ns("metadata_list")),
+        ...,
         shinyWidgets::actionGroupButtons(ns("update_genes"), labels = "Update genes", size = "sm"),
         numericInput(ns("max_gene_num"), "Maximal number of genes", value = 100),
         uiOutput(ns("add_genes_ui")),
@@ -107,8 +108,14 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
             markers_df <- metacell_types()
         }
 
-        new_markers_df <- get_marker_genes(dataset(), mode = mode)
-        if (has_name(new_markers_df, "metacell")) {
+        if (!is.null(input$use_markers) && input$use_markers) {
+            new_markers_df <- get_marker_genes(dataset(), mode = "Markers")
+        } else {
+            new_markers_df <- get_marker_genes(dataset(), mode = mode)
+        }
+
+
+        if (has_name(new_markers_df, "metacell") && mode != "Outliers") {
             markers_df <- markers_df %>%
                 select(metacell) %>%
                 inner_join(new_markers_df, by = "metacell")
@@ -136,8 +143,12 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
     })
 
     output$add_genes_ui <- renderUI({
-        if (mode == "Inner") {
-            mc_fp <- get_mc_data(dataset(), "inner_fold_mat")
+        if (mode %in% c("Inner", "Outliers")) {
+            if (mode == "Inner") {
+                mc_fp <- get_mc_data(dataset(), "inner_fold_mat")
+            } else {
+                mc_fp <- get_mc_data(dataset(), "deviant_fold_mat")
+            }
             req(mc_fp)
             gene_choices <- rownames(mc_fp)[Matrix::rowSums(mc_fp) > 0]
             req(markers)
@@ -224,7 +235,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     ns("heatmap"),
                     height = height,
                     dblclick = dblclickOpts(ns("heatmap_dblclick"), clip = TRUE),
-                    hover = hoverOpts(ns("heatmap_hover"), delay = 500, delayType = "debounce"),
+                    hover = hoverOpts(ns("heatmap_hover"), delay = 5, delayType = "debounce"),
                     brush = brushOpts(
                         id = ns("heatmap_brush"),
                         direction = "x",
@@ -396,20 +407,33 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                 top_genes <- mcell_stats %>%
                     glue::glue_data("{top1_gene} ({round(top1_lfp, digits=2)}), {top2_gene} ({round(top2_lfp, digits=2)})")
 
-                gene_prefix <- "Gene"
-                if (mode == "Gene modules" && !(gene %in% genes())) {
-                    gene_prefix <- "Gene module"
-                }
+                if (mode == "Outliers") {
+                    mcell_tooltip <- paste(
+                        glue("Gene: {gene}"),
+                        glue("Cell: {metacell}"),
+                        glue("Value: {round(value, digits=2)}"),
+                        glue("Most similar metacell: {mcell_stats$most_similar_metacell}"),
+                        glue("Cell type: {mcell_stats$cell_type}"),
+                        glue("Top genes: {top_genes}"),
+                        ifelse(has_name(mcell_stats, "mc_age"), glue("Metacell age (E[t]): {round(mcell_stats$mc_age, digits=2)}"), ""),
+                        sep = "<br/>"
+                    )
+                } else {
+                    gene_prefix <- "Gene"
+                    if (mode == "Gene modules" && !(gene %in% genes())) {
+                        gene_prefix <- "Gene module"
+                    }
 
-                mcell_tooltip <- paste(
-                    glue("{gene_prefix}: {gene}"),
-                    glue("Metacell: {metacell}"),
-                    glue("Value: {round(value, digits=2)}"),
-                    glue("Cell type: {mcell_stats$cell_type}"),
-                    glue("Top genes: {top_genes}"),
-                    ifelse(has_name(mcell_stats, "mc_age"), glue("Metacell age (E[t]): {round(mcell_stats$mc_age, digits=2)}"), ""),
-                    sep = "<br/>"
-                )
+                    mcell_tooltip <- paste(
+                        glue("{gene_prefix}: {gene}"),
+                        glue("Metacell: {metacell}"),
+                        glue("Value: {round(value, digits=2)}"),
+                        glue("Cell type: {mcell_stats$cell_type}"),
+                        glue("Top genes: {top_genes}"),
+                        ifelse(has_name(mcell_stats, "mc_age"), glue("Metacell age (E[t]): {round(mcell_stats$mc_age, digits=2)}"), ""),
+                        sep = "<br/>"
+                    )
+                }
 
                 wellPanel(
                     style = style,
