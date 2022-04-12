@@ -74,6 +74,7 @@ which can be in the app using the right sidebar.</p>
   cell_type_field <span class="op">=</span> <span class="cn">NULL</span>,
   metacell_types_file <span class="op">=</span> <span class="cn">NULL</span>,
   cell_type_colors_file <span class="op">=</span> <span class="cn">NULL</span>,
+  outliers_anndata_file <span class="op">=</span> <span class="cn">NULL</span>,
   cluster_metacells <span class="op">=</span> <span class="cn">TRUE</span>,
   cluster_k <span class="op">=</span> <span class="cn">NULL</span>,
   metadata_fields <span class="op">=</span> <span class="cn">NULL</span>,
@@ -122,6 +123,9 @@ In case the metacell types (given by a file or from the <code>anndata_file</code
 If this is missing, and <code>metacell_types_file</code> did not have a 'color' field, MCView would use the <code>chameleon</code> package to assign a color for each cell type. <br>
 When an atlas is given (using <code>atlas_project</code> and <code>atlas_dataset</code>), if the cell types
 are the same as the atlas, the atlas colors would be used.</p></dd>
+<dt>outliers_anndata_file</dt>
+<dd><p>path to anndata file with outliers (optional). This would enable, by default,
+the following tabs: ["Outliers", "Similar-fold", "Deviant-fold"]. See the metacells python package for more details.</p></dd>
 <dt>cluster_metacells</dt>
 <dd><p>When TRUE and no metacell type is given (via <code>metacell_types_file</code> or <code>cell_type_field</code>), MCView would cluster the metacell matrix using kmeans++ algorithm (from the <code>tglkmeans</code> package).</p></dd>
 <dt>cluster_k</dt>
@@ -165,7 +169,7 @@ name of a delimited file which contains such data frame.</p></dd>
 <dt>projection_weights_file</dt>
 <dd><p>Path to a tabular file (csv,tsv) with the following fields "query", "atlas" and "weight". The file is an output of <code>metacells</code> projection algorithm.</p></dd>
 <dt>copy_atlas</dt>
-<dd><p>copy atlas MCView to the current project. If FALSE - a symbolic link would be created instaed.</p></dd>
+<dd><p>copy atlas MCView to the current project. If FALSE - a symbolic link would be created instead.</p></dd>
 <dt>...</dt>
 <dd><p>Arguments passed on to <code><a href="create_project.html">create_project</a></code></p><dl><dt><code>title</code></dt>
 <dd><p>The title of the app. This would be shown on the top left of the screen.</p></dd>
