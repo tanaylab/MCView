@@ -2,7 +2,7 @@ calc_diff_expr <- function(mat, egc, columns, diff_thresh = 1.5, pval_thresh = 0
     df <- egc %>%
         as.data.frame()
 
-    df$diff <- log2(df[, 1]) - log2(df[, 2])
+    df$diff <- log2(df[, columns[1]]) - log2(df[, columns[2]])
 
     df$pval <- NA
 
@@ -10,6 +10,7 @@ calc_diff_expr <- function(mat, egc, columns, diff_thresh = 1.5, pval_thresh = 0
 
     m <- mat[f, columns, drop = FALSE]
 
+    df$pval <- NA
     if (nrow(m) > 0) {
         tots <- colSums(m)
 

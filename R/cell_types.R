@@ -95,7 +95,6 @@ update_cell_type_colors <- function(project, dataset, cell_type_colors_file) {
     cli_alert_success("Succesfully changed cell type color assignments")
 }
 
-
 parse_cell_type_colors <- function(cell_type_colors) {
     if (is.character(cell_type_colors)) {
         cell_type_colors <- fread(cell_type_colors) %>% as_tibble()
