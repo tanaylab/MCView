@@ -110,6 +110,8 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
         cli_abort("Query h5ad is missing the '{.file projected}' layer")
     }
     projected_mat <- t(query$layers[["projected"]])
+    rownames(projected_mat) <- colnames(query$X)
+    colnames(projected_mat) <- rownames(query$X)
     serialize_shiny_data(projected_mat, "projected_mat", dataset = dataset, cache_dir = cache_dir)
 
     projected_mat_sum <- colSums(projected_mat)
@@ -120,10 +122,12 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
     }
 
     projected_fold <- t(query$layers[["projected_fold"]])
+    rownames(projected_fold) <- colnames(query$X)
+    colnames(projected_fold) <- rownames(query$X)
     serialize_shiny_data(projected_fold, "projected_fold", dataset = dataset, cache_dir = cache_dir)
 
     cli_alert_info("Calculating top atlas-query fold genes")
-    forbidden <- query$var$forbidden_gene
+    forbidden <- query$var$forbidden_gene    
     marker_genes_projected <- select_top_fold_genes_per_metacell(projected_fold[!forbidden, ], minimal_relative_log_fraction = -Inf, use_abs = TRUE, genes_per_metacell = 50)
     serialize_shiny_data(marker_genes_projected, "marker_genes_projected", dataset = dataset, cache_dir = cache_dir)
 
