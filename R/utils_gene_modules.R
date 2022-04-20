@@ -23,7 +23,7 @@ update_gene_modules <- function(project, dataset, gene_modules_file) {
     verify_project_dir(project)
     verify_app_cache(project)
 
-    gene_modules <- parse_geneparse_gene_modules_file(gene_modules_file)
+    gene_modules <- parse_gene_modules_file(gene_modules_file)
 
     serialize_shiny_data(gene_modules, "gene_modules", dataset = dataset, cache_dir = project_cache_dir(project), flat = TRUE)
 
