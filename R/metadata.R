@@ -169,6 +169,7 @@ import_cell_metadata <- function(project, dataset, cell_metadata, cell_to_metace
             select(cell_id, everything())
 
         md <- cell_metadata_to_metacell(md, cell_to_metacell, ...)
+        update_metadata(project, dataset, md, overwrite = TRUE)
     } else {
         if (has_name(cell_metadata, "samp_id")) {
             md <- cell_metadata_to_metacell(cell_metadata %>% select(cell_id, samp_id), cell_to_metacell, ...)
@@ -240,22 +241,24 @@ import_cell_metadata <- function(project, dataset, cell_metadata, cell_to_metace
 #'     metacell = sample(0:1535, size = n_cells, replace = TRUE)
 #' )
 #' metadata <- cell_metadata_to_metacell(
-#'      cell_metadata[, 1:3],
-#'      cell_to_metacell)
+#'     cell_metadata[, 1:3],
+#'     cell_to_metacell
+#' )
 #' head(metadata)
 #'
 #' metadata1 <- cell_metadata_to_metacell(
-#'      cell_metadata[, 11:3], cell_to_metacell, 
-#'      func = function(x) x * 2)
+#'     cell_metadata[, 11:3], cell_to_metacell,
+#'     func = function(x) x * 2
+#' )
 #' head(metadata1)
 #'
 #'
 #' metadata3 <- cell_metadata_to_metacell(
-#'          cell_metadata, 
-#'          cell_to_metacell, 
-#'          categorical = c("md_categorical1", "md_categorical2")
+#'     cell_metadata,
+#'     cell_to_metacell,
+#'     categorical = c("md_categorical1", "md_categorical2")
 #' )
-#' 
+#'
 #' head(metadata3)
 #' \dontrun{
 #' cell_metadata_to_metacell_from_h5ad("cells.h5ad", c("pile", "age", "batch"), categorical = "batch")
