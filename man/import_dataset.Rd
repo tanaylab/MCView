@@ -27,6 +27,8 @@ import_dataset(
   atlas_dataset = NULL,
   projection_weights_file = NULL,
   copy_atlas = TRUE,
+  minimal_max_log_fraction = -13,
+  minimal_relative_log_fraction = 2,
   ...
 )
 }
@@ -104,6 +106,12 @@ name of a delimited file which contains such data frame.}
 \item{projection_weights_file}{Path to a tabular file (csv,tsv) with the following fields "query", "atlas" and "weight". The file is an output of \code{metacells} projection algorithm.}
 
 \item{copy_atlas}{copy atlas MCView to the current project. If FALSE - a symbolic link would be created instead.}
+
+\item{minimal_max_log_fraction}{When choosing marker genes: take only genes with at least one value
+(in log fraction units - normalized egc) above this threshold}
+
+\item{minimal_relative_log_fraction}{When choosing marker genes: take only genes with relative
+log fraction (mc_fp) above this this value}
 
 \item{...}{
   Arguments passed on to \code{\link[=create_project]{create_project}}

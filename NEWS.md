@@ -8,7 +8,8 @@
 * Bug fix: heatmaps crashed when only a single gene was chosen.  
 * Bug fix: automatically color cell types missing from cell type colors file.
 * Bug fix: Diff expr. crashed when there was only a single cell type.
-
+* Bug fix: Wrong tooltip in metadata/metadata scatter plot. 
+* Added control for marker selection paramters in `import_dataset`.
 # MCView 0.2.2
 
 * Added support for atlas projections ('Atlas', 'Query' and 'Projected-fold' tabs)

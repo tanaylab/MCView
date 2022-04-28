@@ -236,7 +236,7 @@ plot_mc_scatter <- function(dataset,
         df <- df %>%
             select(-any_of(y_var)) %>%
             left_join(metadata %>% select(metacell, !!y_var), by = "metacell") %>%
-            mutate(y_str = glue("{y_name}: {y_values}", y_values = round(!!sym(x_var), digits = 3)))
+            mutate(y_str = glue("{y_name}: {y_values}", y_values = round(!!sym(y_var), digits = 3)))
     } else {
         if (y_type == "Gene module") {
             egc_y <- get_gene_module_egc(y_var, dataset, gene_modules, atlas = atlas) + egc_epsilon

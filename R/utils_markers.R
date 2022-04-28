@@ -21,6 +21,10 @@ calc_marker_genes <- function(mc_egc,
     interesting_genes_mask <- (max_log_fractions_of_genes
     >= minimal_max_log_fraction)
 
+    if (length(interesting_genes_mask) == 0) {
+        cli_abort("No genes with at least one value above the {.field minimal_max_log_fraction} threshold ({.val {.value minimal_max_log_fraction}})")
+    }
+
     mc_fp <- sweep(mc_egc, 1, matrixStats::rowMedians(mc_egc, na.rm = TRUE))
 
     mc_top_genes <- select_top_fold_genes_per_metacell(
@@ -37,6 +41,10 @@ calc_marker_genes <- function(mc_egc,
 select_top_fold_genes_per_metacell <- function(fold_matrix, genes_per_metacell = 2, minimal_relative_log_fraction = 2, fold_change_reg = 0.1, use_abs = TRUE) {
     fold_matrix <- fold_matrix + fold_change_reg
     fold_matrix[fold_matrix < minimal_relative_log_fraction] <- NA
+
+    if (nrow(fold_matrix) == 0) {
+        cli_abort("No genes with at least one value above the {.field minimal_relative_log_fraction} threshold ({.val {.value minimal_relative_log_fraction}})")
+    }
 
     mc_top_genes <- apply(fold_matrix, 2, function(fp) {
         if (use_abs) {
