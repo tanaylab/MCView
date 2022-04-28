@@ -58,6 +58,10 @@
 #' @param atlas_dataset name of the atlas dataset
 #' @param projection_weights_file Path to a tabular file (csv,tsv) with the following fields "query", "atlas" and "weight". The file is an output of \code{metacells} projection algorithm.
 #' @param copy_atlas copy atlas MCView to the current project. If FALSE - a symbolic link would be created instead.
+#' @param minimal_max_log_fraction When choosing marker genes: take only genes with at least one value
+#' (in log fraction units - normalized egc) above this threshold
+#' @param minimal_relative_log_fraction When choosing marker genes: take only genes with relative
+#' log fraction (mc_fp) above this this value
 #'
 #' @return invisibly returns an \code{AnnDataR6} object of the read \code{anndata_file}
 #'
@@ -99,6 +103,8 @@ import_dataset <- function(project,
                            atlas_dataset = NULL,
                            projection_weights_file = NULL,
                            copy_atlas = TRUE,
+                           minimal_max_log_fraction = -13,
+                           minimal_relative_log_fraction = 2,
                            ...) {
     verbose <- !is.null(getOption("MCView.verbose")) && getOption("MCView.verbose")
     verify_project_dir(project, create = TRUE, atlas = !is.null(atlas_project), ...)
@@ -190,7 +196,7 @@ import_dataset <- function(project,
     }
 
     serialize_shiny_data(forbidden_genes, "forbidden_genes", dataset = dataset, cache_dir = cache_dir)
-    marker_genes <- calc_marker_genes(mc_egc[!forbidden, ], 20)
+    marker_genes <- calc_marker_genes(mc_egc[!forbidden, ], 20, minimal_max_log_fraction = minimal_max_log_fraction, minimal_relative_log_fraction = minimal_relative_log_fraction)
     serialize_shiny_data(marker_genes, "marker_genes", dataset = dataset, cache_dir = cache_dir)
 
     # serialize the inner fold matrix (if exists)
