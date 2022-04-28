@@ -182,7 +182,7 @@ import_dataset <- function(project,
     cli_alert_info("Calculating top genes per metacell (marker genes)")
     if (is.null(adata$var$forbidden_gene)) {
         forbidden_genes <- c()
-        forbidden <- rep(TRUE, nrow(mc_egc))
+        forbidden <- rep(FALSE, nrow(mc_egc))
     } else {
         forbidden <- adata$var$forbidden_gene
         forbidden_genes <- rownames(adata$var)[adata$var$forbidden_gene]
@@ -190,7 +190,6 @@ import_dataset <- function(project,
     }
 
     serialize_shiny_data(forbidden_genes, "forbidden_genes", dataset = dataset, cache_dir = cache_dir)
-
     marker_genes <- calc_marker_genes(mc_egc[!forbidden, ], 20)
     serialize_shiny_data(marker_genes, "marker_genes", dataset = dataset, cache_dir = cache_dir)
 
