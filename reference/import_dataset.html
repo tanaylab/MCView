@@ -90,6 +90,8 @@ which can be in the app using the right sidebar.</p>
   atlas_dataset <span class="op">=</span> <span class="cn">NULL</span>,
   projection_weights_file <span class="op">=</span> <span class="cn">NULL</span>,
   copy_atlas <span class="op">=</span> <span class="cn">TRUE</span>,
+  minimal_max_log_fraction <span class="op">=</span> <span class="op">-</span><span class="fl">13</span>,
+  minimal_relative_log_fraction <span class="op">=</span> <span class="fl">2</span>,
   <span class="va">...</span>
 <span class="op">)</span></code></pre></div>
     </div>
@@ -170,6 +172,12 @@ name of a delimited file which contains such data frame.</p></dd>
 <dd><p>Path to a tabular file (csv,tsv) with the following fields "query", "atlas" and "weight". The file is an output of <code>metacells</code> projection algorithm.</p></dd>
 <dt>copy_atlas</dt>
 <dd><p>copy atlas MCView to the current project. If FALSE - a symbolic link would be created instead.</p></dd>
+<dt>minimal_max_log_fraction</dt>
+<dd><p>When choosing marker genes: take only genes with at least one value
+(in log fraction units - normalized egc) above this threshold</p></dd>
+<dt>minimal_relative_log_fraction</dt>
+<dd><p>When choosing marker genes: take only genes with relative
+log fraction (mc_fp) above this this value</p></dd>
 <dt>...</dt>
 <dd><p>Arguments passed on to <code><a href="create_project.html">create_project</a></code></p><dl><dt><code>title</code></dt>
 <dd><p>The title of the app. This would be shown on the top left of the screen.</p></dd>
@@ -244,7 +252,7 @@ would contain objects used by MCView shiny app (such as the metacell matrix).</p
 </div>
 
 <div class="pkgdown-footer-right">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.3.</p>
 </div>
 
     </footer></div>
