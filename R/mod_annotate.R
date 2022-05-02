@@ -64,6 +64,7 @@ mod_annotate_ui <- function(id) {
                                 )
                         ),
                         actionButton(ns("reset_metacell_types"), "Reset", style = "align-items: center;"),
+                        actionButton(ns("paste_metacells"), "Paste", style = "align-items: center;"),
                         downloadButton(ns("metacell_types_download"), "Export", style = "align-items: center;")
                     ),
                     uiOutput(ns("annotation_box")),
@@ -235,6 +236,22 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 values$file_status <- NULL
             })
 
+            observeEvent(input$paste_metacells, {
+                selected_metacells <- unique(globals$clipboard)
+
+                new_selected_annot <- metacell_types() %>% filter(metacell %in% selected_metacells)
+                if (!is.null(input$add_to_selection) && input$add_to_selection) {
+                    selected_metacell_types(
+                        bind_rows(
+                            selected_metacell_types(),
+                            new_selected_annot
+                        ) %>% distinct(metacell, cell_type)
+                    )
+                } else {
+                    selected_metacell_types(new_selected_annot %>% distinct(metacell, cell_type))
+                }
+            })
+
             observeEvent(input$reset_cell_type_colors, {
                 cell_type_colors(get_cell_type_data(dataset()))
             })
@@ -384,7 +401,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                     cell_type_colors(edited_data)
                 } else {
                     dups <- paste(edited_data$cell_type[duplicated(edited_data$cell_type)], collapse = ", ")
-                    showNotification("Cell types cannot be duplicated: {dups}")
+                    showNotification(glue("Cell types cannot be duplicated: {dups}"))
                 }
 
                 DT::replaceData(cell_type_table_proxy, cell_type_colors() %>% select(cell_type, color), resetPaging = FALSE, rownames = FALSE)

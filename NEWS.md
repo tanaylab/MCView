@@ -10,7 +10,7 @@
 * Bug fix: Diff expr. crashed when there was only a single cell type.
 * Bug fix: Wrong tooltip in metadata/metadata scatter plot. 
 * Bug fix: Annotation colors in markers heatmap were scaled relative to current zoom.
-* Added control for marker selection paramters in `import_dataset`.
+* Added control for marker selection parameters in `import_dataset`.
 # MCView 0.2.2
 
 * Added support for atlas projections ('Atlas', 'Query' and 'Projected-fold' tabs)

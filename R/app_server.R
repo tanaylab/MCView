@@ -18,6 +18,7 @@ app_server <- function(input, output, session) {
     observe({
         globals$screen_width <- input$screen_width
         globals$screen_height <- input$screen_height
+        globals$clipboard <- character(0)
     })
 
     # annotation reactives

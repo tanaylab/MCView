@@ -60,6 +60,7 @@ heatmap_sidebar <- function(id, ...) {
     ns <- NS(id)
     list(
         uiOutput(ns("reset_zoom_ui")),
+        uiOutput(ns("copy_metacells_ui")),
         uiOutput(ns("cell_type_list")),
         uiOutput(ns("metadata_list")),
         ...,
@@ -222,12 +223,22 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                 shinyWidgets::actionGroupButtons(ns("reset_zoom"), labels = "Reset zoom", size = "sm")
             })
 
+            output$copy_metacells_ui <- renderUI({
+                shinyWidgets::actionGroupButtons(ns("copy_metacells"), labels = "Copy metacells", size = "sm")
+            })
+
             observe({
                 shinyjs::toggle(id = "reset_zoom_ui", condition = !is.null(metacell_filter()) && length(metacell_filter()) > 0)
+                shinyjs::toggle(id = "copy_metacells_ui", condition = !is.null(metacell_filter()) && length(metacell_filter()) > 0)
             })
 
             observeEvent(input$reset_zoom, {
                 metacell_filter(NULL)
+            })
+
+            observeEvent(input$copy_metacells, {
+                globals$clipboard <- metacell_filter()
+                showNotification(glue("Copied {length(metacell_filter())} metacells to clipboard"))
             })
 
             output$plotting_area <- renderUI({
