@@ -107,7 +107,7 @@ add_markers_colorbars <- function(p, mc_types, dataset, top_cell_type_bar = TRUE
             left_join(metadata %>% mutate(metacell = as.character(metacell)), by = "metacell")
 
         for (md in rev(colnames(metadata)[-1])) {
-            md_colors <- get_metadata_colors(dataset, md, metadata = metadata)
+            md_colors <- get_metadata_colors(dataset, md)
             if (is_numeric_field(metadata, md)) {
                 palette <- circlize::colorRamp2(colors = md_colors$colors, breaks = md_colors$breaks)
                 p <- p %>%
