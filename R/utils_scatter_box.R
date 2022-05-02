@@ -38,6 +38,9 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
         checkboxInput(ns("use_atlas_limits"), label = "Use atlas limits", value = FALSE)
     })
 
+    # We use this reactive in order to invalidate the cache only when needed
+    clipboard_changed <- clipboard_changed_scatter_reactive(input, globals)
+
     output$plot_gene_gene_mc <- plotly::renderPlotly({
         req(input$x_axis_var)
         req(input$y_axis_var)
@@ -115,7 +118,7 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
         }
 
         return(fig)
-    }) %>% bindCache(dataset(), input$x_axis_var, input$x_axis_type, input$y_axis_var, input$y_axis_type, input$color_by_type, input$color_by_var, metacell_types(), cell_type_colors(), gene_modules(), input$gene_gene_point_size, input$gene_gene_stroke, input$use_atlas_limits, input$gene_gene_fixed_limits, input$gene_gene_xyline, dragmode, plotly_buttons, globals$clipboard)
+    }) %>% bindCache(dataset(), input$x_axis_var, input$x_axis_type, input$y_axis_var, input$y_axis_type, input$color_by_type, input$color_by_var, metacell_types(), cell_type_colors(), gene_modules(), input$gene_gene_point_size, input$gene_gene_stroke, input$use_atlas_limits, input$gene_gene_fixed_limits, input$gene_gene_xyline, dragmode, plotly_buttons, clipboard_changed())
 }
 
 axis_selector <- function(axis, selected, ns, choices = c("Metadata", "Gene", "Gene module")) {

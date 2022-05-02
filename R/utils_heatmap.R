@@ -78,6 +78,7 @@ heatmap_sidebar <- function(id, ...) {
         numericInput(ns("max_gene_num"), "Maximal number of genes", value = 100),
         uiOutput(ns("add_genes_ui")),
         uiOutput(ns("marker_genes_list")),
+        tags$hr(),
         downloadButton(ns("download_matrix"), "Download matrix")
     )
 }
@@ -228,7 +229,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                 }
 
                 return(m)
-            }) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), markers(), gene_modules(), input$selected_cell_types, input$force_cell_type, genes(), input$show_genes, input$filter_by_clipboard, globals$clipboard, mode)
+            }) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), markers(), gene_modules(), input$selected_cell_types, input$force_cell_type, genes(), input$show_genes, clipboard_changed(), mode)
 
             output$download_matrix <- downloadHandler(
                 filename = function() {
@@ -285,11 +286,12 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     ns("heatmap"),
                     height = height,
                     dblclick = dblclickOpts(ns("heatmap_dblclick"), clip = TRUE),
-                    hover = hoverOpts(ns("heatmap_hover"), delay = 5, delayType = "debounce"),
+                    hover = hoverOpts(ns("heatmap_hover"), delay = 300, delayType = "debounce"),
                     brush = brushOpts(
                         id = ns("heatmap_brush"),
                         direction = "x",
-                        resetOnNew = TRUE
+                        resetOnNew = TRUE,
+                        delay = 1000
                     )
                 )
 
@@ -326,6 +328,15 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     theme(legend.position = c(0.5, 0.5)))
                 cowplot::ggdraw(legend)
             }) %>% bindCache(id, dataset(), cell_type_colors(), input$plot_legend)
+
+            # We use this reactive in order to invalidate the cache only when input$filter_by_clipboard is TRUE
+            clipboard_changed <- reactive({
+                if (!input$filter_by_clipboard) {
+                    return(FALSE)
+                } else {
+                    return(globals$clipboard)
+                }
+            })
 
             output$heatmap <- renderPlot({
                 req(dataset())
@@ -395,7 +406,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
 
                 # we are returning the gtable and ggplot object separatly in order to allow shiny to infer positions correctly.
                 return(structure(list(p = res$p, gtable = res$gtable), class = "gt_custom"))
-            }) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), gene_modules(), lfp_range(), metacell_filter(), input$plot_legend, input$selected_md, markers(), input$selected_cell_types, input$force_cell_type, input$filter_by_clipboard, globals$clipboard, input$high_color, input$low_color, input$mid_color, input$midpoint, genes(), input$show_genes, highlighted_genes(), highlight_color)
+            }) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), gene_modules(), lfp_range(), metacell_filter(), input$plot_legend, input$selected_md, markers(), input$selected_cell_types, input$force_cell_type, clipboard_changed(), input$high_color, input$low_color, input$mid_color, input$midpoint, genes(), input$show_genes, highlighted_genes(), highlight_color)
 
             observeEvent(input$heatmap_brush, {
                 req(input$brush_action)
