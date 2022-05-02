@@ -230,7 +230,7 @@ create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overw
             )
             cli::cli_alert_info("Using latest release: {.file {latest_tag$name}}")
         } else {
-            gert::git_clone("git@github.com:tanaylab/MCView", path = code_dir, branch = branch)
+            gert::git_clone("git@github.com:tanaylab/MCView", path = code_dir, branch = branch, ...)
         }
     }
 
