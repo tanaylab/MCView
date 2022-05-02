@@ -246,7 +246,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     ns("heatmap"),
                     height = height,
                     dblclick = dblclickOpts(ns("heatmap_dblclick"), clip = TRUE),
-                    hover = hoverOpts(ns("heatmap_hover"), delay = 5, delayType = "debounce"),
+                    hover = hoverOpts(ns("heatmap_hover"), delay = 10, delayType = "debounce"),
                     brush = brushOpts(
                         id = ns("heatmap_brush"),
                         direction = "x",

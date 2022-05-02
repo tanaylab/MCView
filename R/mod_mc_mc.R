@@ -177,7 +177,7 @@ mod_mc_mc_server <- function(id, dataset, metacell_types, cell_type_colors, gene
             output$diff_expr_table <- render_mc_mc_gene_diff_table(input, output, session, ns, dataset, mc_mc_gene_scatter_df)
 
             # Projection plots
-            output$plot_mc_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, groupA = groupA, groupB = groupB, source = "proj_mc_plot")
+            output$plot_mc_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, groupA = groupA, groupB = groupB, source = "proj_mc_plot")
 
 
             # metacell click observers

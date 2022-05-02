@@ -255,7 +255,7 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
             })
 
             # Projection plots
-            output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, projected_metacell_types, atlas_colors, gene_modules, group = group, source = "proj_mc_plot_proj_tab")
+            output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, projected_metacell_types, atlas_colors, gene_modules, globals, group = group, source = "proj_mc_plot_proj_tab")
 
             # connect_gene_plots(input, output, session, ns, source = "proj_mc_plot_proj_tab")
 

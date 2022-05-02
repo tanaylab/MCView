@@ -65,6 +65,7 @@ mod_annotate_ui <- function(id) {
                         ),
                         actionButton(ns("reset_metacell_types"), "Reset", style = "align-items: center;"),
                         actionButton(ns("paste_metacells"), "Paste", style = "align-items: center;"),
+                        actionButton(ns("copy_metacells"), "Copy", style = "align-items: center;"),
                         downloadButton(ns("metacell_types_download"), "Export", style = "align-items: center;")
                     ),
                     uiOutput(ns("annotation_box")),
@@ -250,6 +251,12 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 } else {
                     selected_metacell_types(new_selected_annot %>% distinct(metacell, cell_type))
                 }
+            })
+
+            observeEvent(input$copy_metacells, {
+                selected_metacells <- selected_metacell_types()$metacell
+                globals$clipboard <- selected_metacells
+                showNotification(glue("Copied {length(selected_metacells)} metacells to clipboard"))
             })
 
             observeEvent(input$reset_cell_type_colors, {
@@ -587,6 +594,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 metacell_types,
                 cell_type_colors,
                 gene_modules,
+                globals,
                 source = "proj_annot_plot",
                 buttons = c("hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"),
                 dragmode = "select",
