@@ -12,7 +12,8 @@ create_bundle(
   self_contained = FALSE,
   branch = "latest_release",
   restart = overwrite,
-  permissions = NULL
+  permissions = NULL,
+  ...
 )
 }
 \arguments{
@@ -41,6 +42,22 @@ repository.}
 
 \item{permissions}{change the file permissions of the bundle after creation, e.g. "777". When NULL -
 permissions would not be changed.}
+
+\item{...}{
+  Arguments passed on to \code{\link[gert:git_fetch]{gert::git_clone}}
+  \describe{
+    \item{\code{password}}{a string or a callback function to get passwords for authentication
+or password protected ssh keys. Defaults to \link[askpass:askpass]{askpass} which
+checks \code{getOption('askpass')}.}
+    \item{\code{ssh_key}}{path or object containing your ssh private key. By default we
+look for keys in \code{ssh-agent} and \link[credentials:ssh_credentials]{credentials::ssh_key_info}.}
+    \item{\code{verbose}}{display some progress info while downloading}
+    \item{\code{mirror}}{use the \code{--mirror} flag}
+    \item{\code{url}}{remote url. Typically starts with \verb{https://github.com/} for public
+repositories, and \verb{https://yourname@github.com/} or \verb{git@github.com/} for
+private repos. You will be prompted for a password or pat when needed.}
+    \item{\code{bare}}{use the \code{--bare} flag}
+  }}
 }
 \description{
 Generate a 'deployment ready' bundle of the a project app
