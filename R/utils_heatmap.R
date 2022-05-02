@@ -60,7 +60,16 @@ heatmap_sidebar <- function(id, ...) {
     ns <- NS(id)
     list(
         uiOutput(ns("reset_zoom_ui")),
+        shinyWidgets::radioGroupButtons(
+            inputId = ns("brush_action"),
+            label = "Brush action:",
+            choices = c("Zoom", "Select"),
+            selected = "Zoom",
+            size = "sm",
+            justified = TRUE
+        ),
         uiOutput(ns("copy_metacells_ui")),
+        tags$hr(),
         uiOutput(ns("cell_type_list")),
         uiOutput(ns("metadata_list")),
         ...,
@@ -183,6 +192,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
         function(input, output, session) {
             ns <- session$ns
             metacell_filter <- reactiveVal()
+            selected_metacells <- reactiveVal()
 
             genes <- genes %||% reactiveVal()
             highlighted_genes <- highlighted_genes %||% reactiveVal()
@@ -229,7 +239,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
 
             observe({
                 shinyjs::toggle(id = "reset_zoom_ui", condition = !is.null(metacell_filter()) && length(metacell_filter()) > 0)
-                shinyjs::toggle(id = "copy_metacells_ui", condition = !is.null(metacell_filter()) && length(metacell_filter()) > 0)
+                shinyjs::toggle(id = "copy_metacells_ui", condition = !is.null(selected_metacells()) && length(selected_metacells()) > 0 && !is.null(input$brush_action) && input$brush_action == "Select")
             })
 
             observeEvent(input$reset_zoom, {
@@ -237,8 +247,9 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
             })
 
             observeEvent(input$copy_metacells, {
-                globals$clipboard <- metacell_filter()
-                showNotification(glue("Copied {length(metacell_filter())} metacells to clipboard"))
+                globals$clipboard <- selected_metacells()
+                showNotification(glue("Copied {length(selected_metacells())} metacells to clipboard"))
+                selected_metacells(character(0))
             })
 
             output$plotting_area <- renderUI({
@@ -246,7 +257,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     ns("heatmap"),
                     height = height,
                     dblclick = dblclickOpts(ns("heatmap_dblclick"), clip = TRUE),
-                    hover = hoverOpts(ns("heatmap_hover"), delay = 10, delayType = "debounce"),
+                    hover = hoverOpts(ns("heatmap_hover"), delay = 5, delayType = "debounce"),
                     brush = brushOpts(
                         id = ns("heatmap_brush"),
                         direction = "x",
@@ -359,11 +370,16 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
             }) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), gene_modules(), lfp_range(), metacell_filter(), input$plot_legend, input$selected_md, markers(), input$selected_cell_types, input$force_cell_type, input$high_color, input$low_color, input$mid_color, input$midpoint, genes(), input$show_genes, highlighted_genes(), highlight_color)
 
             observeEvent(input$heatmap_brush, {
+                req(input$brush_action)
                 m <- filter_heatmap_by_metacell(mat(), metacell_filter())
                 range <- max(1, round(input$heatmap_brush$xmin)):min(ncol(m), round(input$heatmap_brush$xmax))
                 req(all(range >= 1) && all(range <= ncol(m)))
                 metacells <- colnames(m)[range]
-                metacell_filter(metacells)
+                if (input$brush_action == "Zoom") {
+                    metacell_filter(metacells)
+                } else if (input$brush_action == "Select") {
+                    selected_metacells(metacells)
+                }
             })
 
             observeEvent(input$heatmap_dblclick, {
