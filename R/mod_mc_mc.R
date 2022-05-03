@@ -94,7 +94,8 @@ mod_mc_mc_sidebar_ui <- function(id) {
                 ),
                 uiOutput(ns("metacell1_select")),
                 uiOutput(ns("metacell2_select")),
-                shinyWidgets::actionGroupButtons(ns("switch_metacells"), labels = c("Switch"), size = "sm")
+                shinyWidgets::actionGroupButtons(ns("switch_metacells"), labels = c("Switch"), size = "sm"),
+                checkboxInput(ns("filter_by_clipboard"), "Filter by clipboard", value = FALSE)
             )
         )
     )
@@ -119,7 +120,7 @@ mod_mc_mc_server <- function(id, dataset, metacell_types, cell_type_colors, gene
             group_selectors(input, output, session, dataset, ns, groupA, groupB, metacell_types, cell_type_colors, globals)
             metacell_selectors(input, output, session, dataset, ns, metacell_names, metacell_colors, metacell_types, cell_type_colors, groupA, groupB)
 
-            mc_mc_gene_scatter_df <- mc_mc_gene_scatter_df_reactive(dataset, input, output, session, metacell_types, cell_type_colors, groupA, groupB)
+            mc_mc_gene_scatter_df <- mc_mc_gene_scatter_df_reactive(dataset, input, output, session, metacell_types, cell_type_colors, globals, groupA, groupB)
 
             diff_expr_switch_metacells(dataset, input, output, session, groupA, groupB)
             mod_mc_mc_globals_observers(input, session, globals)

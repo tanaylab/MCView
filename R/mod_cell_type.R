@@ -27,11 +27,8 @@ mod_cell_type_ui <- function(id) {
                         width = 50,
                         id = ns("gene_gene_sidebar"),
                         axis_selector("boxplot_axis", "Gene", ns, choices = c("Metadata", "Gene", "Gene module")),
-                        uiOutput(ns("confusion_color_by_selector")),
-                        # axis_selector("color_by", "Metadata", ns, choices = c("Metadata", "Gene")),
+                        uiOutput(ns("confusion_color_by_selector")),                        
                         uiOutput(ns("cell_type_list"))
-                        # uiOutput(ns("boxplot_point_size_ui")),
-                        # uiOutput(ns("boxplot_stroke_ui"))
                     ),
                     shinycssloaders::withSpinner(
                         plotly::plotlyOutput(ns("cell_type_boxplot"), height = "70vh")
