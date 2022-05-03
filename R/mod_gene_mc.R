@@ -36,7 +36,8 @@ mod_gene_mc_ui <- function(id) {
                         uiOutput(ns("gene_gene_fixed_limits_ui")),
                         uiOutput(ns("use_atlas_limits_ui")),
                         uiOutput(ns("gene_gene_point_size_ui")),
-                        uiOutput(ns("gene_gene_stroke_ui"))
+                        uiOutput(ns("gene_gene_stroke_ui")),
+                        checkboxInput(ns("filter_by_clipboard_scatter"), "Filter by clipboard", value = FALSE)
                     ),
                     shinycssloaders::withSpinner(
                         plotly::plotlyOutput(ns("plot_gene_gene_mc"))
@@ -86,9 +87,11 @@ mod_gene_mc_server <- function(id, dataset, metacell_types, cell_type_colors, ge
             scatter_selectors(ns, dataset, output, globals)
             projection_selectors(ns, dataset, output, input, gene_modules, globals, weight = 0.6)
 
+            clipboard_changed <- clipboard_changed_2d_reactive(input, globals)
+
             # Projection plots
-            output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, source = "proj_mc_plot_gene_tab") %>%
-                bindCache(dataset(), input$color_proj, metacell_types(), cell_type_colors(), input$point_size, input$stroke, input$min_edge_size, input$set_range, input$show_selected_metacells, input$metacell1, input$metacell2, input$proj_stat, input$expr_range, input$lfp, input$color_proj_gene, input$color_proj_metadata, input$color_proj_gene_module)
+            output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, source = "proj_mc_plot_gene_tab") %>%
+                bindCache(dataset(), input$color_proj, metacell_types(), cell_type_colors(), input$point_size, input$stroke, input$min_edge_size, input$set_range, input$show_selected_metacells, input$metacell1, input$metacell2, input$proj_stat, input$expr_range, input$lfp, input$color_proj_gene, input$color_proj_metadata, input$color_proj_gene_module, clipboard_changed())
 
             connect_gene_plots(input, output, session, ns, source = "proj_mc_plot_gene_tab")
 

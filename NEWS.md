@@ -2,6 +2,7 @@
 
 * Added support for gene modules ('Gene modules' tab). 
 * Added 'Outliers' tab.
+* Added Clipboard functionality.
 * Added support for alternative gene names. 
 * Added control over the number of clusters / whether to cluster at all in the import phase.
 * Added new selection controls to Annotate tab ('Gears' symbol on the upper right of 'Metacell Annotation' box).
@@ -10,7 +11,7 @@
 * Bug fix: Diff expr. crashed when there was only a single cell type.
 * Bug fix: Wrong tooltip in metadata/metadata scatter plot. 
 * Bug fix: Annotation colors in markers heatmap were scaled relative to current zoom.
-* Added control for marker selection paramters in `import_dataset`.
+* Added control for marker selection parameters in `import_dataset`.
 # MCView 0.2.2
 
 * Added support for atlas projections ('Atlas', 'Query' and 'Projected-fold' tabs)

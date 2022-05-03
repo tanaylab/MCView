@@ -25,7 +25,8 @@ diff_expr_box <- function(ns,
             ),
             uiOutput(ns("metacell1_select")),
             uiOutput(ns("metacell2_select")),
-            shinyWidgets::actionGroupButtons(ns("switch_metacells"), labels = c("Switch"), size = "sm")
+            shinyWidgets::actionGroupButtons(ns("switch_metacells"), labels = c("Switch"), size = "sm"),
+            checkboxInput(ns("filter_by_clipboard"), "Filter by clipboard", value = FALSE)
         ),
         ...,
         shinycssloaders::withSpinner(
@@ -36,14 +37,14 @@ diff_expr_box <- function(ns,
     )
 }
 
-diff_expr_outputs <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals, ns, source_suffix, dragmode = NULL, plotly_buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines")) {
+diff_expr_outputs <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals, ns, source_suffix, dragmode = NULL, plotly_buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), groupA = NULL, groupB = NULL) {
     metacell_names <- metacell_names_reactive(dataset)
     metacell_colors <- metacell_colors_reactive(dataset, metacell_names, metacell_types)
 
     metacell_selectors(input, output, session, dataset, ns, metacell_names, metacell_colors, metacell_types, cell_type_colors)
-    group_selectors(input, output, session, dataset, ns)
+    group_selectors(input, output, session, dataset, ns, groupA, groupB, metacell_types, cell_type_colors, globals)
 
-    mc_mc_gene_scatter_df <- mc_mc_gene_scatter_df_reactive(dataset, input, output, session, metacell_types, cell_type_colors)
+    mc_mc_gene_scatter_df <- mc_mc_gene_scatter_df_reactive(dataset, input, output, session, metacell_types, cell_type_colors, globals)
 
     diff_expr_switch_metacells(dataset, input, output, session)
 

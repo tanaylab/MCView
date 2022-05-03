@@ -67,7 +67,7 @@ projection_selectors <- function(ns, dataset, output, input, gene_modules, globa
             shinyWidgets::pickerInput(
                 ns("color_proj_metadata"),
                 label = "Metadata:",
-                choices = dataset_metadata_fields(dataset(), atlas = atlas),
+                choices = c("Clipboard", dataset_metadata_fields(dataset(), atlas = atlas)),
                 selected = dataset_metadata_fields(dataset(), atlas = atlas)[1],
                 width = "70%",
                 multiple = FALSE,

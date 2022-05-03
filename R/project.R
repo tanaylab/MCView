@@ -182,7 +182,7 @@ create_project <- function(project,
 #' @param permissions change the file permissions of the bundle after creation, e.g. "777". When NULL -
 #' permissions would not be changed.
 #'
-#'
+#' @inheritDotParams gert::git_clone
 #' @examples
 #' \dontrun{
 #' MCView::create_bundle(project = "PBMC", path = getwd(), name = "PBMC")
@@ -198,7 +198,7 @@ create_project <- function(project,
 #' }
 #'
 #' @export
-create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overwrite = FALSE, self_contained = FALSE, branch = "latest_release", restart = overwrite, permissions = NULL) {
+create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overwrite = FALSE, self_contained = FALSE, branch = "latest_release", restart = overwrite, permissions = NULL, ...) {
     bundle_dir <- fs::path(path, name)
     if (!(fs::dir_exists(project))) {
         cli::cli_abort("{.path {project}} does not exists.")
@@ -219,7 +219,7 @@ create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overw
         cli::cli_alert("Creating a self-contained bundle")
         code_dir <- fs::path(bundle_dir, "code")
         if (!is.null(branch) && branch == "latest_release") {
-            gert::git_clone("git@github.com:tanaylab/MCView", path = code_dir)
+            gert::git_clone("git@github.com:tanaylab/MCView", path = code_dir, ...)
             tag_list <- gert::git_tag_list(repo = code_dir)
             latest_tag <- tail(tag_list, n = 1)
             gert::git_branch_create(
@@ -230,7 +230,7 @@ create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overw
             )
             cli::cli_alert_info("Using latest release: {.file {latest_tag$name}}")
         } else {
-            gert::git_clone("git@github.com:tanaylab/MCView", path = code_dir, branch = branch)
+            gert::git_clone("git@github.com:tanaylab/MCView", path = code_dir, branch = branch, ...)
         }
     }
 

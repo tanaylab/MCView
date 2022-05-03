@@ -123,9 +123,11 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
 
             projection_selectors(ns, dataset, output, input, gene_modules, globals, weight = 1)
 
+            clipboard_changed <- clipboard_changed_2d_reactive(input, globals)
+
             # Projection plots
-            output$plot_manifold_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, source = "proj_manifold_plot") %>%
-                bindCache(dataset(), input$gene1, input$gene2, input$color_proj, metacell_types(), cell_type_colors(), input$point_size, input$stroke, input$min_edge_size, input$show_selected_metacells, input$metacell1, input$metacell2, input$proj_stat, input$expr_range, input$lfp, input$set_range, input$color_proj_metadata, input$color_proj_gene_module)
+            output$plot_manifold_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, source = "proj_manifold_plot") %>%
+                bindCache(dataset(), input$gene1, input$gene2, input$color_proj, metacell_types(), cell_type_colors(), input$point_size, input$stroke, input$min_edge_size, input$show_selected_metacells, input$metacell1, input$metacell2, input$proj_stat, input$expr_range, input$lfp, input$set_range, input$color_proj_metadata, input$color_proj_gene_module, clipboard_changed())
         }
     )
 }

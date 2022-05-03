@@ -192,11 +192,12 @@ plot_mc_scatter <- function(dataset,
                             expr_colors = c("#053061", "#2166AC", "#4393C3", "#92C5DE", "#D1E5F0", "#F7F7F7", "#FDDBC7", "#F4A582", "#D6604D", "#B2182B", "#67001F"),
                             plot_text = TRUE,
                             atlas = FALSE,
+                            metadata = get_mc_data(dataset, "metadata", atlas = atlas),
                             x_limits = NULL,
                             y_limits = NULL,
                             fixed_limits = FALSE,
-                            xyline = FALSE) {
-    metadata <- get_mc_data(dataset, "metadata", atlas = atlas)
+                            xyline = FALSE,
+                            metacell_filter = NULL) {
     if (!is.null(metadata)) {
         metadata <- metadata %>% mutate(metacell = as.character(metacell))
     }
@@ -304,6 +305,10 @@ plot_mc_scatter <- function(dataset,
             )
         )
 
+    if (!is.null(metacell_filter)) {
+        df <- df %>%
+            filter(metacell %in% metacell_filter)
+    }
 
     p <- ggplot(
         data = df,

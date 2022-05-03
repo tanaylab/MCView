@@ -121,9 +121,14 @@ calc_obs_exp_type_df <- function(dataset, cell_type, metacell_types, diff_thresh
 }
 
 
-mc_mc_gene_scatter_df_reactive <- function(dataset, input, output, session, metacell_types, cell_type_colors, groupA = NULL, groupB = NULL) {
+mc_mc_gene_scatter_df_reactive <- function(dataset, input, output, session, metacell_types, cell_type_colors, globals, groupA = NULL, groupB = NULL) {
     reactive({
         req(input$mode)
+        if (!is.null(input$filter_by_clipboard) && input$filter_by_clipboard && length(globals$clipboard) > 0) {
+            metacell_filter <- globals$clipboard
+        } else {
+            metacell_filter <- NULL
+        }
         if (input$mode == "MCs") {
             req(input$metacell1)
             req(input$metacell2)
@@ -135,7 +140,15 @@ mc_mc_gene_scatter_df_reactive <- function(dataset, input, output, session, meta
             req(input$metacell1 %in% metacell_types()$cell_type)
             req(input$metacell2 %in% cell_type_colors()$cell_type)
             req(input$metacell2 %in% metacell_types()$cell_type)
-            calc_ct_ct_gene_df(dataset(), input$metacell1, input$metacell2, metacell_types())
+            types_df <- metacell_types()
+            if (!is.null(metacell_filter)) {
+                types_df <- types_df %>%
+                    filter(cell_type %in% c(input$metacell1, input$metacell2)) %>%
+                    filter(metacell %in% metacell_filter)
+                req(nrow(types_df) > 0)
+                req(all(c(input$metacell1, input$metacell2) %in% types_df$cell_type))
+            }
+            calc_ct_ct_gene_df(dataset(), input$metacell1, input$metacell2, types_df)
         } else if (input$mode == "Groups") {
             req(groupA)
             req(groupB)
@@ -145,6 +158,11 @@ mc_mc_gene_scatter_df_reactive <- function(dataset, input, output, session, meta
                 tibble(metacell = groupA(), cell_type = "Group A"),
                 tibble(metacell = groupB(), cell_type = "Group B")
             )
+            if (!is.null(metacell_filter)) {
+                group_types_df <- group_types_df %>% filter(metacell %in% metacell_filter)
+                req(all(c("Group A", "Group B") %in% group_types_df$cell_type))
+                req(nrow(group_types_df) > 0)
+            }
 
             calc_ct_ct_gene_df(dataset(), "Group A", "Group B", group_types_df)
         }

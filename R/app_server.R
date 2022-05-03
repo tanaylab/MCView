@@ -18,6 +18,7 @@ app_server <- function(input, output, session) {
     observe({
         globals$screen_width <- input$screen_width
         globals$screen_height <- input$screen_height
+        globals$clipboard <- character(0)
     })
 
     # annotation reactives
@@ -191,6 +192,8 @@ app_server <- function(input, output, session) {
         show_help(input, output, session)
     )
 
+    clipboard_reactives(dataset, input, output, session, metacell_types, cell_type_colors, gene_modules, globals)
+
     observeEvent(
         input$download_modal,
         showModal(modalDialog(
@@ -210,12 +213,12 @@ app_server <- function(input, output, session) {
             br(),
             glue("if (!require('MCView')) remotes::install_github('tanaylab/MCView', ref = remotes::github_release())"),
             br(),
-            glue("zip::unzip('MCView-{project}.zip')"),
+            glue("zip::unzip('MCView-{basename(project)}.zip')"),
             br(),
             br(),
             glue("# run the app"),
             br(),
-            glue("MCView::run_app('{project}', launch.browser = TRUE)"),
+            glue("MCView::run_app('{basename(project)}', launch.browser = TRUE)"),
             br(),
             br(),
             "* It is possible to run on a windows machine using WSL",

@@ -125,6 +125,16 @@ app_ui <- function(request) {
                 title = "",
                 class = "dropdown",
                 shinyWidgets::actionBttn(
+                    inputId = "clipboard_modal",
+                    label = "Clipboard",
+                    icon = NULL,
+                    # style = "fill",
+                    color = "default",
+                    size = "sm",
+                    block = FALSE,
+                    no_outline = FALSE
+                ),
+                shinyWidgets::actionBttn(
                     inputId = "download_modal",
                     label = "Run locally",
                     icon = NULL,

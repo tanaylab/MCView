@@ -215,7 +215,7 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
             projection_selectors(ns, dataset, output, input, gene_modules, globals, weight = 0.6)
             top_correlated_selector("axis_var", "axis", "axis_type", input, output, session, dataset, ns, button_labels = c("Axes", "Color"), ids = c("axis", "color"))
 
-            group_selectors_mod_query(input, output, session, dataset, ns, group, metacell_types, cell_type_colors)
+            group_selectors_mod_query(input, output, session, dataset, ns, group, metacell_types, cell_type_colors, globals)
             metacell_selectors_mod_query(input, output, session, dataset, ns, metacell_names, metacell_colors, projected_metacell_types, atlas_colors, group)
 
             mc_mc_gene_scatter_df <- reactive({
@@ -255,7 +255,7 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
             })
 
             # Projection plots
-            output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, projected_metacell_types, atlas_colors, gene_modules, group = group, source = "proj_mc_plot_proj_tab")
+            output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, projected_metacell_types, atlas_colors, gene_modules, globals, group = group, source = "proj_mc_plot_proj_tab")
 
             # connect_gene_plots(input, output, session, ns, source = "proj_mc_plot_proj_tab")
 
@@ -508,7 +508,7 @@ select_metacell_plotly_event_projection <- function(source, input, session, meta
     })
 }
 
-group_selectors_mod_query <- function(input, output, session, dataset, ns, group, metacell_types, cell_type_colors) {
+group_selectors_mod_query <- function(input, output, session, dataset, ns, group, metacell_types, cell_type_colors, globals) {
     output$group_box <- renderUI({
         req(input$mode == "Group")
         shinydashboardPlus::box(
@@ -521,6 +521,7 @@ group_selectors_mod_query <- function(input, output, session, dataset, ns, group
             width = 12,
             actionButton(ns("reset_group"), "Reset"),
             actionButton(ns("remove_group_metacells"), "Remove"),
+            actionButton(ns("paste_group_metacells"), "Paste"),
             shinycssloaders::withSpinner(
                 DT::dataTableOutput(ns("group_table"))
             )
@@ -575,6 +576,11 @@ group_selectors_mod_query <- function(input, output, session, dataset, ns, group
         req(length(rows) > 0)
 
         group(group()[-rows])
+    })
+
+    observeEvent(input$paste_group_metacells, {
+        metacells <- globals$clipboard
+        group(unique(c(group(), metacells)))
     })
 
     observeEvent(plotly::event_data("plotly_selected", source = "proj_mc_plot_proj_tab"), {

@@ -203,7 +203,7 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
     return(p)
 }
 
-render_2d_plotly <- function(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, source, buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL, refresh_on_gene_change = FALSE, atlas = FALSE, query_types = NULL, group = NULL, groupA = NULL, groupB = NULL, selected_metacell_types = NULL) {
+render_2d_plotly <- function(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, source, buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL, refresh_on_gene_change = FALSE, atlas = FALSE, query_types = NULL, group = NULL, groupA = NULL, groupB = NULL, selected_metacell_types = NULL) {
     plotly::renderPlotly({
         req(input$color_proj)
         req(input$point_size)
@@ -364,7 +364,9 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
             fig <- plot_2d_gene(input$gene2)
         } else if (input$color_proj == "Metadata") {
             req(input$color_proj_metadata)
-            fig <- plot_2d_metadata(input$color_proj_metadata)
+            metadata <- get_mc_data(dataset(), "metadata") %>%
+                mutate(Clipboard = ifelse(metacell %in% globals$clipboard, "selected", "not selected"))
+            fig <- plot_2d_metadata(input$color_proj_metadata, metadata = metadata)
         } else if (input$color_proj == "Gene") {
             req(input$color_proj_gene)
             fig <- plot_2d_gene(input$color_proj_gene)
