@@ -11,10 +11,12 @@ clipboard_changed_2d_reactive <- function(input, globals) {
 
 clipboard_changed_scatter_reactive <- function(input, globals) {
     reactive({
-        if (is.null(input$color_by_type) || is.null(input$color_by_var) || input$color_by_type != "Metadata" || input$color_by_var != "Clipboard") {
-            return(FALSE)
-        } else {
+        if (
+            (!is.null(input$color_by_type) && !is.null(input$color_by_var) && input$color_by_type == "Metadata" && input$color_by_var == "Clipboard") || 
+            (!is.null(input$filter_by_clipboard_scatter) && input$filter_by_clipboard_scatter)){        
             return(globals$clipboard)
+        } else {
+            return(FALSE)
         }
     })
 }

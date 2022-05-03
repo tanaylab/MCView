@@ -18,7 +18,8 @@ scatter_box <- function(ns, id, title = "Gene/Gene", x_selected = "Gene", y_sele
             uiOutput(ns("gene_gene_fixed_limits_ui")),
             uiOutput(ns("use_atlas_limits_ui")),
             uiOutput(ns("gene_gene_point_size_ui")),
-            uiOutput(ns("gene_gene_stroke_ui"))
+            uiOutput(ns("gene_gene_stroke_ui")),            
+            checkboxInput(ns("filter_by_clipboard_scatter"), "Filter by clipboard", value = FALSE)
         ),
         shinycssloaders::withSpinner(
             plotly::plotlyOutput(ns("plot_gene_gene_mc"))
@@ -76,6 +77,12 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
         metadata <- get_mc_data(dataset(), "metadata") %>%
             mutate(Clipboard = ifelse(metacell %in% globals$clipboard, "selected", "not selected"))
 
+        if (!is.null(input$filter_by_clipboard_scatter) && input$filter_by_clipboard_scatter && length(globals$clipboard) > 0) {
+            metacell_filter <- globals$clipboard
+        } else {
+            metacell_filter <- NULL
+        }
+
         fig <- plot_mc_scatter(
             dataset(),
             input$x_axis_var,
@@ -94,7 +101,8 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
             x_limits = x_limits,
             y_limits = y_limits,
             fixed_limits = input$gene_gene_fixed_limits,
-            xyline = input$gene_gene_xyline %||% FALSE
+            xyline = input$gene_gene_xyline %||% FALSE,
+            metacell_filter = metacell_filter
         ) %>%
             plotly::ggplotly(tooltip = "tooltip_text", source = plotly_source) %>%
             sanitize_for_WebGL() %>%
