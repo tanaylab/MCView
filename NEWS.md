@@ -2,6 +2,7 @@
 
 * Added support for gene modules ('Gene modules' tab). 
 * Added 'Outliers' tab.
+* Added Clipboard functionality.
 * Added support for alternative gene names. 
 * Added control over the number of clusters / whether to cluster at all in the import phase.
 * Added new selection controls to Annotate tab ('Gears' symbol on the upper right of 'Metacell Annotation' box).
