@@ -69,7 +69,8 @@
   self_contained <span class="op">=</span> <span class="cn">FALSE</span>,
   branch <span class="op">=</span> <span class="st">"latest_release"</span>,
   restart <span class="op">=</span> <span class="va">overwrite</span>,
-  permissions <span class="op">=</span> <span class="cn">NULL</span>
+  permissions <span class="op">=</span> <span class="cn">NULL</span>,
+  <span class="va">...</span>
 <span class="op">)</span></code></pre></div>
     </div>
 
@@ -101,6 +102,32 @@ repository.</p></dd>
 <dt>permissions</dt>
 <dd><p>change the file permissions of the bundle after creation, e.g. "777". When NULL -
 permissions would not be changed.</p></dd>
+<dt>...</dt>
+<dd><p>Arguments passed on to <code><a href="https://docs.ropensci.org/gert/reference/git_fetch.html" class="external-link">gert::git_clone</a></code></p><dl><dt><code>password</code></dt>
+<dd><p>a string or a callback function to get passwords for authentication
+or password protected ssh keys. Defaults to <a href="https://rdrr.io/pkg/askpass/man/askpass.html" class="external-link">askpass</a> which
+checks <code>getOption('askpass')</code>.</p></dd>
+
+    <dt><code>ssh_key</code></dt>
+<dd><p>path or object containing your ssh private key. By default we
+look for keys in <code>ssh-agent</code> and <a href="https://docs.ropensci.org/credentials/reference/ssh_credentials.html" class="external-link">credentials::ssh_key_info</a>.</p></dd>
+
+    <dt><code>verbose</code></dt>
+<dd><p>display some progress info while downloading</p></dd>
+
+    <dt><code>mirror</code></dt>
+<dd><p>use the <code>--mirror</code> flag</p></dd>
+
+    <dt><code>url</code></dt>
+<dd><p>remote url. Typically starts with <code>https://github.com/</code> for public
+repositories, and <code>https://yourname@github.com/</code> or <code>git@github.com/</code> for
+private repos. You will be prompted for a password or pat when needed.</p></dd>
+
+    <dt><code>bare</code></dt>
+<dd><p>use the <code>--bare</code> flag</p></dd>
+
+  
+</dl></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
