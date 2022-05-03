@@ -255,7 +255,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
 
             output$cell_type_list <- cell_type_selector(dataset, ns, id = "selected_cell_types", label = "Cell types", selected = "all", cell_type_colors = cell_type_colors)
 
-            output$metadata_list <- metadata_selector(dataset, ns, id = "selected_md", label = "Metadata", metadata_id = "metadata")
+            output$metadata_list <- metadata_selector(dataset, ns, id = "selected_md", label = "Metadata", metadata_id = "metadata", additional_fields = "Clipboard")
 
 
             output$reset_zoom_ui <- renderUI({
@@ -331,11 +331,11 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
 
             # We use this reactive in order to invalidate the cache only when input$filter_by_clipboard is TRUE
             clipboard_changed <- reactive({
-                if (!input$filter_by_clipboard) {
-                    return(FALSE)
+                if ((!is.null(input$filter_by_clipboard) && input$filter_by_clipboard) || (!is.null(input$selected_md) && input$selected_md == "Clipboard")) {
+                    return(c(input$filter_by_clipboard, globals$clipboard))
                 } else {
-                    return(globals$clipboard)
-                }
+                    return(FALSE)
+                }                
             })
 
             output$heatmap <- renderPlot({
@@ -357,6 +357,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
 
                 if (!is.null(input$selected_md)) {
                     metadata <- get_mc_data(dataset(), "metadata") %>%
+                        mutate(Clipboard = ifelse(metacell %in% globals$clipboard, "selected", "not selected")) %>%
                         select(metacell, one_of(input$selected_md))
                 } else {
                     metadata <- NULL

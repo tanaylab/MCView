@@ -70,11 +70,11 @@ colored_metacell_selector <- function(dataset, ns, id, label, metacell_colors, m
     })
 }
 
-metadata_selector <- function(dataset, ns, id = "selected_md", label = "Metadata", metadata_id = "metadata", selected = NULL, multiple = TRUE) {
+metadata_selector <- function(dataset, ns, id = "selected_md", label = "Metadata", metadata_id = "metadata", selected = NULL, multiple = TRUE, additional_fields = c()) {
     renderUI({
         metadata <- get_mc_data(dataset(), metadata_id)
         req(metadata)
-        metadata_fields <- colnames(metadata)[-1]
+        metadata_fields <- c(additional_fields, colnames(metadata)[-1])
         shinyWidgets::pickerInput(ns(id), label,
             choices = metadata_fields,
             selected = selected,
