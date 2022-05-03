@@ -28,6 +28,7 @@ clipboard_reactives <- function(dataset, input, output, session, metacell_types,
             title = "Clipboard",
             actionButton("clear_clipboard", "Clear clipboard"),
             actionButton("delete_clipboard_row", "Remove selected"),
+            downloadButton("download_clipboard", "Download"),
             br(),
             br(),
             shinycssloaders::withSpinner(
@@ -56,5 +57,17 @@ clipboard_reactives <- function(dataset, input, output, session, metacell_types,
             paging = FALSE,
             language = list(emptyTable = "No metacells in clipboard")
         )
+    )
+
+    output$download_clipboard <- downloadHandler(
+        filename = function() {
+            paste("metacell_clipboard-", Sys.Date(), ".csv", sep = "")
+        },
+        content = function(file) {
+            fwrite(
+                metacell_types() %>% filter(metacell %in% globals$clipboard) %>% select(metacell, cell_type),
+                file
+            )
+        }
     )
 }
