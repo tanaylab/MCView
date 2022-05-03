@@ -192,36 +192,7 @@ app_server <- function(input, output, session) {
         show_help(input, output, session)
     )
 
-    observeEvent(
-        input$clipboard_modal,
-        showModal(modalDialog(
-            title = "Clipboard",
-            actionButton("clear_clipboard", "Clear clipboard"),
-            br(),
-            br(),
-            shinycssloaders::withSpinner(
-                DT::dataTableOutput("clipboard_table")
-            ),
-            easyClose = TRUE
-        ))
-    )
-
-    observeEvent(input$clear_clipboard, {
-        globals$clipboard <- character(0)
-    })
-
-    output$clipboard_table <- DT::renderDataTable(
-        metacell_types() %>% filter(metacell %in% globals$clipboard) %>% select(metacell, cell_type),
-        escape = FALSE,
-        server = FALSE,
-        rownames = FALSE,
-        filter = "top",
-        options = list(
-            dom = "t",
-            paging = FALSE,
-            language = list(emptyTable = "No metacells in clipboard")
-        )
-    )
+    clipboard_reactives(dataset, input, output, session, metacell_types, cell_type_colors, gene_modules, globals)
 
     observeEvent(
         input$download_modal,
