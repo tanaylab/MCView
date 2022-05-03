@@ -335,7 +335,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     return(c(input$filter_by_clipboard, globals$clipboard))
                 } else {
                     return(FALSE)
-                }                
+                }
             })
 
             output$heatmap <- renderPlot({

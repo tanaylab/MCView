@@ -18,7 +18,7 @@ scatter_box <- function(ns, id, title = "Gene/Gene", x_selected = "Gene", y_sele
             uiOutput(ns("gene_gene_fixed_limits_ui")),
             uiOutput(ns("use_atlas_limits_ui")),
             uiOutput(ns("gene_gene_point_size_ui")),
-            uiOutput(ns("gene_gene_stroke_ui")),            
+            uiOutput(ns("gene_gene_stroke_ui")),
             checkboxInput(ns("filter_by_clipboard_scatter"), "Filter by clipboard", value = FALSE)
         ),
         shinycssloaders::withSpinner(

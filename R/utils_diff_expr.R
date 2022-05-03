@@ -141,13 +141,13 @@ mc_mc_gene_scatter_df_reactive <- function(dataset, input, output, session, meta
             req(input$metacell2 %in% cell_type_colors()$cell_type)
             req(input$metacell2 %in% metacell_types()$cell_type)
             types_df <- metacell_types()
-            if (!is.null(metacell_filter)){
+            if (!is.null(metacell_filter)) {
                 types_df <- types_df %>%
-                    filter(cell_type %in% c(input$metacell1, input$metacell2)) %>% 
-                    filter(metacell %in% metacell_filter)                
+                    filter(cell_type %in% c(input$metacell1, input$metacell2)) %>%
+                    filter(metacell %in% metacell_filter)
                 req(nrow(types_df) > 0)
                 req(all(c(input$metacell1, input$metacell2) %in% types_df$cell_type))
-            } 
+            }
             calc_ct_ct_gene_df(dataset(), input$metacell1, input$metacell2, types_df)
         } else if (input$mode == "Groups") {
             req(groupA)

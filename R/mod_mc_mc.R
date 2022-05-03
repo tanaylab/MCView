@@ -465,7 +465,7 @@ group_selectors <- function(input, output, session, dataset, ns, groupA, groupB,
         req(length(rows) > 0)
 
         groupA(groupA()[-rows])
-    })    
+    })
 
     observeEvent(input$remove_groupB_metacells, {
         rows <- input$groupB_table_rows_selected

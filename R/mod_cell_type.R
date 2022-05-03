@@ -27,7 +27,7 @@ mod_cell_type_ui <- function(id) {
                         width = 50,
                         id = ns("gene_gene_sidebar"),
                         axis_selector("boxplot_axis", "Gene", ns, choices = c("Metadata", "Gene", "Gene module")),
-                        uiOutput(ns("confusion_color_by_selector")),                        
+                        uiOutput(ns("confusion_color_by_selector")),
                         uiOutput(ns("cell_type_list"))
                     ),
                     shinycssloaders::withSpinner(

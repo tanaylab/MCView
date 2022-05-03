@@ -305,8 +305,8 @@ plot_mc_scatter <- function(dataset,
             )
         )
 
-    if (!is.null(metacell_filter)){
-        df <- df %>% 
+    if (!is.null(metacell_filter)) {
+        df <- df %>%
             filter(metacell %in% metacell_filter)
     }
 

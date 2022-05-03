@@ -43,7 +43,7 @@ diff_expr_outputs <- function(input, output, session, dataset, metacell_types, c
 
     metacell_selectors(input, output, session, dataset, ns, metacell_names, metacell_colors, metacell_types, cell_type_colors)
     group_selectors(input, output, session, dataset, ns, groupA, groupB, metacell_types, cell_type_colors, globals)
-    
+
     mc_mc_gene_scatter_df <- mc_mc_gene_scatter_df_reactive(dataset, input, output, session, metacell_types, cell_type_colors, globals)
 
     diff_expr_switch_metacells(dataset, input, output, session)
