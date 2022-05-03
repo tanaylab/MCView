@@ -79,7 +79,7 @@ heatmap_sidebar <- function(id, ...) {
         uiOutput(ns("add_genes_ui")),
         uiOutput(ns("marker_genes_list")),
         tags$hr(),
-        downloadButton(ns("download_matrix"), "Download matrix")
+        downloadButton(ns("download_matrix"), "Download matrix", align = "center", style = "margin: 5px 5px 5px 15px; ")
     )
 }
 
