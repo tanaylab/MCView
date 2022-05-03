@@ -116,7 +116,7 @@ mod_mc_mc_server <- function(id, dataset, metacell_types, cell_type_colors, gene
             metacell_colors <- metacell_colors_reactive(dataset, metacell_names, metacell_types)
 
             projection_selectors(ns, dataset, output, input, gene_modules, globals, weight = 0.6)
-            group_selectors(input, output, session, dataset, ns, groupA, groupB, metacell_types, cell_type_colors)
+            group_selectors(input, output, session, dataset, ns, groupA, groupB, metacell_types, cell_type_colors, globals)
             metacell_selectors(input, output, session, dataset, ns, metacell_names, metacell_colors, metacell_types, cell_type_colors, groupA, groupB)
 
             mc_mc_gene_scatter_df <- mc_mc_gene_scatter_df_reactive(dataset, input, output, session, metacell_types, cell_type_colors, groupA, groupB)
@@ -343,7 +343,7 @@ metacell_selectors <- function(input, output, session, dataset, ns, metacell_nam
     })
 }
 
-group_selectors <- function(input, output, session, dataset, ns, groupA, groupB, metacell_types, cell_type_colors) {
+group_selectors <- function(input, output, session, dataset, ns, groupA, groupB, metacell_types, cell_type_colors, globals) {
     output$groupA_box <- renderUI({
         req(input$mode == "Groups")
         shinydashboardPlus::box(
@@ -356,6 +356,7 @@ group_selectors <- function(input, output, session, dataset, ns, groupA, groupB,
             width = 12,
             actionButton(ns("reset_groupA"), "Reset"),
             actionButton(ns("remove_groupA_metacells"), "Remove"),
+            actionButton(ns("paste_groupA_metacells"), "Paste"),
             shinycssloaders::withSpinner(
                 DT::dataTableOutput(ns("groupA_table"))
             )
@@ -374,6 +375,7 @@ group_selectors <- function(input, output, session, dataset, ns, groupA, groupB,
             width = 12,
             actionButton(ns("reset_groupB"), "Reset"),
             actionButton(ns("remove_groupB_metacells"), "Remove"),
+            actionButton(ns("paste_groupB_metacells"), "Paste"),
             shinycssloaders::withSpinner(
                 DT::dataTableOutput(ns("groupB_table"))
             )
@@ -390,6 +392,7 @@ group_selectors <- function(input, output, session, dataset, ns, groupA, groupB,
                     left_join(metacell_types() %>% select(metacell, cell_type), by = "metacell"),
                 escape = FALSE,
                 rownames = FALSE,
+                colnames = "",
                 filter = "none",
                 options = list(
                     dom = "t",
@@ -461,7 +464,7 @@ group_selectors <- function(input, output, session, dataset, ns, groupA, groupB,
         req(length(rows) > 0)
 
         groupA(groupA()[-rows])
-    })
+    })    
 
     observeEvent(input$remove_groupB_metacells, {
         rows <- input$groupB_table_rows_selected
@@ -469,6 +472,16 @@ group_selectors <- function(input, output, session, dataset, ns, groupA, groupB,
         req(length(rows) > 0)
 
         groupB(groupB()[-rows])
+    })
+
+    observeEvent(input$paste_groupA_metacells, {
+        metacells <- globals$clipboard
+        groupA(unique(c(groupA(), metacells)))
+    })
+
+    observeEvent(input$paste_groupB_metacells, {
+        metacells <- globals$clipboard
+        groupB(unique(c(groupB(), metacells)))
     })
 
     observeEvent(input$reset_groupA, {
