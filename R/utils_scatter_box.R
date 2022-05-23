@@ -148,7 +148,7 @@ axis_selector <- function(axis, selected, ns, choices = c("Metadata", "Gene", "G
                 choices = c(),
                 multiple = FALSE,
                 search = TRUE,
-                zIndex = 999999
+                dropboxWrapper = "body"
             )
         ),
         column(
