@@ -17,32 +17,7 @@ mod_gene_mc_ui <- function(id) {
             ),
             resizable_column(
                 width = 5,
-                shinydashboardPlus::box(
-                    id = ns("gene_gene_box"),
-                    title = "Gene/Gene",
-                    status = "primary",
-                    solidHeader = TRUE,
-                    collapsible = TRUE,
-                    closable = FALSE,
-                    width = 12,
-                    sidebar = shinydashboardPlus::boxSidebar(
-                        startOpen = FALSE,
-                        width = 100,
-                        id = ns("gene_gene_sidebar"),
-                        axis_selector("x_axis", "Gene", ns),
-                        axis_selector("y_axis", "Gene", ns),
-                        axis_selector("color_by", "Metadata", ns),
-                        uiOutput(ns("gene_gene_xyline_ui")),
-                        uiOutput(ns("gene_gene_fixed_limits_ui")),
-                        uiOutput(ns("use_atlas_limits_ui")),
-                        uiOutput(ns("gene_gene_point_size_ui")),
-                        uiOutput(ns("gene_gene_stroke_ui")),
-                        checkboxInput(ns("filter_by_clipboard_scatter"), "Filter by clipboard", value = FALSE)
-                    ),
-                    shinycssloaders::withSpinner(
-                        plotly::plotlyOutput(ns("plot_gene_gene_mc"))
-                    )
-                ),
+                scatter_box(ns, "gene_gene_box", x_selected = "Gene", y_selected = "Gene", color_selected = "Metadata"),
                 uiOutput(ns("atlas_gene_gene_box_ui"))
             )
         )
