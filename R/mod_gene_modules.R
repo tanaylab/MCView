@@ -157,12 +157,12 @@ mod_gene_modules_server <- function(id, dataset, metacell_types, cell_type_color
             output$top_correlated_gene_selector <- renderUI({
                 # gene_choices <- gene_names(dataset())
                 tagList(
-                    shinyWidgets::pickerInput(ns("top_correlated_gene"),
+                    shinyWidgets::virtualSelectInput(ns("top_correlated_gene"),
                         label = "Top correlated to:",
                         choices = genes(),
                         selected = c(),
                         multiple = FALSE,
-                        options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE)
+                        search = TRUE
                     )
                 )
             })
@@ -419,11 +419,13 @@ mod_gene_module_controllers <- function(ns, dataset, input, output, session, gen
     output$add_genes_sidebar <- renderUI({
         gene_choices <- gene_names(dataset())
         tagList(
-            shinyWidgets::pickerInput(ns("genes_to_add"),
+            shinyWidgets::virtualSelectInput(ns("genes_to_add"),
+                label = "Add genes:",
                 choices = gene_choices,
                 selected = c(),
                 multiple = TRUE,
-                options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE)
+                showSelectedOptionsFirst = TRUE,
+                search = TRUE
             ),
             shinyWidgets::actionGroupButtons(ns("add_genes"), labels = "Add selected genes", size = "sm")
         )
@@ -431,7 +433,7 @@ mod_gene_module_controllers <- function(ns, dataset, input, output, session, gen
 
     observeEvent(input$add_genes, {
         add_genes_to_gene_module(input$genes_to_add, gene_modules, genes)
-        shinyWidgets::updatePickerInput(session, "genes_to_add", selected = character(0))
+        shinyWidgets::updateVirtualSelect(session = session, inputId = "genes_to_add", selected = character(0))
     })
 
     # Add from top-correlated list

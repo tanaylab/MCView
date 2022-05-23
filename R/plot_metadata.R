@@ -339,7 +339,7 @@ plot_mc_scatter <- function(dataset,
 
         p <- p +
             geom_point(size = point_size, shape = 21, stroke = stroke, color = "black") +
-            scale_fill_manual(values = col_to_ct) +
+            scale_fill_manual("", values = col_to_ct) +
             guides(color = "none")
     } else if (categorical_md) {
         p <- p +

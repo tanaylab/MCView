@@ -17,32 +17,7 @@ mod_gene_mc_ui <- function(id) {
             ),
             resizable_column(
                 width = 5,
-                shinydashboardPlus::box(
-                    id = ns("gene_gene_box"),
-                    title = "Gene/Gene",
-                    status = "primary",
-                    solidHeader = TRUE,
-                    collapsible = TRUE,
-                    closable = FALSE,
-                    width = 12,
-                    sidebar = shinydashboardPlus::boxSidebar(
-                        startOpen = FALSE,
-                        width = 100,
-                        id = ns("gene_gene_sidebar"),
-                        axis_selector("x_axis", "Gene", ns),
-                        axis_selector("y_axis", "Gene", ns),
-                        axis_selector("color_by", "Metadata", ns),
-                        uiOutput(ns("gene_gene_xyline_ui")),
-                        uiOutput(ns("gene_gene_fixed_limits_ui")),
-                        uiOutput(ns("use_atlas_limits_ui")),
-                        uiOutput(ns("gene_gene_point_size_ui")),
-                        uiOutput(ns("gene_gene_stroke_ui")),
-                        checkboxInput(ns("filter_by_clipboard_scatter"), "Filter by clipboard", value = FALSE)
-                    ),
-                    shinycssloaders::withSpinner(
-                        plotly::plotlyOutput(ns("plot_gene_gene_mc"))
-                    )
-                ),
+                scatter_box(ns, "gene_gene_box", x_selected = "Gene", y_selected = "Gene", color_selected = "Metadata"),
                 uiOutput(ns("atlas_gene_gene_box_ui"))
             )
         )
@@ -185,11 +160,11 @@ atlas_gene_gene <- function(input, output, session, dataset, metacell_types, cel
     scatter_selectors(ns, dataset, output, globals, prefix = "atlas_gene_gene")
 
     # Metadata/Metadata plots
-    output$atlas_x_axis_select <- render_axis_select_ui("atlas_x_axis", "X axis", md_choices = dataset_metadata_fields_numeric(dataset(), atlas = TRUE), md_selected = dataset_metadata_fields_numeric(dataset(), atlas = TRUE)[1], selected_gene = default_gene1, input = input, ns = ns, dataset = dataset, gene_modules = gene_modules) %>% bindCache(dataset(), ns, ns("atlas_x_axis"), input$atlas_x_axis_type)
+    render_axis_select_ui("atlas_x_axis", "X axis", "atlas_x_axis_select", md_choices = dataset_metadata_fields_numeric(dataset(), atlas = TRUE), md_selected = dataset_metadata_fields_numeric(dataset(), atlas = TRUE)[1], selected_gene = default_gene1, input = input, output = output, ns = ns, dataset = dataset, gene_modules = gene_modules, session = session)
 
-    output$atlas_y_axis_select <- render_axis_select_ui("atlas_y_axis", "Y axis", md_choices = dataset_metadata_fields_numeric(dataset(), atlas = TRUE), md_selected = dataset_metadata_fields_numeric(dataset(), atlas = TRUE)[2], selected_gene = default_gene2, input = input, ns = ns, dataset = dataset, gene_modules = gene_modules) %>% bindCache(dataset(), ns, ns("atlas_y_axis"), input$atlas_y_axis_type)
+    render_axis_select_ui("atlas_y_axis", "Y axis", "atlas_y_axis_select", md_choices = dataset_metadata_fields_numeric(dataset(), atlas = TRUE), md_selected = dataset_metadata_fields_numeric(dataset(), atlas = TRUE)[2], selected_gene = default_gene2, input = input, output = output, ns = ns, dataset = dataset, gene_modules = gene_modules, session = session)
 
-    output$atlas_color_by_select <- render_axis_select_ui("atlas_color_by", "Color", md_choices = c("Cell type", dataset_metadata_fields_numeric(dataset(), atlas = TRUE)), md_selected = "Cell type", selected_gene = default_gene1, input = input, ns = ns, dataset = dataset, gene_modules = gene_modules) %>% bindCache(dataset(), ns, ns("atlas_color_by"), input$atlas_color_by_type)
+    render_axis_select_ui("atlas_color_by", "Color", "atlas_color_by_select", md_choices = c("Cell type", dataset_metadata_fields_numeric(dataset(), atlas = TRUE)), md_selected = "Cell type", selected_gene = default_gene1, input = input, output = output, ns = ns, dataset = dataset, gene_modules = gene_modules, session = session)
 
     output$atlas_plot_gene_gene_mc <- plotly::renderPlotly({
         req(has_atlas(dataset()))

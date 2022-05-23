@@ -34,9 +34,32 @@ clipboard_reactives <- function(dataset, input, output, session, metacell_types,
             shinycssloaders::withSpinner(
                 DT::dataTableOutput("clipboard_table")
             ),
+            br(),
+            br(),
+            uiOutput("metacell_selector"),
+            actionButton("add_to_clipboard", "Add to clipboard"),
             easyClose = TRUE
         ))
     )
+
+    metacell_names <- metacell_names_reactive(dataset)
+    metacell_colors <- metacell_colors_reactive(dataset, metacell_names, metacell_types)
+
+    output$metacell_selector <- renderUI({
+        cell_types_hex <- col2hex(metacell_colors())
+        shinyWidgets::pickerInput("metacells_to_add", "",
+            choices = metacell_names(),
+            multiple = TRUE,
+            options = shinyWidgets::pickerOptions(`actions-box` = TRUE, liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE),
+            choicesOpt = list(
+                style = paste0("color: ", cell_types_hex, ";")
+            )
+        )
+    })
+
+    observeEvent(input$add_to_clipboard, {
+        globals$clipboard <- unique(c(globals$clipboard, input$metacells_to_add))
+    })
 
     observeEvent(input$clear_clipboard, {
         globals$clipboard <- character(0)
