@@ -1,3 +1,8 @@
+# MCView 0.2.4.9000 
+
+* Add an option to add metacells to clipboard by number 
+* runtime optimizations: use virtualSelectInput 
+
 # MCView 0.2.3
 
 * Added support for gene modules ('Gene modules' tab). 
