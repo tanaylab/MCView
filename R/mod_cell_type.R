@@ -69,7 +69,7 @@ mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, 
             # scatter_selectors(ns, dataset, output, globals, "boxplot")
             top_correlated_selector("boxplot_axis_var", "boxplot_axis", "boxplot_axis_type", input, output, session, dataset, ns, button_labels = c("Axes", "Color"), ids = c("boxplot_axis", "color"))
 
-            output$boxplot_axis_select <- render_axis_select_ui("boxplot_axis", "Data", md_choices = dataset_metadata_fields(dataset()), md_selected = dataset_metadata_fields(dataset())[1], selected_gene = default_gene1, input = input, ns = ns, dataset = dataset, gene_modules = gene_modules)
+            render_axis_select_ui("boxplot_axis", "Data", "boxplot_axis_select", md_choices = dataset_metadata_fields(dataset()), md_selected = dataset_metadata_fields(dataset())[1], selected_gene = default_gene1, input = input, output = output, ns = ns, dataset = dataset, gene_modules = gene_modules, session = session)
 
             output$cell_type_list <- cell_type_selector(dataset, ns, id = "boxplot_cell_types", label = "Cell types", selected = "all", cell_type_colors = cell_type_colors)
 

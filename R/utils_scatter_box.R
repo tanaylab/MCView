@@ -29,11 +29,11 @@ scatter_box <- function(ns, id, title = "Gene/Gene", x_selected = "Gene", y_sele
 }
 
 scatter_box_outputs <- function(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, ns, plotly_source, plotly_buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL) {
-    output$x_axis_select <- render_axis_select_ui("x_axis", "X axis", md_choices = dataset_metadata_fields_numeric(dataset()), md_selected = dataset_metadata_fields_numeric(dataset())[1], selected_gene = default_gene1, input = input, ns = ns, dataset = dataset, gene_modules = gene_modules) %>% bindCache(dataset(), ns, ns("x_axis"), input$x_axis_type, gene_modules())
+    render_axis_select_ui("x_axis", "X axis", "x_axis_select", md_choices = dataset_metadata_fields_numeric(dataset()), md_selected = dataset_metadata_fields_numeric(dataset())[1], selected_gene = default_gene1, input = input, output = output, ns = ns, dataset = dataset, gene_modules = gene_modules, session = session)
 
-    output$y_axis_select <- render_axis_select_ui("y_axis", "Y axis", md_choices = dataset_metadata_fields_numeric(dataset()), md_selected = dataset_metadata_fields_numeric(dataset())[2], selected_gene = default_gene2, input = input, ns = ns, dataset = dataset, gene_modules = gene_modules) %>% bindCache(dataset(), ns, ns("y_axis"), input$y_axis_type, gene_modules())
+    render_axis_select_ui("y_axis", "Y axis", "y_axis_select", md_choices = dataset_metadata_fields_numeric(dataset()), md_selected = dataset_metadata_fields_numeric(dataset())[2], selected_gene = default_gene2, input = input, output = output, ns = ns, dataset = dataset, gene_modules = gene_modules, session = session)
 
-    output$color_by_select <- render_axis_select_ui("color_by", "Color", md_choices = c("Cell type", "Clipboard", dataset_metadata_fields(dataset())), md_selected = "Cell type", selected_gene = default_gene1, input = input, ns = ns, dataset = dataset, gene_modules = gene_modules) %>% bindCache(dataset(), ns, ns("color_by"), input$color_by_type, gene_modules())
+    render_axis_select_ui("color_by", "Color", "color_by_select", md_choices = c("Cell type", "Clipboard", dataset_metadata_fields(dataset())), md_selected = "Cell type", selected_gene = default_gene1, input = input, output = output, ns = ns, dataset = dataset, gene_modules = gene_modules, session = session)
 
     output$use_atlas_limits_ui <- renderUI({
         req(has_atlas(dataset()))
@@ -142,7 +142,14 @@ axis_selector <- function(axis, selected, ns, choices = c("Metadata", "Gene", "G
     fluidRow(
         column(
             width = 7,
-            uiOutput(ns(glue("{axis}_select")))
+            shinyWidgets::virtualSelectInput(
+                ns(glue("{axis}_var")),
+                "",
+                choices = c(),
+                multiple = FALSE,
+                search = TRUE,
+                zIndex = 999999
+            )
         ),
         column(
             width = 5,
@@ -201,48 +208,41 @@ scatter_selectors <- function(ns, dataset, output, globals, prefix = "gene_gene"
     })
 }
 
-render_axis_select_ui <- function(axis, title, md_choices, md_selected, selected_gene, ns, input, dataset, gene_modules, cell_types = NULL, cell_type_selected = NULL) {
-    picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE)
-
-    renderUI({
-        req(dataset())
+render_axis_select_ui <- function(axis, title, output_id, md_choices, md_selected, selected_gene, ns, input, output, dataset, gene_modules, session, cell_types = NULL, cell_type_selected = NULL) {
+    observe({
         req(input[[glue("{axis}_type")]])
         if (input[[glue("{axis}_type")]] == "Metadata") {
-            shinyWidgets::pickerInput(
-                ns(glue("{axis}_var")),
-                title,
+            shinyWidgets::updateVirtualSelect(
+                session = session,
+                inputId = glue("{axis}_var"),
                 choices = md_choices,
                 selected = md_selected,
-                multiple = FALSE,
-                options = picker_options
+                label = title
             )
         } else if (input[[glue("{axis}_type")]] == "Gene") {
-            shinyWidgets::pickerInput(
-                ns(glue("{axis}_var")),
-                title,
+            shinyWidgets::updateVirtualSelect(
+                session = session,
+                inputId = glue("{axis}_var"),
                 choices = gene_names(dataset()),
                 selected = selected_gene,
-                multiple = FALSE,
-                options = picker_options
+                label = title
             )
         } else if (input[[glue("{axis}_type")]] == "Gene module") {
-            shinyWidgets::pickerInput(
-                ns(glue("{axis}_var")),
-                title,
+            shinyWidgets::updateVirtualSelect(
+                session = session,
+                inputId = glue("{axis}_var"),
                 choices = levels(gene_modules()$module),
                 selected = levels(gene_modules()$module)[1],
-                multiple = FALSE,
-                options = picker_options
+                label = title
             )
         } else if (input[[glue("{axis}_type")]] == "Cell type") {
             req(cell_types)
-            shinyWidgets::pickerInput(
-                ns(glue("{axis}_var")),
-                title,
+            shinyWidgets::updateVirtualSelect(
+                session = session,
+                inputId = glue("{axis}_var"),
                 choices = cell_types,
                 selected = cell_type_selected %||% cell_types[1],
-                multiple = FALSE,
-                options = picker_options
+                label = title
             )
         }
     })

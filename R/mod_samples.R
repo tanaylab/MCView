@@ -203,11 +203,9 @@ mod_samples_server <- function(id, dataset, metacell_types, cell_type_colors, ge
             output$diff_expr_table <- render_mc_mc_gene_diff_table(input, output, session, ns, dataset, samp_samp_scatter_df)
 
             # Metadata/Metadata plots
-            output$x_axis_select <- render_axis_select_ui("x_axis", "X axis", md_choices = dataset_cell_metadata_fields_numeric(dataset()), md_selected = dataset_cell_metadata_fields_numeric(dataset())[1], selected_gene = default_gene1, input = input, ns = ns, dataset = dataset, cell_types = sort(names(get_cell_type_colors(dataset())), decreasing = TRUE), gene_modules = gene_modules) %>% bindCache(dataset(), ns, ns("x_axis"), input$x_axis_type)
-
-            output$y_axis_select <- render_axis_select_ui("y_axis", "Y axis", md_choices = dataset_cell_metadata_fields_numeric(dataset()), md_selected = dataset_cell_metadata_fields_numeric(dataset())[2], selected_gene = default_gene2, input = input, ns = ns, dataset = dataset, cell_types = sort(names(get_cell_type_colors(dataset())), decreasing = TRUE), gene_modules = gene_modules) %>% bindCache(dataset(), ns, ns("y_axis"), input$y_axis_type)
-
-            output$color_by_select <- render_axis_select_ui("color_by", "Color", md_choices = c("None", dataset_cell_metadata_fields(dataset())), md_selected = "None", selected_gene = default_gene1, input = input, ns = ns, dataset = dataset, cell_types = sort(names(get_cell_type_colors(dataset())), decreasing = TRUE), gene_modules = gene_modules) %>% bindCache(dataset(), ns, ns("color_by"), input$color_by_type)
+            render_axis_select_ui("x_axis", "X axis", "x_axis_select", md_choices = dataset_cell_metadata_fields_numeric(dataset()), md_selected = dataset_cell_metadata_fields_numeric(dataset())[1], selected_gene = default_gene1, input = input, output = output, ns = ns, dataset = dataset, cell_types = sort(names(get_cell_type_colors(dataset())), decreasing = TRUE), gene_modules = gene_modules, session = session)
+            render_axis_select_ui("y_axis", "Y axis", "y_axis_select", md_choices = dataset_cell_metadata_fields_numeric(dataset()), md_selected = dataset_cell_metadata_fields_numeric(dataset())[2], selected_gene = default_gene2, input = input, output = output, ns = ns, dataset = dataset, cell_types = sort(names(get_cell_type_colors(dataset())), decreasing = TRUE), gene_modules = gene_modules, session = session)
+            render_axis_select_ui("color_by", "Color", "color_by_select", md_choices = c("None", dataset_cell_metadata_fields(dataset())), md_selected = "None", selected_gene = default_gene1, input = input, output = output, ns = ns, dataset = dataset, cell_types = sort(names(get_cell_type_colors(dataset())), decreasing = TRUE), gene_modules = gene_modules, session = session)
 
             output$please_select_cell_types <- renderPrint({
                 if (input$x_axis_type == "Gene" || input$y_axis_type == "Gene" || input$color_by_type == "Gene") {

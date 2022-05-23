@@ -268,11 +268,12 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
             output$diff_expr_table <- render_mc_mc_gene_diff_table(input, output, session, ns, dataset, mc_mc_gene_scatter_df)
 
             # Scatter
-            output$axis_select <- render_axis_select_ui("axis", "Data", md_choices = dataset_metadata_fields_numeric(dataset(), atlas = TRUE), md_selected = dataset_metadata_fields_numeric(dataset(), atlas = TRUE)[1], selected_gene = default_gene1, input = input, ns = ns, dataset = dataset, gene_modules = gene_modules) %>% bindCache(dataset(), ns, ns("axis"), input$axis_type)
+            render_axis_select_ui("axis", "Data", "axis_select", md_choices = dataset_metadata_fields_numeric(dataset(), atlas = TRUE), md_selected = dataset_metadata_fields_numeric(dataset(), atlas = TRUE)[1], selected_gene = default_gene1, input = input, output = output, ns = ns, dataset = dataset, gene_modules = gene_modules, session = session)
 
-            output$color_by_select <- render_axis_select_ui(
+            render_axis_select_ui(
                 "color_by",
                 "Color",
+                "color_by_select",
                 md_choices = c(
                     "Cell type",
                     paste0(dataset_metadata_fields_numeric(dataset(), atlas = TRUE), "_atlas"),
@@ -281,10 +282,12 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
                 md_selected = "Cell type",
                 selected_gene = default_gene1,
                 input = input,
+                output = output,
                 ns = ns,
                 dataset = dataset,
-                gene_modules = gene_modules
-            ) %>% bindCache(dataset(), ns, ns("color_by"), input$color_by_type)
+                gene_modules = gene_modules,
+                session = session
+            )
 
             output$plot_gene_gene_mc <- plotly::renderPlotly({
                 req(input$axis_var)

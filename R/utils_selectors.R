@@ -139,23 +139,23 @@ top_correlated_selector <- function(gene_id, id, type_id, input, output, session
     })
     observeEvent(input[[glue("select_top_cor_{id}_axis")]], {
         req(input[["axis_type"]] == "Gene")
-        shinyWidgets::updatePickerInput(session, "axis_var", selected = input[[glue("selected_top_{id}")]])
+        shinyWidgets::updateVirtualSelect(session = session, inputId = "axis_var", selected = input[[glue("selected_top_{id}")]])
     })
     observeEvent(input[[glue("select_top_cor_{id}_x")]], {
         req(input[["x_axis_type"]] == "Gene")
-        shinyWidgets::updatePickerInput(session, "x_axis_var", selected = input[[glue("selected_top_{id}")]])
+        shinyWidgets::updateVirtualSelect(session = session, inputId = "x_axis_var", selected = input[[glue("selected_top_{id}")]])
     })
     observeEvent(input[[glue("select_top_cor_{id}_y")]], {
         req(input[["y_axis_type"]] == "Gene")
-        shinyWidgets::updatePickerInput(session, "y_axis_var", selected = input[[glue("selected_top_{id}")]])
+        shinyWidgets::updateVirtualSelect(session = session, inputId = "y_axis_var", selected = input[[glue("selected_top_{id}")]])
     })
     observeEvent(input[[glue("select_top_cor_{id}_color")]], {
         req(input[["color_by_type"]] == "Gene")
-        shinyWidgets::updatePickerInput(session, "color_by_var", selected = input[[glue("selected_top_{id}")]])
+        shinyWidgets::updateVirtualSelect(session = session, inputId = "color_by_var", selected = input[[glue("selected_top_{id}")]])
     })
     observeEvent(input[[glue("select_top_cor_{id}_proj2d")]], {
         req(input[["color_proj"]] == "Gene")
-        shinyWidgets::updatePickerInput(session, "color_proj_gene", selected = input[[glue("selected_top_{id}")]])
+        shinyWidgets::updateVirtualSelect(session = session, inputId = "color_proj_gene", selected = input[[glue("selected_top_{id}")]])
     })
 }
 

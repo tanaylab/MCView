@@ -152,7 +152,7 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
         req(markers())
         new_markers <- markers()[!(markers() %in% input$selected_marker_genes)]
         markers(new_markers)
-        shinyWidgets::updatePickerInput(session, ns("genes_to_add"), selected = c())
+        shinyWidgets::updateVirtualSelect(session = session, inputId = "genes_to_add", selected = c())
     })
 
     output$add_genes_ui <- renderUI({
@@ -172,11 +172,13 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
 
         tagList(
             shinyWidgets::actionGroupButtons(ns("add_genes"), labels = "Add genes", size = "sm"),
-            shinyWidgets::pickerInput(ns("genes_to_add"),
+            shinyWidgets::virtualSelectInput(ns("genes_to_add"),
+                label = "Add genes",
                 choices = gene_choices,
                 selected = c(),
                 multiple = TRUE,
-                options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE)
+                showSelectedOptionsFirst = TRUE,
+                search = TRUE
             )
         )
     })
@@ -184,7 +186,7 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
     observeEvent(input$add_genes, {
         new_markers <- sort(unique(c(markers(), input$genes_to_add)))
         markers(new_markers)
-        shinyWidgets::updatePickerInput(session = session, inputId = "genes_to_add", selected = character(0))
+        shinyWidgets::updateVirtualSelect(session = session, inputId = "genes_to_add", selected = character(0))
     })
 }
 

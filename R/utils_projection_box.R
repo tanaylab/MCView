@@ -46,19 +46,19 @@ projection_box <- function(ns,
 }
 
 projection_selectors <- function(ns, dataset, output, input, gene_modules, globals, weight = 1, atlas = FALSE) {
-    picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE)
-
     output$gene_selector <- renderUI({
-        shinyWidgets::pickerInput(
+        shinyWidgets::virtualSelectInput(
             ns("color_proj_gene"),
             label = "Gene:",
             choices = gene_names(dataset(), atlas = atlas),
             selected = default_gene1,
             width = "70%",
             multiple = FALSE,
-            options = picker_options
+            search = TRUE
         )
     })
+
+    picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE)
 
     output$metadata_selector <- renderUI({
         if (!has_metadata(dataset())) {
