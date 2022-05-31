@@ -1,4 +1,4 @@
-# MCView 0.2.4.9000 
+# MCView 0.2.4
 
 * Add an option to add metacells to clipboard by number 
 * runtime optimizations: use virtualSelectInput 
