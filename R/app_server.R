@@ -38,7 +38,7 @@ app_server <- function(input, output, session) {
     })
 
     observeEvent(input$update_tabs, {
-        globals$active_tabs <- input$selected_tabs
+        globals$active_tabs <- c(config$tabs, setdiff(input$selected_tabs, config$tabs))        
     })
 
     observe({
