@@ -21,7 +21,7 @@ mod_annotate_ui <- function(id) {
                         width = 6,
                         offset = 0,
                         style = "padding-right:0px;",
-                        scatter_box(ns, "gene_gene_box")
+                        scatter_box(ns, "gene_gene_box", show_legend = FALSE)
                     ),
                     column(
                         width = 6,

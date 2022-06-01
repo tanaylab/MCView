@@ -1,4 +1,4 @@
-scatter_box <- function(ns, id, title = "Gene/Gene", x_selected = "Gene", y_selected = "Gene", color_selected = "Metadata") {
+scatter_box <- function(ns, id, title = "Gene/Gene", x_selected = "Gene", y_selected = "Gene", color_selected = "Metadata", show_legend = TRUE) {
     shinydashboardPlus::box(
         id = ns(id),
         title = title,
@@ -14,7 +14,7 @@ scatter_box <- function(ns, id, title = "Gene/Gene", x_selected = "Gene", y_sele
             axis_selector("x_axis", x_selected, ns),
             axis_selector("y_axis", y_selected, ns),
             axis_selector("color_by", color_selected, ns),
-            checkboxInput(ns("show_legend_scatter"), "Show legend", value = TRUE),
+            checkboxInput(ns("show_legend_scatter"), "Show legend", value = show_legend),
             uiOutput(ns("gene_gene_xyline_ui")),
             uiOutput(ns("gene_gene_fixed_limits_ui")),
             uiOutput(ns("use_atlas_limits_ui")),
