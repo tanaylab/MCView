@@ -38,13 +38,31 @@ app_server <- function(input, output, session) {
     })
 
     observeEvent(input$update_tabs, {
-        globals$active_tabs <- c(config$tabs, setdiff(input$selected_tabs, config$tabs))        
+        globals$active_tabs <- c(config$tabs, setdiff(input$selected_tabs, config$tabs))
+        globals$active_tabs <- globals$active_tabs[globals$active_tabs %in% input$selected_tabs]
     })
 
     observe({
+        available_tabs <- names(tab_defs)
+        if (!has_atlas(dataset())) {
+            available_tabs <- available_tabs[!(available_tabs %in% c("Atlas", "Query", "Projected-fold"))]
+        }
+        if (!has_samples(dataset())) {
+            available_tabs <- available_tabs[available_tabs != "Samples"]
+        }
+        if (is.null(get_mc_data(dataset(), "inner_fold_mat"))) {
+            available_tabs <- available_tabs[available_tabs != "Inner-fold"]
+        }
+        if (is.null(get_mc_data(dataset(), "deviant_fold_mat"))) {
+            available_tabs <- available_tabs[available_tabs != "Outliers"]
+        }
+        if (is.null(get_mc_data(dataset(), "type_flow"))) {
+            available_tabs <- available_tabs[available_tabs != "Flow"]
+        }
         updateCheckboxGroupInput(
             inputId = "selected_tabs",
-            selected = globals$active_tabs
+            selected = globals$active_tabs,
+            choices = available_tabs
         )
     })
 
