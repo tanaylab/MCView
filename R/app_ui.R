@@ -5,71 +5,41 @@
 #' @import shiny
 #' @noRd
 app_ui <- function(request) {
-    sidebar <- shinydashboard::dashboardSidebar(
-        div(
-            id = "tab_sidebar_help",
-            shinydashboard::sidebarMenuOutput("menu")
-        ),
-        tags$hr(),
-        conditionalPanel(
-            condition = "input.tab_sidebar == 'about'",
-            mod_about_sidebar_ui("about")
-        ),
-        conditionalPanel(
-            condition = "input.tab_sidebar == 'manifold'",
-            mod_manifold_sidebar_ui("manifold")
-        ),
-        conditionalPanel(
-            condition = "input.tab_sidebar == 'gene_mc'",
-            mod_gene_mc_sidebar_ui("gene_mc")
-        ),
-        conditionalPanel(
-            condition = "input.tab_sidebar == 'flow'",
-            mod_flow_sidebar_ui("flow")
-        ),
-        conditionalPanel(
-            condition = "input.tab_sidebar == 'markers'",
-            mod_markers_sidebar_ui("markers")
-        ),
-        conditionalPanel(
-            condition = "input.tab_sidebar == 'gene_modules'",
-            mod_gene_modules_sidebar_ui("gene_modules")
-        ),
-        conditionalPanel(
-            condition = "input.tab_sidebar == 'inner_fold'",
-            mod_inner_fold_sidebar_ui("inner_fold")
-        ),
-        conditionalPanel(
-            condition = "input.tab_sidebar == 'outliers'",
-            mod_outliers_sidebar_ui("outliers")
-        ),
-        conditionalPanel(
-            condition = "input.tab_sidebar == 'proj_fold'",
-            mod_proj_fold_sidebar_ui("proj_fold")
-        ),
-        conditionalPanel(
-            condition = "input.tab_sidebar == 'query'",
-            mod_query_sidebar_ui("query")
-        ),
-        conditionalPanel(
-            condition = "input.tab_sidebar == 'atlas'",
-            mod_atlas_sidebar_ui("atlas")
-        ),
-        conditionalPanel(
-            condition = "input.tab_sidebar == 'cell_type'",
-            mod_cell_type_sidebar_ui("cell_type")
-        ),
-        conditionalPanel(
-            condition = "input.tab_sidebar == 'samples'",
-            mod_samples_sidebar_ui("samples")
-        ),
-        conditionalPanel(
-            condition = "input.tab_sidebar == 'mc_mc'",
-            mod_mc_mc_sidebar_ui("mc_mc")
-        ),
-        conditionalPanel(
-            condition = "input.tab_sidebar == 'annotate'",
-            mod_annotate_sidebar_ui("annotate")
+    modules <- purrr::map_chr(tab_defs, "module_name")
+
+    ui_sidebar_funcs <- purrr::map(modules, ~ {
+        func_name <- glue("mod_{.x}_sidebar_ui")
+        if (!exists(func_name)) {
+            return(NULL)
+        } else {
+            return(get(func_name))
+        }
+    })
+
+    cond_panels <- purrr::map2(
+        modules,
+        ui_sidebar_funcs,
+        function(mod, func) {
+            if (is.null(func)) {
+                return(NULL)
+            } else {
+                conditionalPanel(
+                    condition = glue("input.tab_sidebar == '{mod}'"),
+                    func(mod)
+                )
+            }
+        }
+    )
+
+    sidebar <- do.call(
+        shinydashboard::dashboardSidebar,
+        c(
+            list(div(
+                id = "tab_sidebar_help",
+                shinydashboard::sidebarMenuOutput("menu")
+            )),
+            list(tags$hr()),
+            cond_panels
         )
     )
 
@@ -93,24 +63,30 @@ app_ui <- function(request) {
         )
     )
 
-    body <- shinydashboard::dashboardBody(
-        shinydashboard::tabItems(
-            shinydashboard::tabItem(tabName = "about", mod_about_ui("about")),
-            shinydashboard::tabItem(tabName = "manifold", mod_manifold_ui("manifold")),
-            shinydashboard::tabItem(tabName = "gene_mc", mod_gene_mc_ui("gene_mc")),
-            shinydashboard::tabItem(tabName = "flow", mod_flow_ui("flow")),
-            shinydashboard::tabItem(tabName = "markers", mod_markers_ui("markers")),
-            shinydashboard::tabItem(tabName = "gene_modules", mod_gene_modules_ui("gene_modules")),
-            shinydashboard::tabItem(tabName = "inner_fold", mod_inner_fold_ui("inner_fold")),
-            shinydashboard::tabItem(tabName = "outliers", mod_outliers_ui("outliers")),
-            shinydashboard::tabItem(tabName = "proj_fold", mod_proj_fold_ui("proj_fold")),
-            shinydashboard::tabItem(tabName = "query", mod_query_ui("query")),
-            shinydashboard::tabItem(tabName = "atlas", mod_atlas_ui("atlas")),
-            shinydashboard::tabItem(tabName = "mc_mc", mod_mc_mc_ui("mc_mc")),
-            shinydashboard::tabItem(tabName = "samples", mod_samples_ui("samples")),
-            shinydashboard::tabItem(tabName = "cell_type", mod_cell_type_ui("cell_type")),
-            shinydashboard::tabItem(tabName = "annotate", mod_annotate_ui("annotate"))
+    ui_funcs <- purrr::map(modules, ~ {
+        func_name <- glue("mod_{.x}_ui")
+        if (!exists(func_name)) {
+            return(NULL)
+        } else {
+            return(get(func_name))
+        }
+    })
+
+    tab_items <- div( # shinydashboard::tabItems
+        class = "tab-content",
+        purrr::map2(
+            modules,
+            ui_funcs,
+            function(mod, func) {
+                if (!is.null(func)) {
+                    shinydashboard::tabItem(tabName = mod, func(mod))
+                }
+            }
         )
+    )
+
+    body <- shinydashboard::dashboardBody(
+        tab_items
     )
 
     app_title <- config$title
