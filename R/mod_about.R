@@ -10,8 +10,8 @@
 mod_about_ui <- function(id) {
     ns <- NS(id)
     tagList(
-        includeRMarkdown(about_file),
-        plotOutput(ns("plot_manifold_proj_2d"))
+        includeRMarkdown(about_file) # ,
+        # plotOutput(ns("plot_manifold_proj_2d"))
     )
 }
 

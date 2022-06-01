@@ -74,6 +74,7 @@ app_ui <- function(request) {
     )
 
     right_sidebar <- shinydashboardPlus::dashboardControlbar(
+        width = 400,
         shinydashboardPlus::controlbarMenu(
             shinydashboardPlus::controlbarItem(
                 "Tabs",
@@ -168,6 +169,7 @@ app_ui <- function(request) {
     '
 
     tagList(
+        # profvis::profvis_ui("profiler"),
         tags$script(screen_size_jscode),
         shinyjs::useShinyjs(), # Set up shinyjs
         rintrojs::introjsUI(),

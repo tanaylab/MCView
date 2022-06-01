@@ -79,34 +79,34 @@ app_server <- function(input, output, session) {
     })
 
     load_tab <- function(tab_name) {
-        module <- get(glue("mod_{tab_name}_server"))
-        module(tab_name, dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors, gene_modules = gene_modules, globals = globals)
+        func_name <- glue("mod_{tab_name}_server")
+        if (exists(func_name)) {
+            module <- get(func_name)
+            module(tab_name, dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors, gene_modules = gene_modules, globals = globals)
+        }
     }
 
-    load_tab("manifold")
-    load_tab("gene_mc")
-    load_tab("flow")
-    load_tab("markers")
-    load_tab("gene_modules")
-    load_tab("inner_fold")
-    load_tab("outliers")
-    load_tab("samples")
-    load_tab("cell_type")
-
-    if (any_has_atlas(project)) {
-        load_tab("query")
-        load_tab("atlas")
-        load_tab("proj_fold")
-    }
-
-    load_tab("mc_mc")
-    load_tab("annotate")
-    load_tab("about")
-
+    observe({
+        req(input$tab_sidebar)
+        if (!(input$tab_sidebar %in% loaded_modules)) {
+            load_tab(input$tab_sidebar)
+        }
+        loaded_modules <<- c(loaded_modules, input$tab_sidebar)
+    })
 
     clipboard_reactives(dataset, input, output, session, metacell_types, cell_type_colors, gene_modules, globals)
 
     download_modal_reactives(input, output, session, globals)
 
     help_reactives(input, output, session, globals)
+
+    # callModule(profvis::profvis_server, "profiler")
+    # Rprof(strftime(Sys.time(), "%Y-%m-%d-%H-%M-%S.Rprof"),
+    #     interval = 0.01, line.profiling = TRUE,
+    #     gc.profiling = FALSE, memory.profiling = FALSE
+    # )
+
+    # onStop(function() {
+    #     Rprof(NULL)
+    # })
 }

@@ -49,6 +49,7 @@ init_defs <- function() {
     init_selected_genes()
 
     expr_breaks <<- c(1e-5, 2e-5, 4e-5, 1e-4, 2e-4, 4e-4, 1e-3, 2e-3, 4e-3, 1e-2, 2e-2, 4e-2, 1e-1, 2e-1, 4e-1, 1)
+    loaded_modules <<- c()
 }
 
 init_selected_genes <- function() {

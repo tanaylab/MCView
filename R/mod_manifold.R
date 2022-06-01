@@ -54,14 +54,7 @@ mod_manifold_sidebar_ui <- function(id) {
     ns <- NS(id)
     tagList(
         list(
-            shinyWidgets::prettyRadioButtons(
-                ns("color_proj"),
-                label = "Color by:",
-                choices = c("Cell type", "Gene A", "Gene B", "Gene module", "Metadata"),
-                inline = FALSE,
-                status = "danger",
-                fill = TRUE
-            ),
+            shinycssloaders::withSpinner(uiOutput(ns("color_by_selector"))),
             shinycssloaders::withSpinner(uiOutput(ns("metadata_selector"))),
             shinycssloaders::withSpinner(uiOutput(ns("gene_selectors"))),
             shinycssloaders::withSpinner(uiOutput(ns("proj_gene_module_selector"))),
@@ -85,6 +78,17 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
             manifold_tab_gene_selectors(input, output, session, dataset, ns)
 
             picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE)
+
+            output$color_by_selector <- renderUI({
+                shinyWidgets::prettyRadioButtons(
+                    ns("color_proj"),
+                    label = "Color by:",
+                    choices = c("Cell type", "Gene A", "Gene B", "Gene module", "Metadata"),
+                    inline = FALSE,
+                    status = "danger",
+                    fill = TRUE
+                )
+            })
 
             output$metadata_selector <- renderUI({
                 if (!has_metadata(dataset())) {
