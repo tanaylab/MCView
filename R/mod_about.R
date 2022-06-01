@@ -39,6 +39,7 @@ mod_about_server <- function(id, dataset, metacell_types, cell_type_colors, gene
         id,
         function(input, output, session) {
             ns <- session$ns
+
             output$plot_manifold_proj_2d <- renderPlot({
                 req(metacell_types())
                 req(cell_type_colors())

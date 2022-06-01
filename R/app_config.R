@@ -77,15 +77,35 @@ init_tab_defs <- function() {
             module_name = "manifold",
             icon = "project-diagram"
         ),
+        "Genes" = list(
+            title = "Genes",
+            module_name = "gene_mc",
+            icon = "wind"
+        ),
         "Markers" = list(
             title = "Markers",
             module_name = "markers",
             icon = "map-marker"
         ),
+        "Diff. Expression" = list(
+            title = "Diff. Expression",
+            module_name = "mc_mc",
+            icon = "chart-bar"
+        ),
         "Gene modules" = list(
             title = "Gene modules",
             module_name = "gene_modules",
             icon = "layer-group"
+        ),
+        "Cell types" = list(
+            title = "Cell types",
+            module_name = "cell_type",
+            icon = "bacteria"
+        ),
+        "Annotate" = list(
+            title = "Annotate",
+            module_name = "annotate",
+            icon = "pen"
         ),
         "Inner-fold" = list(
             title = "Inner-fold",
@@ -102,25 +122,10 @@ init_tab_defs <- function() {
             module_name = "proj_fold",
             icon = "cloud-moon-rain"
         ),
-        "Genes" = list(
-            title = "Genes",
-            module_name = "gene_mc",
-            icon = "wind"
-        ),
-        "Diff. Expression" = list(
-            title = "Diff. Expression",
-            module_name = "mc_mc",
-            icon = "chart-bar"
-        ),
         "Flow" = list(
             title = "Flow",
             module_name = "flow",
             icon = "water"
-        ),
-        "Cell types" = list(
-            title = "Cell types",
-            module_name = "cell_type",
-            icon = "bacteria"
         ),
         "Samples" = list(
             title = "Samples",
@@ -136,11 +141,6 @@ init_tab_defs <- function() {
             title = "Atlas",
             module_name = "atlas",
             icon = "atlas"
-        ),
-        "Annotate" = list(
-            title = "Annotate",
-            module_name = "annotate",
-            icon = "pen"
         )
     )
 
@@ -156,15 +156,13 @@ init_tab_defs <- function() {
                 config$tabs <<- config$tabs[config$tabs != .x]
             }
         })
-
-        tab_defs <<- tab_defs[config$tabs]
     } else {
-        tab_defs <<- tab_defs[default_tabs]
+        config$tabs <<- default_tabs
     }
 
-    if (!rmarkdown::pandoc_available() && "About" %in% names(tab_defs)) {
+    if (!rmarkdown::pandoc_available() && "About" %in% config$tabs) {
         warning("pandoc is not available, removing 'About' tab'")
-        tab_defs[["About"]] <<- NULL
+        config$tabs <<- config$tabs[config$tabs != "About"]
     }
 }
 

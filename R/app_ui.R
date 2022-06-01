@@ -5,21 +5,10 @@
 #' @import shiny
 #' @noRd
 app_ui <- function(request) {
-    items_list <- purrr::map(tab_defs, ~ {
-        shinydashboard::menuSubItem(.x$title, tabName = .x$module_name, icon = icon(.x$icon))
-    })
-
     sidebar <- shinydashboard::dashboardSidebar(
         div(
             id = "tab_sidebar_help",
-            shinydashboard::sidebarMenu(
-                id = "tab_sidebar",
-                shinydashboard::menuItem("Tabs",
-                    tabname = "tabs",
-                    startExpanded = TRUE,
-                    items_list
-                )
-            )
+            shinydashboard::sidebarMenuOutput("menu")
         ),
         tags$hr(),
         conditionalPanel(
@@ -84,13 +73,24 @@ app_ui <- function(request) {
         )
     )
 
-    if (length(dataset_ls(project)) > 1) {
-        right_sidebar <- shinydashboardPlus::dashboardControlbar(
-            selectInput("dataset", label = "Dataset", choices = dataset_ls(project), selected = dataset_ls(project)[1], multiple = FALSE, selectize = FALSE)
+    right_sidebar <- shinydashboardPlus::dashboardControlbar(
+        shinydashboardPlus::controlbarMenu(
+            shinydashboardPlus::controlbarItem(
+                "Tabs",
+                checkboxGroupInput(
+                    "selected_tabs",
+                    label = "Tabs",
+                    choices = names(tab_defs),
+                    selected = config$tabs
+                ),
+                actionButton("update_tabs", "Update Tabs")
+            ),
+            shinydashboardPlus::controlbarItem(
+                "Datasets",
+                selectInput("dataset", label = "Dataset", choices = dataset_ls(project), selected = dataset_ls(project)[1], multiple = FALSE, selectize = FALSE)
+            )
         )
-    } else {
-        right_sidebar <- NULL
-    }
+    )
 
     body <- shinydashboard::dashboardBody(
         shinydashboard::tabItems(
