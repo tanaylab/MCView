@@ -14,11 +14,11 @@ knitr::opts_chunk$set(
 
 MCView creates a shiny-app facilitating interactive exploration and annotation of metacell models. Metacell itself is described [here](https://pypi.org/project/metacells/).
 
+See more about MCView [here](https://tanaylab.github.io/MCView), report a bug [here](https://github.com/tanaylab/MCView/issues).
+
 ## Where to start 
 
 On the left sidebar you will find a list of tabs, click on the tab to open it. See below a short description of each tab.
-
-### Adding tabs
 
 Additional tabs can be added from the right sidebar which can be opened by clicking on the "Gears" icon at the top right of the screen. Select the tabs you want and then click on "Update Tabs".
 
@@ -26,28 +26,28 @@ Additional tabs can be added from the right sidebar which can be opened by click
 
 #### Main tabs:
 
-- Manifold: View the 2d projection of the manifold
-- Genes: Compare gene expression and metadata over the metacells.
-- Diff expression: Compare metacells / cell types.
-- Markers: View a heatmap of 'marker genes' over the metacell model. 
-- Cell types: View gene expression and metadata over cell types.
-- Annotate: Assign cell types and colors to metacells.
-- Gene modules: Create gene modules to be used in other tabs.
+- __Manifold__: View the 2d projection of the manifold
+- __Genes__: Compare gene expression and metadata over the metacells.
+- __Diff expression__: Compare metacells / cell types.
+- __Markers__: View a heatmap of 'marker genes' over the metacell model. 
+- __Cell types__: View gene expression and metadata over cell types.
+- __Annotate__: Assign cell types and colors to metacells.
+- __Gene modules__: Create gene modules to be used in other tabs.
 
 #### QC tabs: 
 
-- Inner-fold: 
-- Outliers: 
+- __Inner-fold__: 
+- __Outliers__: 
 
 #### Atlas projection tabs: 
 
-- Query: Examine the results of a projection of the metacell model over an atlas.
-- Atlas: View the 2d projection of the atlas.
-- Projected-fold:
+- __Query__: Examine the results of a projection of the metacell model over an atlas.
+- __Atlas__: View the 2d projection of the atlas.
+- __Projected-fold__:
  
 #### Additional tabs:
 
-- Samples:
+- __Samples__:
 
 
 
