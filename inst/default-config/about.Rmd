@@ -1,25 +1,55 @@
+---
+output: github_document
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",  
+  out.width = "100%"
+)
+```
+
 # MCView
 
-## <u>Features of MCView</u>
+MCView creates a shiny-app facilitating interactive exploration and annotation of metacell models. Metacell itself is described [here](https://pypi.org/project/metacells/).
 
-### Manifold tab
+## Where to start 
 
-> Click on the **help** button for step by step explanation of interface features!
+On the left sidebar you will find a list of tabs, click on the tab to open it. See below a short description of each tab.
 
-- View gene expression manifold. 
-- Color manifold by gene expression. 
+### Adding tabs
 
-### Genes tab
+Additional tabs can be added from the right sidebar which can be opened by clicking on the "Gears" icon at the top right of the screen. Select the tabs you want and then click on "Update Tabs".
 
--   Two genes can be compared over the manifold.
+## Tabs
 
-Clicking on any metacell will select it for further examination in the
-Diff. Expression tab.
+#### Main tabs:
 
-### Diff. Expression tab
+- Manifold: View the 2d projection of the manifold
+- Genes: Compare gene expression and metadata over the metacells.
+- Diff expression: Compare metacells / cell types.
+- Markers: View a heatmap of 'marker genes' over the metacell model. 
+- Cell types: View gene expression and metadata over cell types.
+- Annotate: Assign cell types and colors to metacells.
+- Gene modules: Create gene modules to be used in other tabs.
 
-Two metacells / groups of metacells / cell types can be compared for differential expression. 
-### Annotate tab 
+#### QC tabs: 
 
-- Assign cell types and colors to metacells
+- Inner-fold: 
+- Outliers: 
+
+#### Atlas projection tabs: 
+
+- Query: Examine the results of a projection of the metacell model over an atlas.
+- Atlas: View the 2d projection of the atlas.
+- Projected-fold:
+ 
+#### Additional tabs:
+
+- Samples:
+
+
+
+
 
