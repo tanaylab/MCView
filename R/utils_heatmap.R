@@ -447,7 +447,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
 
             output$hover_info <- renderUI({
                 m <- mat()
-                req(m)                
+                req(m)
                 req(input$heatmap_hover)
                 req(metacell_types())
                 req(cell_type_colors())

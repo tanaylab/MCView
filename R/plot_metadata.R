@@ -32,10 +32,13 @@ mc2d_plot_metadata_ggp <- function(dataset,
         left_join(metadata %>% select(metacell, !!md), by = "metacell") %>%
         mutate(
             `Top genes` = glue("{top1_gene} ({round(top1_lfp, digits=2)}), {top2_gene} ({round(top2_lfp, digits=2)})")
-        ) %>%
-        rename(
+        )
+
+    if (md != "Cell type") {
+        mc2d_df <- mc2d_df %>% rename(
             `Cell type` = cell_type
         )
+    }
 
     if (has_name(df, "mc_age")) {
         mc2d_df <- mc2d_df %>% rename(`Age` = mc_age)
@@ -52,7 +55,9 @@ mc2d_plot_metadata_ggp <- function(dataset,
     if (is_numeric_field(mc2d_df, md)) {
         p <- mc2d_plot_metadata_ggp_numeric(mc2d_df, graph, dataset, metadata, md, colors, color_breaks, point_size, min_d, stroke, graph_color, graph_width, id, scale_edges)
     } else {
-        p <- mc2d_plot_metadata_ggp_categorical(mc2d_df, graph, dataset, metadata, md, point_size, min_d, stroke, graph_color, graph_width, id, scale_edges, colors)
+        p <- mc2d_plot_metadata_ggp_categorical(mc2d_df, graph, dataset, metadata, md, point_size, min_d, stroke, graph_color, graph_width, id, scale_edges, colors) %>%
+            plotly::ggplotly(tooltip = "tooltip_text", source = source) %>%
+            rm_plotly_grid()
     }
 
     return(p)
@@ -77,7 +82,7 @@ mc2d_plot_metadata_ggp_categorical <- function(mc2d_df,
                 glue("{metacell}"),
                 glue("Cell type: {`Cell type`}"),
                 glue("Top genes: {`Top genes`}"),
-                paste0(md, ": ", mc2d_df[[md]]),
+                ifelse(md != "Cell type", paste0(md, ": ", mc2d_df[[md]]), ""),
                 ifelse(has_name(mc2d_df, "Age"), glue("Metacell age (E[t]): {round(Age, digits=2)}"), ""),
                 sep = "\n"
             )
@@ -86,7 +91,6 @@ mc2d_plot_metadata_ggp_categorical <- function(mc2d_df,
     if (is.null(colors)) {
         colors <- colors %||% get_metadata_colors(dataset, md, metadata = metadata)
     }
-
 
     p <- mc2d_df %>%
         ggplot(aes(x = x, y = y, label = metacell, fill = !!sym(md), tooltip_text = Metacell, customdata = id))
