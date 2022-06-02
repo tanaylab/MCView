@@ -32,9 +32,14 @@ verify_project_dir <- function(path, create = FALSE, atlas = FALSE, ...) {
     } else {
         config_file <- project_config_file(path)
         if (!file.exists(config_file)) {
-            cli_abort("No config file found in {.file {config_file}}. Are you sure this is an MCView project dir? You can start a new project by running {.code MCView::create_project}.")
+            if (file.exists(project_config_file(file.path(path, "project")))) {
+                path <- file.path(path, "project")
+            } else {
+                cli_abort("No config file found at {.file {config_file}}. Are you sure this is an MCView project dir? You can start a new project by running {.code MCView::create_project}.")
+            }
         }
     }
+    invisible(path)
 }
 
 create_project_dirs <- function(project_dir, atlas = FALSE) {
