@@ -1,3 +1,12 @@
+# MCView 0.2.4.9000
+
+* Added tab selector. 
+* runtime optimizations: load tabs only on click.
+* Some css fixes.
+* Changed default 'about' document.
+* added preloader spinner.
+* allow using `run_app` with the bundle folder.
+
 # MCView 0.2.4
 
 * Add an option to add metacells to clipboard by number 

@@ -135,6 +135,7 @@ mod_query_sidebar_ui <- function(id) {
                         "Type",
                         "Group"
                     ),
+                    selected = "Type",
                     justified = TRUE
                 ),
                 uiOutput(ns("diff_select"))

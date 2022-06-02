@@ -19,6 +19,51 @@ app_server <- function(input, output, session) {
         globals$screen_width <- input$screen_width
         globals$screen_height <- input$screen_height
         globals$clipboard <- character(0)
+        globals$active_tabs <- config$tabs
+    })
+
+    output$menu <- shinydashboard::renderMenu({
+        items_list <- purrr::map(tab_defs[globals$active_tabs], ~ {
+            shinydashboard::menuSubItem(.x$title, tabName = .x$module_name, icon = icon(.x$icon))
+        })
+
+        shinydashboard::sidebarMenu(
+            id = "tab_sidebar",
+            shinydashboard::menuItem("Tabs",
+                tabname = "tabs",
+                startExpanded = TRUE,
+                items_list
+            )
+        )
+    })
+
+    observeEvent(input$update_tabs, {
+        globals$active_tabs <- c(config$tabs, setdiff(input$selected_tabs, config$tabs))
+        globals$active_tabs <- globals$active_tabs[globals$active_tabs %in% input$selected_tabs]
+    })
+
+    observe({
+        available_tabs <- names(tab_defs)
+        if (!has_atlas(dataset())) {
+            available_tabs <- available_tabs[!(available_tabs %in% c("Atlas", "Query", "Projected-fold"))]
+        }
+        if (!has_samples(dataset())) {
+            available_tabs <- available_tabs[available_tabs != "Samples"]
+        }
+        if (is.null(get_mc_data(dataset(), "inner_fold_mat"))) {
+            available_tabs <- available_tabs[available_tabs != "Inner-fold"]
+        }
+        if (is.null(get_mc_data(dataset(), "deviant_fold_mat"))) {
+            available_tabs <- available_tabs[available_tabs != "Outliers"]
+        }
+        if (is.null(get_mc_data(dataset(), "type_flow"))) {
+            available_tabs <- available_tabs[available_tabs != "Flow"]
+        }
+        updateCheckboxGroupInput(
+            inputId = "selected_tabs",
+            selected = globals$active_tabs,
+            choices = available_tabs
+        )
     })
 
     # annotation reactives
@@ -51,191 +96,29 @@ app_server <- function(input, output, session) {
         }
     })
 
-    load_tab <- function(tab_name, module) {
-        module(tab_name, dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors, gene_modules = gene_modules, globals = globals)
-    }
-
-    load_tab("manifold", mod_manifold_server)
-    load_tab("gene_mc", mod_gene_mc_server)
-    load_tab("flow", mod_flow_server)
-    load_tab("markers", mod_markers_server)
-    load_tab("gene_modules", mod_gene_modules_server)
-    load_tab("inner_fold", mod_inner_fold_server)
-    load_tab("outliers", mod_outliers_server)
-    load_tab("samples", mod_samples_server)
-    load_tab("cell_type", mod_cell_type_server)
-
-    if (any_has_atlas(project)) {
-        load_tab("query", mod_query_server)
-        load_tab("atlas", mod_atlas_server)
-        load_tab("proj_fold", mod_proj_fold_server)
-    }
-
-    load_tab("mc_mc", mod_mc_mc_server)
-    load_tab("annotate", mod_annotate_server)
-    load_tab("about", mod_about_server)
-
-    show_help <- function(input, output, session) {
-        if (input$tab_sidebar == "about") {
-            rintrojs::introjs(session,
-                options = list(
-                    "showProgress" = FALSE,
-                    "showBullets" = FALSE,
-                    "nextLabel" = "next",
-                    "prevLabel" = "back",
-                    steps = get_tab_steps("about")
-                )
-            )
-        } else if (input$tab_sidebar == "manifold") {
-            rintrojs::introjs(session,
-                options = list(
-                    "showProgress" = TRUE,
-                    "showBullets" = FALSE,
-                    "nextLabel" = "next",
-                    "prevLabel" = "back",
-                    steps = get_tab_steps("manifold", "manifold")
-                )
-            )
-        } else if (input$tab_sidebar == "gene_mc") {
-            rintrojs::introjs(session,
-                options = list(
-                    "showProgress" = TRUE,
-                    "showBullets" = FALSE,
-                    "nextLabel" = "next",
-                    "prevLabel" = "back",
-                    steps = get_tab_steps("genes", "gene_mc")
-                )
-            )
-        } else if (input$tab_sidebar == "mc_mc") {
-            rintrojs::introjs(session,
-                options = list(
-                    "showProgress" = TRUE,
-                    "showBullets" = FALSE,
-                    "nextLabel" = "next",
-                    "prevLabel" = "back",
-                    steps = get_tab_steps("metacells", "mc_mc")
-                )
-            )
-        } else if (input$tab_sidebar == "cell_type") {
-            rintrojs::introjs(session,
-                options = list(
-                    "showProgress" = TRUE,
-                    "showBullets" = FALSE,
-                    "nextLabel" = "next",
-                    "prevLabel" = "back",
-                    steps = get_tab_steps("cell_type", "cell_type")
-                )
-            )
-        } else if (input$tab_sidebar == "samples") {
-            rintrojs::introjs(session,
-                options = list(
-                    "showProgress" = TRUE,
-                    "showBullets" = FALSE,
-                    "nextLabel" = "next",
-                    "prevLabel" = "back",
-                    steps = get_tab_steps("samples", "samples")
-                )
-            )
-        } else if (input$tab_sidebar == "Query") {
-            rintrojs::introjs(session,
-                options = list(
-                    "showProgress" = TRUE,
-                    "showBullets" = FALSE,
-                    "nextLabel" = "next",
-                    "prevLabel" = "back",
-                    steps = get_tab_steps("query", "query")
-                )
-            )
-        } else if (input$tab_sidebar == "Atlas") {
-            rintrojs::introjs(session,
-                options = list(
-                    "showProgress" = TRUE,
-                    "showBullets" = FALSE,
-                    "nextLabel" = "next",
-                    "prevLabel" = "back",
-                    steps = get_tab_steps("atlas", "atlas")
-                )
-            )
-        } else if (input$tab_sidebar == "annotate") {
-            rintrojs::introjs(session,
-                options = list(
-                    "showProgress" = TRUE,
-                    "showBullets" = FALSE,
-                    "nextLabel" = "next",
-                    "prevLabel" = "back",
-                    steps = get_tab_steps("metacells", "annotate")
-                )
-            )
+    load_tab <- function(tab_name) {
+        func_name <- glue("mod_{tab_name}_server")
+        if (exists(func_name)) {
+            module <- get(func_name)
+            module(tab_name, dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors, gene_modules = gene_modules, globals = globals)
         }
     }
 
     observe({
-        req(config$help)
-        rintrojs::introjs(session,
-            options = list(
-                "showProgress" = FALSE,
-                "showBullets" = FALSE,
-                "nextLabel" = "next",
-                "prevLabel" = "back",
-                "scrollToElement" = TRUE,
-                steps =
-                    rbind(
-                        data.frame(element = NA, intro = help_config$introduction),
-                        get_tab_steps("about")
-                    )
-            )
-        )
+        req(input$tab_sidebar)
+        if (!(input$tab_sidebar %in% loaded_modules)) {
+            load_tab(input$tab_sidebar)
+        }
+        loaded_modules <<- c(loaded_modules, input$tab_sidebar)
     })
-
-    observeEvent(
-        input$help,
-        show_help(input, output, session)
-    )
 
     clipboard_reactives(dataset, input, output, session, metacell_types, cell_type_colors, gene_modules, globals)
 
-    observeEvent(
-        input$download_modal,
-        showModal(modalDialog(
-            title = "Run MCView locally",
-            "To run the app locally (on a unix or mac machine*), download the bundle by pressing the download button below:",
-            br(),
-            br(),
-            downloadButton("download_bundle", "Download", style = "align-items: center;"),
-            br(),
-            br(),
-            "Then, run the following lines in R (make sure that you are at the download directory):",
-            br(),
-            br(),
-            glue("# install dependencies if needed"),
-            br(),
-            glue("if (!require('remotes')) install.packages('remotes')"),
-            br(),
-            glue("if (!require('MCView')) remotes::install_github('tanaylab/MCView', ref = remotes::github_release())"),
-            br(),
-            glue("zip::unzip('MCView-{basename(project)}.zip')"),
-            br(),
-            br(),
-            glue("# run the app"),
-            br(),
-            glue("MCView::run_app('{basename(project)}', launch.browser = TRUE)"),
-            br(),
-            br(),
-            "* It is possible to run on a windows machine using WSL",
-            br(),
-            easyClose = TRUE
-        ))
-    )
+    download_modal_reactives(input, output, session, globals)
 
-    output$download_bundle <- downloadHandler(
-        filename = function() {
-            glue("MCView-{project}.zip")
-        },
-        content = function(file) {
-            download_project(file, project)
-        }
-    )
+    help_reactives(input, output, session, globals)
 
+    # callModule(profvis::profvis_server, "profiler")
     # Rprof(strftime(Sys.time(), "%Y-%m-%d-%H-%M-%S.Rprof"),
     #     interval = 0.01, line.profiling = TRUE,
     #     gc.profiling = FALSE, memory.profiling = FALSE
