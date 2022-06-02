@@ -101,6 +101,7 @@ app_ui <- function(request) {
             tags$li(
                 title = "",
                 class = "dropdown",
+                style = "margin-top: 7.5px; margin-bottom: 7.5px;",
                 shinyWidgets::actionBttn(
                     inputId = "clipboard_modal",
                     label = "Clipboard",
