@@ -49,30 +49,32 @@ mod_gene_modules_ui <- function(id) {
                         startOpen = FALSE,
                         width = 80,
                         id = ns("gene_modules_sidebar"),
-                        actionButton(ns("remove_gene_module_modal"), "Remove module"),
-                        br(),
-                        actionButton(ns("add_gene_module_modal"), "New module"),
-                        br(),
-                        fileInput(ns("gene_modules_fn"),
-                            label = NULL,
-                            buttonLabel = "Load",
-                            multiple = FALSE,
-                            accept =
-                                c(
-                                    "text/csv",
-                                    "text/comma-separated-values,text/plain",
-                                    "text/tab-separated-values",
-                                    ".csv",
-                                    ".tsv"
-                                )
-                        ),
-                        downloadButton(ns("gene_modules_download"), "Export")
+                        span(
+                            actionButton(ns("remove_gene_module_modal"), "Remove module", style = "margin-bottom: 15px;"),
+                            actionButton(ns("add_gene_module_modal"), "New module", style = "margin-bottom: 15px; margin-left: 5px;"),
+                            downloadButton(ns("gene_modules_download"), "Export", style = "margin-bottom: 15px;"),
+                            fileInput(ns("gene_modules_fn"),
+                                label = NULL,
+                                buttonLabel = "Load",
+                                multiple = FALSE,
+                                accept =
+                                    c(
+                                        "text/csv",
+                                        "text/comma-separated-values,text/plain",
+                                        "text/tab-separated-values",
+                                        ".csv",
+                                        ".tsv"
+                                    )
+                            )
+                        )
                     ),
                     uiOutput(ns("gene_module_selector")),
-                    actionButton(ns("update_module"), "Update", style = "align-items: center;"),
-                    actionButton(ns("clear_genes"), "Clear", style = "align-items: center;"),
-                    actionButton(ns("reset_genes"), "Reset", style = "align-items: center;"),
-                    actionButton(ns("reset_gene_modules"), "Reset all", style = "align-items: left;"),
+                    span(
+                        actionButton(ns("update_module"), "Update", style = "align-items: center;"),
+                        actionButton(ns("clear_genes"), "Clear", style = "align-items: center;"),
+                        actionButton(ns("reset_genes"), "Reset", style = "align-items: center;"),
+                        actionButton(ns("reset_gene_modules"), "Reset all", style = "align-items: left;"),
+                    ),
                     br(),
                     br(),
                     actionButton(ns("remove_genes"), "Remove", style = "align-items: center;"),

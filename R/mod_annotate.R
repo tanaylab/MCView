@@ -21,7 +21,7 @@ mod_annotate_ui <- function(id) {
                         width = 6,
                         offset = 0,
                         style = "padding-right:0px;",
-                        scatter_box(ns, "gene_gene_box")
+                        scatter_box(ns, "gene_gene_box", show_legend = FALSE)
                     ),
                     column(
                         width = 6,
@@ -50,6 +50,7 @@ mod_annotate_ui <- function(id) {
                         checkboxInput(ns("reset_on_apply"), label = "Reset selection\non apply", value = FALSE)
                     ),
                     splitLayout(
+                        cellWidths = c("30%", rep("auto", 4)),
                         fileInput(ns("metacell_types_fn"),
                             label = NULL,
                             buttonLabel = "Load",
@@ -66,7 +67,7 @@ mod_annotate_ui <- function(id) {
                         actionButton(ns("reset_metacell_types"), "Reset", style = "align-items: center;"),
                         actionButton(ns("paste_metacells"), "Paste", style = "align-items: center;"),
                         actionButton(ns("copy_metacells"), "Copy", style = "align-items: center;"),
-                        downloadButton(ns("metacell_types_download"), "Export", style = "align-items: center;")
+                        downloadButton(ns("metacell_types_download"), "", style = "align-items: center;")
                     ),
                     uiOutput(ns("annotation_box")),
                     uiOutput(ns("update_all_selectors")),
@@ -86,10 +87,10 @@ mod_annotate_ui <- function(id) {
                     collapsible = TRUE,
                     closable = FALSE,
                     width = 12,
-                    splitLayout(
-                        actionButton(ns("reset_cell_type_colors"), "Reset", style = "align-items: left;"),
-                        downloadButton(ns("cell_type_colors_download"), "Export", style = "align-items: left;"),
-                        actionButton(ns("add_cell_type_modal"), "Add", style = "align-items: left;")
+                    span(
+                        actionButton(ns("add_cell_type_modal"), "Add"),
+                        actionButton(ns("reset_cell_type_colors"), "Reset"),
+                        downloadButton(ns("cell_type_colors_download"), "")
                     ),
                     br(),
                     br(),

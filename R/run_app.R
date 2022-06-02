@@ -23,6 +23,7 @@ run_app <- function(project,
                     host = NULL,
                     launch.browser = FALSE,
                     ...) {
+    project <- verify_project_dir(project)
     init_config(project = project)
     load_all_data(cache_dir = project_cache_dir(project))
     init_defs()

@@ -77,26 +77,24 @@ heatmap_sidebar <- function(id, ...) {
         shinyWidgets::actionGroupButtons(ns("update_genes"), labels = "Update genes", size = "sm"),
         numericInput(ns("max_gene_num"), "Maximal number of genes", value = 100),
         uiOutput(ns("add_genes_ui")),
-        uiOutput(ns("marker_genes_list")),
+        selectInput(
+            ns("selected_marker_genes"),
+            "Genes",
+            choices = NULL,
+            selected = NULL,
+            multiple = TRUE,
+            size = 30,
+            selectize = FALSE
+        ),
+        shinyWidgets::actionGroupButtons(ns("remove_genes"), labels = "Remove selected genes", size = "sm"),
         tags$hr(),
         downloadButton(ns("download_matrix"), "Download matrix", align = "center", style = "margin: 5px 5px 5px 15px; ")
     )
 }
 
 heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metacell_types, cell_type_colors, globals, markers, lfp_range, mode) {
-    output$marker_genes_list <- renderUI({
-        tagList(
-            selectInput(
-                ns("selected_marker_genes"),
-                "Genes",
-                choices = markers(),
-                selected = NULL,
-                multiple = TRUE,
-                size = 30,
-                selectize = FALSE
-            ),
-            shinyWidgets::actionGroupButtons(ns("remove_genes"), labels = "Remove selected genes", size = "sm")
-        )
+    observe({
+        updateSelectInput(session, "selected_marker_genes", choices = markers())
     })
 
     observe({
@@ -288,7 +286,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     ns("heatmap"),
                     height = height,
                     dblclick = dblclickOpts(ns("heatmap_dblclick"), clip = TRUE),
-                    hover = hoverOpts(ns("heatmap_hover"), delay = 300, delayType = "debounce"),
+                    hover = hoverOpts(ns("heatmap_hover"), delay = 250, delayType = "debounce"),
                     brush = brushOpts(
                         id = ns("heatmap_brush"),
                         direction = "x",

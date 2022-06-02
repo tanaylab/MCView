@@ -10,8 +10,19 @@
 mod_about_ui <- function(id) {
     ns <- NS(id)
     tagList(
-        includeRMarkdown(about_file),
-        plotOutput(ns("plot_manifold_proj_2d"))
+        shinyjqui::jqui_resizable(
+            shinydashboardPlus::box(
+                id = ns("about"),
+                title = "About",
+                # status = "primary",
+                # solidHeader = TRUE,
+                collapsible = FALSE,
+                closable = FALSE,
+                width = 12,
+                height = "80vh",
+                includeRMarkdown(about_file)
+            )
+        )
     )
 }
 
@@ -39,18 +50,6 @@ mod_about_server <- function(id, dataset, metacell_types, cell_type_colors, gene
         id,
         function(input, output, session) {
             ns <- session$ns
-            output$plot_manifold_proj_2d <- renderPlot({
-                req(metacell_types())
-                req(cell_type_colors())
-                mc2d_plot_ggp(
-                    dataset(),
-                    metacell_types = metacell_types(),
-                    cell_type_colors = cell_type_colors(),
-                    point_size = initial_proj_point_size(dataset(), globals$screen_width, globals$screen_height),
-                    stroke = initial_proj_stroke(dataset()),
-                    min_d = min_edge_length(dataset())
-                ) + theme(aspect.ratio = 1)
-            })
         }
     )
 }
