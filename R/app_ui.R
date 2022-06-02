@@ -132,7 +132,8 @@ app_ui <- function(request) {
         ),
         sidebar = sidebar,
         body = body,
-        controlbar = right_sidebar
+        controlbar = right_sidebar,
+        preloader = list(html = waiter::spin_1(), color = "#333e48")
     )
 
     screen_size_jscode <-

@@ -68,7 +68,8 @@ Imports:
     yaml,
     zip,
     Matrix,
-    ggtext (>= 0.1.0)
+    ggtext (>= 0.1.0),
+    waiter
 Suggests: 
     knitr,
     R.utils,
