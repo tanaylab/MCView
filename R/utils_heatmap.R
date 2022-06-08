@@ -356,9 +356,13 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                 m <- filter_heatmap_by_metacell(m, metacell_filter())
 
                 if (!is.null(input$selected_md)) {
-                    metadata <- get_mc_data(dataset(), "metadata") %>%
-                        mutate(Clipboard = ifelse(metacell %in% globals$clipboard, "selected", "not selected")) %>%
-                        select(metacell, one_of(input$selected_md))
+                    metadata <- get_mc_data(dataset(), "metadata")
+                    if (is.null(metadata)) {
+                        metadata <- metacell_types() %>% select(metacell)
+                    }
+                    metadata <- metadata %>%
+                            mutate(Clipboard = ifelse(metacell %in% globals$clipboard, "selected", "not selected")) %>%
+                            select(metacell, one_of(input$selected_md))                    
                 } else {
                     metadata <- NULL
                 }
