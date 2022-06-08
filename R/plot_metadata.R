@@ -142,18 +142,27 @@ mc2d_plot_metadata_ggp_categorical <- function(mc2d_df,
 
     fig <- fig %>%
         add_scatter_layer(showlegend = TRUE)
+    
+    margin <- 0.05
+    xlim <- range(mc2d_df$x, na.rm = TRUE)
+    ylim <- range(mc2d_df$y, na.rm = TRUE)
+
+    xlim <- xlim + c(-diff(xlim) * margin, diff(xlim) * margin)
+    ylim <- ylim + c(-diff(ylim) * margin, diff(ylim) * margin)
 
     fig <- fig %>%
         plotly::layout(
             xaxis = list(
                 showgrid = FALSE,
                 zeroline = FALSE,
-                visible = FALSE
+                visible = FALSE,
+                range = xlim
             ),
             yaxis = list(
                 showgrid = FALSE,
                 zeroline = FALSE,
-                visible = FALSE
+                visible = FALSE,
+                range = ylim
             ),
             margin = list(
                 l = 0,
