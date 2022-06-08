@@ -55,9 +55,7 @@ mc2d_plot_metadata_ggp <- function(dataset,
     if (is_numeric_field(mc2d_df, md)) {
         p <- mc2d_plot_metadata_ggp_numeric(mc2d_df, graph, dataset, metadata, md, colors, color_breaks, point_size, min_d, stroke, graph_color, graph_width, id, scale_edges)
     } else {
-        p <- mc2d_plot_metadata_ggp_categorical(mc2d_df, graph, dataset, metadata, md, point_size, min_d, stroke, graph_color, graph_width, id, scale_edges, colors) %>%
-            plotly::ggplotly(tooltip = "tooltip_text", source = source) %>%
-            rm_plotly_grid()
+        p <- mc2d_plot_metadata_ggp_categorical(mc2d_df, graph, dataset, metadata, md, point_size, min_d, stroke, graph_color, graph_width, id, scale_edges, colors)
     }
 
     return(p)
@@ -78,8 +76,8 @@ mc2d_plot_metadata_ggp_categorical <- function(mc2d_df,
                                                colors = NULL) {
     mc2d_df <- mc2d_df %>%
         mutate(
-            Metacell = paste(
-                glue("{metacell}"),
+            text = paste(
+                glue("Metacell: {metacell}"),
                 glue("Cell type: {`Cell type`}"),
                 glue("Top genes: {`Top genes`}"),
                 ifelse(md != "Cell type", paste0(md, ": ", mc2d_df[[md]]), ""),
@@ -92,30 +90,84 @@ mc2d_plot_metadata_ggp_categorical <- function(mc2d_df,
         colors <- colors %||% get_metadata_colors(dataset, md, metadata = metadata)
     }
 
-    p <- mc2d_df %>%
-        ggplot(aes(x = x, y = y, label = metacell, fill = !!sym(md), tooltip_text = Metacell, customdata = id))
+    mc2d_df <- mc2d_df %>%
+        arrange(desc(!!sym(md))) %>%
+        mutate(value = !!sym(md))
+
+    legend_title <- md
+
+    add_scatter_layer <- function(x, showlegend = FALSE) {
+        plotly::add_trace(x,
+            data = mc2d_df,
+            x = ~x,
+            y = ~y,
+            color = ~value,
+            split = ~value,
+            text = ~text,
+            customdata = ~id,
+            legendgroup = ~value,
+            hoverinfo = "text",
+            type = "scatter",
+            mode = "markers",
+            colors = colors,
+            marker = list(
+                size = point_size * 4,
+                line = list(
+                    color = "black",
+                    width = 0.2
+                )
+            ),
+            showlegend = showlegend
+        )
+    }
+    fig <- plotly::plot_ly() %>% add_scatter_layer()
 
     if (nrow(graph) > 0) {
-        if (scale_edges) {
-            p <- p +
-                geom_segment(data = graph, inherit.aes = FALSE, aes(x = x_mc1, y = y_mc1, xend = x_mc2, yend = y_mc2, size = d_norm), color = graph_color) +
-                scale_size_continuous(range = c(0, graph_width)) +
-                guides(size = "none")
-        } else {
-            p <- p + geom_segment(data = graph, inherit.aes = FALSE, aes(x = x_mc1, y = y_mc1, xend = x_mc2, yend = y_mc2), color = graph_color, size = graph_width)
-        }
+        edges_x <- c(rbind(graph$x_mc1, graph$x_mc2, NA))
+        edges_y <- c(rbind(graph$y_mc1, graph$y_mc2, NA))
+
+        fig <- fig %>%
+            plotly::add_trace(
+                x = edges_x,
+                y = edges_y,
+                type = "scatter",
+                mode = "lines",
+                line = list(
+                    color = graph_color,
+                    width = graph_width * 5
+                ),
+                showlegend = FALSE
+            )
     }
 
-    p <- p +
-        geom_point(size = point_size, shape = 21, stroke = stroke, color = "black") +
-        theme_void() +
-        guides(fill = "none")
+    fig <- fig %>%
+        add_scatter_layer(showlegend = TRUE)
 
-    p <- p +
-        scale_fill_manual(name = md, values = colors)
+    fig <- fig %>%
+        plotly::layout(
+            xaxis = list(
+                showgrid = FALSE,
+                zeroline = FALSE,
+                visible = FALSE
+            ),
+            yaxis = list(
+                showgrid = FALSE,
+                zeroline = FALSE,
+                visible = FALSE
+            ),
+            margin = list(
+                l = 0,
+                r = 0,
+                b = 0,
+                t = 0,
+                pad = 0
+            ),
+            legend = list(title = list(text = legend_title))
+        )
 
-    return(p)
+    return(fig)
 }
+
 
 mc2d_plot_metadata_ggp_numeric <- function(mc2d_df,
                                            graph,
@@ -161,6 +213,7 @@ mc2d_plot_metadata_ggp_numeric <- function(mc2d_df,
             y = ~y,
             color = ~value,
             text = ~text,
+            customdata = ~id,
             hoverinfo = "text",
             type = "scatter",
             mode = "markers",
@@ -195,8 +248,8 @@ mc2d_plot_metadata_ggp_numeric <- function(mc2d_df,
             )
     }
 
-    fig <- fig %>% add_scatter_layer(showlegend = TRUE)
-
+    fig <- fig %>%
+        add_scatter_layer(showlegend = TRUE)
 
     fig <- fig %>%
         plotly::layout(

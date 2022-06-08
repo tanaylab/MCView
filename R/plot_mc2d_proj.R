@@ -87,6 +87,7 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
             y = ~y,
             color = ~value,
             text = ~text,
+            customdata = ~id,
             hoverinfo = "text",
             type = "scatter",
             mode = "markers",
@@ -281,9 +282,9 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
         } else if (input$color_proj == "Metadata") {
             req(input$color_proj_metadata)
             metadata <- get_mc_data(dataset(), "metadata")
-            if (is.null(metadata)){
+            if (is.null(metadata)) {
                 metadata <- metacell_types() %>% select(metacell)
-            } 
+            }
             metadata <- metadata %>%
                 mutate(Clipboard = ifelse(metacell %in% globals$clipboard, "selected", "not selected"))
             fig <- plot_2d_metadata(input$color_proj_metadata, metadata = metadata)
