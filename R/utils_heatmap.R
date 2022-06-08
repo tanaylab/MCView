@@ -356,7 +356,11 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                 m <- filter_heatmap_by_metacell(m, metacell_filter())
 
                 if (!is.null(input$selected_md)) {
-                    metadata <- get_mc_data(dataset(), "metadata") %>%
+                    metadata <- get_mc_data(dataset(), "metadata")
+                    if (is.null(metadata)) {
+                        metadata <- metacell_types() %>% select(metacell)
+                    }
+                    metadata <- metadata %>%
                         mutate(Clipboard = ifelse(metacell %in% globals$clipboard, "selected", "not selected")) %>%
                         select(metacell, one_of(input$selected_md))
                 } else {
@@ -446,13 +450,14 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
             })
 
             output$hover_info <- renderUI({
-                req(mat())
+                m <- mat()
+                req(m)
                 req(input$heatmap_hover)
                 req(metacell_types())
                 req(cell_type_colors())
 
                 hover <- input$heatmap_hover
-                m <- filter_heatmap_by_metacell(mat(), metacell_filter())
+                m <- filter_heatmap_by_metacell(m, metacell_filter())
                 gene <- get_gene_by_heatmap_coord(m, hover$y)
                 metacell <- get_metacell_by_heatmap_coord(m, hover$x)
                 value <- m[gene, metacell]

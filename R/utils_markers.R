@@ -188,7 +188,7 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
         return(1:ncol(feat_all))
     }
 
-    hc <- hclust(tgs_dist(tgs_cor(feat, pairwise.complete.obs = TRUE)), method = "ward.D2")
+    hc <- fastcluster::hclust(tgs_dist(tgs_cor(feat, pairwise.complete.obs = TRUE)), method = "ward.D2")
 
     d <- reorder(
         as.dendrogram(hc),

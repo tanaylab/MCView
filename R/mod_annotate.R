@@ -14,7 +14,7 @@ mod_annotate_ui <- function(id) {
             column(
                 width = 8,
                 style = "padding-right:0px;",
-                projection_box(ns, "gene_projection", checkboxInput(ns("show_selected_metacells"), "Show selected metacells", value = FALSE), color_choices = c("Cell type", "Gene", "Gene module", "Metadata", "Selected")),
+                projection_box(ns, "gene_projection", color_choices = c("Cell type", "Gene", "Gene module", "Metadata", "Selected")),
                 fluidRow(
                     uiOutput(ns("time_box_ui_column")),
                     column(
@@ -610,11 +610,6 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
             diff_expr_outputs(input, output, session, dataset, metacell_types, cell_type_colors, globals, ns, source_suffix = "_annot")
 
             mod_gene_mc_plotly_observers(input, session, source = "mc_mc_plot_annot", notification_suffix = "")
-
-            observe({
-                req(input$color_proj)
-                shinyjs::toggle(id = "show_selected_metacells", condition = input$color_proj == "Cell type")
-            })
         }
     )
 }

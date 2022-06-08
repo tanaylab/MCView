@@ -81,7 +81,12 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
             }
         }
 
-        metadata <- get_mc_data(dataset(), "metadata") %>%
+        metadata <- get_mc_data(dataset(), "metadata")
+        if (is.null(metadata)) {
+            metadata <- metacell_types() %>% select(metacell)
+        }
+
+        metadata <- metadata %>%
             mutate(Clipboard = ifelse(metacell %in% globals$clipboard, "selected", "not selected"))
 
         if (!is.null(input$filter_by_clipboard_scatter) && input$filter_by_clipboard_scatter && length(globals$clipboard) > 0) {
