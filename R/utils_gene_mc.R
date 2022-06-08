@@ -19,7 +19,7 @@ get_top_cor_gene <- function(dataset, gene, type = "pos", atlas = FALSE) {
             filter(gene1 == gene) %>%
             filter(type == !!type) %>%
             filter(gene1 != gene2)
-    } else {        
+    } else {
         mc_egc <- get_mc_egc(dataset, atlas = atlas)
         req(gene %in% rownames(mc_egc))
         lfp <- log2(mc_egc + egc_epsilon)

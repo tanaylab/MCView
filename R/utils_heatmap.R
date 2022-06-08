@@ -361,8 +361,8 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                         metadata <- metacell_types() %>% select(metacell)
                     }
                     metadata <- metadata %>%
-                            mutate(Clipboard = ifelse(metacell %in% globals$clipboard, "selected", "not selected")) %>%
-                            select(metacell, one_of(input$selected_md))                    
+                        mutate(Clipboard = ifelse(metacell %in% globals$clipboard, "selected", "not selected")) %>%
+                        select(metacell, one_of(input$selected_md))
                 } else {
                     metadata <- NULL
                 }
