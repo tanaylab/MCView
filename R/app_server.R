@@ -101,16 +101,12 @@ app_server <- function(input, output, session) {
         if (exists(func_name)) {
             module <- get(func_name)
             module(tab_name, dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors, gene_modules = gene_modules, globals = globals)
+        } else {
+            warning(paste0("Tab ", tab_name, " not found"))
         }
     }
 
-    observe({
-        req(input$tab_sidebar)
-        if (!(input$tab_sidebar %in% loaded_modules)) {
-            load_tab(input$tab_sidebar)
-        }
-        loaded_modules <<- c(loaded_modules, input$tab_sidebar)
-    })
+    purrr::map(tab_defs, ~ load_tab(.x$module_name))
 
     clipboard_reactives(dataset, input, output, session, metacell_types, cell_type_colors, gene_modules, globals)
 
