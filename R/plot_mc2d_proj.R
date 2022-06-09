@@ -271,7 +271,7 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
                 metacell_types = metacell_types(),
                 atlas = atlas,
                 metadata = metacell_types() %>% rename(`Cell type` = cell_type),
-                colors = get_cell_type_colors(dataset, get_mc_data(dataset(), "cell_type_colors", atlas = atlas), atlas = atlas)
+                colors = get_cell_type_colors(dataset, cell_type_colors = cell_type_colors(), atlas = atlas)
             )
         } else if (input$color_proj == "Gene A") {
             req(input$gene1)
