@@ -78,7 +78,10 @@ metacell dataset to MCView.</p>
   calc_gg_cor <span class="op">=</span> <span class="cn">TRUE</span>,
   network <span class="op">=</span> <span class="cn">NULL</span>,
   time_annotation_file <span class="op">=</span> <span class="cn">NULL</span>,
-  time_bin_field <span class="op">=</span> <span class="cn">NULL</span>
+  time_bin_field <span class="op">=</span> <span class="cn">NULL</span>,
+  metadata_fields <span class="op">=</span> <span class="cn">NULL</span>,
+  categorical <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">)</span>,
+  <span class="va">...</span>
 <span class="op">)</span></code></pre></div>
     </div>
 
@@ -86,39 +89,108 @@ metacell dataset to MCView.</p>
     <h2 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h2>
     <dl><dt>project</dt>
 <dd><p>path to the project</p></dd>
+
+
 <dt>dataset</dt>
 <dd><p>name for the dataset, e.g. "PBMC"</p></dd>
+
+
 <dt>scdb</dt>
 <dd><p>path to R metacell single cell RNA database</p></dd>
+
+
 <dt>matrix</dt>
 <dd><p>name of the umi matrix to use</p></dd>
+
+
 <dt>mc</dt>
 <dd><p>name of the metacell object to use</p></dd>
+
+
 <dt>mc2d</dt>
 <dd><p>name of the 2d projection object to use</p></dd>
+
+
 <dt>metacell_types_file</dt>
 <dd><p>path to a tabular file (csv,tsv) with cell type assignement for
 each metacell. The file should have a column named "metacell" with the metacell ids and another
 column named "cell_type" or "cluster" with the cell type assignment. Metacell ids that do
 not exists in the data would be ignored. In addition, the file can have a column named
 "age" or "mc_age" with age metadata per metacell</p></dd>
+
+
 <dt>cell_type_colors_file</dt>
 <dd><p>path to a tabular file (csv,tsv) with color assignement for
 each cell type. The file should have a column named "cell_type" or "cluster" with the
 cell types and another column named "color" with the color assignment. Cell types that do not
 exist in the metacell types would be ignored.</p></dd>
+
+
 <dt>gene_modules_file</dt>
 <dd><p>path to a tabular file (csv,tsv) with assignment of genes to gene modules. Should have a field named "gene" with the gene name and a field named "module" with the name of the gene module.</p></dd>
+
+
 <dt>gene_modules_k</dt>
 <dd><p>number of clusters for initial gene module calculation. If NULL - the number of clusters would be determined such that an gene module would contain 16 genes on average.</p></dd>
+
+
 <dt>calc_gg_cor</dt>
 <dd><p>Calculate top 30 correlated and anti-correlated genes for each gene. This computation can be heavy for large datasets or weaker machines, so you can set <code>calc_gg_cor=FALSE</code> to skip it. Note that then this feature would be missing from the app.</p></dd>
+
+
 <dt>network</dt>
 <dd><p>name of the network object to use (optional)</p></dd>
+
+
 <dt>time_annotation_file</dt>
 <dd><p>file with names for time bins (optional, only relevant with networks/flows). Should have a field named "time_bin" with the time bin id and another field named "time_desc" which contains the description of the time bin</p></dd>
+
+
 <dt>time_bin_field</dt>
 <dd><p>name of a field in <code>cell_metadata</code> which contains time bin per cell (optional)</p></dd>
+
+
+<dt>metadata_fields</dt>
+<dd><p>names of fields <code>mat@cell_metadata</code> which contains metadata per cell to be summarized using <code>cell_metadata_to_metacell</code>. <br>
+The fields should can be either numeric or categorical. <br>
+ You can use <code>cell_metadata_to_metacell</code> to convert from categorical to a numeric score (e.g. by using fraction of the category).</p></dd>
+
+
+<dt>categorical</dt>
+<dd><p>metadata fields that should be treated as categorical (optional)</p></dd>
+
+
+<dt>...</dt>
+<dd><p>Arguments passed on to <code><a href="create_project.html">create_project</a></code></p><dl><dt><code>title</code></dt>
+<dd><p>The title of the app. This would be shown on the top left of the screen.</p></dd>
+
+    <dt><code>tabs</code></dt>
+<dd><p>Controls which tabs to show in the left sidebar and their order. Options are: "Manifold", "Genes", "Query", "Atlas", "Markers", "Gene modules", "Projected-fold", "Diff. Expression", "Cell types", "Flow", "Annotate", "About". When NULL - default tabs would be set. For projects with atlas projections, please set <code>atlas</code> to TRUE.</p></dd>
+
+    <dt><code>help</code></dt>
+<dd><p>Controls wether to start the app with a help modal (from introjs). Help messages can be edited in help.yaml file (see 'Architecture' vignette).</p></dd>
+
+    <dt><code>selected_gene1,selected_gene2</code></dt>
+<dd><p>The default genes that would be selected (in any screen with gene selection). If this parameter is missing, the 2 genes with highest max(expr)-min(expr) in the first dataset would be chosen.</p></dd>
+
+    <dt><code>selected_mc1,selected_mc2</code></dt>
+<dd><p>The default metacells that would be selected in the Diff. Expression tab.</p></dd>
+
+    <dt><code>datasets</code></dt>
+<dd><p>A named list with additional per-dataset parameters. Current parameters include default visualization properties of projection and scatter plots.</p></dd>
+
+    <dt><code>other_params</code></dt>
+<dd><p>Named list of additional parameters such as projection_point_size, projection_point_stroke, scatters_point_size and scatters_stroke_size</p></dd>
+
+    <dt><code>edit_config</code></dt>
+<dd><p>open file editor for config file editing</p></dd>
+
+    <dt><code>atlas</code></dt>
+<dd><p>use default configuration for atlas projections (relevant only when <code>tabs</code> is NULL)</p></dd>
+
+  
+</dl></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -164,7 +236,7 @@ if you computed flows/networks for your dataset and therefore are optional.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.3.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.4.</p>
 </div>
 
     </footer></div>

@@ -75,21 +75,31 @@
     <h2 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h2>
     <dl><dt>project</dt>
 <dd><p>path to the project</p></dd>
+
+
 <dt>dataset</dt>
 <dd><p>name for the dataset, e.g. "PBMC"</p></dd>
+
+
 <dt>metadata</dt>
 <dd><p>can be either a data frame with a column named "metacell" with the metacell id and other metadata columns
 or a name of a delimited file which contains such data frame. See <code>metadata_fields</code> for other details.</p></dd>
+
+
 <dt>metadata_fields</dt>
 <dd><p>names of fields in the anndata <code>object$obs</code> which contains metadata for each metacell. <br>
-The fields should can be either numeric or categorical, but currently
-categorical annotations are only supported at the 'Cell type' tabs. <br>
- You can use <code>cell_metadata_to_metacell</code> with <code>categorical=TRUE</code> to convert from categorical to a numeric score (e.g. by using fraction of the category). You can use 'all' in order to import all the fields
+The fields should can be either numeric or categorical. <br>
+ You can use <code>cell_metadata_to_metacell</code> to convert from categorical to a numeric score (e.g. by using fraction of the category). You can use 'all' in order to import all the fields
  of the anndata object.</p></dd>
+
+
 <dt>anndata_file</dt>
 <dd><p>path to <code>h5ad</code> file which contains the output of metacell2 pipeline (metacells python package).</p></dd>
+
+
 <dt>overwrite</dt>
 <dd><p>overwrite all existing metadata. If <code>FALSE</code> - would override only existing metadata fields.</p></dd>
+
 </dl></div>
 
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
@@ -101,7 +111,7 @@ categorical annotations are only supported at the 'Cell type' tabs. <br>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.3.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.4.</p>
 </div>
 
     </footer></div>
