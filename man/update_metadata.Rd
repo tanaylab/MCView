@@ -22,9 +22,8 @@ update_metadata(
 or a name of a delimited file which contains such data frame. See \code{metadata_fields} for other details.}
 
 \item{metadata_fields}{names of fields in the anndata \code{object$obs} which contains metadata for each metacell. \cr
-The fields should can be either numeric or categorical, but currently
-categorical annotations are only supported at the 'Cell type' tabs. \cr
- You can use \code{cell_metadata_to_metacell} with \code{categorical=TRUE} to convert from categorical to a numeric score (e.g. by using fraction of the category). You can use 'all' in order to import all the fields
+The fields should can be either numeric or categorical. \cr
+ You can use \code{cell_metadata_to_metacell} to convert from categorical to a numeric score (e.g. by using fraction of the category). You can use 'all' in order to import all the fields
  of the anndata object.}
 
 \item{anndata_file}{path to \code{h5ad} file which contains the output of metacell2 pipeline (metacells python package).}

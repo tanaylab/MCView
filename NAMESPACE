@@ -3,6 +3,7 @@
 S3method(print,gt_custom)
 export(cell_metadata_to_metacell)
 export(cell_metadata_to_metacell_from_h5ad)
+export(cell_metadata_to_metacell_from_metacell1)
 export(create_bundle)
 export(create_project)
 export(dataset_ls)

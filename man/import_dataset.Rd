@@ -68,9 +68,8 @@ the following tabs: ["Outliers", "Similar-fold", "Deviant-fold"]. See the metace
 \item{cluster_k}{number of clusters for initial metacell clustering. If NULL - the number of clusters would be determined such that a metacell would contain 16 cells on average.}
 
 \item{metadata_fields}{names of fields in the anndata \code{object$obs} which contains metadata for each metacell. \cr
-The fields should can be either numeric or categorical, but currently
-categorical annotations are only supported at the 'Cell type' tabs. \cr
- You can use \code{cell_metadata_to_metacell} with \code{categorical=TRUE} to convert from categorical to a numeric score (e.g. by using fraction of the category). You can use 'all' in order to import all the fields
+The fields should can be either numeric or categorical. \cr
+ You can use \code{cell_metadata_to_metacell} to convert from categorical to a numeric score (e.g. by using fraction of the category). You can use 'all' in order to import all the fields
  of the anndata object.}
 
 \item{metadata}{can be either a data frame with a column named "metacell" with the metacell id and other metadata columns
@@ -119,10 +118,8 @@ log fraction (mc_fp) above this this value}
     \item{\code{title}}{The title of the app. This would be shown on the top left of the screen.}
     \item{\code{tabs}}{Controls which tabs to show in the left sidebar and their order. Options are: "Manifold", "Genes", "Query", "Atlas", "Markers", "Gene modules", "Projected-fold", "Diff. Expression", "Cell types", "Flow", "Annotate", "About". When NULL - default tabs would be set. For projects with atlas projections, please set \code{atlas} to TRUE.}
     \item{\code{help}}{Controls wether to start the app with a help modal (from introjs). Help messages can be edited in help.yaml file (see 'Architecture' vignette).}
-    \item{\code{selected_gene1}}{The default genes that would be selected (in any screen with gene selection). If this parameter is missing, the 2 genes with highest max(expr)-min(expr) in the first dataset would be chosen.}
-    \item{\code{selected_gene2}}{The default genes that would be selected (in any screen with gene selection). If this parameter is missing, the 2 genes with highest max(expr)-min(expr) in the first dataset would be chosen.}
-    \item{\code{selected_mc1}}{The default metacells that would be selected in the Diff. Expression tab.}
-    \item{\code{selected_mc2}}{The default metacells that would be selected in the Diff. Expression tab.}
+    \item{\code{selected_gene1,selected_gene2}}{The default genes that would be selected (in any screen with gene selection). If this parameter is missing, the 2 genes with highest max(expr)-min(expr) in the first dataset would be chosen.}
+    \item{\code{selected_mc1,selected_mc2}}{The default metacells that would be selected in the Diff. Expression tab.}
     \item{\code{datasets}}{A named list with additional per-dataset parameters. Current parameters include default visualization properties of projection and scatter plots.}
     \item{\code{other_params}}{Named list of additional parameters such as projection_point_size, projection_point_stroke, scatters_point_size and scatters_stroke_size}
     \item{\code{edit_config}}{open file editor for config file editing}

@@ -39,9 +39,8 @@
 #' @param cluster_metacells When TRUE and no metacell type is given (via \code{metacell_types_file} or \code{cell_type_field}), MCView would cluster the metacell matrix using kmeans++ algorithm (from the \code{tglkmeans} package).
 #' @param cluster_k number of clusters for initial metacell clustering. If NULL - the number of clusters would be determined such that a metacell would contain 16 cells on average.
 #' @param metadata_fields names of fields in the anndata \code{object$obs} which contains metadata for each metacell. \cr
-#' The fields should can be either numeric or categorical, but currently
-#' categorical annotations are only supported at the 'Cell type' tabs. \cr
-#'  You can use \code{cell_metadata_to_metacell} with \code{categorical=TRUE} to convert from categorical to a numeric score (e.g. by using fraction of the category). You can use 'all' in order to import all the fields
+#' The fields should can be either numeric or categorical. \cr
+#'  You can use \code{cell_metadata_to_metacell} to convert from categorical to a numeric score (e.g. by using fraction of the category). You can use 'all' in order to import all the fields
 #'  of the anndata object.
 #' @param metadata can be either a data frame with a column named "metacell" with the metacell id and other metadata columns
 #' or a name of a delimited file which contains such data frame. See \code{metadata_fields} for other details.

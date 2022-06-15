@@ -40,6 +40,10 @@
 #' @param network  name of the network object to use (optional)
 #' @param time_annotation_file file with names for time bins (optional, only relevant with networks/flows). Should have a field named "time_bin" with the time bin id and another field named "time_desc" which contains the description of the time bin
 #' @param time_bin_field name of a field in \code{cell_metadata} which contains time bin per cell (optional)
+#' @param metadata_fields names of fields \code{mat@cell_metadata} which contains metadata per cell to be summarized using \code{cell_metadata_to_metacell}. \cr
+#' The fields should can be either numeric or categorical. \cr
+#'  You can use \code{cell_metadata_to_metacell} to convert from categorical to a numeric score (e.g. by using fraction of the category).
+#' @param categorical metadata fields that should be treated as categorical (optional)
 #'
 #' @examples
 #' \dontrun{
@@ -59,6 +63,7 @@
 #' }
 #'
 #' @inheritParams import_dataset
+#' @inheritDotParams create_project
 #'
 #' @export
 import_dataset_metacell1 <- function(project,
@@ -74,9 +79,12 @@ import_dataset_metacell1 <- function(project,
                                      calc_gg_cor = TRUE,
                                      network = NULL,
                                      time_annotation_file = NULL,
-                                     time_bin_field = NULL) {
+                                     time_bin_field = NULL,
+                                     metadata_fields = NULL,
+                                     categorical = c(),
+                                     ...) {
     verbose <- !is.null(getOption("MCView.verbose")) && getOption("MCView.verbose")
-    verify_project_dir(project, create = TRUE)
+    verify_project_dir(project, create = TRUE, ...)
 
     cli_alert_info("Importing {.field {dataset}}")
 
@@ -84,8 +92,9 @@ import_dataset_metacell1 <- function(project,
 
     library(metacell)
 
-    init_temp_scdb(scdb, matrix, mc, mc2d, network, dataset)
-    mc <- scdb_mc(mc)
+    mc_name <- mc
+    init_temp_scdb(scdb, matrix, mc_name, mc2d, network, dataset)
+    mc <- scdb_mc(mc_name)
 
     mc_egc <- mc@e_gc
 
@@ -165,7 +174,19 @@ import_dataset_metacell1 <- function(project,
 
     serialize_shiny_data(metacell_types, "metacell_types", dataset = dataset, cache_dir = cache_dir, flat = TRUE)
 
+    if (!is.null(metadata_fields)) {
+        metadata <- cell_metadata_to_metacell_from_metacell1(
+            scdb = scdb,
+            matrix = matrix,
+            mc = mc_name,
+            metadata_fields = metadata_fields,
+            categorical = categorical
+        )
+        update_metadata(project, dataset, metadata)
+    }
+
     if (calc_gg_cor) {
+        cli_alert_info("Calculating top 30 correlated and anti-correlated genes for each gene")
         # Top 30 correlated and anti-correlated genes for each gene
         gg_mc_top_cor <- calc_gg_mc_top_cor(mc@e_gc, k = 30)
         serialize_shiny_data(gg_mc_top_cor, "gg_mc_top_cor", dataset = dataset, cache_dir = cache_dir)

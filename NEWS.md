@@ -1,11 +1,12 @@
 # MCView 0.2.4.9000
 
 * Added tab selector. 
-* runtime optimizations: load tabs only on click.
+* Runtime optimizations: load tabs only on click.
 * Some css fixes.
 * Changed default 'about' document.
-* added preloader spinner.
-* allow using `run_app` with the bundle folder.
+* Added preloader spinner.
+* Allow using `run_app` with the bundle folder.
+* Added cell metadata support for metacell1 import. 
 
 # MCView 0.2.4
 

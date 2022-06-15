@@ -18,7 +18,10 @@ import_dataset_metacell1(
   calc_gg_cor = TRUE,
   network = NULL,
   time_annotation_file = NULL,
-  time_bin_field = NULL
+  time_bin_field = NULL,
+  metadata_fields = NULL,
+  categorical = c(),
+  ...
 )
 }
 \arguments{
@@ -56,6 +59,26 @@ exist in the metacell types would be ignored.}
 \item{time_annotation_file}{file with names for time bins (optional, only relevant with networks/flows). Should have a field named "time_bin" with the time bin id and another field named "time_desc" which contains the description of the time bin}
 
 \item{time_bin_field}{name of a field in \code{cell_metadata} which contains time bin per cell (optional)}
+
+\item{metadata_fields}{names of fields \code{mat@cell_metadata} which contains metadata per cell to be summarized using \code{cell_metadata_to_metacell}. \cr
+The fields should can be either numeric or categorical. \cr
+ You can use \code{cell_metadata_to_metacell} to convert from categorical to a numeric score (e.g. by using fraction of the category).}
+
+\item{categorical}{metadata fields that should be treated as categorical (optional)}
+
+\item{...}{
+  Arguments passed on to \code{\link[=create_project]{create_project}}
+  \describe{
+    \item{\code{title}}{The title of the app. This would be shown on the top left of the screen.}
+    \item{\code{tabs}}{Controls which tabs to show in the left sidebar and their order. Options are: "Manifold", "Genes", "Query", "Atlas", "Markers", "Gene modules", "Projected-fold", "Diff. Expression", "Cell types", "Flow", "Annotate", "About". When NULL - default tabs would be set. For projects with atlas projections, please set \code{atlas} to TRUE.}
+    \item{\code{help}}{Controls wether to start the app with a help modal (from introjs). Help messages can be edited in help.yaml file (see 'Architecture' vignette).}
+    \item{\code{selected_gene1,selected_gene2}}{The default genes that would be selected (in any screen with gene selection). If this parameter is missing, the 2 genes with highest max(expr)-min(expr) in the first dataset would be chosen.}
+    \item{\code{selected_mc1,selected_mc2}}{The default metacells that would be selected in the Diff. Expression tab.}
+    \item{\code{datasets}}{A named list with additional per-dataset parameters. Current parameters include default visualization properties of projection and scatter plots.}
+    \item{\code{other_params}}{Named list of additional parameters such as projection_point_size, projection_point_stroke, scatters_point_size and scatters_stroke_size}
+    \item{\code{edit_config}}{open file editor for config file editing}
+    \item{\code{atlas}}{use default configuration for atlas projections (relevant only when \code{tabs} is NULL)}
+  }}
 }
 \description{
 Read objects from \code{metacell} R package and import a

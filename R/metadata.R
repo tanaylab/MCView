@@ -208,6 +208,7 @@ import_cell_metadata <- function(project, dataset, cell_metadata, cell_to_metace
 #' @param anndata_file path to \code{h5ad} file which contains the output of metacell2 pipeline (metacells python package).
 #' @param metadata_fields names of fields in the anndata \code{object$obs} which contains metadata for each cell.
 #' @param rm_outliers do not calculate statistics for cells that are marked as outliers (\code{outiler=TRUE} in \code{object$obs}) (only relevant when running \code{cell_metadata_to_metacell_from_h5ad})
+#' @param scdb,matrix,mc scdb, matrix and mc objects from metacell1. See \code{import_dataset_metacell1} for more information.
 #'
 #'
 #' @return A data frame with a column named "metacell" and
@@ -221,8 +222,10 @@ import_cell_metadata <- function(project, dataset, cell_metadata, cell_to_metace
 #' factor or are explicitly set at \code{categorical} are treated as categorical.
 #'
 #'
-#' \code{cell_metadata_to_metacell} converts cell metadata to metacell metadata from data frames.
+#' \code{cell_metadata_to_metacell} converts cell metadata to metacell metadata from data frames. \cr
 #' \code{cell_metadata_to_metacell_from_h5ad} extracts metadata fields and cell_to_metacell from cells h5ad file and
+#' then runs \code{cell_metadata_to_metacell}. \cr
+#' \code{cell_metadata_to_metacell_from_metacell1} extracts metadata fields and cell_to_metacell from metacell1 scdb and
 #' then runs \code{cell_metadata_to_metacell}.
 #'
 #' @examples
@@ -342,6 +345,32 @@ cell_metadata_to_metacell <- function(cell_metadata, cell_to_metacell, func = me
     }
 
     return(metadata)
+}
+
+#'
+#' @describeIn cell_metadata_to_metacell
+#'
+#' @export
+cell_metadata_to_metacell_from_metacell1 <- function(scdb, matrix, mc, metadata_fields, func = mean, categorical = c()) {
+    library(metacell)
+    init_temp_scdb(scdb, matrix, mc, mc2d = mc, dataset = "temp")
+    mc <- scdb_mc(mc)
+    mat <- scdb_mat(matrix)
+
+    purrr::walk(metadata_fields, ~ {
+        if (!has_name(mat@cell_metadata, .x)) {
+            cli_abort("The field {.field {.x}} doesn't exist in {.field mat@cell_metadata}")
+        }
+    })
+
+    cell_metadata <- mat@cell_metadata[, metadata_fields, drop = FALSE] %>%
+        as.data.frame() %>%
+        rownames_to_column("cell_id") %>%
+        as_tibble()
+
+    cell_to_metacell <- enframe(mc@mc, "cell_id", "metacell") %>% as_tibble()
+
+    cell_metadata_to_metacell(cell_metadata = cell_metadata, cell_to_metacell = cell_to_metacell, func = func, categorical = categorical)
 }
 
 #'

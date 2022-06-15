@@ -2,12 +2,22 @@
 % Please edit documentation in R/metadata.R
 \name{cell_metadata_to_metacell}
 \alias{cell_metadata_to_metacell}
+\alias{cell_metadata_to_metacell_from_metacell1}
 \alias{cell_metadata_to_metacell_from_h5ad}
 \title{Convert cell metadata to metacell metadata}
 \usage{
 cell_metadata_to_metacell(
   cell_metadata,
   cell_to_metacell,
+  func = mean,
+  categorical = c()
+)
+
+cell_metadata_to_metacell_from_metacell1(
+  scdb,
+  matrix,
+  mc,
+  metadata_fields,
   func = mean,
   categorical = c()
 )
@@ -36,9 +46,11 @@ name of a delimited file which contains such data frame.}
 a column for each category where the values are the fraction of cells with the
 category in each metacell.}
 
-\item{anndata_file}{path to \code{h5ad} file which contains the output of metacell2 pipeline (metacells python package).}
+\item{scdb, matrix, mc}{scdb, matrix and mc objects from metacell1. See \code{import_dataset_metacell1} for more information.}
 
 \item{metadata_fields}{names of fields in the anndata \code{object$obs} which contains metadata for each cell.}
+
+\item{anndata_file}{path to \code{h5ad} file which contains the output of metacell2 pipeline (metacells python package).}
 
 \item{rm_outliers}{do not calculate statistics for cells that are marked as outliers (\code{outiler=TRUE} in \code{object$obs}) (only relevant when running \code{cell_metadata_to_metacell_from_h5ad})}
 }
@@ -54,12 +66,16 @@ metadata columns with the fraction of cells (in each metacell) for every categor
 factor or are explicitly set at \code{categorical} are treated as categorical.
 
 
-\code{cell_metadata_to_metacell} converts cell metadata to metacell metadata from data frames.
+\code{cell_metadata_to_metacell} converts cell metadata to metacell metadata from data frames. \cr
 \code{cell_metadata_to_metacell_from_h5ad} extracts metadata fields and cell_to_metacell from cells h5ad file and
+then runs \code{cell_metadata_to_metacell}. \cr
+\code{cell_metadata_to_metacell_from_metacell1} extracts metadata fields and cell_to_metacell from metacell1 scdb and
 then runs \code{cell_metadata_to_metacell}.
 }
 \section{Functions}{
 \itemize{
+\item \code{cell_metadata_to_metacell_from_metacell1}: 
+
 \item \code{cell_metadata_to_metacell_from_h5ad}: 
 }}
 
