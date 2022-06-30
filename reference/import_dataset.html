@@ -67,33 +67,33 @@ which can be in the app using the right sidebar.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">import_dataset</span><span class="op">(</span>
-  <span class="va">project</span>,
-  <span class="va">dataset</span>,
-  <span class="va">anndata_file</span>,
-  cell_type_field <span class="op">=</span> <span class="cn">NULL</span>,
-  metacell_types_file <span class="op">=</span> <span class="cn">NULL</span>,
-  cell_type_colors_file <span class="op">=</span> <span class="cn">NULL</span>,
-  outliers_anndata_file <span class="op">=</span> <span class="cn">NULL</span>,
-  cluster_metacells <span class="op">=</span> <span class="cn">TRUE</span>,
-  cluster_k <span class="op">=</span> <span class="cn">NULL</span>,
-  metadata_fields <span class="op">=</span> <span class="cn">NULL</span>,
-  metadata <span class="op">=</span> <span class="cn">NULL</span>,
-  metadata_colors <span class="op">=</span> <span class="cn">NULL</span>,
-  cell_metadata <span class="op">=</span> <span class="cn">NULL</span>,
-  cell_to_metacell <span class="op">=</span> <span class="cn">NULL</span>,
-  gene_modules_file <span class="op">=</span> <span class="cn">NULL</span>,
-  gene_modules_k <span class="op">=</span> <span class="cn">NULL</span>,
-  calc_gg_cor <span class="op">=</span> <span class="cn">TRUE</span>,
-  gene_names <span class="op">=</span> <span class="cn">NULL</span>,
-  atlas_project <span class="op">=</span> <span class="cn">NULL</span>,
-  atlas_dataset <span class="op">=</span> <span class="cn">NULL</span>,
-  projection_weights_file <span class="op">=</span> <span class="cn">NULL</span>,
-  copy_atlas <span class="op">=</span> <span class="cn">TRUE</span>,
-  minimal_max_log_fraction <span class="op">=</span> <span class="op">-</span><span class="fl">13</span>,
-  minimal_relative_log_fraction <span class="op">=</span> <span class="fl">2</span>,
-  <span class="va">...</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">import_dataset</span><span class="op">(</span></span>
+<span>  <span class="va">project</span>,</span>
+<span>  <span class="va">dataset</span>,</span>
+<span>  <span class="va">anndata_file</span>,</span>
+<span>  cell_type_field <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  metacell_types_file <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  cell_type_colors_file <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  outliers_anndata_file <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  cluster_metacells <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  cluster_k <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  metadata_fields <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  metadata <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  metadata_colors <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  cell_metadata <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  cell_to_metacell <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  gene_modules_file <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  gene_modules_k <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  calc_gg_cor <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  gene_names <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  atlas_project <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  atlas_dataset <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  projection_weights_file <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  copy_atlas <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  minimal_max_log_fraction <span class="op">=</span> <span class="op">-</span><span class="fl">13</span>,</span>
+<span>  minimal_relative_log_fraction <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -276,17 +276,17 @@ would contain objects used by MCView shiny app (such as the metacell matrix).</p
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span></span>
-<span class="r-in"><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="st">"raw"</span><span class="op">)</span></span>
-<span class="r-in"><span class="fu"><a href="https://rdrr.io/r/utils/download.file.html" class="external-link">download.file</a></span><span class="op">(</span></span>
-<span class="r-in">    <span class="st">"http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz"</span>,</span>
-<span class="r-in">    <span class="st">"raw/PBMC_processed.tar.gz"</span></span>
-<span class="r-in"><span class="op">)</span></span>
-<span class="r-in"><span class="fu"><a href="https://rdrr.io/r/utils/untar.html" class="external-link">untar</a></span><span class="op">(</span><span class="st">"raw/PBMC_processed.tar.gz"</span>, exdir <span class="op">=</span> <span class="st">"raw"</span><span class="op">)</span></span>
-<span class="r-in"><span class="fu"><a href="create_project.html">create_project</a></span><span class="op">(</span><span class="st">"PBMC"</span><span class="op">)</span></span>
-<span class="r-in"><span class="fu">import_dataset</span><span class="op">(</span><span class="st">"PBMC"</span>, <span class="st">"PBMC163k"</span>, <span class="st">"raw/metacells.h5ad"</span><span class="op">)</span></span>
-<span class="r-in"><span class="op">}</span></span>
-<span class="r-in"></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="st">"raw"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/download.file.html" class="external-link">download.file</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    <span class="st">"http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz"</span>,</span></span>
+<span class="r-in"><span>    <span class="st">"raw/PBMC_processed.tar.gz"</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/untar.html" class="external-link">untar</a></span><span class="op">(</span><span class="st">"raw/PBMC_processed.tar.gz"</span>, exdir <span class="op">=</span> <span class="st">"raw"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="create_project.html">create_project</a></span><span class="op">(</span><span class="st">"PBMC"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">import_dataset</span><span class="op">(</span><span class="st">"PBMC"</span>, <span class="st">"PBMC163k"</span>, <span class="st">"raw/metacells.h5ad"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span></span></span>
+<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
@@ -298,7 +298,7 @@ would contain objects used by MCView shiny app (such as the metacell matrix).</p
 </div>
 
 <div class="pkgdown-footer-right">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.4.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.5.</p>
 </div>
 
     </footer></div>
