@@ -391,7 +391,7 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
                         )
                     )
 
-                    round_columns <- c("correction_factor", "projected_correlation")
+                    round_columns <- c("correction_factor")
                     round_columns <- round_columns[round_columns %in% colnames(current_gene_table())]
                     if (length(round_columns) > 0) {
                         dt <- dt %>% DT::formatRound(columns = round_columns, digits = 2)
