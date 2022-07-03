@@ -843,7 +843,7 @@ plot_obs_proj_scatter <- function(dataset,
         df <- df %>%
             mutate(!!x_var := egc_obs[metacell], !!y_var := egc_proj[metacell]) %>%
             mutate(x_str = glue("{axis_name} obs: {expr_text}", expr_text = scales::scientific(!!sym(x_var)))) %>%
-            mutate(y_str = glue("{axis_name} proj: {expr_text}", expr_text = scales::scientific(!!sym(x_var))))
+            mutate(y_str = glue("{axis_name} proj: {expr_text}", expr_text = scales::scientific(!!sym(y_var))))
     }
 
     categorical_md <- FALSE
