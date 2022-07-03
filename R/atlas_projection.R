@@ -162,12 +162,9 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
             forbidden_gene,
             ignored_gene,
             any_of("atlas_significant_gene"),
-            correction_factor,            
+            correction_factor,
             correlated_gene,
-            uncorrelated_gene,
-            glob_biased_gene = biased_gene,
-            glob_ignored_gene = ignored_gene,
-            glob_systematic_gene = systematic_gene
+            glob_ignored_gene = ignored_gene
         ) %>%
         pivot_longer(
             contains("_of_"),
@@ -176,13 +173,9 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
         ) %>%
         spread(dtype, value) %>%
         select(
-            gene, cell_type, biased_gene, systematic_gene, ignored_gene, correlated_gene, uncorrelated_gene, everything()
+            gene, cell_type, ignored_gene, correlated_gene, everything()
         ) %>%
         arrange(
-            desc(biased_gene),
-            desc(systematic_gene),
-            desc(glob_biased_gene),
-            desc(glob_systematic_gene),
             desc(ignored_gene),
             desc(glob_ignored_gene)
         )
