@@ -155,7 +155,7 @@ import_dataset_metacell1 <- function(project,
         mutate(cell_type = factor(cell_type), cell_type = forcats::fct_inorder(cell_type))
     serialize_shiny_data(cell_type_colors, "cell_type_colors", dataset = dataset, cache_dir = cache_dir, flat = TRUE)
 
-    metacell_types <- metacell_types %>%        
+    metacell_types <- metacell_types %>%
         left_join(mc_genes_top2, by = "metacell")
 
     # filter metacell_types to contain only metacells that are included in mc_egc

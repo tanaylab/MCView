@@ -365,9 +365,16 @@ plot_mc_scatter <- function(dataset,
     color_name <- color_var
     categorical_md <- FALSE
     if (is.null(color_var)) {
+        if (atlas) {
+            col_to_ct <- get_cell_type_colors(dataset, NULL, atlas = TRUE)
+        } else {
+            col_to_ct <- get_cell_type_colors(dataset, cell_type_colors)
+        }
+
         df <- df %>%
             mutate(color = cell_type, color_values = cell_type) %>%
-            mutate(color_str = glue("Cell type: {`Cell type`}"))
+            mutate(color_str = glue("Cell type: {`Cell type`}")) %>%
+            mutate(color = factor(color, levels = sort(names(col_to_ct))))
     } else if (color_type == "Metadata") {
         req(metadata)
         df <- df %>%
@@ -442,12 +449,6 @@ plot_mc_scatter <- function(dataset,
 
     # set color plotting
     if (is.null(color_var)) {
-        if (atlas) {
-            col_to_ct <- get_cell_type_colors(dataset, NULL, atlas = TRUE)
-        } else {
-            col_to_ct <- get_cell_type_colors(dataset, cell_type_colors)
-        }
-
         p <- p +
             geom_point(size = point_size, shape = 21, stroke = stroke, color = "black") +
             scale_fill_manual("", values = col_to_ct) +

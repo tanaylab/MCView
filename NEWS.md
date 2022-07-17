@@ -7,6 +7,7 @@
 * Added preloader spinner.
 * Allow using `run_app` with the bundle folder.
 * Added cell metadata support for metacell1 import. 
+* Fix: clicking on a cell type on the manifold legend was sometimes not aligned with the gene/gene plot. 
 
 # MCView 0.2.4
 
