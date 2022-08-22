@@ -510,6 +510,6 @@ cli_alert_success_verbose <- function(...) {
     }
 }
 
-cli_abort_compute_for_mcview <- function(field) {
-    cli_abort("{.field {{field}} is missing from the h5ad file. Did you remember to run {.code compute_for_mcview} using the metacells python package?", call = parent.env(1))
+cli_abort_compute_for_mcview <- function(field) {    
+    cli_abort("{.field {field}} is missing from the h5ad file. Did you remember to run {.code compute_for_mcview} using the metacells python package?")
 }
