@@ -80,11 +80,18 @@ mc2d_plot_metadata_ggp_categorical <- function(mc2d_df,
                 glue("Metacell: {metacell}"),
                 glue("Cell type: {`Cell type`}"),
                 glue("Top genes: {`Top genes`}"),
-                ifelse(md != "Cell type", paste0(md, ": ", mc2d_df[[md]]), ""),
-                ifelse(has_name(mc2d_df, "Age"), glue("Metacell age (E[t]): {round(Age, digits=2)}"), ""),
                 sep = "\n"
             )
         )
+
+    if (md != "Cell type") {
+        mc2d_df <- mc2d_df %>%
+            mutate(text = paste0(text, "\n", md, ": ", mc2d_df[[md]]))
+    }
+    if (has_name(mc2d_df, "Age")) {
+        mc2d_df <- mc2d_df %>%
+            mutate(text = paste0(text, "\n", glue("Metacell age (E[t]): {round(Age, digits=2)}")))
+    }
 
     if (is.null(colors)) {
         colors <- colors %||% get_metadata_colors(dataset, md, metadata = metadata)
