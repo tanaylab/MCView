@@ -86,6 +86,7 @@ which can be in the app using the right sidebar.</p>
 <span>  gene_modules_k <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  calc_gg_cor <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  gene_names <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  metacell_graphs <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  atlas_project <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  atlas_dataset <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  projection_weights_file <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -197,6 +198,10 @@ name of a delimited file which contains such data frame.</p></dd>
 
 <dt>gene_names</dt>
 <dd><p>use alternative gene names (optional). A data frame with a column called 'gene_name' with the original gene name (as it appears at the 'h5ad' file) and another column called 'alt_name' with the gene name to use in MCView. Genes that do not appear at the table would not be changed.</p></dd>
+
+
+<dt>metacell_graphs</dt>
+<dd><p>a named list of metacell graphs or files containing metacell graphs. Each graph should be a data frame columns named "from", "to" and "weight" with the ids of the metacells and the weight of the edge. If the list is not named, the names would be 'graph1', 'graph2' and so on. Note that the graph cannot be named "metacell" as this is reserved for the metacell graph.</p></dd>
 
 
 <dt>atlas_project</dt>
