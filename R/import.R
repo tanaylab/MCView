@@ -53,6 +53,7 @@
 #' @param gene_modules_k number of clusters for initial gene module calculation. If NULL - the number of clusters would be determined such that an gene module would contain 16 genes on average.
 #' @param calc_gg_cor Calculate top 30 correlated and anti-correlated genes for each gene. This computation can be heavy for large datasets or weaker machines, so you can set \code{calc_gg_cor=FALSE} to skip it. Note that then this feature would be missing from the app.
 #' @param gene_names use alternative gene names (optional). A data frame with a column called 'gene_name' with the original gene name (as it appears at the 'h5ad' file) and another column called 'alt_name' with the gene name to use in MCView. Genes that do not appear at the table would not be changed.
+#' @param metacell_graphs a named list of metacell graphs or files containing metacell graphs. Each graph should be a data frame columns named "from", "to" and "weight" with the ids of the metacells and the weight of the edge. If the list is not named, the names would be 'graph1', 'graph2' and so on. Note that the graph cannot be named "metacell" as this is reserved for the metacell graph.
 #' @param atlas_project path to and \code{MCView} project which contains the atlas.
 #' @param atlas_dataset name of the atlas dataset
 #' @param projection_weights_file Path to a tabular file (csv,tsv) with the following fields "query", "atlas" and "weight". The file is an output of \code{metacells} projection algorithm.
@@ -98,6 +99,7 @@ import_dataset <- function(project,
                            gene_modules_k = NULL,
                            calc_gg_cor = TRUE,
                            gene_names = NULL,
+                           metacell_graphs = NULL,
                            atlas_project = NULL,
                            atlas_dataset = NULL,
                            projection_weights_file = NULL,
@@ -181,6 +183,12 @@ import_dataset <- function(project,
         mc_y = adata$obs %>% select(umap_y) %>% tibble::rownames_to_column("mc") %>% tibble::deframe()
     )
     serialize_shiny_data(mc2d_list, "mc2d", dataset = dataset, cache_dir = cache_dir)
+
+    if (!is.null(metacell_graphs)) {
+        cli_alert_info("Processing metacell graphs")
+        metacell_graphs <- read_metacell_graphs(metacell_graphs, metacells)
+        serialize_shiny_data(metacell_graphs, "metacell_graphs", dataset = dataset, cache_dir = cache_dir)
+    }
 
     mc_egc <- t(t(mc_mat) / mc_sum)
 
