@@ -24,6 +24,7 @@ mod_manifold_ui <- function(id) {
                     startOpen = FALSE,
                     width = 25,
                     id = ns("gene_projection_sidebar"),
+                    uiOutput(ns("graph_select_ui")),
                     selectInput(ns("proj_stat"), label = "Statistic", choices = c("Expression" = "expression", "Enrichment" = "enrichment"), selected = "Expression", multiple = FALSE, selectize = FALSE),
                     uiOutput(ns("set_range_ui")),
                     uiOutput(ns("expr_range_ui")),
@@ -131,7 +132,7 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
 
             # Projection plots
             output$plot_manifold_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, source = "proj_manifold_plot") %>%
-                bindCache(dataset(), input$gene1, input$gene2, input$color_proj, metacell_types(), cell_type_colors(), input$point_size, input$stroke, input$min_edge_size, input$metacell1, input$metacell2, input$proj_stat, input$expr_range, input$lfp, input$set_range, input$color_proj_metadata, input$color_proj_gene_module, clipboard_changed())
+                bindCache(dataset(), input$gene1, input$gene2, input$color_proj, metacell_types(), cell_type_colors(), input$point_size, input$stroke, input$min_edge_size, input$metacell1, input$metacell2, input$proj_stat, input$expr_range, input$lfp, input$set_range, input$color_proj_metadata, input$color_proj_gene_module, clipboard_changed(), input$graph_name)
         }
     )
 }

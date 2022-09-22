@@ -17,7 +17,8 @@ mc2d_plot_metadata_ggp <- function(dataset,
                                    scale_edges = FALSE,
                                    metacell_types = NULL,
                                    atlas = FALSE,
-                                   metadata = NULL) {
+                                   metadata = NULL,
+                                   graph_name = NULL) {
     mc2d <- get_mc_data(dataset, "mc2d", atlas = atlas)
     metadata <- metadata %||% get_mc_data(dataset, "metadata", atlas = atlas)
 
@@ -44,7 +45,13 @@ mc2d_plot_metadata_ggp <- function(dataset,
         mc2d_df <- mc2d_df %>% rename(`Age` = mc_age)
     }
 
-    graph <- mc2d_to_graph_df(mc2d, min_d = min_d)
+    if (!is.null(graph_name) && graph_name != "metacell") {
+        graph <- get_mc_data(dataset, "metacell_graphs")[[graph_name]]
+    } else {
+        graph <- NULL
+    }
+
+    graph <- mc2d_to_graph_df(mc2d, min_d = min_d, graph = graph)
 
     if (is.null(id)) {
         mc2d_df <- mc2d_df %>% mutate(id = metacell)

@@ -31,6 +31,7 @@ projection_box <- function(ns,
             uiOutput(ns("gene_selector")),
             uiOutput(ns("proj_gene_module_selector")),
             uiOutput(ns("metadata_selector")),
+            uiOutput(ns("graph_select_ui")),
             uiOutput(ns("proj_stat_ui")),
             uiOutput(ns("set_range_ui")),
             uiOutput(ns("expr_range_ui")),
@@ -102,6 +103,15 @@ projection_selectors <- function(ns, dataset, output, input, gene_modules, globa
         selectInput(ns("proj_stat"), label = "Statistic", choices = c("Expression" = "expression", "Enrichment" = "enrichment"), selected = "Expression", multiple = FALSE, selectize = FALSE)
     })
 
+    output$graph_select_ui <- renderUI({
+        choices <- c("metacell")
+        graphs <- get_mc_data(dataset(), "metacell_graphs")
+        if (!is.null(graphs)) {
+            choices <- c(choices, names(graphs))
+        }
+        selectInput(ns("graph_name"), label = "Graph", choices = choices, selected = "metacell", multiple = FALSE, selectize = FALSE)
+    })
+
     # Expression range
     output$set_range_ui <- renderUI({
         req(input$color_proj == "Gene" || input$color_proj == "Gene A" || input$color_proj == "Gene B" || input$color_proj == "Gene module")
@@ -137,6 +147,12 @@ projection_selectors <- function(ns, dataset, output, input, gene_modules, globa
 
     # Minimal edge length selector
     output$edge_distance_ui <- renderUI({
-        sliderInput(ns("min_edge_size"), label = "Min edge length", min = 0, max = 0.3, value = min_edge_length(dataset()), step = 0.001)
+        graph <- input$graph_name
+        if (is.null(graph) || graph == "metacell") {
+            sliderInput(ns("min_edge_size"), label = "Min edge length", min = 0, max = 0.3, value = min_edge_length(dataset()), step = 0.001)
+        } else {
+            graph <- get_mc_data(dataset(), "metacell_graphs")[[graph]]
+            sliderInput(ns("min_edge_size"), label = "Min weight", min = min(graph$weight, na.rm = TRUE), max = max(graph$weight, na.rm = TRUE), value = median(graph$weight), step = (max(graph$weight, na.rm = TRUE) - min(graph$weight, na.rm = TRUE)) / 50)
+        }
     })
 }

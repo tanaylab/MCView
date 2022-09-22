@@ -23,6 +23,7 @@ import_dataset(
   gene_modules_k = NULL,
   calc_gg_cor = TRUE,
   gene_names = NULL,
+  metacell_graphs = NULL,
   atlas_project = NULL,
   atlas_dataset = NULL,
   projection_weights_file = NULL,
@@ -97,6 +98,8 @@ name of a delimited file which contains such data frame.}
 \item{calc_gg_cor}{Calculate top 30 correlated and anti-correlated genes for each gene. This computation can be heavy for large datasets or weaker machines, so you can set \code{calc_gg_cor=FALSE} to skip it. Note that then this feature would be missing from the app.}
 
 \item{gene_names}{use alternative gene names (optional). A data frame with a column called 'gene_name' with the original gene name (as it appears at the 'h5ad' file) and another column called 'alt_name' with the gene name to use in MCView. Genes that do not appear at the table would not be changed.}
+
+\item{metacell_graphs}{a named list of metacell graphs or files containing metacell graphs. Each graph should be a data frame columns named "from", "to" and "weight" with the ids of the metacells and the weight of the edge. If the list is not named, the names would be 'graph1', 'graph2' and so on. Note that the graph cannot be named "metacell" as this is reserved for the metacell graph.}
 
 \item{atlas_project}{path to and \code{MCView} project which contains the atlas.}
 
