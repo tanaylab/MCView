@@ -61,6 +61,7 @@
 #' (in log fraction units - normalized egc) above this threshold
 #' @param minimal_relative_log_fraction When choosing marker genes: take only genes with relative
 #' log fraction (mc_fp) above this this value
+#' @param max_clusters_for_markers Maximal number of clusters to use when clustering metacells by marker genes. If the number of metacells is smaller than this number - all metacells would be used as clusters.
 #'
 #' @return invisibly returns an \code{AnnDataR6} object of the read \code{anndata_file}
 #'
@@ -104,6 +105,7 @@ import_dataset <- function(project,
                            copy_atlas = TRUE,
                            minimal_max_log_fraction = -13,
                            minimal_relative_log_fraction = 2,
+                           max_clusters_for_markers = 300,
                            ...) {
     verbose <- !is.null(getOption("MCView.verbose")) && getOption("MCView.verbose")
     verify_project_dir(project, create = TRUE, atlas = !is.null(atlas_project), ...)
@@ -197,6 +199,22 @@ import_dataset <- function(project,
     serialize_shiny_data(forbidden_genes, "forbidden_genes", dataset = dataset, cache_dir = cache_dir)
     marker_genes <- calc_marker_genes(mc_egc[!forbidden, ], 20, minimal_max_log_fraction = minimal_max_log_fraction, minimal_relative_log_fraction = minimal_relative_log_fraction)
     serialize_shiny_data(marker_genes, "marker_genes", dataset = dataset, cache_dir = cache_dir)
+
+    # cluster the marker genes
+    top_marks <- choose_markers(marker_genes, 1e3)
+    mc_egc_norm <- mc_egc[top_marks, , drop = FALSE] + 1e-5
+    mc_fp <- mc_egc_norm / apply(mc_egc_norm, 1, median, na.rm = TRUE)
+    marker_clust <- cluster_markers_matrix(mc_fp, max_clusters_for_markers)
+    serialize_shiny_data(marker_clust, "marker_clust", dataset = dataset, cache_dir = cache_dir)
+
+    if (max_clusters_for_markers < ncol(mc_egc)) {
+        marker_clust_mat <- t(tgs_matrix_tapply(mc_egc, marker_clust$cluster, mean, na.rm = TRUE)) + 1e-5
+        marker_clust_mat <- marker_clust_mat / apply(marker_clust_mat, 1, median, na.rm = TRUE)
+    } else {
+        marker_clust_mat <- mc_fp
+    }
+
+    serialize_shiny_data(marker_clust_mat, "marker_clust_mat", dataset = dataset, cache_dir = cache_dir)
 
     # serialize the inner fold matrix (if exists)
     if (!is.null(adata$layers[["inner_fold"]])) {
@@ -510,6 +528,6 @@ cli_alert_success_verbose <- function(...) {
     }
 }
 
-cli_abort_compute_for_mcview <- function(field) {    
+cli_abort_compute_for_mcview <- function(field) {
     cli_abort("{.field {field}} is missing from the h5ad file. Did you remember to run {.code compute_for_mcview} using the metacells python package?")
 }

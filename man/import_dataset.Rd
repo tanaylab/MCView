@@ -29,6 +29,7 @@ import_dataset(
   copy_atlas = TRUE,
   minimal_max_log_fraction = -13,
   minimal_relative_log_fraction = 2,
+  max_clusters_for_markers = 300,
   ...
 )
 }
@@ -111,6 +112,8 @@ name of a delimited file which contains such data frame.}
 
 \item{minimal_relative_log_fraction}{When choosing marker genes: take only genes with relative
 log fraction (mc_fp) above this this value}
+
+\item{max_clusters_for_markers}{Maximal number of clusters to use when clustering metacells by marker genes. If the number of metacells is smaller than this number - all metacells would be used as clusters.}
 
 \item{...}{
   Arguments passed on to \code{\link[=create_project]{create_project}}

@@ -144,11 +144,49 @@ get_top_marks <- function(feat, notify_var_genes = TRUE) {
     return(c(main_mark, second_mark))
 }
 
+cluster_markers_matrix <- function(feat, max_clusters_for_markers = 300) {
+    cli_alert_info("Clustering markers matrix")
+    clust <- order_mc_by_most_var_genes(feat, log_transform = TRUE, epsilon = 0, ret_hc = TRUE)
+    # hc <- fastcluster::hclust(tgs_dist(tgs_cor(log2(feat), pairwise.complete.obs = TRUE)), method = "ward.D2")
+    if (ncol(feat) > max_clusters_for_markers) {
+        cli_alert_info("Reducing number of clusters to {.val {.value max_clusters_for_markers}}")
+        ct <- stats::cutree(clust$hc, k = max_clusters_for_markers)
+        ct <- tibble::enframe(ct, name = "metacell", value = "cluster")
+    } else {
+        ct <- tibble(metacell = colnames(feat), cluster = metacell)
+    }
+
+    ord_df <- tibble(metacell = colnames(feat)[clust$ord]) %>% mutate(ord = 1:n())
+
+    ct <- ct %>%
+        mutate(cluster = factor(paste0("c", cluster), levels = paste0("c", 1:max(ct$cluster)))) %>%
+        left_join(ord_df, by = "metacell") %>%
+        arrange(cluster, ord) %>%
+        select(metacell, cluster, ord)
+
+    return(ct)
+}
+
+order_mc_by_predefined_clusters <- function(mat, clust_map, clust_expr) {
+    # order using the clusters matrix
+    clust_ord <- order_mc_by_most_var_genes(clust_expr, log_transform = TRUE, epsilon = 0, force_cell_type = FALSE, order_each_cell_type = FALSE)
+
+    # order by the metacells according to their clusters and then their order within the clusters
+    mc_ord <- clust_map %>%
+        mutate(
+            cluster = factor(cluster, levels = colnames(clust_expr)[clust_ord]),
+            metacell = factor(metacell, levels = colnames(mat))
+        ) %>%
+        arrange(cluster, ord) %>%
+        pull(as.numeric(metacell))
+    return(mc_ord)
+}
+
 #' Order metacells based on 2 most variable genes
 #'
 #' @noRd
 #' @return named vector with metacell order
-order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers = FALSE, force_cell_type = FALSE, metacell_types = NULL, order_each_cell_type = FALSE, epsilon = 0, notify_var_genes = FALSE, log_transform = TRUE) {
+order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers = FALSE, force_cell_type = FALSE, metacell_types = NULL, order_each_cell_type = FALSE, epsilon = 0, notify_var_genes = FALSE, log_transform = TRUE, clust_map = NULL, clust_expr = NULL, ret_hc = FALSE) {
     if (filter_markers) {
         gene_folds <- filter_markers_mat(gene_folds)
     }
@@ -159,50 +197,55 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
         feat <- gene_folds
     }
 
-
-    if (is.null(marks)) {
-        marks <- get_top_marks(feat, notify_var_genes = notify_var_genes)
-        main_mark <- marks[1]
-        second_mark <- marks[2]
+    if (!is.null(clust_map) && !is.null(clust_expr)) {
+        ord <- order_mc_by_predefined_clusters(feat, clust_map, clust_expr)
+        mc_order <- ord
     } else {
-        main_mark <- marks[1]
-        second_mark <- marks[2]
+        if (is.null(marks)) {
+            marks <- get_top_marks(feat, notify_var_genes = notify_var_genes)
+            main_mark <- marks[1]
+            second_mark <- marks[2]
+        } else {
+            main_mark <- marks[1]
+            second_mark <- marks[2]
+        }
+
+        if (notify_var_genes) {
+            showNotification(glue("Ordering metacells based on {main_mark} vs {second_mark}"))
+        }
+
+        if (ncol(feat) == 1) {
+            return(1)
+        }
+
+        zero_mcs <- colSums(abs(feat) > 0) < 2
+        if (any(zero_mcs)) {
+            feat_all <- feat
+            feat <- feat_all[, !zero_mcs, drop = FALSE]
+            feat_zero <- feat_all[, zero_mcs, drop = FALSE]
+        }
+
+        if (ncol(feat) == 0) { # all the metacells do not have enough non-zero values
+            return(1:ncol(feat_all))
+        }
+
+        hc <- fastcluster::hclust(tgs_dist(tgs_cor(feat, pairwise.complete.obs = TRUE)), method = "ward.D2")
+
+        d <- reorder(
+            as.dendrogram(hc),
+            feat[main_mark, ] - feat[second_mark, ],
+            agglo.FUN = mean
+        )
+        ord <- as.hclust(d)$order
+
+        if (any(zero_mcs)) {
+            mc_order <- c(colnames(feat)[ord], colnames(feat_zero))
+            feat <- feat_all
+        } else {
+            mc_order <- colnames(feat)[ord]
+        }
     }
 
-    if (notify_var_genes) {
-        showNotification(glue("Ordering metacells based on {main_mark} vs {second_mark}"))
-    }
-
-    if (ncol(feat) == 1) {
-        return(1)
-    }
-
-    zero_mcs <- colSums(abs(feat) > 0) < 2
-    if (any(zero_mcs)) {
-        feat_all <- feat
-        feat <- feat_all[, !zero_mcs, drop = FALSE]
-        feat_zero <- feat_all[, zero_mcs, drop = FALSE]
-    }
-
-    if (ncol(feat) == 0) { # all the metacells do not have enough non-zero values
-        return(1:ncol(feat_all))
-    }
-
-    hc <- fastcluster::hclust(tgs_dist(tgs_cor(feat, pairwise.complete.obs = TRUE)), method = "ward.D2")
-
-    d <- reorder(
-        as.dendrogram(hc),
-        feat[main_mark, ] - feat[second_mark, ],
-        agglo.FUN = mean
-    )
-    ord <- as.hclust(d)$order
-
-    if (any(zero_mcs)) {
-        mc_order <- c(colnames(feat)[ord], colnames(feat_zero))
-        feat <- feat_all
-    } else {
-        mc_order <- colnames(feat)[ord]
-    }
 
     if (force_cell_type) {
         ord_df <- tibble(metacell = colnames(feat)) %>%
@@ -250,7 +293,11 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
         }
     }
 
-    return(ord)
+    if (ret_hc) {
+        return(list(ord = ord, hc = hc))
+    } else {
+        return(ord)
+    }
 }
 
 get_markers <- function(dataset) {
@@ -265,7 +312,9 @@ get_markers <- function(dataset) {
     return(marker_genes)
 }
 
-get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_types = NULL, gene_modules = NULL, force_cell_type = TRUE, mode = "Markers", notify_var_genes = FALSE) {
+get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_types = NULL, gene_modules = NULL, force_cell_type = TRUE, mode = "Markers", notify_var_genes = FALSE, recluster = FALSE) {
+    clust_map <- NULL
+    clust_expr <- NULL
     if (mode == "Inner") {
         mc_fp <- get_mc_data(dataset, "inner_fold_mat")
         req(mc_fp)
@@ -284,6 +333,10 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
         mc_fp <- get_mc_fp(dataset, markers)
         epsilon <- 0
         log_transform <- TRUE
+        if (!recluster) {
+            clust_map <- get_mc_data(dataset, "marker_clust")
+            clust_expr <- get_mc_data(dataset, "marker_clust_mat")
+        }
     } else if (mode == "Gene modules") {
         mc_fp <- get_mc_gene_modules_fp(dataset, markers, gene_modules)
         epsilon <- 0
@@ -309,7 +362,7 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
     }
 
     if (ncol(mat) > 1) {
-        mc_order <- order_mc_by_most_var_genes(mat, force_cell_type = force_cell_type, metacell_types = metacell_types, epsilon = epsilon, notify_var_genes = notify_var_genes, log_transform = log_transform)
+        mc_order <- order_mc_by_most_var_genes(mat, force_cell_type = force_cell_type, metacell_types = metacell_types, epsilon = epsilon, notify_var_genes = notify_var_genes, log_transform = log_transform, clust_map = clust_map, clust_expr = clust_expr)
         mat <- mat[, mc_order, drop = FALSE]
     }
 
