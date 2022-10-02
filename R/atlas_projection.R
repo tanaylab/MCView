@@ -162,8 +162,8 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
             forbidden_gene,
             ignored_gene,
             any_of("atlas_significant_gene"),
-            correction_factor,
-            correlated_gene,
+            any_of("correction_factor"),
+            any_of("correlated_gene"),
             glob_ignored_gene = ignored_gene
         ) %>%
         pivot_longer(
@@ -173,7 +173,7 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
         ) %>%
         spread(dtype, value) %>%
         select(
-            gene, cell_type, ignored_gene, correlated_gene, everything()
+            gene, cell_type, ignored_gene, any_of("correlated_gene"), everything()
         ) %>%
         arrange(
             desc(ignored_gene),
