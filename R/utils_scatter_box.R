@@ -28,12 +28,12 @@ scatter_box <- function(ns, id, title = "Gene/Gene", x_selected = "Gene", y_sele
     )
 }
 
-scatter_box_outputs <- function(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, ns, plotly_source, plotly_buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL) {
-    render_axis_select_ui("x_axis", "X axis", "x_axis_select", md_choices = dataset_metadata_fields_numeric(dataset()), md_selected = dataset_metadata_fields_numeric(dataset())[1], selected_gene = default_gene1, input = input, output = output, ns = ns, dataset = dataset, gene_modules = gene_modules, session = session)
+scatter_box_outputs <- function(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, ns, plotly_source, plotly_buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL, atlas = FALSE) {
+    render_axis_select_ui("x_axis", "X axis", "x_axis_select", md_choices = dataset_metadata_fields_numeric(dataset()), md_selected = dataset_metadata_fields_numeric(dataset())[1], selected_gene = default_gene1, input = input, output = output, ns = ns, dataset = dataset, gene_modules = gene_modules, session = session, atlas = atlas)
 
-    render_axis_select_ui("y_axis", "Y axis", "y_axis_select", md_choices = dataset_metadata_fields_numeric(dataset()), md_selected = dataset_metadata_fields_numeric(dataset())[2], selected_gene = default_gene2, input = input, output = output, ns = ns, dataset = dataset, gene_modules = gene_modules, session = session)
+    render_axis_select_ui("y_axis", "Y axis", "y_axis_select", md_choices = dataset_metadata_fields_numeric(dataset()), md_selected = dataset_metadata_fields_numeric(dataset())[2], selected_gene = default_gene2, input = input, output = output, ns = ns, dataset = dataset, gene_modules = gene_modules, session = session, atlas = atlas)
 
-    render_axis_select_ui("color_by", "Color", "color_by_select", md_choices = c("Cell type", "Clipboard", dataset_metadata_fields(dataset())), md_selected = "Cell type", selected_gene = default_gene1, input = input, output = output, ns = ns, dataset = dataset, gene_modules = gene_modules, session = session)
+    render_axis_select_ui("color_by", "Color", "color_by_select", md_choices = c("Cell type", "Clipboard", dataset_metadata_fields(dataset())), md_selected = "Cell type", selected_gene = default_gene1, input = input, output = output, ns = ns, dataset = dataset, gene_modules = gene_modules, session = session, atlas = atlas)
 
     output$use_atlas_limits_ui <- renderUI({
         req(has_atlas(dataset()))
@@ -59,7 +59,7 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
         req(input$gene_gene_point_size)
         req(input$gene_gene_stroke)
         req(!is.null(input$gene_gene_fixed_limits))
-        req(axis_vars_ok(dataset(), input, "metadata", gene_modules))
+        req(axis_vars_ok(dataset(), input, "metadata", gene_modules, atlas = atlas))
 
         color_var <- input$color_by_var
         if (input$color_by_var == "Cell type") {
@@ -173,6 +173,7 @@ axis_selector <- function(axis, selected, ns, choices = c("Metadata", "Gene", "G
 
 axis_vars_ok <- function(dataset, input, md_id, gene_modules, axes = c("x_axis", "y_axis", "color_by"), atlas = FALSE) {
     metadata <- get_mc_data(dataset, md_id, atlas = atlas)
+    genes <- gene_names(dataset, atlas = atlas)
     vars_ok <- purrr::map_lgl(axes, function(v) {
         type <- input[[glue("{v}_type")]]
         var <- input[[glue("{v}_var")]]
@@ -180,7 +181,7 @@ axis_vars_ok <- function(dataset, input, md_id, gene_modules, axes = c("x_axis",
             return(TRUE)
         } else if (type == "Metadata" && atlas && var %in% paste0(colnames(metadata), "_atlas")) {
             return(TRUE)
-        } else if (type == "Gene" && var %in% gene_names(dataset)) {
+        } else if (type == "Gene" && var %in% genes) {
             return(TRUE)
         } else if (type == "Gene module" && var %in% levels(gene_modules()$module)) {
             return(TRUE)
@@ -213,7 +214,7 @@ scatter_selectors <- function(ns, dataset, output, globals, prefix = "gene_gene"
     })
 }
 
-render_axis_select_ui <- function(axis, title, output_id, md_choices, md_selected, selected_gene, ns, input, output, dataset, gene_modules, session, cell_types = NULL, cell_type_selected = NULL) {
+render_axis_select_ui <- function(axis, title, output_id, md_choices, md_selected, selected_gene, ns, input, output, dataset, gene_modules, session, cell_types = NULL, cell_type_selected = NULL, atlas = FALSE) {
     observe({
         req(input[[glue("{axis}_type")]])
         if (input[[glue("{axis}_type")]] == "Metadata") {
@@ -228,7 +229,7 @@ render_axis_select_ui <- function(axis, title, output_id, md_choices, md_selecte
             shinyWidgets::updateVirtualSelect(
                 session = session,
                 inputId = glue("{axis}_var"),
-                choices = gene_names(dataset()),
+                choices = gene_names(dataset(), atlas = atlas),
                 selected = selected_gene,
                 label = title
             )
