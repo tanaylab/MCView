@@ -140,7 +140,6 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
         # If we did not choose all the cell types
         if (!is.null(input$selected_cell_types) && length(input$selected_cell_types) != nrow(cell_type_colors())) {
             # TODO: add also genes that are distictive for the specific cell type (although not variable within it)
-            # browser()
         }
 
         markers(new_markers)
