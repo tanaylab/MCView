@@ -307,12 +307,18 @@ import_dataset <- function(project,
     } else if (is.null(cell_type_colors)) {
         if (!is.null(atlas_dataset) && !is.null(atlas_project)) { # use atlas colors
             atlas_colors <- fread(fs::path(project_cache_dir(atlas_project), atlas_dataset, "cell_type_colors.tsv")) %>% as_tibble()
+            atlas_colors <- atlas_colors %>%
+                bind_rows(
+                    tibble(cell_type = c("Dissimilar", "Mixture", "Doublet"), color = c("gray", "darkgray", "black"), order = max(atlas_colors$order) + 1:3)
+                ) %>%
+                distinct(cell_type, color, .keep_all = TRUE)
             # if we are using the atlas cell types - use their colors
             if (all(metacell_types$cell_type %in% atlas_colors$cell_type)) {
                 cli_alert_info("Loading cell type color annotations from {.field atlas}")
                 cell_type_colors <- atlas_colors
             } else {
-                types_without_colors <- paste(setdiff(unique(metacell_types$cell_type), atlas_colors$cell_type), collapse = ", ")
+                types_without_colors <- setdiff(unique(metacell_types$cell_type), atlas_colors$cell_type)
+                types_without_colors <- paste(types_without_colors, collapse = ", ")
                 cli_abort("The following cell types do not have colors at the atlas: {.field {types_without_colors}}. To fix it either provide {.code cell_type_colors_file} or add the cell type(s) to the atlas colors.")
             }
         } else {
