@@ -193,12 +193,16 @@ import_dataset <- function(project,
     mc_egc <- t(t(mc_mat) / mc_sum)
 
     cli_alert_info("Calculating top genes per metacell (marker genes)")
-    if (is.null(adata$var$forbidden_gene)) {
+    forbidden_field <- "lateral_gene"
+    if (!("lateral_gene" %in% colnames(adata$var)) && "forbidden_gene" %in% colnames(adata$var)){
+        forbidden_field <- "forbidden_gene"
+    }
+    if (is.null(adata$var[, forbidden_field])) {
         forbidden_genes <- c()
         forbidden <- rep(FALSE, nrow(mc_egc))
     } else {
-        forbidden <- adata$var$forbidden_gene
-        forbidden_genes <- rownames(adata$var)[adata$var$forbidden_gene]
+        forbidden <- adata$var[, forbidden_field]
+        forbidden_genes <- rownames(adata$var)[adata$var[, forbidden_field]]
         forbidden_genes <- motify_gene_names(forbidden_genes, gene_names)
     }
 

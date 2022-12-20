@@ -127,7 +127,11 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
     serialize_shiny_data(projected_fold, "projected_fold", dataset = dataset, cache_dir = cache_dir)
 
     cli_alert_info("Calculating top atlas-query fold genes")
-    forbidden <- query$var$forbidden_gene
+    forbidden_field <- "lateral_gene"
+    if (!("lateral_gene" %in% colnames(query$var)) && "forbidden_gene" %in% colnames(query$var)){
+        forbidden_field <- "forbidden_gene"
+    }
+    forbidden <- query$var[, forbidden_field]
     marker_genes_projected <- select_top_fold_genes_per_metacell(projected_fold[!forbidden, ], minimal_relative_log_fraction = -Inf, use_abs = TRUE, genes_per_metacell = 50)
     serialize_shiny_data(marker_genes_projected, "marker_genes_projected", dataset = dataset, cache_dir = cache_dir)
 
@@ -159,7 +163,8 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
         select(
             gene,
             contains("_of_"),
-            forbidden_gene,
+            any_of("forbidden_gene"),
+            any_of("lateral_gene"),
             ignored_gene,
             any_of("atlas_significant_gene"),
             any_of("correction_factor"),
