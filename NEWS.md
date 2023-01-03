@@ -1,4 +1,4 @@
-# MCView 0.2.4.9000
+# MCView 0.2.5
 
 * Added tab selector. 
 * Runtime optimizations: load tabs only on click.
@@ -9,6 +9,7 @@
 * Added cell metadata support for metacell1 import. 
 * Fix: clicking on a cell type on the manifold legend was sometimes not aligned with the gene/gene plot. 
 * Fix: categorical metadata tooltip was wrong in projection plots.
+* Changed metacell selectors to search with "contains" instead of "startWith" behaviour. 
 
 # MCView 0.2.4
 

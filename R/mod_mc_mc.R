@@ -230,7 +230,7 @@ metacell_selectors <- function(input, output, session, dataset, ns, metacell_nam
                 choices = metacell_names(),
                 selected = config$selected_mc1 %||% metacell_names()[1],
                 multiple = FALSE,
-                options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE),
+                options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "contains", dropupAuto = FALSE),
                 choicesOpt = list(
                     style = paste0("color: ", cell_types_hex, ";")
                 )
@@ -245,7 +245,7 @@ metacell_selectors <- function(input, output, session, dataset, ns, metacell_nam
                 choices = cell_types,
                 selected = cell_types[1],
                 multiple = FALSE,
-                options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE),
+                options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "contains", dropupAuto = FALSE),
                 choicesOpt = list(
                     style = paste0("color: ", cell_types_hex, ";")
                 )
@@ -257,7 +257,7 @@ metacell_selectors <- function(input, output, session, dataset, ns, metacell_nam
             tagList(
                 shinyWidgets::pickerInput(ns("metacell"), "Metacell",
                     choices = metacell_names(),
-                    selected = config$selected_mc1 %||% metacell_names()[1], multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE),
+                    selected = config$selected_mc1 %||% metacell_names()[1], multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "contains", dropupAuto = FALSE),
                     choicesOpt = list(
                         style = paste0("color: ", cell_types_hex, ";")
                     )
@@ -280,7 +280,7 @@ metacell_selectors <- function(input, output, session, dataset, ns, metacell_nam
             cell_types_hex <- col2hex(metacell_colors())
             shinyWidgets::pickerInput(ns("metacell2"), "Metacell B",
                 choices = metacell_names(),
-                selected = config$selected_mc2 %||% metacell_names()[2], multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE),
+                selected = config$selected_mc2 %||% metacell_names()[2], multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "contains", dropupAuto = FALSE),
                 choicesOpt = list(
                     style = paste0("color: ", cell_types_hex, ";")
                 )
@@ -293,7 +293,7 @@ metacell_selectors <- function(input, output, session, dataset, ns, metacell_nam
             shinyWidgets::pickerInput(ns("metacell2"), "Cell type B",
                 choices = cell_types,
                 selected = cell_types[2],
-                options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE),
+                options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "contains", dropupAuto = FALSE),
                 choicesOpt = list(
                     style = paste0("color: ", cell_types_hex, ";")
                 )

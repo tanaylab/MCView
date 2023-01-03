@@ -102,7 +102,7 @@ mod_samples_server <- function(id, dataset, metacell_types, cell_type_colors, ge
                     selected2 <- samp_list[1]
                 }
 
-                picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE)
+                picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "contains", dropupAuto = FALSE)
                 tagList(
                     shinyWidgets::pickerInput(
                         ns("samp1"),
