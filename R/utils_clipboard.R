@@ -50,7 +50,7 @@ clipboard_reactives <- function(dataset, input, output, session, metacell_types,
         shinyWidgets::pickerInput("metacells_to_add", "",
             choices = metacell_names(),
             multiple = TRUE,
-            options = shinyWidgets::pickerOptions(`actions-box` = TRUE, liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE),
+            options = shinyWidgets::pickerOptions(`actions-box` = TRUE, liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "contains", dropupAuto = FALSE),
             choicesOpt = list(
                 style = paste0("color: ", cell_types_hex, ";")
             )

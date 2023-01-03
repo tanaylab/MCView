@@ -194,7 +194,7 @@ import_dataset <- function(project,
 
     cli_alert_info("Calculating top genes per metacell (marker genes)")
     forbidden_field <- "lateral_gene"
-    if (!("lateral_gene" %in% colnames(adata$var)) && "forbidden_gene" %in% colnames(adata$var)){
+    if (!("lateral_gene" %in% colnames(adata$var)) && "forbidden_gene" %in% colnames(adata$var)) {
         forbidden_field <- "forbidden_gene"
     }
     if (is.null(adata$var[, forbidden_field])) {

@@ -128,7 +128,7 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
 
     cli_alert_info("Calculating top atlas-query fold genes")
     forbidden_field <- "lateral_gene"
-    if (!("lateral_gene" %in% colnames(query$var)) && "forbidden_gene" %in% colnames(query$var)){
+    if (!("lateral_gene" %in% colnames(query$var)) && "forbidden_gene" %in% colnames(query$var)) {
         forbidden_field <- "forbidden_gene"
     }
     forbidden <- query$var[, forbidden_field]

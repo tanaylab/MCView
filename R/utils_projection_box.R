@@ -59,7 +59,7 @@ projection_selectors <- function(ns, dataset, output, input, gene_modules, globa
         )
     })
 
-    picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE)
+    picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "contains", dropupAuto = FALSE)
 
     output$metadata_selector <- renderUI({
         if (!has_metadata(dataset())) {

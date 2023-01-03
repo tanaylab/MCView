@@ -114,7 +114,7 @@ mod_flow_server <- function(id, dataset, metacell_types, cell_type_colors, gene_
 
             output$metacell_selector <- colored_metacell_selector(dataset, ns, "selected_metacell", "Metacell", metacell_colors, metacell_names)
 
-            picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE)
+            picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "contains", dropupAuto = FALSE)
 
             output$gene_selector <- renderUI({
                 shinyWidgets::pickerInput(

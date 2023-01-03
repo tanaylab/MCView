@@ -74,11 +74,11 @@ then runs \code{cell_metadata_to_metacell}.
 }
 \section{Functions}{
 \itemize{
-\item \code{cell_metadata_to_metacell_from_metacell1}: 
+\item \code{cell_metadata_to_metacell_from_metacell1()}: 
 
-\item \code{cell_metadata_to_metacell_from_h5ad}: 
+\item \code{cell_metadata_to_metacell_from_h5ad()}: 
+
 }}
-
 \examples{
 set.seed(60427)
 n_cells <- 5e6

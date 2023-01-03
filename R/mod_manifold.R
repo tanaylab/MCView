@@ -78,7 +78,7 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
             # gene selectors
             manifold_tab_gene_selectors(input, output, session, dataset, ns)
 
-            picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "startsWith", dropupAuto = FALSE)
+            picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "contains", dropupAuto = FALSE)
 
             output$color_by_selector <- renderUI({
                 shinyWidgets::prettyRadioButtons(
