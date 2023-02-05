@@ -151,45 +151,51 @@ mod_flow_server <- function(id, dataset, metacell_types, cell_type_colors, gene_
                 shinyjs::toggle(id = "vein_gene_foc_type_select", condition = input$color_gene_vein == "Cell type")
             })
 
-            output$gene_vein_plot <- renderPlot({
-                req(input$color_gene_vein)
-                req(input$vein_gene_foc_type)
+            output$gene_vein_plot <- renderPlot(
+                {
+                    req(input$color_gene_vein)
+                    req(input$vein_gene_foc_type)
 
-                if (input$color_gene_vein == "Gene") {
-                    req(input$gene)
-                    gene <- input$gene
-                } else {
-                    gene <- NULL
-                }
-
-                cell_type_colors <- get_cell_type_data(dataset())
-
-                color_order <- cell_type_colors$color
-                if (input$vein_gene_foc_type == "All") {
-                    foc_type <- NULL
-                    vein_rm_cell_types <- get_mc_config(dataset(), "vein_rm_cell_types")
-                    if (!is.null(vein_rm_cell_types)) {
-                        color_order <- cell_type_colors %>%
-                            filter(!(cell_type %in% vein_rm_cell_types)) %>%
-                            pull(color)
+                    if (input$color_gene_vein == "Gene") {
+                        req(input$gene)
+                        gene <- input$gene
+                    } else {
+                        gene <- NULL
                     }
-                } else {
-                    foc_type <- input$vein_gene_foc_type
-                }
 
-                plot_vein(dataset(), gene = gene, foc_type = foc_type, color_order = color_order, metacell_types = metacell_types())
-            })
+                    cell_type_colors <- get_cell_type_data(dataset())
+
+                    color_order <- cell_type_colors$color
+                    if (input$vein_gene_foc_type == "All") {
+                        foc_type <- NULL
+                        vein_rm_cell_types <- get_mc_config(dataset(), "vein_rm_cell_types")
+                        if (!is.null(vein_rm_cell_types)) {
+                            color_order <- cell_type_colors %>%
+                                filter(!(cell_type %in% vein_rm_cell_types)) %>%
+                                pull(color)
+                        }
+                    } else {
+                        foc_type <- input$vein_gene_foc_type
+                    }
+
+                    plot_vein(dataset(), gene = gene, foc_type = foc_type, color_order = color_order, metacell_types = metacell_types())
+                },
+                res = 96
+            )
 
             # Metacell flow
-            output$plot_metacell_flow <- renderPlot({
-                req(has_network(dataset()))
-                req(input$selected_metacell)
+            output$plot_metacell_flow <- renderPlot(
+                {
+                    req(has_network(dataset()))
+                    req(input$selected_metacell)
 
-                mc_data <- metacell_types() %>% filter(metacell == input$selected_metacell)
-                plot_propagation_net_metacell(dataset(), input$selected_metacell, metacell_types = metacell_types()) +
-                    ggtitle(glue("metacell #{input$selected_metacell} ({mc_data$cell_type[1]})")) +
-                    theme(plot.title = element_text(colour = "darkblue"))
-            })
+                    mc_data <- metacell_types() %>% filter(metacell == input$selected_metacell)
+                    plot_propagation_net_metacell(dataset(), input$selected_metacell, metacell_types = metacell_types()) +
+                        ggtitle(glue("metacell #{input$selected_metacell} ({mc_data$cell_type[1]})")) +
+                        theme(plot.title = element_text(colour = "darkblue"))
+                },
+                res = 96
+            )
 
 
             top_var_genes <- reactive({

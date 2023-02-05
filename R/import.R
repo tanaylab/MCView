@@ -172,7 +172,7 @@ import_dataset <- function(project,
 
     purrr::walk(c("umap_x", "umap_y"), ~ {
         if (is.null(adata$obs[[.x]])) {
-            cli_abort_compute_for_mcview("$obs${.x}")
+            cli_abort_compute_for_mcview(glue("$obs${.x}"))
         }
     })
 

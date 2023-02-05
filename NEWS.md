@@ -1,3 +1,7 @@
+# MCView 0.2.5.9000
+
+* Fixed resolution of heatmap plots.
+
 # MCView 0.2.5
 
 * Added tab selector. 

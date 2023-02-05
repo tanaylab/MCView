@@ -315,18 +315,21 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                 }
             })
 
-            output$markers_legend <- renderPlot({
-                req(cell_type_colors())
-                req(input$plot_legend)
-                legend_point_size <- max(1, min(10, 250 / nrow(cell_type_colors())))
-                legend <- cowplot::get_legend(cell_type_colors() %>%
-                    ggplot(aes(x = cell_type, color = cell_type, y = 1)) +
-                    geom_point() +
-                    scale_color_manual("", values = deframe(cell_type_colors() %>% select(cell_type, color))) +
-                    guides(color = guide_legend(override.aes = list(size = legend_point_size), ncol = 1)) +
-                    theme(legend.position = c(0.5, 0.5)))
-                cowplot::ggdraw(legend)
-            }) %>% bindCache(id, dataset(), cell_type_colors(), input$plot_legend)
+            output$markers_legend <- renderPlot(
+                {
+                    req(cell_type_colors())
+                    req(input$plot_legend)
+                    legend_point_size <- max(1, min(2, 250 / nrow(cell_type_colors())))
+                    legend <- cowplot::get_legend(cell_type_colors() %>%
+                        ggplot(aes(x = cell_type, color = cell_type, y = 1)) +
+                        geom_point() +
+                        scale_color_manual("", values = deframe(cell_type_colors() %>% select(cell_type, color))) +
+                        guides(color = guide_legend(override.aes = list(size = legend_point_size), ncol = 1)) +
+                        theme(legend.position = c(0.5, 0.5)))
+                    cowplot::ggdraw(legend)
+                },
+                res = 96
+            ) %>% bindCache(id, dataset(), cell_type_colors(), input$plot_legend)
 
             # We use this reactive in order to invalidate the cache only when input$filter_by_clipboard is TRUE
             clipboard_changed <- reactive({
@@ -337,80 +340,83 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                 }
             })
 
-            output$heatmap <- renderPlot({
-                req(dataset())
-                req(lfp_range())
-                req(metacell_types())
-                req(cell_type_colors())
-                req(input$midpoint)
-                req(input$low_color)
-                req(input$high_color)
-                req(input$mid_color)
-                req(input$midpoint > lfp_range()[1])
-                req(input$midpoint < lfp_range()[2])
+            output$heatmap <- renderPlot(
+                {
+                    req(dataset())
+                    req(lfp_range())
+                    req(metacell_types())
+                    req(cell_type_colors())
+                    req(input$midpoint)
+                    req(input$low_color)
+                    req(input$high_color)
+                    req(input$mid_color)
+                    req(input$midpoint > lfp_range()[1])
+                    req(input$midpoint < lfp_range()[2])
 
-                m <- mat()
-                req(m)
+                    m <- mat()
+                    req(m)
 
-                m <- filter_heatmap_by_metacell(m, metacell_filter())
+                    m <- filter_heatmap_by_metacell(m, metacell_filter())
 
-                if (!is.null(input$selected_md)) {
-                    metadata <- get_mc_data(dataset(), "metadata")
-                    if (is.null(metadata)) {
-                        metadata <- metacell_types() %>% select(metacell)
+                    if (!is.null(input$selected_md)) {
+                        metadata <- get_mc_data(dataset(), "metadata")
+                        if (is.null(metadata)) {
+                            metadata <- metacell_types() %>% select(metacell)
+                        }
+                        metadata <- metadata %>%
+                            mutate(Clipboard = ifelse(metacell %in% globals$clipboard, "selected", "not selected")) %>%
+                            select(metacell, one_of(input$selected_md))
+                    } else {
+                        metadata <- NULL
                     }
-                    metadata <- metadata %>%
-                        mutate(Clipboard = ifelse(metacell %in% globals$clipboard, "selected", "not selected")) %>%
-                        select(metacell, one_of(input$selected_md))
-                } else {
-                    metadata <- NULL
-                }
 
-                req(nrow(m) > 0)
-                req(ncol(m) > 0)
+                    req(nrow(m) > 0)
+                    req(ncol(m) > 0)
 
-                if (!is.null(genes) && length(genes()) > 0 && !is.null(input$show_genes) && input$show_genes) {
-                    # m <- add_genes_to_marker_matrix(m, genes(), dataset())
-                    other_genes <- genes()
+                    if (!is.null(genes) && length(genes()) > 0 && !is.null(input$show_genes) && input$show_genes) {
+                        # m <- add_genes_to_marker_matrix(m, genes(), dataset())
+                        other_genes <- genes()
 
-                    gene_colors <- tibble(gene = rownames(m), color = ifelse(gene %in% genes(), "blue", "black")) %>% deframe()
-                } else {
-                    gene_colors <- get_gene_colors(
-                        rownames(m),
-                        forbidden_genes = get_mc_data(dataset(), "forbidden_genes"),
-                        systematic_genes = get_mc_data(dataset(), "systematic_genes"),
-                        disjoined_genes = get_mc_data(dataset(), "disjoined_genes_no_atlas")
+                        gene_colors <- tibble(gene = rownames(m), color = ifelse(gene %in% genes(), "blue", "black")) %>% deframe()
+                    } else {
+                        gene_colors <- get_gene_colors(
+                            rownames(m),
+                            forbidden_genes = get_mc_data(dataset(), "forbidden_genes"),
+                            systematic_genes = get_mc_data(dataset(), "systematic_genes"),
+                            disjoined_genes = get_mc_data(dataset(), "disjoined_genes_no_atlas")
+                        )
+                    }
+
+                    if (!is.null(highlighted_genes) && length(highlighted_genes()) > 0 && highlighted_genes() %in% names(gene_colors)) {
+                        gene_colors[highlighted_genes()] <- highlight_color
+                    }
+
+                    res <- plot_markers_mat(
+                        m,
+                        metacell_types(),
+                        cell_type_colors(),
+                        dataset(),
+                        min_lfp = lfp_range()[1],
+                        max_lfp = lfp_range()[2],
+                        plot_legend = FALSE,
+                        high_color = input$high_color,
+                        low_color = input$low_color,
+                        mid_color = input$mid_color,
+                        midpoint = input$midpoint,
+                        metadata = metadata,
+                        gene_colors = gene_colors,
+                        col_names = ncol(m) <= 100,
+                        top_cell_type_bar = ncol(m) <= 100,
+                        interleave = nrow(m) > 80,
+                        vertial_gridlines = mode %in% c("Inner", "Proj"),
+                        separate_gtable = TRUE
                     )
-                }
 
-                if (!is.null(highlighted_genes) && length(highlighted_genes()) > 0 && highlighted_genes() %in% names(gene_colors)) {
-                    gene_colors[highlighted_genes()] <- highlight_color
-                }
-
-                res <- plot_markers_mat(
-                    m,
-                    metacell_types(),
-                    cell_type_colors(),
-                    dataset(),
-                    min_lfp = lfp_range()[1],
-                    max_lfp = lfp_range()[2],
-                    plot_legend = FALSE,
-                    high_color = input$high_color,
-                    low_color = input$low_color,
-                    mid_color = input$mid_color,
-                    midpoint = input$midpoint,
-                    metadata = metadata,
-                    gene_colors = gene_colors,
-                    col_names = ncol(m) <= 100,
-                    top_cell_type_bar = ncol(m) <= 100,
-                    interleave = nrow(m) > 80,
-                    vertial_gridlines = mode %in% c("Inner", "Proj"),
-                    separate_gtable = TRUE
-                )
-
-                # we are returning the gtable and ggplot object separatly in order to allow shiny to infer positions correctly.
-                return(structure(list(p = res$p, gtable = res$gtable), class = "gt_custom"))
-            }) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), gene_modules(), lfp_range(), metacell_filter(), input$plot_legend, input$selected_md, markers(), input$selected_cell_types, input$force_cell_type, clipboard_changed(), input$high_color, input$low_color, input$mid_color, input$midpoint, genes(), input$show_genes, highlighted_genes(), highlight_color)
+                    # we are returning the gtable and ggplot object separatly in order to allow shiny to infer positions correctly.
+                    return(structure(list(p = res$p, gtable = res$gtable), class = "gt_custom"))
+                },
+                res = 96
+            ) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), gene_modules(), lfp_range(), metacell_filter(), input$plot_legend, input$selected_md, markers(), input$selected_cell_types, input$force_cell_type, clipboard_changed(), input$high_color, input$low_color, input$mid_color, input$midpoint, genes(), input$show_genes, highlighted_genes(), highlight_color)
 
             observeEvent(input$heatmap_brush, {
                 req(input$brush_action)
