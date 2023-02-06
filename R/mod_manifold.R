@@ -166,7 +166,7 @@ manifold_tab_gene_selectors <- function(input, output, session, dataset, ns) {
             selectInput(
                 ns("selected_top_gene1"),
                 glue("Top correlated to {input$gene1}:"),
-                choices = c(get_top_cor_gene(dataset(), input$gene1, type = "pos"), rev(get_top_cor_gene(dataset(), input$gene1, type = "neg"))),
+                choices = c(get_top_cor_gene(dataset(), input$gene1, type = "pos"), get_top_cor_gene(dataset(), input$gene1, type = "neg")),
                 selected = NULL,
                 size = 10,
                 selectize = FALSE
@@ -182,7 +182,7 @@ manifold_tab_gene_selectors <- function(input, output, session, dataset, ns) {
             selectInput(
                 ns("selected_top_gene2"),
                 glue("Top correlated to {input$gene2}:"),
-                choices = c(get_top_cor_gene(dataset(), input$gene2, type = "pos"), rev(get_top_cor_gene(dataset(), input$gene2, type = "neg"))),
+                choices = c(get_top_cor_gene(dataset(), input$gene2, type = "pos"), get_top_cor_gene(dataset(), input$gene2, type = "neg")),
                 selected = NULL,
                 size = 10,
                 selectize = FALSE

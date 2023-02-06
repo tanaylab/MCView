@@ -2,6 +2,7 @@
 
 * Fixed resolution of heatmap plots.
 * Added a 'rename' modal to the 'Annotate' tab.
+* Fixed order of negative correlations in the left panels. Fixes #127.
 
 # MCView 0.2.5
 

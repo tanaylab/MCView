@@ -119,7 +119,7 @@ mod_atlas_server <- function(id, dataset, metacell_types, cell_type_colors, gene
                     selectInput(
                         ns("selected_top_gene"),
                         glue("Top correlated to {input$color_proj_gene}:"),
-                        choices = c(get_top_cor_gene(dataset(), input$color_proj_gene, type = "pos"), rev(get_top_cor_gene(dataset(), input$color_proj_gene, type = "neg"))),
+                        choices = c(get_top_cor_gene(dataset(), input$color_proj_gene, type = "pos"), get_top_cor_gene(dataset(), input$color_proj_gene, type = "neg")),
                         selected = NULL,
                         size = 10,
                         selectize = FALSE

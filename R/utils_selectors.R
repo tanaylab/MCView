@@ -91,7 +91,7 @@ top_correlated_selector_multiple_genes <- function(input, output, session, datas
         selectInput(
             ns(id),
             label,
-            choices = c(get_top_cor_gene(dataset(), gene, type = "pos"), rev(get_top_cor_gene(dataset(), gene, type = "neg"))),
+            choices = c(get_top_cor_gene(dataset(), gene, type = "pos"), get_top_cor_gene(dataset(), gene, type = "neg")),
             selected = NULL,
             size = 10,
             selectize = FALSE,
@@ -122,7 +122,7 @@ top_correlated_selector <- function(gene_id, id, type_id, input, output, session
             selectInput(
                 ns(glue("selected_top_{id}")),
                 glue("Top correlated to {gene}:"),
-                choices = c(get_top_cor_gene(dataset(), gene, type = "pos"), rev(get_top_cor_gene(dataset(), gene, type = "neg"))),
+                choices = c(get_top_cor_gene(dataset(), gene, type = "pos"), get_top_cor_gene(dataset(), gene, type = "neg")),
                 selected = NULL,
                 size = 10,
                 selectize = FALSE
