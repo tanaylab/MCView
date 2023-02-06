@@ -383,38 +383,6 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 server = TRUE # see https://github.com/rstudio/DT/issues/598
             )
 
-            cell_type_table_proxy <- DT::dataTableProxy("cell_type_table")
-
-            observeEvent(input$cell_type_table_cell_edit, {
-                # fix column number to be 1 based
-                new_input <- input$cell_type_table_cell_edit %>% mutate(col = col + 1)
-                edited_data <- DT::editData(cell_type_colors() %>% select(cell_type, color), new_input)
-                # the data table was given only cell_type and color columns so we add the rest
-                edited_data <- bind_cols(
-                    cell_type_colors() %>%
-                        select(-cell_type, -color),
-                    edited_data
-                ) %>%
-                    select(cell_type, color, order)
-
-                # change corresponding metacell_type entries
-                if (new_input$col == 1) {
-                    old_cell_type <- as.character(cell_type_colors()$cell_type[new_input$row])
-                    new_cell_type <- as.character(edited_data$cell_type[new_input$row])
-                    new_metacell_types <- metacell_types() %>% mutate(cell_type = ifelse(cell_type == old_cell_type, new_cell_type, cell_type))
-                    metacell_types(new_metacell_types)
-                }
-
-                if (!any(duplicated(edited_data$cell_type))) {
-                    cell_type_colors(edited_data)
-                } else {
-                    dups <- paste(edited_data$cell_type[duplicated(edited_data$cell_type)], collapse = ", ")
-                    showNotification(glue("Cell types cannot be duplicated: {dups}"))
-                }
-
-                DT::replaceData(cell_type_table_proxy, cell_type_colors() %>% select(cell_type, color), resetPaging = FALSE, rownames = FALSE)
-            })
-
             observeEvent(input$merge_cell_types_modal, {
                 rows <- input$cell_type_table_rows_selected
                 req(rows)
@@ -494,6 +462,47 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 removeModal()
             })
 
+            observeEvent(input$rename_cell_type_colors_modal, {
+                req(input$cell_type_table_rows_selected)
+                req(length(input$cell_type_table_rows_selected) == 1)
+
+                cell_type <- cell_type_colors()$cell_type[input$cell_type_table_rows_selected]
+                showModal({
+                    modalDialog(
+                        title = "Rename cell type",
+                        textInput(ns("new_cell_type_name"), "Cell type name", value = cell_type),
+                        footer = tagList(
+                            modalButton("Cancel"),
+                            actionButton(ns("rename_cell_type_colors"), "OK")
+                        )
+                    )
+                })
+            })
+
+            observeEvent(input$rename_cell_type_colors, {
+                req(input$cell_type_table_rows_selected)
+                req(length(input$cell_type_table_rows_selected) == 1)
+
+                cell_type <- cell_type_colors()$cell_type[input$cell_type_table_rows_selected]
+                req(input$new_cell_type_name)
+                if (input$new_cell_type_name %in% cell_type_colors()$cell_type[-input$cell_type_table_rows_selected]) {
+                    showNotification(glue("Cell type {input$new_cell_type_name} already exists"), type = "error")
+                    removeModal()
+                    req(FALSE)
+                }
+
+                new_cell_type_colors <- cell_type_colors() %>%
+                    mutate(cell_type = ifelse(cell_type == !!cell_type, input$new_cell_type_name, cell_type))
+                cell_type_colors(new_cell_type_colors)
+
+                new_metacell_types <- metacell_types() %>%
+                    mutate(cell_type = ifelse(cell_type == !!cell_type, input$new_cell_type_name, cell_type))
+                metacell_types(new_metacell_types)
+
+                removeModal()
+            })
+
+
             observeEvent(input$add_cell_type_modal, {
                 showModal({
                     modalDialog(
@@ -546,6 +555,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                     column(3, actionButton(ns("submit_new_color"), "Change color")),
                     column(3, colourpicker::colourInput(ns("selected_new_color"), NULL, "black")),
                     column(3, actionButton(ns("delete_cell_type_colors_modal"), "Delete")),
+                    column(3, actionButton(ns("rename_cell_type_colors_modal"), "Rename")),
                     column(3, actionButton(ns("merge_cell_types_modal"), "Merge"))
                 )
             })
@@ -554,6 +564,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 shinyjs::toggle(id = "submit_new_color", condition = !is.null(input$cell_type_table_rows_selected))
                 shinyjs::toggle(id = "selected_new_color", condition = !is.null(input$cell_type_table_rows_selected))
                 shinyjs::toggle(id = "delete_cell_type_colors_modal", condition = !is.null(input$cell_type_table_rows_selected))
+                shinyjs::toggle(id = "rename_cell_type_colors_modal", condition = !is.null(input$cell_type_table_rows_selected) && length(input$cell_type_table_rows_selected) == 1)
                 shinyjs::toggle(id = "merge_cell_types_modal", condition = !is.null(input$cell_type_table_rows_selected) && length(input$cell_type_table_rows_selected) > 1)
             })
 
