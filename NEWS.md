@@ -1,6 +1,7 @@
 # MCView 0.2.5.9000
 
 * Fixed resolution of heatmap plots.
+* Added a 'rename' modal to the 'Annotate' tab.
 
 # MCView 0.2.5
 
