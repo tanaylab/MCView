@@ -130,7 +130,7 @@ import_dataset <- function(project,
 
     cli_alert_info("Processing metacell matrix")
     mc_mat <- t(adata$X)
-    rownames(mc_mat) <- motify_gene_names(rownames(mc_mat), gene_names)
+    rownames(mc_mat) <- modify_gene_names(rownames(mc_mat), gene_names)
 
     serialize_shiny_data(mc_mat, "mc_mat", dataset = dataset, cache_dir = cache_dir)
 
@@ -203,7 +203,7 @@ import_dataset <- function(project,
     } else {
         forbidden <- adata$var[, forbidden_field]
         forbidden_genes <- rownames(adata$var)[adata$var[, forbidden_field]]
-        forbidden_genes <- motify_gene_names(forbidden_genes, gene_names)
+        forbidden_genes <- modify_gene_names(forbidden_genes, gene_names)
     }
 
     serialize_shiny_data(forbidden_genes, "forbidden_genes", dataset = dataset, cache_dir = cache_dir)
@@ -386,7 +386,7 @@ import_dataset <- function(project,
         ) %>%
             arrange(gene1, desc(cor))
         gg_mc_top_cor <- gg_mc_top_cor %>%
-            mutate(gene1 = motify_gene_names(gene1, gene_names), gene2 = motify_gene_names(gene2, gene_names))
+            mutate(gene1 = modify_gene_names(gene1, gene_names), gene2 = modify_gene_names(gene2, gene_names))
         serialize_shiny_data(gg_mc_top_cor, "gg_mc_top_cor", dataset = dataset, cache_dir = cache_dir)
     } else {
         if (calc_gg_cor) {
@@ -421,10 +421,10 @@ import_dataset <- function(project,
         }
 
         if (!is.null(gene_names)) {
-            cli_abort("Using {.field gene_names} with atlas is currently not supported")
+            cli_warn("Use {.field gene_names} with atlas only if you are sure that the atlas and the dataset use the same gene names. Otherwise, the atlas will not be imported correctly.")
         }
 
-        import_atlas(adata, atlas_project, atlas_dataset, projection_weights_file, dataset = dataset, cache_dir = cache_dir, copy_atlas)
+        import_atlas(adata, atlas_project, atlas_dataset, projection_weights_file, dataset = dataset, cache_dir = cache_dir, copy_atlas = copy_atlas, gene_names = gene_names)
     }
 
     cli_alert_success("{.field {dataset}} dataset imported succesfully to {.path {project}} project")

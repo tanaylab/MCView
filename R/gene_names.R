@@ -1,4 +1,4 @@
-motify_gene_names <- function(orig_names, gene_names = NULL) {
+modify_gene_names <- function(orig_names, gene_names = NULL) {
     if (is.null(gene_names)) {
         return(orig_names)
     }
