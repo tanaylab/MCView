@@ -112,8 +112,8 @@ calc_obs_exp_type_df <- function(dataset, cell_type, metacell_types, diff_thresh
     exp_egc <- get_cell_types_egc(cell_type, metacell_types, dataset, projected = TRUE) + egc_epsilon
 
     genes <- intersect(rownames(obs_mat), rownames(exp_mat))
-    mat <- as.matrix(data.frame(Observed = obs_mat[genes, 1], Projected = exp_mat[, 1]))
-    egc <- as.matrix(data.frame(Observed = obs_egc[genes, 1], Projected = exp_egc[, 1]))
+    mat <- as.matrix(data.frame(Observed = obs_mat[genes, 1], Projected = exp_mat[genes, 1]))
+    egc <- as.matrix(data.frame(Observed = obs_egc[genes, 1], Projected = exp_egc[genes, 1]))
 
     df <- calc_diff_expr(mat, egc, c("Observed", "Projected"), diff_thresh, pval_thresh)
 

@@ -222,6 +222,7 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
             mc_mc_gene_scatter_df <- reactive({
                 req(input$mode)
                 req(!is.null(input$mark_disjoined))
+
                 if (input$mode == "MC") {
                     req(input$metacell1)
                     df <- calc_obs_exp_mc_df(dataset(), input$metacell1)

@@ -5,7 +5,7 @@ load_outliers <- function(outliers_anndata_file, project, dataset, gene_names = 
     cli_alert_info("Processing outliers")
 
     # outliers_mat <- t(outliers$X)
-    # rownames(outliers_mat) <- motify_gene_names(rownames(outliers_mat), gene_names)
+    # rownames(outliers_mat) <- modify_gene_names(rownames(outliers_mat), gene_names)
     # serialize_shiny_data(outliers_mat, "outliers_mat", dataset = dataset, cache_dir = cache_dir)
 
     outliers_metadata <- outliers$obs %>%
@@ -21,7 +21,7 @@ load_outliers <- function(outliers_anndata_file, project, dataset, gene_names = 
         cli_abort("File {.file {outliers_anndata_file}} does not contain the layer {.field deviant_folds}.")
     }
     deviant_fold_mat <- t(outliers$layers[["deviant_folds"]])
-    rownames(deviant_fold_mat) <- motify_gene_names(rownames(deviant_fold_mat), gene_names)
+    rownames(deviant_fold_mat) <- modify_gene_names(rownames(deviant_fold_mat), gene_names)
     serialize_shiny_data(deviant_fold_mat, "deviant_fold_mat", dataset = dataset, cache_dir = cache_dir)
 
     cli_alert_info("Calculating top inner-fold genes")

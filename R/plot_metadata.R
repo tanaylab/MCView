@@ -853,6 +853,7 @@ plot_obs_proj_scatter <- function(dataset,
     } else {
         egc_obs <- get_gene_egc(axis_var, dataset) + egc_epsilon
         egc_proj <- get_gene_egc(axis_var, dataset, projected = TRUE) + egc_epsilon
+
         x_var <- glue("{axis_var} - observed")
         y_var <- glue("{axis_var} - projected")
         df <- df %>%

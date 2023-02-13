@@ -1,4 +1,4 @@
-import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights_file, dataset, cache_dir, copy_atlas) {
+import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights_file, dataset, cache_dir, copy_atlas, gene_names = FALSE) {
     cli_alert_info("Reading dataset {.file {atlas_dataset}} at project: {.file {atlas_project}}")
     verify_app_cache(atlas_project, datasets = atlas_dataset)
 
@@ -112,6 +112,9 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
     projected_mat <- t(query$layers[["projected"]])
     rownames(projected_mat) <- colnames(query$X)
     colnames(projected_mat) <- rownames(query$X)
+    if (!is.null(gene_names)) {
+        rownames(projected_mat) <- modify_gene_names(rownames(projected_mat), gene_names)
+    }
     serialize_shiny_data(projected_mat, "projected_mat", dataset = dataset, cache_dir = cache_dir)
 
     projected_mat_sum <- colSums(projected_mat)
@@ -124,6 +127,9 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
     projected_fold <- t(query$layers[["projected_fold"]])
     rownames(projected_fold) <- colnames(query$X)
     colnames(projected_fold) <- rownames(query$X)
+    if (!is.null(gene_names)) {
+        rownames(projected_fold) <- modify_gene_names(rownames(projected_fold), gene_names)
+    }
     serialize_shiny_data(projected_fold, "projected_fold", dataset = dataset, cache_dir = cache_dir)
 
     cli_alert_info("Calculating top atlas-query fold genes")
@@ -132,6 +138,7 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
         forbidden_field <- "forbidden_gene"
     }
     forbidden <- query$var[, forbidden_field]
+
     marker_genes_projected <- select_top_fold_genes_per_metacell(projected_fold[!forbidden, ], minimal_relative_log_fraction = -Inf, use_abs = TRUE, genes_per_metacell = 50)
     serialize_shiny_data(marker_genes_projected, "marker_genes_projected", dataset = dataset, cache_dir = cache_dir)
 
@@ -150,7 +157,11 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
         systematic_genes <- c()
     } else {
         systematic_genes <- rownames(query$var)[query$var$systematic_gene]
+        if (!is.null(gene_names)) {
+            systematic_genes <- modify_gene_names(systematic_genes, gene_names)
+        }
     }
+
 
     serialize_shiny_data(systematic_genes, "systematic_genes", dataset = dataset, cache_dir = cache_dir)
 
@@ -184,6 +195,10 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
             desc(ignored_gene),
             desc(glob_ignored_gene)
         )
+
+    if (!is.null(gene_names)) {
+        cell_type_gene_md$gene <- modify_gene_names(cell_type_gene_md$gene, gene_names)
+    }
 
     serialize_shiny_data(cell_type_gene_md, "gene_metadata", dataset = dataset, cache_dir = cache_dir, flat = TRUE)
 
