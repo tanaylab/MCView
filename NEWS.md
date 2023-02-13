@@ -3,6 +3,7 @@
 * Fixed resolution of heatmap plots.
 * Added a 'rename' modal to the 'Annotate' tab.
 * Fixed order of negative correlations in the left panels. Fixes #127.
+* Added an option to use 'gene_names' parameter with atlas projection. 
 
 # MCView 0.2.5
 
