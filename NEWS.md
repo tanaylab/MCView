@@ -4,6 +4,7 @@
 * Added a 'rename' modal to the 'Annotate' tab.
 * Fixed order of negative correlations in the left panels. Fixes #127.
 * Added an option to use 'gene_names' parameter with atlas projection. 
+* Rasterized Type Prediction plot.
 
 # MCView 0.2.5
 
