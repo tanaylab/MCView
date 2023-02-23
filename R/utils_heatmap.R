@@ -213,7 +213,8 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     gene_modules(),
                     force_cell_type = input$force_cell_type,
                     mode = mode,
-                    notify_var_genes = TRUE
+                    notify_var_genes = TRUE,
+                    cached = config$light_version
                 )
 
                 if (input$filter_by_clipboard) {
