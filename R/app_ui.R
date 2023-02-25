@@ -91,7 +91,11 @@ app_ui <- function(request) {
 
     app_title <- config$title
     if (is.null(app_title) || app_title == "MCView") {
-        app_title <- glue("MCView {version}", version = packageVersion("MCView"))
+        if (length(dataset_ls(project)) == 1) {
+            app_title <- dataset_ls(project)[1]
+        } else {
+            app_title <- glue("MCView {version}", version = packageVersion("MCView"))
+        }
     }
 
     dashboard_page <- shinydashboardPlus::dashboardPage(
