@@ -15,7 +15,7 @@
 #'
 #' @param project path to the project
 #' @param dataset name for the dataset, e.g. "PBMC"
-#' @param anndata_file path to \code{h5ad} file which contains the output of metacell2 pipeline (metacells python package).
+#' @param anndata_file path to \code{h5ad} file which contains the output of metacell2 pipeline (metacells python package) or a loaded anndata object of the same format.
 #' @param cell_type_field name of a field in the anndata \code{object$obs} which contains a cell type (optional).
 #' If the field doesn't exist and \code{metacell_types_file} is missing, MCView would first look
 #' for a field named 'projected_type', 'type', 'cell_type' or 'cluster' at \code{object$obs} (in this order), and if it doesn't exists MCView would cluster the metacell matrix using kmeans++ algorithm (from the \code{tglkmeans} package).
@@ -36,7 +36,7 @@
 #' are the same as the atlas, the atlas colors would be used.
 #' @param outliers_anndata_file path to anndata file with outliers (optional). This would enable, by default,
 #' the following tabs: ["Outliers", "Similar-fold", "Deviant-fold"]. See the metacells python package for more details.
-#' @param cluster_metacells When TRUE and no metacell type is given (via \code{metacell_types_file} or \code{cell_type_field}), MCView would cluster the metacell matrix using kmeans++ algorithm (from the \code{tglkmeans} package).
+#' @param cluster_metacells When TRUE and no metacell type is given (via \code{metacell_types_file} or \code{cell_type_field} - implicit and explicit), MCView would cluster the metacell matrix using kmeans++ algorithm (from the \code{tglkmeans} package).
 #' @param cluster_k number of clusters for initial metacell clustering. If NULL - the number of clusters would be determined such that a metacell would contain 16 cells on average.
 #' @param metadata_fields names of fields in the anndata \code{object$obs} which contains metadata for each metacell. \cr
 #' The fields should can be either numeric or categorical. \cr
@@ -114,12 +114,22 @@ import_dataset <- function(project,
 
     cache_dir <- project_cache_dir(project)
 
-    if (!fs::file_exists(anndata_file)) {
-        cli_abort("{anndata_file} doesn't exist. Maybe there is a typo?")
+    # if anndata is an anndata object - just use it
+    if (inherits(anndata_file, "AnnDataR6")) {
+        cli_alert_info("Using the provided anndata object")
+        adata <- anndata_file
+    } else {
+        if (!fs::file_exists(anndata_file)) {
+            cli_abort("{.file {anndata_file}} doesn't exist. Maybe there is a typo?")
+        }
+
+        cli_alert_info("Reading {.file {anndata_file}}")
+        adata <- anndata::read_h5ad(anndata_file)
     }
 
-    cli_alert_info("Reading {.file {anndata_file}}")
-    adata <- anndata::read_h5ad(anndata_file)
+    if (is.null(adata$uns$mcview_format) || adata$uns$mcview_format != "1.0") {
+        cli_abort("The file {.file {anndata_file}} was created by an old version of {.pkg metacells}. Please convert it to the new format and try again.")
+    }
 
     if (rlang::has_name(adata$obs, "hidden")) {
         adata <- adata[!adata$obs$hidden, ]
@@ -129,7 +139,13 @@ import_dataset <- function(project,
     adata <- adata[, sort(colnames(adata$X))]
 
     cli_alert_info("Processing metacell matrix")
-    mc_mat <- t(adata$X)
+    if (is.null(adata$obs$total_umis)) {
+        cli_abort("The file {.file {anndata_file}} doesn't contain the metacell sum. Please convert it to the new format and try again.")
+    }
+    mc_sum <- adata$obs$total_umis
+    serialize_shiny_data(mc_sum, "mc_sum", dataset = dataset, cache_dir = cache_dir)
+
+    mc_mat <- t(adata$X * mc_sum)
     rownames(mc_mat) <- modify_gene_names(rownames(mc_mat), gene_names)
 
     serialize_shiny_data(mc_mat, "mc_mat", dataset = dataset, cache_dir = cache_dir)
@@ -137,7 +153,7 @@ import_dataset <- function(project,
     metacells <- colnames(mc_mat)
 
     mc_sum <- colSums(mc_mat)
-    serialize_shiny_data(mc_sum, "mc_sum", dataset = dataset, cache_dir = cache_dir)
+
 
     metacells <- rownames(adata$obs)
 
@@ -170,7 +186,7 @@ import_dataset <- function(project,
 
     graph <- graph %>% mutate(i = rownames(adata$obs)[i], j = rownames(adata$obs)[j])
 
-    purrr::walk(c("umap_x", "umap_y"), ~ {
+    purrr::walk(c("x", "y"), ~ {
         if (is.null(adata$obs[[.x]])) {
             cli_abort_compute_for_mcview(glue("$obs${.x}"))
         }
@@ -179,8 +195,8 @@ import_dataset <- function(project,
     mc2d_list <- list(
         graph = tibble(mc1 = graph[, 1], mc2 = graph[, 2], weight = graph[, 3]),
         mc_id = rownames(adata$obs),
-        mc_x = adata$obs %>% select(umap_x) %>% tibble::rownames_to_column("mc") %>% tibble::deframe(),
-        mc_y = adata$obs %>% select(umap_y) %>% tibble::rownames_to_column("mc") %>% tibble::deframe()
+        mc_x = adata$obs %>% select(umap_x = x) %>% tibble::rownames_to_column("mc") %>% tibble::deframe(),
+        mc_y = adata$obs %>% select(umap_y = y) %>% tibble::rownames_to_column("mc") %>% tibble::deframe()
     )
     serialize_shiny_data(mc2d_list, "mc2d", dataset = dataset, cache_dir = cache_dir)
 
@@ -193,21 +209,24 @@ import_dataset <- function(project,
     mc_egc <- t(t(mc_mat) / mc_sum)
 
     cli_alert_info("Calculating top genes per metacell (marker genes)")
-    forbidden_field <- "lateral_gene"
-    if (!("lateral_gene" %in% colnames(adata$var)) && "forbidden_gene" %in% colnames(adata$var)) {
-        forbidden_field <- "forbidden_gene"
-    }
-    if (is.null(adata$var[, forbidden_field])) {
-        forbidden_genes <- c()
-        forbidden <- rep(FALSE, nrow(mc_egc))
+    lateral_field <- "lateral_gene"
+
+    if (is.null(adata$var[, lateral_field])) {
+        lateral_genes <- c()
+        lateral <- rep(FALSE, nrow(mc_egc))
     } else {
-        forbidden <- adata$var[, forbidden_field]
-        forbidden_genes <- rownames(adata$var)[adata$var[, forbidden_field]]
-        forbidden_genes <- modify_gene_names(forbidden_genes, gene_names)
+        lateral <- adata$var[, lateral_field]
+        lateral_genes <- rownames(adata$var)[adata$var[, lateral_field]]
+        lateral_genes <- modify_gene_names(lateral_genes, gene_names)
     }
 
-    serialize_shiny_data(forbidden_genes, "forbidden_genes", dataset = dataset, cache_dir = cache_dir)
-    marker_genes <- calc_marker_genes(mc_egc[!forbidden, ], 20, minimal_max_log_fraction = minimal_max_log_fraction, minimal_relative_log_fraction = minimal_relative_log_fraction)
+    serialize_shiny_data(lateral_genes, "lateral_genes", dataset = dataset, cache_dir = cache_dir)
+
+    if (is.null(adata$var[, "marker_gene"])) {
+        marker_genes <- calc_marker_genes(mc_egc[!lateral, ], 20, minimal_max_log_fraction = minimal_max_log_fraction, minimal_relative_log_fraction = minimal_relative_log_fraction)
+    } else {
+        marker_genes <- calc_marker_genes(mc_egc[adata$var[, "marker_gene"], ], 20, minimal_max_log_fraction = minimal_max_log_fraction, minimal_relative_log_fraction = minimal_relative_log_fraction)
+    }
     serialize_shiny_data(marker_genes, "marker_genes", dataset = dataset, cache_dir = cache_dir)
 
     # serialize the inner fold matrix (if exists)
@@ -348,7 +367,7 @@ import_dataset <- function(project,
     if (!is.null(gene_modules_file)) {
         gene_modules <- parse_gene_modules_file(gene_modules_file)
     } else {
-        gene_modules <- calc_gene_modules(mc_mat[!forbidden, ], k = gene_modules_k)
+        gene_modules <- calc_gene_modules(mc_mat[!lateral, ], k = gene_modules_k)
     }
     serialize_shiny_data(gene_modules, "gene_modules", dataset = dataset, cache_dir = cache_dir, flat = TRUE)
 
@@ -500,9 +519,10 @@ color_cell_types <- function(adata, mc_egc, metacell_types) {
         cli_abort("{anndata_file} object doesn't have a 'var' field named 'top_feature_gene' or 'feature_gene'")
     }
 
-    if (all(paste0("umap_", c("x", "y", "u")) %in% colnames(adata$obs))) {
+    if (all(c("x", "y", "u") %in% colnames(adata$obs))) {
         cli_alert_info("Coloring using pre-calculated 3D umap")
-        color_of_clusters <- chameleon::data_colors(adata$obs[, paste0("umap_", c("x", "y", "u"))], groups = metacell_types$cell_type, run_umap = FALSE)
+        umap_data <- adata$obs %>% select(any_of(c("x", "y", "u", "v", "w")))
+        color_of_clusters <- chameleon::data_colors(umap_data, groups = metacell_types$cell_type, run_umap = FALSE)
     } else {
         cli_alert_info("Coloring using umap on feature matrix")
         color_of_clusters <- chameleon::data_colors(t(feat_mat), groups = metacell_types$cell_type)

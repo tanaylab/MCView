@@ -38,7 +38,7 @@ import_dataset(
 
 \item{dataset}{name for the dataset, e.g. "PBMC"}
 
-\item{anndata_file}{path to \code{h5ad} file which contains the output of metacell2 pipeline (metacells python package).}
+\item{anndata_file}{path to \code{h5ad} file which contains the output of metacell2 pipeline (metacells python package) or a loaded anndata object of the same format.}
 
 \item{cell_type_field}{name of a field in the anndata \code{object$obs} which contains a cell type (optional).
 If the field doesn't exist and \code{metacell_types_file} is missing, MCView would first look
@@ -64,7 +64,7 @@ are the same as the atlas, the atlas colors would be used.}
 \item{outliers_anndata_file}{path to anndata file with outliers (optional). This would enable, by default,
 the following tabs: ["Outliers", "Similar-fold", "Deviant-fold"]. See the metacells python package for more details.}
 
-\item{cluster_metacells}{When TRUE and no metacell type is given (via \code{metacell_types_file} or \code{cell_type_field}), MCView would cluster the metacell matrix using kmeans++ algorithm (from the \code{tglkmeans} package).}
+\item{cluster_metacells}{When TRUE and no metacell type is given (via \code{metacell_types_file} or \code{cell_type_field} - implicit and explicit), MCView would cluster the metacell matrix using kmeans++ algorithm (from the \code{tglkmeans} package).}
 
 \item{cluster_k}{number of clusters for initial metacell clustering. If NULL - the number of clusters would be determined such that a metacell would contain 16 cells on average.}
 

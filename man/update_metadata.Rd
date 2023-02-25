@@ -26,7 +26,7 @@ The fields should can be either numeric or categorical. \cr
  You can use \code{cell_metadata_to_metacell} to convert from categorical to a numeric score (e.g. by using fraction of the category). You can use 'all' in order to import all the fields
  of the anndata object.}
 
-\item{anndata_file}{path to \code{h5ad} file which contains the output of metacell2 pipeline (metacells python package).}
+\item{anndata_file}{path to \code{h5ad} file which contains the output of metacell2 pipeline (metacells python package) or a loaded anndata object of the same format.}
 
 \item{overwrite}{overwrite all existing metadata. If \code{FALSE} - would override only existing metadata fields.}
 }

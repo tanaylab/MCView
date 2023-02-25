@@ -1,5 +1,6 @@
-# MCView 0.2.5.9000
+# MCView 0.2.6
 
+* Use new `metacells` version. Note that old `anndata` objects will not work with this version without conversion.
 * Fixed resolution of heatmap plots.
 * Added a 'rename' modal to the 'Annotate' tab.
 * Fixed order of negative correlations in the left panels. Fixes #127.

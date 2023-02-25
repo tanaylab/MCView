@@ -100,7 +100,7 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
     observe({
         if (is.null(markers())) {
             req(input$max_gene_num)
-            initial_markers <- choose_markers(get_marker_genes(dataset(), mode = mode), input$max_gene_num, dataset = dataset(), add_systematic = mode == "Proj")
+            initial_markers <- choose_markers(get_marker_genes(dataset(), mode = mode), input$max_gene_num, dataset = dataset(), add_misfit = mode == "Proj")
             markers(initial_markers)
         }
 
@@ -135,7 +135,7 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
         }
 
         req(input$max_gene_num)
-        new_markers <- choose_markers(markers_df, input$max_gene_num, dataset = dataset(), add_systematic = mode == "Proj")
+        new_markers <- choose_markers(markers_df, input$max_gene_num, dataset = dataset(), add_misfit = mode == "Proj")
 
         # If we did not choose all the cell types
         if (!is.null(input$selected_cell_types) && length(input$selected_cell_types) != nrow(cell_type_colors())) {
@@ -381,8 +381,8 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     } else {
                         gene_colors <- get_gene_colors(
                             rownames(m),
-                            forbidden_genes = get_mc_data(dataset(), "forbidden_genes"),
-                            systematic_genes = get_mc_data(dataset(), "systematic_genes"),
+                            lateral_genes = get_mc_data(dataset(), "lateral_genes"),
+                            misfit_genes = get_mc_data(dataset(), "misfit_genes"),
                             disjoined_genes = get_mc_data(dataset(), "disjoined_genes_no_atlas")
                         )
                     }
