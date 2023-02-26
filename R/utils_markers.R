@@ -62,7 +62,7 @@ select_top_fold_genes_per_metacell <- function(fold_matrix, genes_per_metacell =
     return(mc_top_genes)
 }
 
-choose_markers <- function(marker_genes, max_markers, dataset = NULL, add_misfit = FALSE) {
+choose_markers <- function(marker_genes, max_markers, dataset = NULL) {
     if (has_name(marker_genes, "metacell")) {
         n_metacells <- length(unique(marker_genes$metacell))
         genes_per_metacell <- min(10, max(1, round(max_markers / n_metacells)))
@@ -91,21 +91,6 @@ choose_markers <- function(marker_genes, max_markers, dataset = NULL, add_misfit
 
     markers <- sort(unique(markers))
 
-    if (add_misfit && !is.null(dataset)) {
-        markers <- add_misfit_markers(dataset, markers)
-        markers <- markers[1:min(length(markers), max_markers)]
-    }
-
-    return(markers)
-}
-
-add_misfit_markers <- function(dataset, markers) {
-    misfit_genes <- get_mc_data(dataset, "misfit_genes")
-    if (!is.null(misfit_genes)) {
-        m <- get_mc_data(dataset, "projected_fold")
-        f <- Matrix::rowSums(m[intersect(rownames(m), misfit_genes), , drop = FALSE]) > 0
-        return(unique(c(misfit_genes[f], markers)))
-    }
     return(markers)
 }
 

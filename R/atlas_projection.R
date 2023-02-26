@@ -150,20 +150,7 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
     serialize_shiny_data(disjoined_genes_no_atlas, "disjoined_genes_no_atlas", dataset = dataset, cache_dir = cache_dir)
     serialize_shiny_data(disjoined_genes_no_query, "disjoined_genes_no_query", dataset = dataset, cache_dir = cache_dir)
 
-
-    if (is.null(query$var$misfit)) {
-        misfit_genes <- c()
-    } else {
-        misfit_genes <- rownames(query$var)[query$var$misfit]
-        if (!is.null(gene_names)) {
-            misfit_genes <- modify_gene_names(misfit_genes, gene_names)
-        }
-    }
-
-
-    serialize_shiny_data(misfit_genes, "misfit_genes", dataset = dataset, cache_dir = cache_dir)
-
-    # Gene metadata
+   # Gene metadata
     gene_md <- query$var %>%
         rownames_to_column("gene") %>%
         as_tibble()
