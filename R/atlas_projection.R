@@ -1,4 +1,4 @@
-import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights_file, dataset, cache_dir, copy_atlas, gene_names = FALSE) {
+import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights_file, dataset, cache_dir, copy_atlas, gene_names = NULL) {
     cli_alert_info("Reading dataset {.file {atlas_dataset}} at project: {.file {atlas_project}}")
     verify_app_cache(atlas_project, datasets = atlas_dataset)
 
@@ -32,6 +32,30 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
             cli_abort("Query h5ad file does not have the required field: '{.file {.x}}'")
         }
     })
+
+    # disjoined genes
+    atlas_mat <- get_mc_data(dataset, "mc_mat", atlas = TRUE)
+    query_mat <- get_mc_data(dataset, "mc_mat")
+    disjoined_genes_no_atlas <- setdiff(rownames(query_mat), rownames(atlas_mat))
+    disjoined_genes_no_query <- setdiff(rownames(atlas_mat), rownames(query_mat))
+
+    serialize_shiny_data(disjoined_genes_no_atlas, "disjoined_genes_no_atlas", dataset = dataset, cache_dir = cache_dir)
+    serialize_shiny_data(disjoined_genes_no_query, "disjoined_genes_no_query", dataset = dataset, cache_dir = cache_dir)
+
+    # change the UMI matrix to use the corrected UMI counts
+    mc_sum <- query$obs$total_atlas_umis
+    serialize_shiny_data(mc_sum, "mc_sum", dataset = dataset, cache_dir = cache_dir)
+
+    mc_mat <- t(query$layers[["corrected_fraction"]] * mc_sum)
+    if (!is.null(gene_names)) {
+        rownames(mc_mat) <- modify_gene_names(rownames(mc_mat), gene_names)
+    }
+
+    # if corrected_fraction is a sparse matrix, convert it to dense
+    if (methods::is(mc_mat, "dgCMatrix")) {
+        mc_mat <- as.matrix(mc_mat)
+    }
+    serialize_shiny_data(mc_mat, "mc_mat", dataset = dataset, cache_dir = cache_dir)
 
     proj_weights <- tgutil::fread(projection_weights_file) %>%
         mutate(atlas = as.character(atlas), query = as.character(query)) %>%
@@ -141,16 +165,7 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
 
     serialize_shiny_data(query$uns$project_max_projection_fold_factor, "project_max_projection_fold_factor", dataset = dataset, cache_dir = cache_dir)
 
-    # disjoined genes
-    atlas_mat <- get_mc_data(dataset, "mc_mat", atlas = TRUE)
-    query_mat <- get_mc_data(dataset, "mc_mat")
-    disjoined_genes_no_atlas <- setdiff(rownames(query_mat), rownames(atlas_mat))
-    disjoined_genes_no_query <- setdiff(rownames(atlas_mat), rownames(query_mat))
-
-    serialize_shiny_data(disjoined_genes_no_atlas, "disjoined_genes_no_atlas", dataset = dataset, cache_dir = cache_dir)
-    serialize_shiny_data(disjoined_genes_no_query, "disjoined_genes_no_query", dataset = dataset, cache_dir = cache_dir)
-
-   # Gene metadata
+    # Gene metadata
     gene_md <- query$var %>%
         rownames_to_column("gene") %>%
         as_tibble()

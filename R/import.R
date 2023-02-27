@@ -152,11 +152,6 @@ import_dataset <- function(project,
 
     metacells <- colnames(mc_mat)
 
-    mc_sum <- colSums(mc_mat)
-
-
-    metacells <- rownames(adata$obs)
-
     metadata <- load_metadata(metadata, metadata_fields, metacells, adata)
     if (!is.null(metadata)) {
         serialize_shiny_data(
@@ -519,9 +514,9 @@ color_cell_types <- function(adata, mc_egc, metacell_types) {
         cli_abort("{anndata_file} object doesn't have a 'var' field named 'top_feature_gene' or 'feature_gene'")
     }
 
-    if (all(c("x", "y", "u") %in% colnames(adata$obs))) {
+    if (all(c("u", "v", "w") %in% colnames(adata$obs))) {
         cli_alert_info("Coloring using pre-calculated 3D umap")
-        umap_data <- adata$obs %>% select(any_of(c("x", "y", "u", "v", "w")))
+        umap_data <- adata$obs %>% select(any_of(c("u", "v", "w")))
         color_of_clusters <- chameleon::data_colors(umap_data, groups = metacell_types$cell_type, run_umap = FALSE)
     } else {
         cli_alert_info("Coloring using umap on feature matrix")
