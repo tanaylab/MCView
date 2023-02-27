@@ -250,7 +250,7 @@ get_markers <- function(dataset) {
     return(marker_genes)
 }
 
-get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_types = NULL, gene_modules = NULL, force_cell_type = TRUE, mode = "Markers", notify_var_genes = FALSE) {
+get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_types = NULL, gene_modules = NULL, force_cell_type = TRUE, mode = "Markers", notify_var_genes = FALSE, cached = FALSE) {
     if (mode == "Inner") {
         mc_fp <- get_mc_data(dataset, "inner_fold_mat")
         req(mc_fp)

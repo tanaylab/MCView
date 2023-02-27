@@ -6,6 +6,7 @@
 * Fixed order of negative correlations in the left panels. Fixes #127.
 * Added an option to use 'gene_names' parameter with atlas projection. 
 * Use the name of the dataset as title by default.
+* Rasterized Type Prediction plot.
 
 # MCView 0.2.5
 

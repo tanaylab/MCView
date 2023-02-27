@@ -202,6 +202,7 @@ create_project <- function(project,
 #' @param restart add a file named 'restart.txt' to the bundle. This would force shiny-server to restart the app when updated.
 #' @param permissions change the file permissions of the bundle after creation, e.g. "777". When NULL -
 #' permissions would not be changed.
+#' @param light_version create a light version of the bundle, which would not include features that require heavy computation (e.g. changing Marker genes, Gene modules etc.)
 #'
 #' @inheritDotParams gert::git_clone
 #' @examples
@@ -219,7 +220,7 @@ create_project <- function(project,
 #' }
 #'
 #' @export
-create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overwrite = FALSE, self_contained = FALSE, branch = "latest_release", restart = overwrite, permissions = NULL, ...) {
+create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overwrite = FALSE, self_contained = FALSE, branch = "latest_release", restart = overwrite, permissions = NULL, light_version = FALSE, ...) {
     bundle_dir <- fs::path(path, name)
     if (!(fs::dir_exists(project))) {
         cli::cli_abort("{.path {project}} does not exists.")
@@ -253,10 +254,17 @@ create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overw
         } else {
             gert::git_clone("git@github.com:tanaylab/MCView", path = code_dir, branch = branch, ...)
         }
-    }
+    }    
 
     fs::file_copy(app_sys("app.R"), fs::path(bundle_dir, "app.R"))
     fs::dir_copy(project, fs::path(bundle_dir, "project"))
+
+    if (light_version){
+        bundle_config_file <- project_config_file(fs::path(bundle_dir, "project"))
+        bundle_config <- yaml::read_yaml(bundle_config_file)
+        bundle_config$light_version <- TRUE
+        yaml::write_yaml(bundle_config, bundle_config_file)
+    }
 
     if (restart) {
         fs::file_touch(fs::path(bundle_dir, "restart.txt"))
