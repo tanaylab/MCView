@@ -22,6 +22,22 @@ project_cache_dir <- function(path) {
     fs::path(path, "cache")
 }
 
+project_version_file <- function(path) {
+    fs::path(path, "config", "MCVIEW_VERSION")
+}
+
+verify_version <- function(path) {
+    version_file <- project_version_file(path)
+    if (!file.exists(version_file)) {
+        cli_alert_warning("No version file found. This is probably an old project. Please re-import the project with the latest version of MCView.")
+    } else {
+        version <- readLines(version_file)
+        if (utils::compareVersion(version, as.character(packageVersion("MCView"))) < 0) {
+            cli_alert_warning("Project was created with MCView version {.field {version}} while the current version is {.field {packageVersion('MCView')}}. Please re-import the project with the latest version of MCView.")
+        }
+    }
+}
+
 verify_project_dir <- function(path, create = FALSE, atlas = FALSE, ...) {
     if (!dir.exists(path)) {
         if (create) {

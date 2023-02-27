@@ -128,7 +128,7 @@ import_dataset <- function(project,
     }
 
     if (is.null(adata$uns$mcview_format) || adata$uns$mcview_format != "1.0") {
-        cli_abort("The file {.file {anndata_file}} was created by an old version of {.pkg metacells}. Please convert it to the new format and try again.")
+        cli_abort("The file {.file {anndata_file}} was created by an old version of {.pkg metacells}. Please convert it to the new format and try again. The conversion script can be found at: {.url https://github.com/tanaylab/metacells/blob/master/bin/convert_0.8_to_0.9.py}")
     }
 
     if (rlang::has_name(adata$obs, "hidden")) {
@@ -440,6 +440,12 @@ import_dataset <- function(project,
 
         import_atlas(adata, atlas_project, atlas_dataset, projection_weights_file, dataset = dataset, cache_dir = cache_dir, copy_atlas = copy_atlas, gene_names = gene_names)
     }
+
+    # write the version of the package
+    writeLines(
+        as.character(packageVersion("MCView")),
+        project_version_file(project)
+    )
 
     cli_alert_success("{.field {dataset}} dataset imported succesfully to {.path {project}} project")
     cli::cli_ul("You can now run the app using: {.field run_app(\"{project}\")}")
