@@ -57,7 +57,7 @@ mod_query_ui <- function(id) {
                     closable = FALSE,
                     width = 12,
                     shinycssloaders::withSpinner(
-                        plotly::plotlyOutput(ns("plot_mc_stacked_type"))
+                        plotOutput(ns("plot_mc_stacked_type"))
                     )
                 )
             ),
@@ -240,18 +240,16 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
                 }
 
                 disjoined <- get_mc_data(dataset(), "disjoined_genes_no_atlas")
-                systematic <- get_mc_data(dataset(), "systematic_genes")
 
                 if (input$mark_disjoined) {
                     prev_levels <- levels(df$col)
                     df <- df %>%
                         mutate(col = ifelse(gene %in% disjoined, "#00b7ff", as.character(col))) %>%
-                        mutate(col = ifelse(gene %in% systematic, "purple", as.character(col))) %>%
                         mutate(col = factor(col, levels = c("#00b7ff", "purple", prev_levels)))
                 }
 
                 df <- df %>%
-                    mutate(Disjoined = gene %in% disjoined, Systematic = gene %in% systematic)
+                    mutate(Disjoined = gene %in% disjoined)
 
                 return(df)
             })
@@ -351,7 +349,7 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
                 sliderInput(ns("min_edge_size"), label = "Min edge length", min = 0, max = 0.3, value = min_edge_length(dataset()), step = 0.001)
             })
 
-            output$plot_mc_stacked_type <- plot_type_predictions_bar(dataset)
+            output$plot_mc_stacked_type <- plot_type_predictions_bar(dataset, metacell_types, cell_type_colors)
 
             output$gene_metadata_cell_type_selector <- cell_type_selector(dataset, ns, id = "gene_metadata_cell_type", label = "Cell types", selected = "all", cell_type_colors = cell_type_colors)
 

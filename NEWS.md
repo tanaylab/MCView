@@ -1,9 +1,13 @@
-# MCView 0.2.5.9000
+# MCView 0.2.6
 
+* Use new `metacells` version. Note that old `anndata` objects will not work with this version without conversion.
+* Added an option to bundle a 'light' version without the option to change the genes on heatmaps.
 * Fixed resolution of heatmap plots.
 * Added a 'rename' modal to the 'Annotate' tab.
 * Fixed order of negative correlations in the left panels. Fixes #127.
 * Added an option to use 'gene_names' parameter with atlas projection. 
+* Use the name of the dataset as title by default.
+* Rasterized Type Prediction plot.
 
 # MCView 0.2.5
 

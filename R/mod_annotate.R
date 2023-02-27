@@ -186,7 +186,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                         select(-any_of(c("cell_type"))) %>%
                         left_join(new_metacell_types %>% select(metacell, cell_type), by = "metacell") %>%
                         mutate(cell_type = ifelse(cell_type == "(Missing)", NA, cell_type)) %>%
-                        mutate(cell_type = as.character(forcats::fct_explicit_na(factor(cell_type))))
+                        mutate(cell_type = as.character(forcats::fct_na_value_to_level(factor(cell_type))))
 
                     new_metacell_types <- sanitize_metacell_types(new_metacell_types, cell_type_colors(), dataset())
                     metacell_types(new_metacell_types)

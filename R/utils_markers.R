@@ -62,7 +62,7 @@ select_top_fold_genes_per_metacell <- function(fold_matrix, genes_per_metacell =
     return(mc_top_genes)
 }
 
-choose_markers <- function(marker_genes, max_markers, dataset = NULL, add_systematic = FALSE) {
+choose_markers <- function(marker_genes, max_markers, dataset = NULL) {
     if (has_name(marker_genes, "metacell")) {
         n_metacells <- length(unique(marker_genes$metacell))
         genes_per_metacell <- min(10, max(1, round(max_markers / n_metacells)))
@@ -91,21 +91,6 @@ choose_markers <- function(marker_genes, max_markers, dataset = NULL, add_system
 
     markers <- sort(unique(markers))
 
-    if (add_systematic && !is.null(dataset)) {
-        markers <- add_systematic_markers(dataset, markers)
-        markers <- markers[1:min(length(markers), max_markers)]
-    }
-
-    return(markers)
-}
-
-add_systematic_markers <- function(dataset, markers) {
-    systematic_genes <- get_mc_data(dataset, "systematic_genes")
-    if (!is.null(systematic_genes)) {
-        m <- get_mc_data(dataset, "projected_fold")
-        f <- Matrix::rowSums(m[intersect(rownames(m), systematic_genes), , drop = FALSE]) > 0
-        return(unique(c(systematic_genes[f], markers)))
-    }
     return(markers)
 }
 
@@ -148,7 +133,7 @@ get_top_marks <- function(feat, notify_var_genes = TRUE) {
 #'
 #' @noRd
 #' @return named vector with metacell order
-order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers = FALSE, force_cell_type = FALSE, metacell_types = NULL, order_each_cell_type = FALSE, epsilon = 0, notify_var_genes = FALSE, log_transform = TRUE) {
+order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers = FALSE, force_cell_type = FALSE, metacell_types = NULL, order_each_cell_type = FALSE, epsilon = 0, notify_var_genes = FALSE, log_transform = TRUE, cached_dist = NULL) {
     if (filter_markers) {
         gene_folds <- filter_markers_mat(gene_folds)
     }
@@ -188,7 +173,13 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
         return(1:ncol(feat_all))
     }
 
-    hc <- fastcluster::hclust(tgs_dist(tgs_cor(feat, pairwise.complete.obs = TRUE)), method = "ward.D2")
+    if (!is.null(cached_dist)) {
+        metacells <- colnames(feat)
+        hc <- fastcluster::hclust(as.dist(as.matrix(cached_dist)[metacells, metacells]), method = "ward.D2")
+    } else {
+        hc <- fastcluster::hclust(tgs_dist(tgs_cor(feat, pairwise.complete.obs = TRUE)), method = "ward.D2")
+    }
+
 
     d <- reorder(
         as.dendrogram(hc),
@@ -266,6 +257,7 @@ get_markers <- function(dataset) {
 }
 
 get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_types = NULL, gene_modules = NULL, force_cell_type = TRUE, mode = "Markers", notify_var_genes = FALSE) {
+    cached_dist <- NULL
     if (mode == "Inner") {
         mc_fp <- get_mc_data(dataset, "inner_fold_mat")
         req(mc_fp)
@@ -284,6 +276,10 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
         mc_fp <- get_mc_fp(dataset, markers)
         epsilon <- 0
         log_transform <- TRUE
+        default_markers <- get_mc_data(dataset, "default_markers")
+        if (!is.null(default_markers) && all(markers %in% default_markers)) {
+            cached_dist <- get_mc_data(dataset, "default_markers_dist")
+        }
     } else if (mode == "Gene modules") {
         mc_fp <- get_mc_gene_modules_fp(dataset, markers, gene_modules)
         epsilon <- 0
@@ -309,7 +305,7 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
     }
 
     if (ncol(mat) > 1) {
-        mc_order <- order_mc_by_most_var_genes(mat, force_cell_type = force_cell_type, metacell_types = metacell_types, epsilon = epsilon, notify_var_genes = notify_var_genes, log_transform = log_transform)
+        mc_order <- order_mc_by_most_var_genes(mat, force_cell_type = force_cell_type, metacell_types = metacell_types, epsilon = epsilon, notify_var_genes = notify_var_genes, log_transform = log_transform, cached_dist = cached_dist)
         mat <- mat[, mc_order, drop = FALSE]
     }
 

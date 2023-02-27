@@ -59,6 +59,18 @@ heatmap_box <- function(id,
 
 heatmap_sidebar <- function(id, ...) {
     ns <- NS(id)
+    if (config$light_version) {
+        max_gene_num_ui <- NULL
+        remove_genes_ui <- NULL
+        add_genes_ui <- NULL
+        update_genes_ui <- NULL
+    } else {
+        max_gene_num_ui <- numericInput(ns("max_gene_num"), "Maximal number of genes", value = 100)
+        remove_genes_ui <- shinyWidgets::actionGroupButtons(ns("remove_genes"), labels = "Remove selected genes", size = "sm")
+        add_genes_ui <- uiOutput(ns("add_genes_ui"))
+        update_genes_ui <- shinyWidgets::actionGroupButtons(ns("update_genes"), labels = "Update genes", size = "sm")
+    }
+
     list(
         uiOutput(ns("reset_zoom_ui")),
         shinyWidgets::radioGroupButtons(
@@ -74,9 +86,9 @@ heatmap_sidebar <- function(id, ...) {
         uiOutput(ns("cell_type_list")),
         uiOutput(ns("metadata_list")),
         ...,
-        shinyWidgets::actionGroupButtons(ns("update_genes"), labels = "Update genes", size = "sm"),
-        numericInput(ns("max_gene_num"), "Maximal number of genes", value = 100),
-        uiOutput(ns("add_genes_ui")),
+        update_genes_ui,
+        max_gene_num_ui,
+        add_genes_ui,
         selectInput(
             ns("selected_marker_genes"),
             "Genes",
@@ -86,7 +98,7 @@ heatmap_sidebar <- function(id, ...) {
             size = 30,
             selectize = FALSE
         ),
-        shinyWidgets::actionGroupButtons(ns("remove_genes"), labels = "Remove selected genes", size = "sm"),
+        remove_genes_ui,
         tags$hr(),
         downloadButton(ns("download_matrix"), "Download matrix", align = "center", style = "margin: 5px 5px 5px 15px; ")
     )
@@ -99,8 +111,14 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
 
     observe({
         if (is.null(markers())) {
-            req(input$max_gene_num)
-            initial_markers <- choose_markers(get_marker_genes(dataset(), mode = mode), input$max_gene_num, dataset = dataset(), add_systematic = mode == "Proj")
+            if (config$light_version) {
+                max_gene_num <- 100
+            } else {
+                req(input$max_gene_num)
+                max_gene_num <- input$max_gene_num
+            }
+
+            initial_markers <- choose_markers(get_marker_genes(dataset(), mode = mode), max_gene_num, dataset = dataset())
             markers(initial_markers)
         }
 
@@ -135,7 +153,7 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
         }
 
         req(input$max_gene_num)
-        new_markers <- choose_markers(markers_df, input$max_gene_num, dataset = dataset(), add_systematic = mode == "Proj")
+        new_markers <- choose_markers(markers_df, input$max_gene_num, dataset = dataset())
 
         # If we did not choose all the cell types
         if (!is.null(input$selected_cell_types) && length(input$selected_cell_types) != nrow(cell_type_colors())) {
@@ -166,6 +184,7 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
         } else {
             gene_choices <- gene_names(dataset())
         }
+
 
         tagList(
             shinyWidgets::actionGroupButtons(ns("add_genes"), labels = "Add genes", size = "sm"),
@@ -215,6 +234,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     mode = mode,
                     notify_var_genes = TRUE
                 )
+
 
                 if (input$filter_by_clipboard) {
                     if (!is.null(globals$clipboard) && length(globals$clipboard) > 0) {
@@ -381,8 +401,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     } else {
                         gene_colors <- get_gene_colors(
                             rownames(m),
-                            forbidden_genes = get_mc_data(dataset(), "forbidden_genes"),
-                            systematic_genes = get_mc_data(dataset(), "systematic_genes"),
+                            lateral_genes = get_mc_data(dataset(), "lateral_genes"),
                             disjoined_genes = get_mc_data(dataset(), "disjoined_genes_no_atlas")
                         )
                     }

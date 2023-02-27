@@ -1,4 +1,4 @@
-import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights_file, dataset, cache_dir, copy_atlas, gene_names = FALSE) {
+import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights_file, dataset, cache_dir, copy_atlas, gene_names = NULL) {
     cli_alert_info("Reading dataset {.file {atlas_dataset}} at project: {.file {atlas_project}}")
     verify_app_cache(atlas_project, datasets = atlas_dataset)
 
@@ -32,6 +32,30 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
             cli_abort("Query h5ad file does not have the required field: '{.file {.x}}'")
         }
     })
+
+    # disjoined genes
+    atlas_mat <- get_mc_data(dataset, "mc_mat", atlas = TRUE)
+    query_mat <- get_mc_data(dataset, "mc_mat")
+    disjoined_genes_no_atlas <- setdiff(rownames(query_mat), rownames(atlas_mat))
+    disjoined_genes_no_query <- setdiff(rownames(atlas_mat), rownames(query_mat))
+
+    serialize_shiny_data(disjoined_genes_no_atlas, "disjoined_genes_no_atlas", dataset = dataset, cache_dir = cache_dir)
+    serialize_shiny_data(disjoined_genes_no_query, "disjoined_genes_no_query", dataset = dataset, cache_dir = cache_dir)
+
+    # change the UMI matrix to use the corrected UMI counts
+    mc_sum <- query$obs$total_atlas_umis
+    serialize_shiny_data(mc_sum, "mc_sum", dataset = dataset, cache_dir = cache_dir)
+
+    mc_mat <- t(query$layers[["corrected_fraction"]] * mc_sum)
+    if (!is.null(gene_names)) {
+        rownames(mc_mat) <- modify_gene_names(rownames(mc_mat), gene_names)
+    }
+
+    # if corrected_fraction is a sparse matrix, convert it to dense
+    if (methods::is(mc_mat, "dgCMatrix")) {
+        mc_mat <- as.matrix(mc_mat)
+    }
+    serialize_shiny_data(mc_mat, "mc_mat", dataset = dataset, cache_dir = cache_dir)
 
     proj_weights <- tgutil::fread(projection_weights_file) %>%
         mutate(atlas = as.character(atlas), query = as.character(query)) %>%
@@ -106,19 +130,19 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
     metadata_colors[["similar"]] <- similarity_colors
     serialize_shiny_data(metadata_colors, "metadata_colors", dataset = dataset, cache_dir = cache_dir)
 
-    if (is.null(query$layers[["projected"]])) {
-        cli_abort("Query h5ad is missing the '{.file projected}' layer")
+
+    if (is.null(query$layers[["projected_fraction"]])) {
+        cli_abort("Query h5ad is missing the '{.file projected_fraction}' layer")
     }
-    projected_mat <- t(query$layers[["projected"]])
+    projected_mat_sum <- query$obs$total_atlas_umis
+    serialize_shiny_data(projected_mat_sum, "projected_mat_sum", dataset = dataset, cache_dir = cache_dir)
+    projected_mat <- t(query$layers[["projected_fraction"]] * projected_mat_sum)
     rownames(projected_mat) <- colnames(query$X)
     colnames(projected_mat) <- rownames(query$X)
     if (!is.null(gene_names)) {
         rownames(projected_mat) <- modify_gene_names(rownames(projected_mat), gene_names)
     }
     serialize_shiny_data(projected_mat, "projected_mat", dataset = dataset, cache_dir = cache_dir)
-
-    projected_mat_sum <- colSums(projected_mat)
-    serialize_shiny_data(projected_mat_sum, "projected_mat_sum", dataset = dataset, cache_dir = cache_dir)
 
     if (is.null(query$layers[["projected_fold"]])) {
         cli_abort("Query h5ad is missing the '{.file projected_fold}' layer")
@@ -133,37 +157,13 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
     serialize_shiny_data(projected_fold, "projected_fold", dataset = dataset, cache_dir = cache_dir)
 
     cli_alert_info("Calculating top atlas-query fold genes")
-    forbidden_field <- "lateral_gene"
-    if (!("lateral_gene" %in% colnames(query$var)) && "forbidden_gene" %in% colnames(query$var)) {
-        forbidden_field <- "forbidden_gene"
-    }
-    forbidden <- query$var[, forbidden_field]
+    lateral_field <- "lateral_gene"
+    lateral <- query$var[, lateral_field]
 
-    marker_genes_projected <- select_top_fold_genes_per_metacell(projected_fold[!forbidden, ], minimal_relative_log_fraction = -Inf, use_abs = TRUE, genes_per_metacell = 50)
+    marker_genes_projected <- select_top_fold_genes_per_metacell(projected_fold[!lateral, ], minimal_relative_log_fraction = -Inf, use_abs = TRUE, genes_per_metacell = 50)
     serialize_shiny_data(marker_genes_projected, "marker_genes_projected", dataset = dataset, cache_dir = cache_dir)
 
     serialize_shiny_data(query$uns$project_max_projection_fold_factor, "project_max_projection_fold_factor", dataset = dataset, cache_dir = cache_dir)
-
-    # disjoined genes
-    atlas_mat <- get_mc_data(dataset, "mc_mat", atlas = TRUE)
-    query_mat <- get_mc_data(dataset, "mc_mat")
-    disjoined_genes_no_atlas <- setdiff(rownames(query_mat), rownames(atlas_mat))
-    disjoined_genes_no_query <- setdiff(rownames(atlas_mat), rownames(query_mat))
-
-    serialize_shiny_data(disjoined_genes_no_atlas, "disjoined_genes_no_atlas", dataset = dataset, cache_dir = cache_dir)
-    serialize_shiny_data(disjoined_genes_no_query, "disjoined_genes_no_query", dataset = dataset, cache_dir = cache_dir)
-
-    if (is.null(query$var$systematic_gene)) {
-        systematic_genes <- c()
-    } else {
-        systematic_genes <- rownames(query$var)[query$var$systematic_gene]
-        if (!is.null(gene_names)) {
-            systematic_genes <- modify_gene_names(systematic_genes, gene_names)
-        }
-    }
-
-
-    serialize_shiny_data(systematic_genes, "systematic_genes", dataset = dataset, cache_dir = cache_dir)
 
     # Gene metadata
     gene_md <- query$var %>%
@@ -174,13 +174,12 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
         select(
             gene,
             contains("_of_"),
-            any_of("forbidden_gene"),
             any_of("lateral_gene"),
-            ignored_gene,
-            any_of("atlas_significant_gene"),
+            excluded_gene,
+            any_of("atlas_lateral_gene"),
+            any_of("atlas_marker_gene"),
             any_of("correction_factor"),
-            any_of("correlated_gene"),
-            glob_ignored_gene = ignored_gene
+            any_of("correlated_gene")
         ) %>%
         pivot_longer(
             contains("_of_"),
@@ -189,11 +188,10 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
         ) %>%
         spread(dtype, value) %>%
         select(
-            gene, cell_type, ignored_gene, any_of("correlated_gene"), everything()
+            gene, cell_type, excluded_gene, everything()
         ) %>%
         arrange(
-            desc(ignored_gene),
-            desc(glob_ignored_gene)
+            desc(excluded_gene)
         )
 
     if (!is.null(gene_names)) {
@@ -204,53 +202,4 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
 
 
     cli_alert_success("succesfully imported atlas projections")
-}
-
-
-plot_type_predictions_bar <- function(dataset) {
-    plotly::renderPlotly({
-        df_fracs <- get_mc_data(dataset(), "query_atlas_cell_type_fracs")
-        req(!is.null(df_fracs))
-        req(has_atlas(dataset()))
-        atlas_colors <- get_mc_data(dataset(), "cell_type_colors", atlas = TRUE)
-        atlas_colors <- atlas_colors %>%
-            select(cell_type, color) %>%
-            deframe()
-
-        fracs_mat <- df_fracs %>%
-            spread(type, fraction) %>%
-            column_to_rownames("metacell") %>%
-            as.matrix()
-
-        ord <- slanter::slanted_orders(fracs_mat)
-
-        df_fracs <- df_fracs %>%
-            mutate(metacell = factor(metacell, levels = rownames(fracs_mat)[ord$rows])) %>%
-            mutate(type = factor(type, levels = colnames(fracs_mat)[ord$cols]))
-
-        p <- df_fracs %>%
-            ggplot(aes(x = metacell, y = fraction, fill = type, customdata = metacell)) +
-            geom_col() +
-            scale_fill_manual(name = "", values = atlas_colors) +
-            theme(
-                panel.grid.minor = element_blank(),
-                panel.grid.major = element_blank(),
-                axis.text.x = element_blank(),
-                axis.ticks.x = element_blank()
-            ) +
-            scale_y_continuous(expand = c(0, 0)) +
-            ylab("Fraction") +
-            xlab("Metacell") +
-            guides(fill = "none")
-
-
-        fig <- plotly::ggplotly(
-            p,
-            source = "type_prediction_bar"
-        ) %>%
-            sanitize_plotly_buttons() %>%
-            plotly::hide_legend()
-
-        return(fig)
-    })
 }

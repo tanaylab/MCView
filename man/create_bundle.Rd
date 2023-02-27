@@ -13,6 +13,7 @@ create_bundle(
   branch = "latest_release",
   restart = overwrite,
   permissions = NULL,
+  light_version = FALSE,
   ...
 )
 }
@@ -42,6 +43,8 @@ repository.}
 
 \item{permissions}{change the file permissions of the bundle after creation, e.g. "777". When NULL -
 permissions would not be changed.}
+
+\item{light_version}{create a light version of the bundle, which would not include features that require heavy computation (e.g. changing Marker genes, Gene modules etc.)}
 
 \item{...}{
   Arguments passed on to \code{\link[gert:git_fetch]{gert::git_clone}}
