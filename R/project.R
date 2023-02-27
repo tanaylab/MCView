@@ -254,12 +254,12 @@ create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overw
         } else {
             gert::git_clone("git@github.com:tanaylab/MCView", path = code_dir, branch = branch, ...)
         }
-    }    
+    }
 
     fs::file_copy(app_sys("app.R"), fs::path(bundle_dir, "app.R"))
     fs::dir_copy(project, fs::path(bundle_dir, "project"))
 
-    if (light_version){
+    if (light_version) {
         bundle_config_file <- project_config_file(fs::path(bundle_dir, "project"))
         bundle_config <- yaml::read_yaml(bundle_config_file)
         bundle_config$light_version <- TRUE

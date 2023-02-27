@@ -59,6 +59,18 @@ heatmap_box <- function(id,
 
 heatmap_sidebar <- function(id, ...) {
     ns <- NS(id)
+    if (config$light_version) {
+        max_gene_num_ui <- NULL
+        remove_genes_ui <- NULL
+        add_genes_ui <- NULL
+        update_genes_ui <- NULL
+    } else {
+        max_gene_num_ui <- numericInput(ns("max_gene_num"), "Maximal number of genes", value = 100)
+        remove_genes_ui <- shinyWidgets::actionGroupButtons(ns("remove_genes"), labels = "Remove selected genes", size = "sm")
+        add_genes_ui <- uiOutput(ns("add_genes_ui"))
+        update_genes_ui <- shinyWidgets::actionGroupButtons(ns("update_genes"), labels = "Update genes", size = "sm")
+    }
+
     list(
         uiOutput(ns("reset_zoom_ui")),
         shinyWidgets::radioGroupButtons(
@@ -74,9 +86,9 @@ heatmap_sidebar <- function(id, ...) {
         uiOutput(ns("cell_type_list")),
         uiOutput(ns("metadata_list")),
         ...,
-        shinyWidgets::actionGroupButtons(ns("update_genes"), labels = "Update genes", size = "sm"),
-        numericInput(ns("max_gene_num"), "Maximal number of genes", value = 100),
-        uiOutput(ns("add_genes_ui")),
+        update_genes_ui,
+        max_gene_num_ui,
+        add_genes_ui,
         selectInput(
             ns("selected_marker_genes"),
             "Genes",
@@ -86,7 +98,7 @@ heatmap_sidebar <- function(id, ...) {
             size = 30,
             selectize = FALSE
         ),
-        shinyWidgets::actionGroupButtons(ns("remove_genes"), labels = "Remove selected genes", size = "sm"),
+        remove_genes_ui,
         tags$hr(),
         downloadButton(ns("download_matrix"), "Download matrix", align = "center", style = "margin: 5px 5px 5px 15px; ")
     )
@@ -99,8 +111,14 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
 
     observe({
         if (is.null(markers())) {
-            req(input$max_gene_num)
-            initial_markers <- choose_markers(get_marker_genes(dataset(), mode = mode), input$max_gene_num, dataset = dataset())
+            if (config$light_version) {
+                max_gene_num <- 100
+            } else {
+                req(input$max_gene_num)
+                max_gene_num <- input$max_gene_num
+            }
+
+            initial_markers <- choose_markers(get_marker_genes(dataset(), mode = mode), max_gene_num, dataset = dataset())
             markers(initial_markers)
         }
 
@@ -167,6 +185,7 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
             gene_choices <- gene_names(dataset())
         }
 
+
         tagList(
             shinyWidgets::actionGroupButtons(ns("add_genes"), labels = "Add genes", size = "sm"),
             shinyWidgets::virtualSelectInput(ns("genes_to_add"),
@@ -213,9 +232,9 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     gene_modules(),
                     force_cell_type = input$force_cell_type,
                     mode = mode,
-                    notify_var_genes = TRUE,
-                    cached = config$light_version
+                    notify_var_genes = TRUE
                 )
+
 
                 if (input$filter_by_clipboard) {
                     if (!is.null(globals$clipboard) && length(globals$clipboard) > 0) {

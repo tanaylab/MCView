@@ -224,6 +224,18 @@ import_dataset <- function(project,
     }
     serialize_shiny_data(marker_genes, "marker_genes", dataset = dataset, cache_dir = cache_dir)
 
+
+    # cache metacell correlations of default marker genes
+    cli_alert_info("Calculating metacell correlations of default marker genes")
+    default_markers <- choose_markers(marker_genes, 100)
+    mc_fp <- log2(get_mc_fp(dataset, default_markers))
+    zero_mcs <- colSums(abs(mc_fp) > 0) < 2
+    mc_fp <- mc_fp[, !zero_mcs, drop = FALSE]
+    default_markers_dist <- tgs_dist(tgs_cor(mc_fp, pairwise.complete.obs = TRUE))
+    serialize_shiny_data(default_markers_dist, "default_markers_dist", dataset = dataset, cache_dir = cache_dir)
+    serialize_shiny_data(default_markers, "default_markers", dataset = dataset, cache_dir = cache_dir)
+
+
     # serialize the inner fold matrix (if exists)
     if (!is.null(adata$layers[["inner_fold"]])) {
         cli_alert_info("Processing inner-folds matrix")
