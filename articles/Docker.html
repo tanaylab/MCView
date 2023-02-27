@@ -26,7 +26,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">MCView</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.5.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.6</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -72,7 +72,8 @@
 
 
 
-<script src="Docker_files/accessible-code-block-0.0.1/empty-anchor.js"></script><div class="row">
+
+<div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="" class="logo" alt=""><h1>Docker</h1>
             
@@ -83,33 +84,37 @@
 
     
     
-<p><strong>MCView</strong> maintains a docker image with all the R and python dependencies. By default, the image starts an app with the project mounted at <code>/project</code> in the docker fs, but you can also use it to create projects or import datasets.</p>
+<p><strong>MCView</strong> maintains a docker image with all the R and
+python dependencies. By default, the image starts an app with the
+project mounted at <code>/project</code> in the docker fs, but you can
+also use it to create projects or import datasets.</p>
 <div class="section level2">
 <h2 id="pull-the-image">Pull the image<a class="anchor" aria-label="anchor" href="#pull-the-image"></a>
 </h2>
 <p>Pull the <strong>MCView</strong> docker image using:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1"></a><span class="ex">docker</span> pull tanaylab/mcview:latest</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> pull tanaylab/mcview:latest</span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="create-a-project">Create a project<a class="anchor" aria-label="anchor" href="#create-a-project"></a>
 </h2>
-<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1"></a><span class="fu">mkdir</span> PBMC</span>
-<span id="cb2-2"><a href="#cb2-2"></a><span class="ex">docker</span> run -v <span class="va">$(</span><span class="bu">pwd</span><span class="va">)</span>/PBMC:/project tanaylab/mcview R -e <span class="st">'MCView::create_project("/project/PBMC")'</span></span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> PBMC</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-v</span> <span class="va">$(</span><span class="bu">pwd</span><span class="va">)</span>/PBMC:/project tanaylab/mcview R <span class="at">-e</span> <span class="st">'MCView::create_project("/project/PBMC")'</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="import-a-dataset">Import a dataset<a class="anchor" aria-label="anchor" href="#import-a-dataset"></a>
 </h2>
 <p>Download the PBMC example dataset:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1"></a><span class="fu">wget</span> http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz</span>
-<span id="cb3-2"><a href="#cb3-2"></a><span class="fu">tar</span> xvzf PBMC_processed.tar.gz</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">wget</span> http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">tar</span> xvzf PBMC_processed.tar.gz</span></code></pre></div>
 <p>Import the dataset:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1"></a><span class="ex">docker</span> run -v <span class="va">$(</span><span class="bu">pwd</span><span class="va">)</span>:/workdir tanaylab/mcview R -e <span class="st">'MCView::import_dataset("/workdir/PBMC", dataset = "PBMC163k", anndata_file = "/workdir/metacells.h5ad", cell_type_colors_file = "/workdir/cluster-colors.csv")'</span></span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-v</span> <span class="va">$(</span><span class="bu">pwd</span><span class="va">)</span>:/workdir tanaylab/mcview R <span class="at">-e</span> <span class="st">'MCView::import_dataset("/workdir/PBMC", dataset = "PBMC163k", anndata_file = "/workdir/metacells.h5ad", cell_type_colors_file = "/workdir/cluster-colors.csv")'</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="run-the-app">Run the app<a class="anchor" aria-label="anchor" href="#run-the-app"></a>
 </h2>
-<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1"></a><span class="ex">docker</span> run -v <span class="va">$(</span><span class="bu">pwd</span><span class="va">)</span>/PBMC:/project -p 3838:3838 tanaylab/mcview</span></code></pre></div>
-<p>We can now go to port 3838 on our machine to view the running app.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-v</span> <span class="va">$(</span><span class="bu">pwd</span><span class="va">)</span>/PBMC:/project <span class="at">-p</span> 3838:3838 tanaylab/mcview</span></code></pre></div>
+<p>We can now go to port 3838 on our machine to view the running
+app.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
     </nav></aside>
