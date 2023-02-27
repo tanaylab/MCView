@@ -239,12 +239,12 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
                     df <- calc_obs_exp_type_df(dataset(), "Group", group_types_df)
                 }
 
-                disjoined <- get_mc_data(dataset(), "disjoined_genes_no_atlas")                
+                disjoined <- get_mc_data(dataset(), "disjoined_genes_no_atlas")
 
                 if (input$mark_disjoined) {
                     prev_levels <- levels(df$col)
                     df <- df %>%
-                        mutate(col = ifelse(gene %in% disjoined, "#00b7ff", as.character(col))) %>%                        
+                        mutate(col = ifelse(gene %in% disjoined, "#00b7ff", as.character(col))) %>%
                         mutate(col = factor(col, levels = c("#00b7ff", "purple", prev_levels)))
                 }
 
