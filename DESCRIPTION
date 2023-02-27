@@ -28,7 +28,7 @@ Imports:
     cowplot,
     dplyr,
     DT,
-    forcats,
+    forcats (>= 1.0.0),
     fs,
     furrr,
     future,

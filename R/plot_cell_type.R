@@ -21,7 +21,7 @@ cell_type_gene_boxplot <- function(gene,
 
     df <- df %>%
         mutate(cell_type = factor(cell_type, levels = sort(as.character(cell_type_colors$cell_type)))) %>%
-        mutate(cell_type = forcats::fct_explicit_na(cell_type)) %>%
+        mutate(cell_type = forcats::fct_na_value_to_level(cell_type)) %>%
         rename(
             `Cell type` = cell_type
         )
@@ -70,7 +70,7 @@ cell_type_metadata_boxplot <- function(var,
 
     df <- df %>%
         mutate(cell_type = factor(cell_type, levels = sort(as.character(cell_type_colors$cell_type)))) %>%
-        mutate(cell_type = forcats::fct_explicit_na(cell_type)) %>%
+        mutate(cell_type = forcats::fct_na_value_to_level(cell_type)) %>%
         rename(
             `Cell type` = cell_type
         )
@@ -115,8 +115,8 @@ cell_type_metadata_confusion <- function(var,
 
     df <- df %>%
         mutate(cell_type = factor(cell_type, levels = sort(as.character(cell_type_colors$cell_type)))) %>%
-        mutate(cell_type = forcats::fct_explicit_na(cell_type)) %>%
-        mutate(var = factor(var), !!var := forcats::fct_explicit_na(!!sym(var)))
+        mutate(cell_type = forcats::fct_na_value_to_level(cell_type)) %>%
+        mutate(var = factor(var), !!var := forcats::fct_na_value_to_level(!!sym(var)))
 
     df <- df %>%
         count(cell_type, !!sym(var), .drop = FALSE) %>%
