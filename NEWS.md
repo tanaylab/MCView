@@ -1,3 +1,7 @@
+# MCView 0.2.7
+
+* Added QC metrics to the manifold tab.
+
 # MCView 0.2.6
 
 * Use new `metacells` version. Note that old `anndata` objects will not work with this version without conversion.
