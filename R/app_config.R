@@ -32,9 +32,9 @@ init_config <- function(project) {
 
     config <<- yaml::read_yaml(config_file)
     verify_config_file(config)
-
+    
     if (is.null(config$light_version)) {
-        config$light_version <- FALSE
+        config$light_version <<- FALSE
     }
 
     verify_app_cache(project)
