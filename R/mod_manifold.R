@@ -90,7 +90,7 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 shinydashboard::valueBox(
                     scales::comma(num_umis),
                     "Total number of UMIs",
-                    color = "aqua"
+                    color = "black"
                 )
             })
 
@@ -100,7 +100,7 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 shinydashboard::valueBox(
                     scales::comma(num_cells),
                     "Number of cells",
-                    color = "blue"
+                    color = "purple"
                 )
             })
 
@@ -127,8 +127,8 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 req(median_umis_per_cell)
                 shinydashboard::valueBox(
                     scales::comma(median_umis_per_cell),
-                    "Median UMIs per cell",
-                    color = "purple"
+                    "Median UMIs per metacell",
+                    color = "blue"
                 )
             })
 
