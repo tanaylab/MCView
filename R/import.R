@@ -228,10 +228,11 @@ import_dataset <- function(project,
     # cache metacell correlations of default marker genes
     cli_alert_info("Calculating metacell correlations of default marker genes")
     default_markers <- choose_markers(marker_genes, 100)
-    mc_fp <- log2(get_mc_fp(dataset, default_markers))
-    zero_mcs <- colSums(abs(mc_fp) > 0) < 2
-    mc_fp <- mc_fp[, !zero_mcs, drop = FALSE]
-    default_markers_dist <- tgs_dist(tgs_cor(mc_fp, pairwise.complete.obs = TRUE))
+    m_norm <- mc_egc[default_markers, ] + 1e-5
+    mc_fp_markers <- m_norm / apply(m_norm, 1, median, na.rm = TRUE)
+    zero_mcs <- colSums(abs(mc_fp_markers) > 0) < 2
+    mc_fp_markers <- mc_fp_markers[, !zero_mcs, drop = FALSE]
+    default_markers_dist <- tgs_dist(tgs_cor(mc_fp_markers, pairwise.complete.obs = TRUE))
     serialize_shiny_data(default_markers_dist, "default_markers_dist", dataset = dataset, cache_dir = cache_dir)
     serialize_shiny_data(default_markers, "default_markers", dataset = dataset, cache_dir = cache_dir)
 
@@ -435,6 +436,11 @@ import_dataset <- function(project,
     if (!is.null(outliers_anndata_file)) {
         load_outliers(outliers_anndata_file, project, dataset, gene_names = gene_names)
     }
+
+    qc_metadata <- adata$obs %>%
+        select(umis = total_umis, cells = grouped)
+
+    browser()
 
 
     if (!is.null(atlas_project)) {
