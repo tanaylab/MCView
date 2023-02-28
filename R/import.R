@@ -440,9 +440,6 @@ import_dataset <- function(project,
     qc_metadata <- adata$obs %>%
         select(umis = total_umis, cells = grouped)
 
-    browser()
-
-
     if (!is.null(atlas_project)) {
         if (is.null(atlas_dataset)) {
             cli_abort("Please provide {.code atlas_dataset}")
