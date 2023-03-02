@@ -10,7 +10,8 @@
 mod_manifold_ui <- function(id) {
     ns <- NS(id)
     tagList(
-        shinyjqui::jqui_resizable(
+        resizable_column(
+            width = 9,
             shinydashboardPlus::box(
                 id = ns("gene_projection"),
                 title = "2D Projection",
@@ -34,9 +35,17 @@ mod_manifold_ui <- function(id) {
                     uiOutput(ns("edge_distance_ui"))
                 ),
                 shinycssloaders::withSpinner(
-                    plotly::plotlyOutput(ns("plot_manifold_proj_2d"), height = "80vh")
+                    plotly::plotlyOutput(ns("plot_manifold_proj_2d"), height = "60vh")
                 )
             )
+        ),
+        resizable_column(
+            width = 3,
+            shinydashboard::valueBoxOutput(ns("num_umis"), width = 12),
+            shinydashboard::valueBoxOutput(ns("num_cells"), width = 12),
+            shinydashboard::valueBoxOutput(ns("num_outliers"), width = 12),
+            shinydashboard::valueBoxOutput(ns("median_umis_per_cell"), width = 12),
+            shinydashboard::valueBoxOutput(ns("median_cells_per_metacell"), width = 12)
         )
     )
 }
@@ -74,6 +83,64 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
         id,
         function(input, output, session) {
             ns <- session$ns
+
+            output$num_umis <- shinydashboard::renderValueBox({
+                num_umis <- get_mc_data(dataset(), "qc_stats")$n_umis
+                req(num_umis)
+                shinydashboard::valueBox(
+                    scales::comma(num_umis),
+                    "Total number of UMIs",
+                    color = "black"
+                )
+            })
+
+            output$num_cells <- shinydashboard::renderValueBox({
+                num_cells <- get_mc_data(dataset(), "qc_stats")$n_cells
+                req(num_cells)
+                shinydashboard::valueBox(
+                    scales::comma(num_cells),
+                    "Number of cells",
+                    color = "purple"
+                )
+            })
+
+            output$num_outliers <- shinydashboard::renderValueBox({
+                num_cells <- get_mc_data(dataset(), "qc_stats")$n_cells
+                num_outliers <- get_mc_data(dataset(), "qc_stats")$n_outliers
+                req(num_cells)
+                req(num_outliers)
+                p_outliers <- num_outliers / num_cells
+                if (p_outliers >= 0.2) {
+                    color <- "red"
+                } else {
+                    color <- "green"
+                }
+                shinydashboard::valueBox(
+                    glue("{scales::comma(num_outliers)} ({scales::percent(p_outliers)})"),
+                    "Number of outlier cells",
+                    color = color
+                )
+            })
+
+            output$median_umis_per_cell <- shinydashboard::renderValueBox({
+                median_umis_per_cell <- get_mc_data(dataset(), "qc_stats")$median_umis_per_cell
+                req(median_umis_per_cell)
+                shinydashboard::valueBox(
+                    scales::comma(median_umis_per_cell),
+                    "Median UMIs per metacell",
+                    color = "blue"
+                )
+            })
+
+            output$median_cells_per_metacell <- shinydashboard::renderValueBox({
+                median_cells_per_metacell <- get_mc_data(dataset(), "qc_stats")$median_cells_per_metacell
+                req(median_cells_per_metacell)
+                shinydashboard::valueBox(
+                    scales::comma(median_cells_per_metacell),
+                    "Median cells per metacell",
+                    color = "maroon"
+                )
+            })
 
             # gene selectors
             manifold_tab_gene_selectors(input, output, session, dataset, ns)

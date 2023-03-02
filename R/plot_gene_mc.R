@@ -22,7 +22,7 @@ plot_gg_over_mc <- function(dataset, g1, g2, metacell_types = get_mc_data(datase
             `Top genes` = glue("{top1_gene} ({round(top1_lfp, digits=2)}), {top2_gene} ({round(top2_lfp, digits=2)})")
         ) %>%
         mutate(cell_type = factor(cell_type, levels = sort(as.character(cell_type_colors$cell_type)))) %>%
-        mutate(cell_type = forcats::fct_na_value_to_level(cell_type)) %>%
+        mutate(cell_type = forcats::fct_na_value_to_level(cell_type, "(Missing)")) %>%
         rename(
             `Cell type` = cell_type
         )
@@ -87,7 +87,7 @@ plot_gene_time_over_mc <- function(dataset, gene, metacell_types = get_mc_data(d
             `Top genes` = glue("{top1_gene} ({round(top1_lfp, digits=2)}), {top2_gene} ({round(top2_lfp, digits=2)})")
         ) %>%
         mutate(cell_type = factor(cell_type, levels = sort(as.character(cell_type_colors$cell_type)))) %>%
-        mutate(cell_type = forcats::fct_na_value_to_level(cell_type)) %>%
+        mutate(cell_type = forcats::fct_na_value_to_level(cell_type, "(Missing)")) %>%
         rename(
             `Cell type` = cell_type,
             `Age` = mc_age

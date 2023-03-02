@@ -312,7 +312,7 @@ import_dataset <- function(project,
         }
     }
 
-    metacell_types <- metacell_types %>% mutate(cell_type = forcats::fct_na_value_to_level(factor(cell_type)))
+    metacell_types <- metacell_types %>% mutate(cell_type = forcats::fct_na_value_to_level(factor(cell_type), "(Missing)"))
 
     if (!is.null(cell_type_colors_file)) {
         cli_alert_info("Loading cell type color annotations from {.file {cell_type_colors_file}}")
@@ -437,8 +437,19 @@ import_dataset <- function(project,
         load_outliers(outliers_anndata_file, project, dataset, gene_names = gene_names)
     }
 
-    qc_metadata <- adata$obs %>%
+    mc_qc_metadata <- adata$obs %>%
         select(umis = total_umis, cells = grouped)
+
+    serialize_shiny_data(mc_qc_metadata, "mc_qc_metadata", dataset = dataset, cache_dir = cache_dir)
+
+    qc_stats <- list(
+        n_outliers = adata$uns$outliers,
+        n_cells = sum(mc_qc_metadata$cells),
+        n_umis = sum(mc_qc_metadata$umis),
+        median_umis_per_cell = median(mc_qc_metadata$umis, na.rm = TRUE),
+        median_cells_per_metacell = median(mc_qc_metadata$cells, na.rm = TRUE)
+    )
+    serialize_shiny_data(qc_stats, "qc_stats", dataset = dataset, cache_dir = cache_dir)
 
     if (!is.null(atlas_project)) {
         if (is.null(atlas_dataset)) {

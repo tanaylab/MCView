@@ -1,3 +1,9 @@
+# MCView 0.2.7
+
+* Added QC metrics to the manifold tab.
+* Fix: import_cell_metadata was overwriting existing metadata
+* Fix: import crashed when metacell_types had missing colors
+
 # MCView 0.2.6
 
 * Use new `metacells` version. Note that old `anndata` objects will not work with this version without conversion.
