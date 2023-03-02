@@ -333,7 +333,7 @@ plot_mc_scatter <- function(dataset,
             `Top genes` = glue("{top1_gene} ({round(top1_lfp, digits=2)}), {top2_gene} ({round(top2_lfp, digits=2)})")
         ) %>%
         mutate(cell_type = factor(cell_type, levels = sort(as.character(cell_type_colors$cell_type)))) %>%
-        mutate(cell_type = forcats::fct_na_value_to_level(cell_type)) %>%
+        mutate(cell_type = forcats::fct_na_value_to_level(cell_type, "(Missing)")) %>%
         mutate(`Cell type` = cell_type)
 
     # set x variable
@@ -834,7 +834,7 @@ plot_obs_proj_scatter <- function(dataset,
             `Top genes` = glue("{top1_gene} ({round(top1_lfp, digits=2)}), {top2_gene} ({round(top2_lfp, digits=2)})")
         ) %>%
         mutate(cell_type = factor(cell_type, levels = sort(as.character(cell_type_colors$cell_type)))) %>%
-        mutate(cell_type = forcats::fct_na_value_to_level(cell_type)) %>%
+        mutate(cell_type = forcats::fct_na_value_to_level(cell_type, "(Missing)")) %>%
         mutate(`Cell type` = cell_type)
 
     # set axis variables

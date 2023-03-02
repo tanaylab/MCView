@@ -138,7 +138,7 @@ get_metacell_types_data <- function(dataset, atlas = FALSE) {
         metacell_types$cell_type <- factor(metacell_types$cell_type)
     }
     metacell_types <- metacell_types %>%
-        mutate(cell_type = as.character(forcats::fct_na_value_to_level(cell_type))) %>%
+        mutate(cell_type = as.character(forcats::fct_na_value_to_level(cell_type, "(Missing)"))) %>%
         mutate(metacell = as.character(metacell))
 
     cell_type_colors <- get_cell_type_data(dataset, atlas = atlas)
