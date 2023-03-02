@@ -1,6 +1,8 @@
 # MCView 0.2.7
 
 * Added QC metrics to the manifold tab.
+* Fix: import_cell_metadata was overwriting existing metadata
+* Fix: import crashed when metacell_types had missing colors
 
 # MCView 0.2.6
 

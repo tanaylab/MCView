@@ -169,11 +169,11 @@ import_cell_metadata <- function(project, dataset, cell_metadata, cell_to_metace
             select(cell_id, everything())
 
         md <- cell_metadata_to_metacell(md, cell_to_metacell, ...)
-        update_metadata(project, dataset, md, overwrite = TRUE)
+        update_metadata(project, dataset, md, overwrite = FALSE)
     } else {
         if (has_name(cell_metadata, "samp_id")) {
             md <- cell_metadata_to_metacell(cell_metadata %>% select(cell_id, samp_id), cell_to_metacell, ...)
-            update_metadata(project, dataset, md, overwrite = TRUE)
+            update_metadata(project, dataset, md, overwrite = FALSE)
         }
     }
 
