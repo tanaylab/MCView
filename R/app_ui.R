@@ -98,6 +98,11 @@ app_ui <- function(request) {
         }
     }
 
+    app_footer <- glue("MCView {version}", version = packageVersion("MCView"))
+    if (!is.null(config$metacells_version)) {
+        app_footer <- glue("{app_footer} | {config$metacells_version}")
+    }
+
     dashboard_page <- shinydashboardPlus::dashboardPage(
         title = app_title,
         shinydashboardPlus::dashboardHeader(
@@ -140,7 +145,7 @@ app_ui <- function(request) {
         controlbar = right_sidebar,
         preloader = list(html = waiter::spin_1(), color = "#333e48"),
         footer = shinydashboardPlus::dashboardFooter(
-            left = glue("MCView {version}", version = packageVersion("MCView")),
+            left = app_footer,
         ),
     )
 

@@ -26,6 +26,10 @@ project_version_file <- function(path) {
     fs::path(path, "config", "MCVIEW_VERSION")
 }
 
+project_metacells_algorithm_file <- function(path) {
+    fs::path(path, "config", "METACELLS_VERSION")
+}
+
 verify_version <- function(path) {
     version_file <- project_version_file(path)
     if (!file.exists(version_file)) {
