@@ -146,6 +146,7 @@ app_ui <- function(request) {
         preloader = list(html = waiter::spin_1(), color = "#333e48"),
         footer = shinydashboardPlus::dashboardFooter(
             left = app_footer,
+            right = glue("(C) Weizmann Institute of Science, 2020-{year}", year = format(Sys.time(), "%Y"))
         ),
     )
 
