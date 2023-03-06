@@ -41,7 +41,7 @@ init_config <- function(project) {
 
     help_config <<- yaml::read_yaml(help_file)
 
-    if (!is.null(project_metacells_algorithm_file(project))) {
+    if (file.exists(project_metacells_algorithm_file(project))) {
         metacells_version <- readLines(project_metacells_algorithm_file(project))
         config$metacells_version <<- metacells_version
     }
