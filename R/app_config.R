@@ -169,6 +169,11 @@ init_tab_defs <- function() {
         config$tabs <<- default_tabs
     }
 
+    if (!is.null(config$excluded_tabs)) {
+        tab_defs <<- tab_defs[!(names(tab_defs) %in% config$excluded_tabs)]
+        config$tabs <<- config$tabs[!(config$tabs %in% config$excluded_tabs)]
+    }
+
     if (!rmarkdown::pandoc_available() && "About" %in% config$tabs) {
         warning("pandoc is not available, removing 'About' tab'")
         config$tabs <<- config$tabs[config$tabs != "About"]

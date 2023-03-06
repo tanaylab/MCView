@@ -29,9 +29,8 @@ create_bundle(
 \item{self_contained}{include the source code of \code{MCView} in the bundle
 and use it to run the app. Use this in order to ensure that the package would always
 run the same way, regardless of MCView changes. When this option is FALSE,
-the installed version of \code{MCView} would be loaded, which can be occasionally
-updated for all the \code{MCView} apps running from a server. By default, the code
-of the latest \code{MCView} release would be used, see \code{branch} for
+the version of \code{MCView} which is installed on the server would be loaded, which can be occasionally
+be different than the one used when creating the app. By default, the code uses the latest \code{MCView} release would be used, see \code{branch} for
 other options.}
 
 \item{branch}{name of the \code{MCView} branch to include when \code{self_contained=TRUE}. By default, the latest release would be used. You can set this

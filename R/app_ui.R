@@ -138,7 +138,10 @@ app_ui <- function(request) {
         sidebar = sidebar,
         body = body,
         controlbar = right_sidebar,
-        preloader = list(html = waiter::spin_1(), color = "#333e48")
+        preloader = list(html = waiter::spin_1(), color = "#333e48"),
+        footer = shinydashboardPlus::dashboardFooter(
+            left = glue("MCView {version}", version = packageVersion("MCView")),
+        ),
     )
 
     screen_size_jscode <-
