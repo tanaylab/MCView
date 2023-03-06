@@ -40,6 +40,11 @@ init_config <- function(project) {
     verify_app_cache(project)
 
     help_config <<- yaml::read_yaml(help_file)
+
+    if (!is.null(project_metacells_algorithm_file(project))) {
+        metacells_version <- readLines(project_metacells_algorithm_file(project))
+        config$metacells_version <<- metacells_version
+    }
 }
 
 init_defs <- function() {
@@ -167,6 +172,11 @@ init_tab_defs <- function() {
         })
     } else {
         config$tabs <<- default_tabs
+    }
+
+    if (!is.null(config$excluded_tabs)) {
+        tab_defs <<- tab_defs[!(names(tab_defs) %in% config$excluded_tabs)]
+        config$tabs <<- config$tabs[!(config$tabs %in% config$excluded_tabs)]
     }
 
     if (!rmarkdown::pandoc_available() && "About" %in% config$tabs) {

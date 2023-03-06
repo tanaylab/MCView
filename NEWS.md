@@ -1,3 +1,8 @@
+# MCView 0.2.7.9000
+
+* Added 'excluded_tabs' to the config file.
+* Added a footer with MCView and metacells versions.
+
 # MCView 0.2.7
 
 * Added QC metrics to the manifold tab.

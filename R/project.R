@@ -26,6 +26,10 @@ project_version_file <- function(path) {
     fs::path(path, "config", "MCVIEW_VERSION")
 }
 
+project_metacells_algorithm_file <- function(path) {
+    fs::path(path, "config", "METACELLS_VERSION")
+}
+
 verify_version <- function(path) {
     version_file <- project_version_file(path)
     if (!file.exists(version_file)) {
@@ -191,9 +195,8 @@ create_project <- function(project,
 #' @param self_contained include the source code of \code{MCView} in the bundle
 #' and use it to run the app. Use this in order to ensure that the package would always
 #' run the same way, regardless of MCView changes. When this option is FALSE,
-#' the installed version of \code{MCView} would be loaded, which can be occasionally
-#' updated for all the \code{MCView} apps running from a server. By default, the code
-#' of the latest \code{MCView} release would be used, see \code{branch} for
+#' the version of \code{MCView} which is installed on the server would be loaded, which can be occasionally
+#' be different than the one used when creating the app. By default, the code uses the latest \code{MCView} release would be used, see \code{branch} for
 #' other options.
 #' @param branch name of the \code{MCView} branch to include when \code{self_contained=TRUE}. By default, the latest release would be used. You can set this
 #' parameter to NULL in order to include the current development version
@@ -263,7 +266,9 @@ create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overw
         bundle_config_file <- project_config_file(fs::path(bundle_dir, "project"))
         bundle_config <- yaml::read_yaml(bundle_config_file)
         bundle_config$light_version <- TRUE
+        bundle_config$excluded_tabs <- c("Gene modules", "Annotate", "Inner-fold")
         yaml::write_yaml(bundle_config, bundle_config_file)
+        cli::cli_alert("Creating a light version of the bundle. Excluded tabs: {.field Gene modules, Annotate, Inner-fold}. To change this, edit the {.file project/config.yaml} file.")
     }
 
     if (restart) {
@@ -272,6 +277,9 @@ create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overw
     }
 
     if (!is.null(permissions)) {
+        if (!is.character(permissions)) {
+            cli::cli_abort("{.field permissions} must be a character string.")
+        }
         fs::file_chmod(c(bundle_dir, fs::dir_ls(bundle_dir, recurse = TRUE)), mode = permissions)
         cli::cli_li("Changing permissions to {.field {permissions}}")
     }

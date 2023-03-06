@@ -98,6 +98,11 @@ app_ui <- function(request) {
         }
     }
 
+    app_footer <- glue("MCView {version}", version = packageVersion("MCView"))
+    if (!is.null(config$metacells_version)) {
+        app_footer <- glue("{app_footer} | {config$metacells_version}")
+    }
+
     dashboard_page <- shinydashboardPlus::dashboardPage(
         title = app_title,
         shinydashboardPlus::dashboardHeader(
@@ -138,7 +143,11 @@ app_ui <- function(request) {
         sidebar = sidebar,
         body = body,
         controlbar = right_sidebar,
-        preloader = list(html = waiter::spin_1(), color = "#333e48")
+        preloader = list(html = waiter::spin_1(), color = "#333e48"),
+        footer = shinydashboardPlus::dashboardFooter(
+            left = app_footer,
+            right = glue("(C) Weizmann Institute of Science, 2020-{year}", year = format(Sys.time(), "%Y"))
+        ),
     )
 
     screen_size_jscode <-

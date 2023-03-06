@@ -473,6 +473,14 @@ import_dataset <- function(project,
         project_version_file(project)
     )
 
+    if (!is.null(adata$uns$metacells_algorithm)) {
+        writeLines(
+            as.character(adata$uns$metacells_algorithm),
+            project_metacells_algorithm_file(project)
+        )
+    }
+
+
     cli_alert_success("{.field {dataset}} dataset imported succesfully to {.path {project}} project")
     cli::cli_ul("You can now run the app using: {.field run_app(\"{project}\")}")
     cli::cli_ul("or create a bundle using: {.field create_bundle(\"{project}\", name = \"name_of_bundle\")}")
