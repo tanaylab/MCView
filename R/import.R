@@ -425,7 +425,7 @@ import_dataset <- function(project,
         }
     }
 
-
+    # cell metadata
     if (!is.null(cell_metadata)) {
         if (is.null(cell_to_metacell)) {
             cli_abort("Please provide also {.field cell_to_metacell} in order to import {.field cell_metadata}")
@@ -438,7 +438,21 @@ import_dataset <- function(project,
     }
 
     mc_qc_metadata <- adata$obs %>%
-        select(umis = total_umis, cells = grouped)
+        rownames_to_column("metacell") %>%
+        select(metacell, umis = total_umis, cells = grouped)
+
+    if (!is.null(adata$layers[["inner_fold"]])) {
+        max_inner_fold <- apply(inner_fold_mat, 2, max, na.rm = TRUE) %>%
+            tibble::enframe(name = "metacell", value = "max_inner_fold")
+        mc_qc_metadata <- mc_qc_metadata %>%
+            left_join(max_inner_fold, by = "metacell")
+    }
+
+    if (!is.null(adata$layers[["zeros"]]) && has_name(adata$obs, "__zeros_downsample_umis")) {
+        obs_zeros <- adata$layers[["zeros"]]
+        # TODO
+        # mc_qc_metadata$zero_cell_fold <- ...
+    }
 
     serialize_shiny_data(mc_qc_metadata, "mc_qc_metadata", dataset = dataset, cache_dir = cache_dir)
 
@@ -446,7 +460,7 @@ import_dataset <- function(project,
         n_outliers = adata$uns$outliers,
         n_cells = sum(mc_qc_metadata$cells),
         n_umis = sum(mc_qc_metadata$umis),
-        median_umis_per_cell = median(mc_qc_metadata$umis, na.rm = TRUE),
+        median_umis_per_metacell = median(mc_qc_metadata$umis, na.rm = TRUE),
         median_cells_per_metacell = median(mc_qc_metadata$cells, na.rm = TRUE)
     )
     serialize_shiny_data(qc_stats, "qc_stats", dataset = dataset, cache_dir = cache_dir)

@@ -70,7 +70,7 @@ The fields should can be either numeric or categorical. \cr
   Arguments passed on to \code{\link[=create_project]{create_project}}
   \describe{
     \item{\code{title}}{The title of the app. This would be shown on the top left of the screen.}
-    \item{\code{tabs}}{Controls which tabs to show in the left sidebar and their order. Options are: "Manifold", "Genes", "Query", "Atlas", "Markers", "Gene modules", "Projected-fold", "Diff. Expression", "Cell types", "Flow", "Annotate", "About". When NULL - default tabs would be set. For projects with atlas projections, please set \code{atlas} to TRUE.}
+    \item{\code{tabs}}{Controls which tabs to show in the left sidebar and their order. Options are: "QC", "Manifold", "Genes", "Query", "Atlas", "Markers", "Gene modules", "Projected-fold", "Diff. Expression", "Cell types", "Flow", "Annotate", "About". When NULL - default tabs would be set. For projects with atlas projections, please set \code{atlas} to TRUE.}
     \item{\code{help}}{Controls wether to start the app with a help modal (from introjs). Help messages can be edited in help.yaml file (see 'Architecture' vignette).}
     \item{\code{selected_gene1,selected_gene2}}{The default genes that would be selected (in any screen with gene selection). If this parameter is missing, the 2 genes with highest max(expr)-min(expr) in the first dataset would be chosen.}
     \item{\code{selected_mc1,selected_mc2}}{The default metacells that would be selected in the Diff. Expression tab.}
