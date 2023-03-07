@@ -1,5 +1,7 @@
 # MCView 0.2.7.9000
 
+* Added 'QC' tab. Please re-import your dataset in order to enable it.
+* Moved some of 'gene/gene' and 'projection' controls to below the plot. 
 * Added 'excluded_tabs' to the config file.
 * Added a footer with MCView and metacells versions.
 

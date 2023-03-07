@@ -12,13 +12,13 @@ mod_gene_mc_ui <- function(id) {
     tagList(
         fluidRow(
             resizable_column(
-                width = 7,
-                projection_box(ns, "gene_projection", title = "Gene projections")
-            ),
-            resizable_column(
                 width = 5,
                 scatter_box(ns, "gene_gene_box", x_selected = "Gene", y_selected = "Gene", color_selected = "Metadata"),
                 uiOutput(ns("atlas_gene_gene_box_ui"))
+            ),
+            resizable_column(
+                width = 7,
+                projection_box(ns, "gene_projection", title = "Gene projections")
             )
         )
     )
@@ -134,9 +134,6 @@ atlas_gene_gene <- function(input, output, session, dataset, metacell_types, cel
                 startOpen = FALSE,
                 width = 100,
                 id = ns("atlas_gene_gene_sidebar"),
-                axis_selector("atlas_x_axis", "Gene", ns),
-                axis_selector("atlas_y_axis", "Gene", ns),
-                axis_selector("atlas_color_by", "Metadata", ns),
                 uiOutput(ns("atlas_gene_gene_xyline_ui")),
                 uiOutput(ns("atlas_gene_gene_fixed_limits_ui")),
                 checkboxInput(ns("use_query_limits"), label = "Use query limits", value = FALSE),
@@ -145,6 +142,15 @@ atlas_gene_gene <- function(input, output, session, dataset, metacell_types, cel
             ),
             shinycssloaders::withSpinner(
                 plotly::plotlyOutput(ns("atlas_plot_gene_gene_mc"))
+            ),
+            shinydashboardPlus::accordion(
+                id = ns("gene_gene_atlas_accordion"),
+                shinydashboardPlus::accordionItem(
+                    title = "Select axes",
+                    axis_selector("atlas_x_axis", "Gene", ns),
+                    axis_selector("atlas_y_axis", "Gene", ns),
+                    axis_selector("atlas_color_by", "Metadata", ns),
+                )
             )
         )
     })

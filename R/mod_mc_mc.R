@@ -12,6 +12,22 @@ mod_mc_mc_ui <- function(id) {
     tagList(
         fluidRow(
             resizable_column(
+                width = 5,
+                shinydashboardPlus::box(
+                    title = "Diff. Expression",
+                    status = "primary",
+                    solidHeader = TRUE,
+                    collapsible = TRUE,
+                    closable = FALSE,
+                    width = 12,
+                    shinycssloaders::withSpinner(
+                        plotly::plotlyOutput(ns("plot_mc_mc_gene_scatter"))
+                    ),
+                    shinyWidgets::prettySwitch(inputId = ns("show_diff_expr_table"), value = FALSE, label = "Show table"),
+                    DT::DTOutput(ns("diff_expr_table"))
+                )
+            ),
+            resizable_column(
                 width = 7,
                 shinydashboardPlus::box(
                     id = ns("metacell_projection"),
@@ -36,22 +52,6 @@ mod_mc_mc_ui <- function(id) {
                     uiOutput(ns("projection_selectors"))
                 )
             ),
-            resizable_column(
-                width = 5,
-                shinydashboardPlus::box(
-                    title = "Diff. Expression",
-                    status = "primary",
-                    solidHeader = TRUE,
-                    collapsible = TRUE,
-                    closable = FALSE,
-                    width = 12,
-                    shinycssloaders::withSpinner(
-                        plotly::plotlyOutput(ns("plot_mc_mc_gene_scatter"))
-                    ),
-                    shinyWidgets::prettySwitch(inputId = ns("show_diff_expr_table"), value = FALSE, label = "Show table"),
-                    DT::DTOutput(ns("diff_expr_table"))
-                )
-            )
         ),
         fluidRow(
             column(

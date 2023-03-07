@@ -19,18 +19,6 @@ projection_box <- function(ns,
             startOpen = FALSE,
             width = 80,
             id = ns(glue("{id}_sidebar")),
-            shinyWidgets::prettyRadioButtons(
-                ns("color_proj"),
-                label = "Color by:",
-                choices = color_choices,
-                inline = TRUE,
-                status = "danger",
-                fill = TRUE
-            ),
-            ...,
-            uiOutput(ns("gene_selector")),
-            uiOutput(ns("proj_gene_module_selector")),
-            uiOutput(ns("metadata_selector")),
             uiOutput(ns("graph_select_ui")),
             uiOutput(ns("proj_stat_ui")),
             uiOutput(ns("set_range_ui")),
@@ -42,6 +30,24 @@ projection_box <- function(ns,
         ),
         shinycssloaders::withSpinner(
             plotly::plotlyOutput(ns("plot_gene_proj_2d"), height = plotly_height)
+        ),
+        shinydashboardPlus::accordion(
+            id = ns("proj_accordion"),
+            shinydashboardPlus::accordionItem(
+                title = "Modify colors",
+                shinyWidgets::prettyRadioButtons(
+                    ns("color_proj"),
+                    label = "Color by:",
+                    choices = color_choices,
+                    inline = TRUE,
+                    status = "danger",
+                    fill = TRUE
+                ),
+                ...,
+                uiOutput(ns("gene_selector")),
+                uiOutput(ns("proj_gene_module_selector")),
+                uiOutput(ns("metadata_selector")),
+            )
         )
     )
 }

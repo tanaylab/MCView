@@ -75,13 +75,19 @@ mod_query_ui <- function(id) {
                         startOpen = FALSE,
                         width = 100,
                         id = ns("gene_gene_sidebar"),
-                        axis_selector("axis", "Gene", ns, choices = c("Gene")),
-                        axis_selector("color_by", "Metadata", ns, choices = c("Metadata", "Gene")),
                         uiOutput(ns("gene_gene_point_size_ui")),
                         uiOutput(ns("gene_gene_stroke_ui"))
                     ),
                     shinycssloaders::withSpinner(
                         plotly::plotlyOutput(ns("plot_gene_gene_mc"))
+                    ),
+                    shinydashboardPlus::accordion(
+                        id = ns("gene_gene_accordion"),
+                        shinydashboardPlus::accordionItem(
+                            title = "Select Gene and colors",
+                            axis_selector("axis", "Gene", ns, choices = c("Gene")),
+                            axis_selector("color_by", "Metadata", ns, choices = c("Metadata", "Gene")),
+                        )
                     )
                 )
             ),

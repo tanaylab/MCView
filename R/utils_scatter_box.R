@@ -11,9 +11,6 @@ scatter_box <- function(ns, id, title = "Gene/Gene", x_selected = "Gene", y_sele
             startOpen = FALSE,
             width = 100,
             id = ns("gene_gene_sidebar"),
-            axis_selector("x_axis", x_selected, ns),
-            axis_selector("y_axis", y_selected, ns),
-            axis_selector("color_by", color_selected, ns),
             checkboxInput(ns("show_legend_scatter"), "Show legend", value = show_legend),
             uiOutput(ns("gene_gene_xyline_ui")),
             uiOutput(ns("gene_gene_fixed_limits_ui")),
@@ -24,6 +21,15 @@ scatter_box <- function(ns, id, title = "Gene/Gene", x_selected = "Gene", y_sele
         ),
         shinycssloaders::withSpinner(
             plotly::plotlyOutput(ns("plot_gene_gene_mc"))
+        ),
+        shinydashboardPlus::accordion(
+            id = ns("gene_gene_accordion"),
+            shinydashboardPlus::accordionItem(
+                title = "Select axes",
+                axis_selector("x_axis", x_selected, ns),
+                axis_selector("y_axis", y_selected, ns),
+                axis_selector("color_by", color_selected, ns)
+            )
         )
     )
 }
