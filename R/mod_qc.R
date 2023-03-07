@@ -105,7 +105,7 @@ qc_value_box <- function(field, title, dataset, color = "black") {
     })
 }
 
-qc_stat_box <- function(ns, id, title, output_id, width = 12, height = "30vh") {
+qc_stat_box <- function(ns, id, title, output_id, width = 12, height = "27vh") {
     shinydashboardPlus::box(
         id = ns(id),
         title = title,
