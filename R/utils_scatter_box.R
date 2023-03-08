@@ -1,4 +1,4 @@
-scatter_box <- function(ns, id, title = "Gene/Gene", x_selected = "Gene", y_selected = "Gene", color_selected = "Metadata", show_legend = TRUE) {
+scatter_box <- function(ns, id, title = "Gene/Gene", x_selected = "Gene", y_selected = "Gene", color_selected = "Metadata", show_legend = TRUE, collapsed_accordion = TRUE) {
     shinydashboardPlus::box(
         id = ns(id),
         title = title,
@@ -22,9 +22,10 @@ scatter_box <- function(ns, id, title = "Gene/Gene", x_selected = "Gene", y_sele
             plotly::plotlyOutput(ns("plot_gene_gene_mc"))
         ),
         shinydashboardPlus::accordion(
-            id = ns("gene_gene_accordion"),
+            id = ns("gene_gene_accordion"),            
             shinydashboardPlus::accordionItem(
                 title = "Select axes",
+                collapsed = collapsed_accordion,
                 axis_selector("x_axis", x_selected, ns),
                 axis_selector("y_axis", y_selected, ns),
                 axis_selector("color_by", color_selected, ns),

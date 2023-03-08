@@ -13,12 +13,12 @@ mod_gene_mc_ui <- function(id) {
         fluidRow(
             resizable_column(
                 width = 5,
-                scatter_box(ns, "gene_gene_box", x_selected = "Gene", y_selected = "Gene", color_selected = "Metadata"),
+                scatter_box(ns, "gene_gene_box", x_selected = "Gene", y_selected = "Gene", color_selected = "Metadata", collapsed_accordion = FALSE),
                 uiOutput(ns("atlas_gene_gene_box_ui"))
             ),
             resizable_column(
                 width = 7,
-                projection_box(ns, "gene_projection", title = "Gene projections")
+                projection_box(ns, "gene_projection", title = "Gene projections", collapsed_accordion = FALSE)
             )
         )
     )

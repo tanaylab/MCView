@@ -5,7 +5,8 @@ projection_box <- function(ns,
                            title = "2D Projection",
                            height = NULL,
                            plotly_height = "400px",
-                           additional_elements = NULL) {
+                           additional_elements = NULL, 
+                           collapsed_accordion = TRUE) {
     shinydashboardPlus::box(
         id = ns(id),
         title = title,
@@ -35,6 +36,7 @@ projection_box <- function(ns,
             id = ns("proj_accordion"),
             shinydashboardPlus::accordionItem(
                 title = "Modify colors",
+                collapsed = collapsed_accordion,
                 shinyWidgets::prettyRadioButtons(
                     ns("color_proj"),
                     label = "Color by:",
