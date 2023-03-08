@@ -26,6 +26,7 @@ Additional tabs can be added from the right sidebar which can be opened by click
 
 #### Main tabs:
 
+- __QC__: View QC metrics of the metacell model.
 - __Manifold__: View the 2d projection of the manifold
 - __Genes__: Compare gene expression and metadata over the metacells.
 - __Diff expression__: Compare metacells / cell types.
