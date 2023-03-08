@@ -10,9 +10,9 @@
 mod_manifold_ui <- function(id) {
     ns <- NS(id)
     tagList(
-        resizable_column(
+        generic_column(
             width = 12,
-            shinydashboardPlus::box(
+            movable_box(
                 id = ns("gene_projection"),
                 title = "2D Projection",
                 status = "primary",

@@ -20,17 +20,17 @@ mod_qc_ui <- function(id) {
                 shinydashboard::valueBoxOutput(ns("median_cells_per_metacell"), width = 2)
             )
         ),
-        resizable_column(
+        generic_column(
             width = 6,
             qc_stat_box(ns, id, "# of UMIs per metacell", "plot_qc_umis"),
             qc_stat_box(ns, id, "Max inner-fold per metacell", "plot_qc_inner_fold")
         ),
-        resizable_column(
+        generic_column(
             width = 6,
             qc_stat_box(ns, id, "# of cells per metacell", "plot_qc_cell_num"),
             qc_stat_box(ns, id, "Max zero-fold per metacell", "plot_mc_zero_fold"),
         ),
-        resizable_column(
+        generic_column(
             width = 6,
             zero_fold_stat_box(ns, id, "# of cells with zero UMIs per gene", "plot_zero_fold")
         )
@@ -115,7 +115,7 @@ qc_value_box <- function(field, title, dataset, color = "black") {
 }
 
 qc_stat_box <- function(ns, id, title, output_id, width = 12, height = "27vh") {
-    shinydashboardPlus::box(
+    movable_box(
         id = ns(id),
         title = title,
         status = "primary",
@@ -143,7 +143,7 @@ qc_stat_box <- function(ns, id, title, output_id, width = 12, height = "27vh") {
 }
 
 zero_fold_stat_box <- function(ns, id, title, output_id, width = 12, height = "35vh") {
-    shinydashboardPlus::box(
+    movable_box(
         id = ns(id),
         title = title,
         status = "primary",

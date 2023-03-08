@@ -11,9 +11,9 @@ mod_flow_ui <- function(id) {
     ns <- NS(id)
     tagList(
         fluidRow(
-            resizable_column(
+            generic_column(
                 width = 6,
-                shinydashboardPlus::box(
+                movable_box(
                     title = "Vein plot",
                     status = "primary",
                     solidHeader = TRUE,
@@ -40,7 +40,7 @@ mod_flow_ui <- function(id) {
                         plotOutput(ns("gene_vein_plot"), height = 600)
                     )
                 ),
-                shinydashboardPlus::box(
+                movable_box(
                     title = "Genes Trajectory",
                     status = "primary",
                     solidHeader = TRUE,
@@ -58,9 +58,9 @@ mod_flow_ui <- function(id) {
                     )
                 )
             ),
-            resizable_column(
+            generic_column(
                 width = 6,
-                shinydashboardPlus::box(
+                movable_box(
                     title = "Metacell flow",
                     status = "primary",
                     solidHeader = TRUE,

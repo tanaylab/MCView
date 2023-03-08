@@ -11,7 +11,7 @@ mod_about_ui <- function(id) {
     ns <- NS(id)
     tagList(
         shinyjqui::jqui_resizable(
-            shinydashboardPlus::box(
+            movable_box(
                 id = ns("about"),
                 title = "About",
                 # status = "primary",

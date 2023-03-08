@@ -11,9 +11,9 @@ mod_atlas_ui <- function(id) {
     ns <- NS(id)
     tagList(
         fluidRow(
-            resizable_column(
+            generic_column(
                 width = 12,
-                shinydashboardPlus::box(
+                movable_box(
                     id = ns("metacell_projection"),
                     title = "Atlas 2D Projection",
                     status = "primary",

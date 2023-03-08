@@ -11,7 +11,7 @@ mod_outliers_ui <- function(id) {
     ns <- NS(id)
     tagList(
         fluidRow(
-            resizable_column(
+            generic_column(
                 width = 12,
                 heatmap_box(ns("outliers_heatmap"), "Outliers Heatmap")
             )

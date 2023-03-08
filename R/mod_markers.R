@@ -11,7 +11,7 @@ mod_markers_ui <- function(id) {
     ns <- NS(id)
     tagList(
         fluidRow(
-            resizable_column(
+            generic_column(
                 width = 12,
                 heatmap_box(ns("markers_heatmap"), "Markers Heatmap")
             )

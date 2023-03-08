@@ -11,9 +11,9 @@ mod_samples_ui <- function(id) {
     ns <- NS(id)
     tagList(
         fluidRow(
-            resizable_column(
+            generic_column(
                 width = 5,
-                shinydashboardPlus::box(
+                movable_box(
                     id = ns("sample_sample_box"),
                     title = "Sample/Sample",
                     status = "primary",
@@ -39,7 +39,7 @@ mod_samples_ui <- function(id) {
                 ),
                 uiOutput(ns("diff_expr_box"))
             ),
-            resizable_column(
+            generic_column(
                 width = 7,
                 projection_box(
                     ns,
@@ -134,7 +134,7 @@ mod_samples_server <- function(id, dataset, metacell_types, cell_type_colors, ge
             # Info box
             output$sample_info_box <- renderUI({
                 req(input$samp1)
-                shinydashboardPlus::box(
+                movable_box(
                     id = ns("sample_info_box_1"),
                     title = "Sample information",
                     status = "primary",
@@ -176,7 +176,7 @@ mod_samples_server <- function(id, dataset, metacell_types, cell_type_colors, ge
             output$diff_expr_box <- renderUI({
                 req(input$selected_cell_types)
 
-                shinydashboardPlus::box(
+                movable_box(
                     title = "Diff. Expression",
                     status = "primary",
                     solidHeader = TRUE,

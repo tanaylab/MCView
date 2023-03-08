@@ -1,11 +1,17 @@
-resizable_column <- function(width, ..., offset = 0, operation = c("enable", "disable", "destroy", "save", "load"), options = NULL) {
-    shinyjqui::jqui_resizable(
+generic_column <- function(width, ..., offset = 0) {    
         column(
             width = width,
             offset = offset,
             ...
-        ),
-        operation = operation,
-        options = options
+        )
+}
+
+movable_box <- function(...){
+    shinyjqui::jqui_draggable(
+        shinyjqui::jqui_resizable(
+            shinydashboardPlus::box(
+                ...
+            )
+        )
     )
 }

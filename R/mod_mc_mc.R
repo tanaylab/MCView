@@ -11,9 +11,9 @@ mod_mc_mc_ui <- function(id) {
     ns <- NS(id)
     tagList(
         fluidRow(
-            resizable_column(
+            generic_column(
                 width = 5,
-                shinydashboardPlus::box(
+                movable_box(
                     title = "Diff. Expression",
                     status = "primary",
                     solidHeader = TRUE,
@@ -27,9 +27,9 @@ mod_mc_mc_ui <- function(id) {
                     DT::DTOutput(ns("diff_expr_table"))
                 )
             ),
-            resizable_column(
+            generic_column(
                 width = 7,
-                shinydashboardPlus::box(
+                movable_box(
                     id = ns("metacell_projection"),
                     title = "2D Projection",
                     status = "primary",
@@ -350,7 +350,7 @@ metacell_selectors <- function(input, output, session, dataset, ns, metacell_nam
 group_selectors <- function(input, output, session, dataset, ns, groupA, groupB, metacell_types, cell_type_colors, globals) {
     output$groupA_box <- renderUI({
         req(input$mode == "Groups")
-        shinydashboardPlus::box(
+        movable_box(
             id = ns("groupA_box_1"),
             title = "Group A metacells",
             status = "primary",
@@ -369,7 +369,7 @@ group_selectors <- function(input, output, session, dataset, ns, groupA, groupB,
 
     output$groupB_box <- renderUI({
         req(input$mode == "Groups")
-        shinydashboardPlus::box(
+        movable_box(
             id = ns("groupB_box_1"),
             title = "Group B metacells",
             status = "primary",

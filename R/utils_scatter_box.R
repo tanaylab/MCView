@@ -1,5 +1,5 @@
 scatter_box <- function(ns, id, title = "Gene/Gene", x_selected = "Gene", y_selected = "Gene", color_selected = "Metadata", show_legend = TRUE, collapsed_accordion = TRUE) {
-    shinydashboardPlus::box(
+    movable_box(
         id = ns(id),
         title = title,
         status = "primary",

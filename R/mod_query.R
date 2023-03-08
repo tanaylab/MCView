@@ -11,7 +11,7 @@ mod_query_ui <- function(id) {
     ns <- NS(id)
     tagList(
         fluidRow(
-            resizable_column(
+            generic_column(
                 width = 7,
                 projection_box(
                     ns,
@@ -22,9 +22,9 @@ mod_query_ui <- function(id) {
                     color_choices = c("Cell type", "Similarity", "Query Metadata", "Atlas Metadata", "Gene", "Gene module", "Selected")
                 )
             ),
-            resizable_column(
+            generic_column(
                 width = 5,
-                shinydashboardPlus::box(
+                movable_box(
                     title = "Diff. Expression",
                     status = "primary",
                     solidHeader = TRUE,
@@ -46,9 +46,9 @@ mod_query_ui <- function(id) {
             )
         ),
         fluidRow(
-            resizable_column(
+            generic_column(
                 width = 7,
-                shinydashboardPlus::box(
+                movable_box(
                     id = ns("metacell_projection"),
                     title = "Type predictions",
                     status = "primary",
@@ -61,9 +61,9 @@ mod_query_ui <- function(id) {
                     )
                 )
             ),
-            resizable_column(
+            generic_column(
                 width = 5,
-                shinydashboardPlus::box(
+                movable_box(
                     id = ns("scatter_box"),
                     title = "Gene/Gene",
                     status = "primary",
@@ -97,9 +97,9 @@ mod_query_ui <- function(id) {
             )
         ),
         fluidRow(
-            resizable_column(
+            generic_column(
                 width = 12,
-                shinydashboardPlus::box(
+                movable_box(
                     id = ns("gene_metadata_box"),
                     title = "Gene metadata",
                     status = "primary",
@@ -520,7 +520,7 @@ select_metacell_plotly_event_projection <- function(source, input, session, meta
 group_selectors_mod_query <- function(input, output, session, dataset, ns, group, metacell_types, cell_type_colors, globals) {
     output$group_box <- renderUI({
         req(input$mode == "Group")
-        shinydashboardPlus::box(
+        movable_box(
             id = ns("group_box_1"),
             title = "Group metacells",
             status = "primary",

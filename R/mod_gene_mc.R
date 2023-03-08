@@ -11,12 +11,12 @@ mod_gene_mc_ui <- function(id) {
     ns <- NS(id)
     tagList(
         fluidRow(
-            resizable_column(
+            generic_column(
                 width = 5,
                 scatter_box(ns, "gene_gene_box", x_selected = "Gene", y_selected = "Gene", color_selected = "Metadata", collapsed_accordion = FALSE),
                 uiOutput(ns("atlas_gene_gene_box_ui"))
             ),
-            resizable_column(
+            generic_column(
                 width = 7,
                 projection_box(ns, "gene_projection", title = "Gene projections", collapsed_accordion = FALSE)
             )
@@ -122,7 +122,7 @@ mod_gene_mc_globals_observers <- function(input, session, globals, dataset, noti
 atlas_gene_gene <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals, ns) {
     output$atlas_gene_gene_box_ui <- renderUI({
         req(has_atlas(dataset()))
-        shinydashboardPlus::box(
+        movable_box(
             id = ns("atlas_gene_gene_box"),
             title = "Atlas Gene/Gene",
             status = "primary",

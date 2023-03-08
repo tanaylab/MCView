@@ -7,7 +7,7 @@ projection_box <- function(ns,
                            plotly_height = "400px",
                            additional_elements = NULL,
                            collapsed_accordion = TRUE) {
-    shinydashboardPlus::box(
+    movable_box(
         id = ns(id),
         title = title,
         status = "primary",

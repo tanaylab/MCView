@@ -11,7 +11,7 @@ mod_proj_fold_ui <- function(id) {
     ns <- NS(id)
     tagList(
         fluidRow(
-            resizable_column(
+            generic_column(
                 width = 12,
                 uiOutput(ns("hm_box"))
             )
