@@ -27,8 +27,12 @@ mod_qc_ui <- function(id) {
         ),
         resizable_column(
             width = 6,
-            qc_stat_box(ns, id, "# of cells per metacell", "plot_qc_cell_num")
-            # qc_stat_box(ns, id, "Max zero-fold per metacell", "plot_qc_zero_fold")
+            qc_stat_box(ns, id, "# of cells per metacell", "plot_qc_cell_num"),
+            qc_stat_box(ns, id, "Max zero-fold per metacell", "plot_mc_zero_fold"),
+        ),
+        resizable_column(
+            width = 6,
+            zero_fold_stat_box(ns, id, "# of cells with zero UMIs per gene", "plot_zero_fold")
         )
     )
 }
@@ -87,6 +91,8 @@ mod_qc_server <- function(id, dataset, metacell_types, cell_type_colors, gene_mo
             output$plot_qc_umis <- qc_stat_plot("umis", "Number of UMIs per metacell", dataset, input, "plot_qc_umis_type", log_scale = TRUE)
             output$plot_qc_cell_num <- qc_stat_plot("cells", "Number of cells per metacell", dataset, input, "plot_qc_cell_num_type")
             output$plot_qc_inner_fold <- qc_stat_plot("max_inner_fold", "Max inner-fold per metacell", dataset, input, "plot_qc_inner_fold_type")
+            output$plot_mc_zero_fold <- qc_stat_plot("zero_fold", "Max zero-fold per metacell", dataset, input, "plot_mc_zero_fold_type")
+            output$plot_zero_fold <- zero_fold_gene_plot(dataset, input)
         }
     )
 }
@@ -131,6 +137,43 @@ qc_stat_box <- function(ns, id, title, output_id, width = 12, height = "27vh") {
             plotly::plotlyOutput(ns(output_id), height = height)
         )
     )
+}
+
+zero_fold_stat_box <- function(ns, id, title, output_id, width = 12, height = "35vh") {
+    shinydashboardPlus::box(
+        id = ns(id),
+        title = title,
+        status = "primary",
+        solidHeader = TRUE,
+        collapsible = TRUE,
+        closable = FALSE,
+        width = width,
+        shinycssloaders::withSpinner(
+            plotly::plotlyOutput(ns(output_id), height = height)
+        )
+    )
+}
+
+zero_fold_gene_plot <- function(dataset, input) {
+    plotly::renderPlotly({
+        zero_fold_df <- get_mc_data(dataset(), "gene_zero_fold")
+        req(zero_fold_df)
+
+        limits <- c(0, max(zero_fold_df$obs, zero_fold_df$exp) + 1)
+
+        p <- zero_fold_df %>%
+            rename(Observed = obs, Expected = exp) %>%
+            ggplot(aes(x = Observed, y = Expected, label = gene, metacell = metacell, FC = zero_fold)) +
+            geom_point(size = 0.5) +
+            geom_abline(intercept = 0, slope = 1, color = "black", linetype = "dashed") +
+            xlab("# of cells with 0 UMIs (observed)") +
+            ylab("# of cells with 0 UMIs (expected)") +
+            ylim(limits) +
+            xlim(limits)
+
+        plotly::ggplotly(p) %>%
+            sanitize_plotly_buttons()
+    })
 }
 
 qc_stat_plot <- function(field, xlab, dataset, input, plot_type_id, ylab = NULL, log_scale = FALSE) {

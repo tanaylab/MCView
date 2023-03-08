@@ -450,8 +450,30 @@ import_dataset <- function(project,
 
     if (!is.null(adata$layers[["zeros"]]) && has_name(adata$obs, "__zeros_downsample_umis")) {
         obs_zeros <- adata$layers[["zeros"]]
-        # TODO
-        # mc_qc_metadata$zero_cell_fold <- ...
+
+        # expected number of zeros assuming a poisson distribution: e^(-T * lambda)*N where T is the number of UMIs (downsampled) and lambda is the average number of UMIs per cell and N is the number of cells
+        exp_zeros <- t(exp(-t(adata$X) * adata$obs$`__zeros_downsample_umis`) * adata$obs$grouped)
+
+        zero_fold <- log(obs_zeros + 1) - log(exp_zeros + 1)
+        gene_max_folds <- matrixStats::colMaxs(zero_fold)
+        names(gene_max_folds) <- colnames(zero_fold)
+        top_bad_genes <- head(sort(gene_max_folds, decreasing = TRUE), n = 100)
+        idxs <- apply(zero_fold[, names(top_bad_genes)], 2, which.max)
+
+        zero_fold_df <- tibble::enframe(top_bad_genes, name = "gene", value = "zero_fold") %>%
+            mutate(
+                obs = purrr::map2_dbl(gene, idxs, ~ obs_zeros[.y, .x]),
+                exp = purrr::map2_dbl(gene, idxs, ~ exp_zeros[.y, .x]),
+                metacell = rownames(obs_zeros)[idxs],
+                gene = modify_gene_names(gene, gene_names)
+            )
+
+        mc_max_folds <- matrixStats::rowMaxs(zero_fold)
+        names(mc_max_folds) <- rownames(zero_fold)
+        mc_qc_metadata <- mc_qc_metadata %>%
+            mutate(zero_fold = mc_max_folds[metacell])
+
+        serialize_shiny_data(zero_fold_df, "gene_zero_fold", dataset = dataset, cache_dir = cache_dir)
     }
 
     serialize_shiny_data(mc_qc_metadata, "mc_qc_metadata", dataset = dataset, cache_dir = cache_dir)
