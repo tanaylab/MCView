@@ -149,32 +149,47 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
     }) %>% bindCache(dataset(), input$x_axis_var, input$x_axis_type, input$y_axis_var, input$y_axis_type, input$color_by_type, input$color_by_var, metacell_types(), cell_type_colors(), gene_modules(), input$gene_gene_point_size, input$gene_gene_stroke, input$use_atlas_limits, input$gene_gene_fixed_limits, input$gene_gene_xyline, dragmode, plotly_buttons, clipboard_changed(), input$show_legend_scatter)
 }
 
-axis_selector <- function(axis, selected, ns, choices = c("Metadata", "Gene", "Gene module")) {
-    fluidRow(
-        column(
-            width = 7,
-            shinyWidgets::virtualSelectInput(
-                ns(glue("{axis}_var")),
-                "",
-                choices = c(),
-                multiple = FALSE,
-                search = TRUE,
-                dropboxWrapper = "body"
-            )
-        ),
-        column(
-            width = 5,
-            shinyWidgets::prettyRadioButtons(
-                ns(glue("{axis}_type")),
-                label = "",
-                choices = choices,
-                inline = TRUE,
-                status = "danger",
-                fill = TRUE,
-                selected = selected
-            )
-        )
+axis_selector <- function(axis, selected, ns, choices = c("Metadata", "Gene", "Gene module"), orientation = "horizontal") {
+    select_input <- shinyWidgets::virtualSelectInput(
+        ns(glue("{axis}_var")),
+        "",
+        choices = c(),
+        multiple = FALSE,
+        search = TRUE,
+        dropboxWrapper = "body"
     )
+    radio_buttons <- shinyWidgets::prettyRadioButtons(
+        ns(glue("{axis}_type")),
+        label = "",
+        choices = choices,
+        inline = TRUE,
+        status = "danger",
+        fill = TRUE,
+        selected = selected
+    )
+    if (orientation == "horizontal") {
+        return(fluidRow(
+            column(
+                width = 7,
+                select_input
+            ),
+            column(
+                width = 5,
+                radio_buttons
+            )
+        ))
+    } else {
+        return(fluidRow(
+            column(
+                width = 12,
+                select_input
+            ),
+            column(
+                width = 12,
+                radio_buttons
+            )
+        ))
+    }
 }
 
 axis_vars_ok <- function(dataset, input, md_id, gene_modules, axes = c("x_axis", "y_axis", "color_by"), atlas = FALSE) {
