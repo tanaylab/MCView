@@ -84,9 +84,9 @@ mod_qc_server <- function(id, dataset, metacell_types, cell_type_colors, gene_mo
             output$median_umis_per_metacell <- qc_value_box("median_umis_per_metacell", "Median UMIs / MC", dataset, color = "blue")
             output$median_cells_per_metacell <- qc_value_box("median_cells_per_metacell", "Median cells / MC", dataset, color = "maroon")
 
-            output$plot_qc_umis <- qc_stat_plot("umis", "Number of UMIs per metacell", dataset)
-            output$plot_qc_cell_num <- qc_stat_plot("cells", "Number of cells per metacell", dataset)
-            output$plot_qc_inner_fold <- qc_stat_plot("max_inner_fold", "Max inner-fold per metacell", dataset)
+            output$plot_qc_umis <- qc_stat_plot("umis", "Number of UMIs per metacell", dataset, input, "plot_qc_umis_type", log_scale = TRUE)
+            output$plot_qc_cell_num <- qc_stat_plot("cells", "Number of cells per metacell", dataset, input, "plot_qc_cell_num_type")
+            output$plot_qc_inner_fold <- qc_stat_plot("max_inner_fold", "Max inner-fold per metacell", dataset, input, "plot_qc_inner_fold_type")
         }
     )
 }
@@ -114,47 +114,133 @@ qc_stat_box <- function(ns, id, title, output_id, width = 12, height = "27vh") {
         collapsible = TRUE,
         closable = FALSE,
         width = width,
+        sidebar = shinydashboardPlus::boxSidebar(
+            startOpen = FALSE,
+            id = ns(glue("stat_selector_{output_id}")),
+            shinyWidgets::prettyRadioButtons(
+                ns(glue("{output_id}_type")),
+                label = "Plot type",
+                choices = c("ECDF", "Density"),
+                inline = TRUE,
+                status = "danger",
+                fill = TRUE,
+                selected = "Density"
+            )
+        ),
         shinycssloaders::withSpinner(
             plotly::plotlyOutput(ns(output_id), height = height)
         )
     )
 }
 
-# qc_stat_plot <- function(field, xlab, dataset, ylab = "Density"){
-#     plotly::renderPlotly({
-#         qc_df <- as_tibble(get_mc_data(dataset(), "mc_qc_metadata"))
-#         req(qc_df[[field]])
-
-#         med <- median(qc_df[[field]])
-
-#         p <- qc_df %>%
-#             ggplot(aes(x = !!sym(field))) +
-#             geom_density(fill = "black", alpha = 0.5) +
-#             xlab(xlab) +
-#             ylab(ylab) +
-#             geom_vline(xintercept = med, color = "red", linetype = "dashed")
-#         plotly::ggplotly(p) %>%
-#             sanitize_plotly_buttons()
-#     })
-# }
-
-qc_stat_plot <- function(field, xlab, dataset, ylab = "% of metacells <= x") {
+qc_stat_plot <- function(field, xlab, dataset, input, plot_type_id, ylab = NULL, log_scale = FALSE) {
     plotly::renderPlotly({
         qc_df <- as_tibble(get_mc_data(dataset(), "mc_qc_metadata"))
         req(qc_df[[field]])
 
-        p <- tibble(
-            x = qc_df[[field]],
-            y = 1 - ecdf(x)(x)
-        ) %>%
-            ggplot(aes(x = x, y = y)) +
-            geom_line() +
-            xlab(xlab) +
-            ylab(ylab) +
-            scale_y_continuous(labels = scales::percent) +
-            theme_bw()
+        req(input[[plot_type_id]])
 
-        plotly::ggplotly(p) %>%
-            sanitize_plotly_buttons()
+        if (input[[plot_type_id]] == "ECDF") {
+            p <- qc_ecdf(qc_df, field, xlab, ylab, log_scale = log_scale)
+        } else {
+            p <- qc_density(qc_df, field, xlab, ylab, log_scale = log_scale)
+        }
+
+        return(p)
     })
+}
+
+qc_density <- function(qc_df, field, xlab, ylab, log_scale = FALSE) {
+    if (is.null(ylab)) {
+        ylab <- "Density"
+    }
+    quants <- quantile(qc_df[[field]], probs = c(0.1, 0.5, 0.9))
+
+    p <- qc_df %>%
+        ggplot(aes(x = !!sym(field))) +
+        geom_density(fill = "black", alpha = 0.2, color = "black") +
+        xlab(xlab) +
+        ylab(ylab) +
+        geom_vline(xintercept = quants[2], color = "red", linetype = "dashed") +
+        geom_vline(xintercept = quants[c(1, 3)], color = "black", linetype = "dashed")
+
+    quants_text <- c(
+        glue("bottom 10%: {round(quants[1], digits = 2)}"),
+        glue("median: {round(quants[2], digits = 2)}"),
+        glue("top 10%: {round(quants[3], digits = 2)}")
+    )
+
+    if (log_scale) {
+        p <- p + scale_x_log10(labels = scales::scientific)
+        quants <- log10(quants)
+    }
+
+    max_y <- layer_scales(p)$y$get_limits()[2]
+
+    p <- plotly::ggplotly(p) %>%
+        plotly::add_annotations(
+            x = quants,
+            y = c(0.75, 0.75, 0.75) * max_y,
+            text = quants_text,
+            showarrow = FALSE,
+            font = list(color = "black", size = 10),
+            yshift = 0,
+            xshift = -10,
+            textangle = 90,
+            ax = 0,
+            ay = 0
+        ) %>%
+        sanitize_plotly_buttons()
+
+    return(p)
+}
+
+qc_ecdf <- function(qc_df, field, xlab, ylab, log_scale = FALSE) {
+    if (is.null(ylab)) {
+        ylab <- "% of metacells <= x"
+    }
+
+    quants <- quantile(qc_df[[field]], probs = c(0.1, 0.5, 0.9))
+
+    p <- tibble(
+        x = qc_df[[field]],
+        y = 1 - ecdf(x)(x)
+    ) %>%
+        ggplot(aes(x = x, y = y)) +
+        geom_line() +
+        xlab(xlab) +
+        ylab(ylab) +
+        scale_y_continuous(labels = scales::percent) +
+        geom_vline(xintercept = quants[2], color = "red", linetype = "dashed") +
+        geom_vline(xintercept = quants[c(1, 3)], color = "gray", linetype = "dashed") +
+        theme_bw()
+
+    quants_text <- c(
+        glue("bottom 10%: {round(quants[1], digits = 2)}"),
+        glue("median: {round(quants[2], digits = 2)}"),
+        glue("top 10%: {round(quants[3], digits = 2)}")
+    )
+
+    if (log_scale) {
+        p <- p + scale_x_log10(labels = scales::scientific)
+        quants <- log10(quants)
+    }
+
+    p <- plotly::ggplotly(p) %>%
+        plotly::add_annotations(
+            x = quants,
+            y = c(0.3, 0.3, 0.75),
+            text = quants_text,
+            showarrow = FALSE,
+            font = list(color = "darkgray", size = 10),
+            yshift = 0,
+            xshift = -10,
+            textangle = 90,
+            ax = 0,
+            ay = 0
+        ) %>%
+        sanitize_plotly_buttons()
+
+
+    return(p)
 }
