@@ -222,7 +222,7 @@ qc_stat_plot <- function(field, xlab, dataset, input, plot_type_id, ylab = NULL,
         }
 
         return(p)
-    }) %>% bindCache(dataset(), input[[plot_type_id]])
+    }) %>% bindCache(dataset(), input[[plot_type_id]], field, plot_type_id)
 }
 
 qc_density <- function(qc_df, field, xlab, ylab, log_scale = FALSE) {
