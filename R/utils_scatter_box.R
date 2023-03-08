@@ -11,7 +11,6 @@ scatter_box <- function(ns, id, title = "Gene/Gene", x_selected = "Gene", y_sele
             startOpen = FALSE,
             width = 100,
             id = ns("gene_gene_sidebar"),
-            checkboxInput(ns("show_legend_scatter"), "Show legend", value = show_legend),
             uiOutput(ns("gene_gene_xyline_ui")),
             uiOutput(ns("gene_gene_fixed_limits_ui")),
             uiOutput(ns("use_atlas_limits_ui")),
@@ -28,7 +27,8 @@ scatter_box <- function(ns, id, title = "Gene/Gene", x_selected = "Gene", y_sele
                 title = "Select axes",
                 axis_selector("x_axis", x_selected, ns),
                 axis_selector("y_axis", y_selected, ns),
-                axis_selector("color_by", color_selected, ns)
+                axis_selector("color_by", color_selected, ns),
+                checkboxInput(ns("show_legend_scatter"), "Show legend", value = show_legend)
             )
         )
     )
