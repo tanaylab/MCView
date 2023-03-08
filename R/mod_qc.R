@@ -93,6 +93,9 @@ mod_qc_server <- function(id, dataset, metacell_types, cell_type_colors, gene_mo
             output$plot_qc_inner_fold <- qc_stat_plot("max_inner_fold", "Max inner-fold per metacell", dataset, input, "plot_qc_inner_fold_type")
             output$plot_mc_zero_fold <- qc_stat_plot("zero_fold", "Max zero-fold per metacell", dataset, input, "plot_mc_zero_fold_type")
             output$plot_zero_fold <- zero_fold_gene_plot(dataset, input)
+
+
+            output$zero_fold_table <- zero_fold_table(dataset, input)
         }
     )
 }
@@ -150,7 +153,36 @@ zero_fold_stat_box <- function(ns, id, title, output_id, width = 12, height = "3
         width = width,
         shinycssloaders::withSpinner(
             plotly::plotlyOutput(ns(output_id), height = height)
-        )
+        ),
+        shinyWidgets::prettySwitch(inputId = ns("show_zero_fold_table"), value = FALSE, label = "Show table"),
+        DT::DTOutput(ns("zero_fold_table"))
+    )
+}
+
+zero_fold_table <- function(dataset, input) {
+    DT::renderDT(
+        if (input$show_zero_fold_table) {
+            zero_fold_df <- get_mc_data(dataset(), "gene_zero_fold")
+            req(zero_fold_df)
+            zero_fold_df %>%
+                rename(Observed = obs, Expected = exp, FC = zero_fold) %>%
+                DT::datatable(
+                    rownames = FALSE,
+                    options = list(
+                        pageLength = 20,
+                        scrollX = TRUE,
+                        scrollY = "300px",
+                        scrollCollapse = TRUE,
+                        dom = "tp",
+                        columnDefs = list(
+                            list(
+                                targets = 0,
+                                width = "100px"
+                            )
+                        )
+                    )
+                )
+        }
     )
 }
 

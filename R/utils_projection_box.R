@@ -5,7 +5,7 @@ projection_box <- function(ns,
                            title = "2D Projection",
                            height = NULL,
                            plotly_height = "400px",
-                           additional_elements = NULL, 
+                           additional_elements = NULL,
                            collapsed_accordion = TRUE) {
     shinydashboardPlus::box(
         id = ns(id),
