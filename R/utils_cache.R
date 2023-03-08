@@ -156,11 +156,40 @@ get_mc_color_key <- function(dataset) {
         as.data.frame()
 }
 
+get_metadata <- function(dataset, atlas = FALSE) {
+    if (atlas) {
+        return(mc_data[[dataset]]$atlas[["metadata"]])
+    } else {
+        metadata <- mc_data[[dataset]][["metadata"]]
+    }
+
+    if (!is.null(metadata)) {
+        mc_qc_metadata <- mc_data[[dataset]][["mc_qc_metadata"]]
+        if (!is.null(mc_qc_metadata)) {
+            same_colnames <- intersect(colnames(mc_qc_metadata), colnames(metadata))
+            same_colnames <- same_colnames[same_colnames != "metacell"]
+
+            mc_qc_metadata <- mc_qc_metadata %>%
+                select(-any_of(same_colnames))
+
+            if (!is.null(mc_qc_metadata)) {
+                metadata <- metadata %>%
+                    left_join(mc_qc_metadata, by = "metacell")
+            }
+        }
+    }
+
+
+    return(metadata)
+}
+
 get_mc_data <- function(dataset, var_name, atlas = FALSE) {
     if (var_name == "metacell_types") {
         return(get_metacell_types_data(dataset, atlas = atlas))
     } else if (var_name == "cell_type_colors") {
         return(get_cell_type_data(dataset, atlas = atlas))
+    } else if (var_name == "metadata") {
+        return(get_metadata(dataset, atlas = atlas))
     }
 
     if (atlas) {
