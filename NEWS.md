@@ -1,3 +1,7 @@
+# MCView 0.2.9
+
+* Fixed import according to newest metacells version.
+
 # MCView 0.2.8
 
 * Added the 'QC' tab. Please re-import your dataset in order to enable it.

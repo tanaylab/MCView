@@ -146,6 +146,7 @@ import_dataset <- function(project,
     serialize_shiny_data(mc_sum, "mc_sum", dataset = dataset, cache_dir = cache_dir)
 
     mc_mat <- t(adata$X * mc_sum)
+    mc_mat <- as.matrix(mc_mat)
     rownames(mc_mat) <- modify_gene_names(rownames(mc_mat), gene_names)
 
     serialize_shiny_data(mc_mat, "mc_mat", dataset = dataset, cache_dir = cache_dir)
@@ -216,7 +217,7 @@ import_dataset <- function(project,
     }
 
     serialize_shiny_data(lateral_genes, "lateral_genes", dataset = dataset, cache_dir = cache_dir)
-
+    
     if (is.null(adata$var[, "marker_gene"])) {
         marker_genes <- calc_marker_genes(mc_egc[!lateral, ], 20, minimal_max_log_fraction = minimal_max_log_fraction, minimal_relative_log_fraction = minimal_relative_log_fraction)
     } else {
@@ -452,7 +453,7 @@ import_dataset <- function(project,
         obs_zeros <- adata$layers[["zeros"]]
 
         # expected number of zeros assuming a poisson distribution: e^(-T * lambda)*N where T is the number of UMIs (downsampled) and lambda is the average number of UMIs per cell and N is the number of cells
-        exp_zeros <- t(exp(-t(adata$X) * adata$obs$`__zeros_downsample_umis`) * adata$obs$grouped)
+        exp_zeros <- t(exp(-t(as.matrix(adata$X)) * adata$obs$`__zeros_downsample_umis`) * adata$obs$grouped)
 
         zero_fold <- log(obs_zeros + 1) - log(exp_zeros + 1)
         gene_max_folds <- matrixStats::colMaxs(zero_fold)
