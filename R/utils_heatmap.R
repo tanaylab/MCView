@@ -11,7 +11,7 @@ heatmap_box <- function(id,
                         height = "80vh") {
     ns <- NS(id)
     div(
-        movable_box(
+        generic_box(
             id = ns("heatmap_box"),
             title = title,
             status = "primary",

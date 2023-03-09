@@ -12,7 +12,7 @@ mod_manifold_ui <- function(id) {
     tagList(
         generic_column(
             width = 12,
-            movable_box(
+            generic_box(
                 id = ns("gene_projection"),
                 title = "2D Projection",
                 status = "primary",

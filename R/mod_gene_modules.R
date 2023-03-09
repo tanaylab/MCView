@@ -37,7 +37,7 @@ mod_gene_modules_ui <- function(id) {
             generic_column(
                 width = 3,
                 style = "padding-right:0px; padding-left:0px;",
-                movable_box(
+                generic_box(
                     id = ns("gene_modules_box"),
                     title = "Gene modules",
                     status = "primary",

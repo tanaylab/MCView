@@ -13,7 +13,7 @@ mod_flow_ui <- function(id) {
         fluidRow(
             generic_column(
                 width = 6,
-                movable_box(
+                generic_box(
                     title = "Vein plot",
                     status = "primary",
                     solidHeader = TRUE,
@@ -40,7 +40,7 @@ mod_flow_ui <- function(id) {
                         plotOutput(ns("gene_vein_plot"), height = 600)
                     )
                 ),
-                movable_box(
+                generic_box(
                     title = "Genes Trajectory",
                     status = "primary",
                     solidHeader = TRUE,
@@ -60,7 +60,7 @@ mod_flow_ui <- function(id) {
             ),
             generic_column(
                 width = 6,
-                movable_box(
+                generic_box(
                     title = "Metacell flow",
                     status = "primary",
                     solidHeader = TRUE,

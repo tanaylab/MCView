@@ -13,7 +13,7 @@ mod_cell_type_ui <- function(id) {
         fluidRow(
             generic_column(
                 width = 12,
-                movable_box(
+                generic_box(
                     id = ns("boxplot_box"),
                     title = "Cell types",
                     status = "primary",

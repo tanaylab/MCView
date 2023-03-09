@@ -122,7 +122,7 @@ mod_gene_mc_globals_observers <- function(input, session, globals, dataset, noti
 atlas_gene_gene <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals, ns) {
     output$atlas_gene_gene_box_ui <- renderUI({
         req(has_atlas(dataset()))
-        movable_box(
+        generic_box(
             id = ns("atlas_gene_gene_box"),
             title = "Atlas Gene/Gene",
             status = "primary",

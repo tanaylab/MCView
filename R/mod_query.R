@@ -24,7 +24,7 @@ mod_query_ui <- function(id) {
             ),
             generic_column(
                 width = 5,
-                movable_box(
+                generic_box(
                     title = "Diff. Expression",
                     status = "primary",
                     solidHeader = TRUE,
@@ -48,7 +48,7 @@ mod_query_ui <- function(id) {
         fluidRow(
             generic_column(
                 width = 7,
-                movable_box(
+                generic_box(
                     id = ns("metacell_projection"),
                     title = "Type predictions",
                     status = "primary",
@@ -63,7 +63,7 @@ mod_query_ui <- function(id) {
             ),
             generic_column(
                 width = 5,
-                movable_box(
+                generic_box(
                     id = ns("scatter_box"),
                     title = "Gene/Gene",
                     status = "primary",
@@ -99,7 +99,7 @@ mod_query_ui <- function(id) {
         fluidRow(
             generic_column(
                 width = 12,
-                movable_box(
+                generic_box(
                     id = ns("gene_metadata_box"),
                     title = "Gene metadata",
                     status = "primary",
@@ -520,7 +520,7 @@ select_metacell_plotly_event_projection <- function(source, input, session, meta
 group_selectors_mod_query <- function(input, output, session, dataset, ns, group, metacell_types, cell_type_colors, globals) {
     output$group_box <- renderUI({
         req(input$mode == "Group")
-        movable_box(
+        generic_box(
             id = ns("group_box_1"),
             title = "Group metacells",
             status = "primary",

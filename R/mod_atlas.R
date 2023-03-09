@@ -13,7 +13,7 @@ mod_atlas_ui <- function(id) {
         fluidRow(
             generic_column(
                 width = 12,
-                movable_box(
+                generic_box(
                     id = ns("metacell_projection"),
                     title = "Atlas 2D Projection",
                     status = "primary",

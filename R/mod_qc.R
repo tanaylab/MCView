@@ -115,7 +115,7 @@ qc_value_box <- function(field, title, dataset, color = "black") {
 }
 
 qc_stat_box <- function(ns, id, title, output_id, width = 12, height = "27vh") {
-    movable_box(
+    generic_box(
         id = ns(id),
         title = title,
         status = "primary",
@@ -143,7 +143,7 @@ qc_stat_box <- function(ns, id, title, output_id, width = 12, height = "27vh") {
 }
 
 zero_fold_stat_box <- function(ns, id, title, output_id, width = 12, height = "35vh") {
-    movable_box(
+    generic_box(
         id = ns(id),
         title = title,
         status = "primary",

@@ -6,12 +6,10 @@ generic_column <- function(width, ..., offset = 0) {
     )
 }
 
-movable_box <- function(...) {
-    shinyjqui::jqui_draggable(
-        shinyjqui::jqui_resizable(
-            shinydashboardPlus::box(
-                ...
-            )
+generic_box <- function(...) {
+    shinyjqui::jqui_resizable(
+        shinydashboardPlus::box(
+            ...
         )
     )
 }

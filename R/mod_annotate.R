@@ -34,7 +34,7 @@ mod_annotate_ui <- function(id) {
             column(
                 width = 4,
                 style = "padding-right:0px; padding-left:0px;",
-                movable_box(
+                generic_box(
                     id = ns("metacell_types_box"),
                     title = "Metacell annotation",
                     status = "primary",
@@ -79,7 +79,7 @@ mod_annotate_ui <- function(id) {
             column(
                 width = 4,
                 style = "padding-right:0px; padding-left:0px;",
-                movable_box(
+                generic_box(
                     id = ns("cell_type_colors"),
                     title = "Cell Types",
                     status = "primary",

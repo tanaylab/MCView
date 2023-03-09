@@ -13,7 +13,7 @@ mod_samples_ui <- function(id) {
         fluidRow(
             generic_column(
                 width = 5,
-                movable_box(
+                generic_box(
                     id = ns("sample_sample_box"),
                     title = "Sample/Sample",
                     status = "primary",
@@ -134,7 +134,7 @@ mod_samples_server <- function(id, dataset, metacell_types, cell_type_colors, ge
             # Info box
             output$sample_info_box <- renderUI({
                 req(input$samp1)
-                movable_box(
+                generic_box(
                     id = ns("sample_info_box_1"),
                     title = "Sample information",
                     status = "primary",
@@ -176,7 +176,7 @@ mod_samples_server <- function(id, dataset, metacell_types, cell_type_colors, ge
             output$diff_expr_box <- renderUI({
                 req(input$selected_cell_types)
 
-                movable_box(
+                generic_box(
                     title = "Diff. Expression",
                     status = "primary",
                     solidHeader = TRUE,

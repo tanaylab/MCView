@@ -4,7 +4,6 @@
 * Moved some of 'gene/gene' and 'projection' controls to below the plot. 
 * Added 'excluded_tabs' to the config file.
 * Added a footer with MCView and metacells versions.
-* Boxes are now draggable. 
 * Some modifications to the 'Genes' tab layout. 
 
 # MCView 0.2.7

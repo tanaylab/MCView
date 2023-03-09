@@ -13,7 +13,7 @@ mod_mc_mc_ui <- function(id) {
         fluidRow(
             generic_column(
                 width = 5,
-                movable_box(
+                generic_box(
                     title = "Diff. Expression",
                     status = "primary",
                     solidHeader = TRUE,
@@ -29,7 +29,7 @@ mod_mc_mc_ui <- function(id) {
             ),
             generic_column(
                 width = 7,
-                movable_box(
+                generic_box(
                     id = ns("metacell_projection"),
                     title = "2D Projection",
                     status = "primary",
@@ -350,7 +350,7 @@ metacell_selectors <- function(input, output, session, dataset, ns, metacell_nam
 group_selectors <- function(input, output, session, dataset, ns, groupA, groupB, metacell_types, cell_type_colors, globals) {
     output$groupA_box <- renderUI({
         req(input$mode == "Groups")
-        movable_box(
+        generic_box(
             id = ns("groupA_box_1"),
             title = "Group A metacells",
             status = "primary",
@@ -369,7 +369,7 @@ group_selectors <- function(input, output, session, dataset, ns, groupA, groupB,
 
     output$groupB_box <- renderUI({
         req(input$mode == "Groups")
-        movable_box(
+        generic_box(
             id = ns("groupB_box_1"),
             title = "Group B metacells",
             status = "primary",

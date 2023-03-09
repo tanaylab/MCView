@@ -9,7 +9,7 @@ projection_box <- function(ns,
                            collapsed_accordion = TRUE,
                            legend_orientation = "Vertical",
                            show_legend = TRUE) {
-    movable_box(
+    generic_box(
         id = ns(id),
         title = title,
         status = "primary",
