@@ -25,7 +25,7 @@ mod_cell_type_ui <- function(id) {
                     sidebar = shinydashboardPlus::boxSidebar(
                         startOpen = FALSE,
                         width = 50,
-                        id = ns("gene_gene_sidebar")
+                        id = ns("cell_type_sidebar")
                     ),
                     shinycssloaders::withSpinner(
                         plotly::plotlyOutput(ns("cell_type_boxplot"), height = "70vh")

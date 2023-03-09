@@ -151,14 +151,6 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
 }
 
 axis_selector <- function(axis, selected, ns, choices = c("Metadata", "Gene", "Gene module"), orientation = "horizontal") {
-    select_input <- shinyWidgets::virtualSelectInput(
-        ns(glue("{axis}_var")),
-        "",
-        choices = c(),
-        multiple = FALSE,
-        search = TRUE,
-        dropboxWrapper = "body"
-    )
     radio_buttons <- shinyWidgets::prettyRadioButtons(
         ns(glue("{axis}_type")),
         label = "",
@@ -169,6 +161,14 @@ axis_selector <- function(axis, selected, ns, choices = c("Metadata", "Gene", "G
         selected = selected
     )
     if (orientation == "horizontal") {
+        select_input <- shinyWidgets::virtualSelectInput(
+            ns(glue("{axis}_var")),
+            "",
+            choices = c(),
+            multiple = FALSE,
+            search = TRUE,
+            dropboxWrapper = "body" # we assume horizontal orientation is used inside a box
+        )
         return(fluidRow(
             column(
                 width = 7,
@@ -180,6 +180,13 @@ axis_selector <- function(axis, selected, ns, choices = c("Metadata", "Gene", "G
             )
         ))
     } else {
+        select_input <- shinyWidgets::virtualSelectInput(
+            ns(glue("{axis}_var")),
+            "",
+            choices = c(),
+            multiple = FALSE,
+            search = TRUE
+        )
         return(fluidRow(
             column(
                 width = 12,
