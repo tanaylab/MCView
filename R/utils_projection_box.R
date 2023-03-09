@@ -6,7 +6,9 @@ projection_box <- function(ns,
                            height = NULL,
                            plotly_height = "400px",
                            additional_elements = NULL,
-                           collapsed_accordion = TRUE) {
+                           collapsed_accordion = TRUE,
+                           legend_orientation = "Vertical",
+                           show_legend = TRUE) {
     movable_box(
         id = ns(id),
         title = title,
@@ -27,7 +29,16 @@ projection_box <- function(ns,
             uiOutput(ns("enrich_range_ui")),
             uiOutput(ns("point_size_ui")),
             uiOutput(ns("stroke_ui")),
-            uiOutput(ns("edge_distance_ui"))
+            uiOutput(ns("edge_distance_ui")),
+            shinyWidgets::prettyRadioButtons(
+                ns("legend_orientation"),
+                label = "Legend orientation:",
+                choices = c("Vertical", "Horizontal"),
+                selected = legend_orientation,
+                inline = TRUE,
+                status = "danger",
+                fill = TRUE
+            )
         ),
         shinycssloaders::withSpinner(
             plotly::plotlyOutput(ns("plot_gene_proj_2d"), height = plotly_height)
@@ -49,6 +60,7 @@ projection_box <- function(ns,
                 uiOutput(ns("gene_selector")),
                 uiOutput(ns("proj_gene_module_selector")),
                 uiOutput(ns("metadata_selector")),
+                checkboxInput(ns("show_legend_projection"), "Show legend", value = show_legend)
             )
         )
     )

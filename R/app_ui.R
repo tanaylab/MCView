@@ -59,6 +59,10 @@ app_ui <- function(request) {
             shinydashboardPlus::controlbarItem(
                 "Datasets",
                 selectInput("dataset", label = "Dataset", choices = dataset_ls(project), selected = dataset_ls(project)[1], multiple = FALSE, selectize = FALSE)
+            ),
+            shinydashboardPlus::controlbarItem(
+                "Theme",
+                shinydashboardPlus::skinSelector()
             )
         )
     )

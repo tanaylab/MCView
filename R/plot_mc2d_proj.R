@@ -385,6 +385,19 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
             fig <- fig %>% plotly::layout(dragmode = "select")
         }
 
+        if (!is.null(input$legend_orientation)) {
+            if (input$legend_orientation == "Horizontal") {
+                orientation <- "h"
+            } else if (input$legend_orientation == "Vertical") {
+                orientation <- "v"
+            }
+            fig <- fig %>% plotly::layout(legend = list(orientation = orientation))
+        }
+
+        if (!is.null(input$show_legend_projection) && !input$show_legend_projection) {
+            fig <- plotly::hide_legend(fig)
+        }
+
         fig <- fig %>%
             sanitize_for_WebGL()
         fig <- fig %>%
