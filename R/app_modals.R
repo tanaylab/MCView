@@ -36,7 +36,7 @@ download_modal_reactives <- function(input, output, session, globals) {
 
     output$download_bundle <- downloadHandler(
         filename = function() {
-            glue("MCView-{project}.zip")
+            glue("MCView-{basename(project)}.zip")
         },
         content = function(file) {
             download_project(file, project)
