@@ -11,7 +11,7 @@ mod_inner_fold_ui <- function(id) {
     ns <- NS(id)
     tagList(
         fluidRow(
-            resizable_column(
+            generic_column(
                 width = 12,
                 heatmap_box(ns("inner_fold_heatmap"), "Inner-Fold Heatmap")
             )

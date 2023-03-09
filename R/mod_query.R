@@ -11,7 +11,7 @@ mod_query_ui <- function(id) {
     ns <- NS(id)
     tagList(
         fluidRow(
-            resizable_column(
+            generic_column(
                 width = 7,
                 projection_box(
                     ns,
@@ -22,9 +22,9 @@ mod_query_ui <- function(id) {
                     color_choices = c("Cell type", "Similarity", "Query Metadata", "Atlas Metadata", "Gene", "Gene module", "Selected")
                 )
             ),
-            resizable_column(
+            generic_column(
                 width = 5,
-                shinydashboardPlus::box(
+                generic_box(
                     title = "Diff. Expression",
                     status = "primary",
                     solidHeader = TRUE,
@@ -46,9 +46,9 @@ mod_query_ui <- function(id) {
             )
         ),
         fluidRow(
-            resizable_column(
+            generic_column(
                 width = 7,
-                shinydashboardPlus::box(
+                generic_box(
                     id = ns("metacell_projection"),
                     title = "Type predictions",
                     status = "primary",
@@ -61,9 +61,9 @@ mod_query_ui <- function(id) {
                     )
                 )
             ),
-            resizable_column(
+            generic_column(
                 width = 5,
-                shinydashboardPlus::box(
+                generic_box(
                     id = ns("scatter_box"),
                     title = "Gene/Gene",
                     status = "primary",
@@ -75,13 +75,19 @@ mod_query_ui <- function(id) {
                         startOpen = FALSE,
                         width = 100,
                         id = ns("gene_gene_sidebar"),
-                        axis_selector("axis", "Gene", ns, choices = c("Gene")),
-                        axis_selector("color_by", "Metadata", ns, choices = c("Metadata", "Gene")),
                         uiOutput(ns("gene_gene_point_size_ui")),
                         uiOutput(ns("gene_gene_stroke_ui"))
                     ),
                     shinycssloaders::withSpinner(
                         plotly::plotlyOutput(ns("plot_gene_gene_mc"))
+                    ),
+                    shinydashboardPlus::accordion(
+                        id = ns("gene_gene_accordion"),
+                        shinydashboardPlus::accordionItem(
+                            title = "Select Gene and colors",
+                            axis_selector("axis", "Gene", ns, choices = c("Gene")),
+                            axis_selector("color_by", "Metadata", ns, choices = c("Metadata", "Gene")),
+                        )
                     )
                 )
             ),
@@ -91,9 +97,9 @@ mod_query_ui <- function(id) {
             )
         ),
         fluidRow(
-            resizable_column(
+            generic_column(
                 width = 12,
-                shinydashboardPlus::box(
+                generic_box(
                     id = ns("gene_metadata_box"),
                     title = "Gene metadata",
                     status = "primary",
@@ -213,7 +219,7 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
 
 
             scatter_selectors(ns, dataset, output, globals)
-            projection_selectors(ns, dataset, output, input, gene_modules, globals, weight = 0.6)
+            projection_selectors(ns, dataset, output, input, gene_modules, globals, session, weight = 0.6)
             top_correlated_selector("axis_var", "axis", "axis_type", input, output, session, dataset, ns, button_labels = c("Axes", "Color"), ids = c("axis", "color"))
 
             group_selectors_mod_query(input, output, session, dataset, ns, group, metacell_types, cell_type_colors, globals)
@@ -514,7 +520,7 @@ select_metacell_plotly_event_projection <- function(source, input, session, meta
 group_selectors_mod_query <- function(input, output, session, dataset, ns, group, metacell_types, cell_type_colors, globals) {
     output$group_box <- renderUI({
         req(input$mode == "Group")
-        shinydashboardPlus::box(
+        generic_box(
             id = ns("group_box_1"),
             title = "Group metacells",
             status = "primary",

@@ -5,8 +5,11 @@ projection_box <- function(ns,
                            title = "2D Projection",
                            height = NULL,
                            plotly_height = "400px",
-                           additional_elements = NULL) {
-    shinydashboardPlus::box(
+                           additional_elements = NULL,
+                           collapsed_accordion = TRUE,
+                           legend_orientation = "Vertical",
+                           show_legend = TRUE) {
+    generic_box(
         id = ns(id),
         title = title,
         status = "primary",
@@ -19,18 +22,6 @@ projection_box <- function(ns,
             startOpen = FALSE,
             width = 80,
             id = ns(glue("{id}_sidebar")),
-            shinyWidgets::prettyRadioButtons(
-                ns("color_proj"),
-                label = "Color by:",
-                choices = color_choices,
-                inline = TRUE,
-                status = "danger",
-                fill = TRUE
-            ),
-            ...,
-            uiOutput(ns("gene_selector")),
-            uiOutput(ns("proj_gene_module_selector")),
-            uiOutput(ns("metadata_selector")),
             uiOutput(ns("graph_select_ui")),
             uiOutput(ns("proj_stat_ui")),
             uiOutput(ns("set_range_ui")),
@@ -38,63 +29,104 @@ projection_box <- function(ns,
             uiOutput(ns("enrich_range_ui")),
             uiOutput(ns("point_size_ui")),
             uiOutput(ns("stroke_ui")),
-            uiOutput(ns("edge_distance_ui"))
+            uiOutput(ns("edge_distance_ui")),
+            shinyWidgets::prettyRadioButtons(
+                ns("legend_orientation"),
+                label = "Legend orientation:",
+                choices = c("Vertical", "Horizontal"),
+                selected = legend_orientation,
+                inline = TRUE,
+                status = "danger",
+                fill = TRUE
+            )
         ),
         shinycssloaders::withSpinner(
             plotly::plotlyOutput(ns("plot_gene_proj_2d"), height = plotly_height)
+        ),
+        shinydashboardPlus::accordion(
+            id = ns("proj_accordion"),
+            shinydashboardPlus::accordionItem(
+                title = "Modify colors",
+                collapsed = collapsed_accordion,
+                shinyWidgets::prettyRadioButtons(
+                    ns("color_proj"),
+                    label = "Color by:",
+                    choices = color_choices,
+                    inline = TRUE,
+                    status = "danger",
+                    fill = TRUE
+                ),
+                ...,
+                shinyWidgets::virtualSelectInput(
+                    ns("color_proj_gene"),
+                    "Gene:",
+                    choices = c(),
+                    multiple = FALSE,
+                    search = TRUE,
+                    dropboxWrapper = "body"
+                ),
+                shinyWidgets::virtualSelectInput(
+                    ns("color_proj_metadata"),
+                    "Metadata:",
+                    choices = c(),
+                    multiple = FALSE,
+                    search = TRUE,
+                    dropboxWrapper = "body"
+                ),
+                shinyWidgets::virtualSelectInput(
+                    ns("color_proj_gene_module"),
+                    "Gene module:",
+                    choices = c(),
+                    multiple = FALSE,
+                    search = TRUE,
+                    dropboxWrapper = "body"
+                ),
+                shinyWidgets::prettyRadioButtons(
+                    ns("scatter_axis_proj"),
+                    label = "Axis:",
+                    choices = c("x", "y"),
+                    inline = TRUE,
+                    status = "danger",
+                    fill = TRUE
+                ),
+                checkboxInput(ns("show_legend_projection"), "Show legend", value = show_legend)
+            )
         )
     )
 }
 
-projection_selectors <- function(ns, dataset, output, input, gene_modules, globals, weight = 1, atlas = FALSE) {
-    output$gene_selector <- renderUI({
-        shinyWidgets::virtualSelectInput(
-            ns("color_proj_gene"),
-            label = "Gene:",
+projection_selectors <- function(ns, dataset, output, input, gene_modules, globals, session, weight = 1, atlas = FALSE) {
+    observe({
+        shinyWidgets::updateVirtualSelect(
+            session = session,
+            inputId = "color_proj_gene",
             choices = gene_names(dataset(), atlas = atlas),
-            selected = default_gene1,
-            width = "70%",
-            multiple = FALSE,
-            search = TRUE
+            selected = default_gene1
+        )
+
+        shinyWidgets::updateVirtualSelect(
+            session = session,
+            inputId = "color_proj_metadata",
+            choices = c("Clipboard", dataset_metadata_fields(dataset(), atlas = atlas)),
+            selected = dataset_metadata_fields(dataset(), atlas = atlas)[1]
+        )
+
+        shinyWidgets::updateVirtualSelect(
+            session = session,
+            inputId = "color_proj_gene_module",
+            choices = levels(gene_modules()$module),
+            selected = NULL
         )
     })
 
     picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "contains", dropupAuto = FALSE)
 
-    output$metadata_selector <- renderUI({
-        if (!has_metadata(dataset())) {
-            print(glue("Dataset doesn't have any metadata."))
-        } else {
-            shinyWidgets::pickerInput(
-                ns("color_proj_metadata"),
-                label = "Metadata:",
-                choices = c("Clipboard", dataset_metadata_fields(dataset(), atlas = atlas)),
-                selected = dataset_metadata_fields(dataset(), atlas = atlas)[1],
-                width = "70%",
-                multiple = FALSE,
-                options = picker_options
-            )
-        }
-    })
-
-    output$proj_gene_module_selector <- renderUI({
-        req(gene_modules())
-        req(levels(gene_modules()$module))
-        shinyWidgets::pickerInput(
-            ns("color_proj_gene_module"),
-            "Gene module:",
-            choices = levels(gene_modules()$module),
-            selected = NULL,
-            multiple = FALSE,
-            options = picker_options
-        )
-    })
-
     observe({
         req(input$color_proj)
-        shinyjs::toggle(id = "gene_selector", condition = input$color_proj == "Gene")
-        shinyjs::toggle(id = "metadata_selector", condition = input$color_proj == "Metadata")
-        shinyjs::toggle(id = "proj_gene_module_selector", condition = input$color_proj == "Gene module")
+        shinyjs::toggle(id = "color_proj_gene", condition = input$color_proj == "Gene")
+        shinyjs::toggle(id = "color_proj_metadata", condition = input$color_proj == "Metadata")
+        shinyjs::toggle(id = "color_proj_gene_module", condition = input$color_proj == "Gene module")
+        shinyjs::toggle(id = "scatter_axis_proj", condition = input$color_proj == "Scatter Axis")
     })
 
 

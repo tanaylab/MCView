@@ -12,16 +12,16 @@ mod_gene_modules_ui <- function(id) {
 
     tagList(
         fluidRow(
-            resizable_column(
+            generic_column(
                 width = 9,
                 style = "padding-right:0px;",
                 heatmap_box(ns("gene_modules_heatmap"), "Gene modules Heatmap", legend_width = 2),
                 fluidRow(
-                    resizable_column(
+                    generic_column(
                         width = 6,
                         scatter_box(ns, "gene_gene_box", x_selected = "Gene module", y_selected = "Gene")
                     ),
-                    resizable_column(
+                    generic_column(
                         width = 6,
                         diff_expr_box(
                             ns,
@@ -34,10 +34,10 @@ mod_gene_modules_ui <- function(id) {
                     )
                 )
             ),
-            resizable_column(
+            generic_column(
                 width = 3,
                 style = "padding-right:0px; padding-left:0px;",
-                shinydashboardPlus::box(
+                generic_box(
                     id = ns("gene_modules_box"),
                     title = "Gene modules",
                     status = "primary",

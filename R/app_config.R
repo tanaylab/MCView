@@ -86,6 +86,11 @@ init_tab_defs <- function() {
             module_name = "about",
             icon = "info"
         ),
+        "QC" = list(
+            title = "QC",
+            module_name = "qc",
+            icon = "check"
+        ),
         "Manifold" = list(
             title = "Manifold",
             module_name = "manifold",

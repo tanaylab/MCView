@@ -11,14 +11,14 @@ mod_gene_mc_ui <- function(id) {
     ns <- NS(id)
     tagList(
         fluidRow(
-            resizable_column(
+            generic_column(
                 width = 7,
-                projection_box(ns, "gene_projection", title = "Gene projections")
-            ),
-            resizable_column(
-                width = 5,
-                scatter_box(ns, "gene_gene_box", x_selected = "Gene", y_selected = "Gene", color_selected = "Metadata"),
+                scatter_box(ns, "gene_gene_box", x_selected = "Gene", y_selected = "Gene", color_selected = "Metadata", collapsed_accordion = FALSE),
                 uiOutput(ns("atlas_gene_gene_box_ui"))
+            ),
+            generic_column(
+                width = 5,
+                projection_box(ns, "gene_projection", title = "Gene projections", collapsed_accordion = FALSE, show_legend = FALSE, color_choices = c("Scatter Axis", "Cell type", "Gene", "Gene module", "Metadata"))
             )
         )
     )
@@ -60,13 +60,13 @@ mod_gene_mc_server <- function(id, dataset, metacell_types, cell_type_colors, ge
             mod_gene_mc_globals_observers(input, session, globals, dataset)
 
             scatter_selectors(ns, dataset, output, globals)
-            projection_selectors(ns, dataset, output, input, gene_modules, globals, weight = 0.6)
+            projection_selectors(ns, dataset, output, input, gene_modules, globals, session, weight = 0.6)
 
             clipboard_changed <- clipboard_changed_2d_reactive(input, globals)
 
             # Projection plots
             output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, source = "proj_mc_plot_gene_tab") %>%
-                bindCache(dataset(), input$color_proj, metacell_types(), cell_type_colors(), input$point_size, input$stroke, input$min_edge_size, input$set_range, input$metacell1, input$metacell2, input$proj_stat, input$expr_range, input$lfp, input$color_proj_gene, input$color_proj_metadata, input$color_proj_gene_module, clipboard_changed(), input$graph_name)
+                bindCache(dataset(), input$color_proj, metacell_types(), cell_type_colors(), input$point_size, input$stroke, input$min_edge_size, input$set_range, input$metacell1, input$metacell2, input$proj_stat, input$expr_range, input$lfp, input$color_proj_gene, input$color_proj_metadata, input$color_proj_gene_module, clipboard_changed(), input$graph_name, input$legend_orientation, input$show_legend_projection, input$scatter_axis_proj, input$x_axis_var, input$x_axis_type, input$y_axis_var, input$y_axis_type)
 
             connect_gene_plots(input, output, session, ns, source = "proj_mc_plot_gene_tab")
 
@@ -122,7 +122,7 @@ mod_gene_mc_globals_observers <- function(input, session, globals, dataset, noti
 atlas_gene_gene <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals, ns) {
     output$atlas_gene_gene_box_ui <- renderUI({
         req(has_atlas(dataset()))
-        shinydashboardPlus::box(
+        generic_box(
             id = ns("atlas_gene_gene_box"),
             title = "Atlas Gene/Gene",
             status = "primary",
@@ -134,9 +134,6 @@ atlas_gene_gene <- function(input, output, session, dataset, metacell_types, cel
                 startOpen = FALSE,
                 width = 100,
                 id = ns("atlas_gene_gene_sidebar"),
-                axis_selector("atlas_x_axis", "Gene", ns),
-                axis_selector("atlas_y_axis", "Gene", ns),
-                axis_selector("atlas_color_by", "Metadata", ns),
                 uiOutput(ns("atlas_gene_gene_xyline_ui")),
                 uiOutput(ns("atlas_gene_gene_fixed_limits_ui")),
                 checkboxInput(ns("use_query_limits"), label = "Use query limits", value = FALSE),
@@ -145,6 +142,15 @@ atlas_gene_gene <- function(input, output, session, dataset, metacell_types, cel
             ),
             shinycssloaders::withSpinner(
                 plotly::plotlyOutput(ns("atlas_plot_gene_gene_mc"))
+            ),
+            shinydashboardPlus::accordion(
+                id = ns("gene_gene_atlas_accordion"),
+                shinydashboardPlus::accordionItem(
+                    title = "Select axes",
+                    axis_selector("atlas_x_axis", "Gene", ns),
+                    axis_selector("atlas_y_axis", "Gene", ns),
+                    axis_selector("atlas_color_by", "Metadata", ns),
+                )
             )
         )
     })

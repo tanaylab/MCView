@@ -10,18 +10,16 @@
 mod_about_ui <- function(id) {
     ns <- NS(id)
     tagList(
-        shinyjqui::jqui_resizable(
-            shinydashboardPlus::box(
-                id = ns("about"),
-                title = "About",
-                # status = "primary",
-                # solidHeader = TRUE,
-                collapsible = FALSE,
-                closable = FALSE,
-                width = 12,
-                height = "80vh",
-                includeRMarkdown(about_file)
-            )
+        generic_box(
+            id = ns("about"),
+            title = "About",
+            # status = "primary",
+            # solidHeader = TRUE,
+            collapsible = FALSE,
+            closable = FALSE,
+            width = 12,
+            height = "80vh",
+            includeRMarkdown(about_file)
         )
     )
 }

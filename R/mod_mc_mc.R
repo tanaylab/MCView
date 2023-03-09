@@ -11,9 +11,25 @@ mod_mc_mc_ui <- function(id) {
     ns <- NS(id)
     tagList(
         fluidRow(
-            resizable_column(
+            generic_column(
+                width = 5,
+                generic_box(
+                    title = "Diff. Expression",
+                    status = "primary",
+                    solidHeader = TRUE,
+                    collapsible = TRUE,
+                    closable = FALSE,
+                    width = 12,
+                    shinycssloaders::withSpinner(
+                        plotly::plotlyOutput(ns("plot_mc_mc_gene_scatter"))
+                    ),
+                    shinyWidgets::prettySwitch(inputId = ns("show_diff_expr_table"), value = FALSE, label = "Show table"),
+                    DT::DTOutput(ns("diff_expr_table"))
+                )
+            ),
+            generic_column(
                 width = 7,
-                shinydashboardPlus::box(
+                generic_box(
                     id = ns("metacell_projection"),
                     title = "2D Projection",
                     status = "primary",
@@ -36,22 +52,6 @@ mod_mc_mc_ui <- function(id) {
                     uiOutput(ns("projection_selectors"))
                 )
             ),
-            resizable_column(
-                width = 5,
-                shinydashboardPlus::box(
-                    title = "Diff. Expression",
-                    status = "primary",
-                    solidHeader = TRUE,
-                    collapsible = TRUE,
-                    closable = FALSE,
-                    width = 12,
-                    shinycssloaders::withSpinner(
-                        plotly::plotlyOutput(ns("plot_mc_mc_gene_scatter"))
-                    ),
-                    shinyWidgets::prettySwitch(inputId = ns("show_diff_expr_table"), value = FALSE, label = "Show table"),
-                    DT::DTOutput(ns("diff_expr_table"))
-                )
-            )
         ),
         fluidRow(
             column(
@@ -117,7 +117,7 @@ mod_mc_mc_server <- function(id, dataset, metacell_types, cell_type_colors, gene
             metacell_names <- metacell_names_reactive(dataset)
             metacell_colors <- metacell_colors_reactive(dataset, metacell_names, metacell_types)
 
-            projection_selectors(ns, dataset, output, input, gene_modules, globals, weight = 0.6)
+            projection_selectors(ns, dataset, output, input, gene_modules, globals, session, weight = 0.6)
             group_selectors(input, output, session, dataset, ns, groupA, groupB, metacell_types, cell_type_colors, globals)
             metacell_selectors(input, output, session, dataset, ns, metacell_names, metacell_colors, metacell_types, cell_type_colors, groupA, groupB)
 
@@ -350,7 +350,7 @@ metacell_selectors <- function(input, output, session, dataset, ns, metacell_nam
 group_selectors <- function(input, output, session, dataset, ns, groupA, groupB, metacell_types, cell_type_colors, globals) {
     output$groupA_box <- renderUI({
         req(input$mode == "Groups")
-        shinydashboardPlus::box(
+        generic_box(
             id = ns("groupA_box_1"),
             title = "Group A metacells",
             status = "primary",
@@ -369,7 +369,7 @@ group_selectors <- function(input, output, session, dataset, ns, groupA, groupB,
 
     output$groupB_box <- renderUI({
         req(input$mode == "Groups")
-        shinydashboardPlus::box(
+        generic_box(
             id = ns("groupB_box_1"),
             title = "Group B metacells",
             status = "primary",

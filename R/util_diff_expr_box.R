@@ -4,7 +4,7 @@ diff_expr_box <- function(ns,
                           choices = c("MCs", "Types"),
                           selected = "Types",
                           ...) {
-    shinydashboardPlus::box(
+    generic_box(
         id = ns(id),
         title = title,
         status = "primary",

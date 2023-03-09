@@ -59,6 +59,10 @@ app_ui <- function(request) {
             shinydashboardPlus::controlbarItem(
                 "Datasets",
                 selectInput("dataset", label = "Dataset", choices = dataset_ls(project), selected = dataset_ls(project)[1], multiple = FALSE, selectize = FALSE)
+            ),
+            shinydashboardPlus::controlbarItem(
+                "Theme",
+                shinydashboardPlus::skinSelector()
             )
         )
     )
@@ -143,7 +147,7 @@ app_ui <- function(request) {
         sidebar = sidebar,
         body = body,
         controlbar = right_sidebar,
-        preloader = list(html = waiter::spin_1(), color = "#333e48"),
+        preloader = list(html = tagList(waiter::spin_1(), h4("Loading MCView...")), color = "#333e48"),
         footer = shinydashboardPlus::dashboardFooter(
             left = app_footer,
             right = glue("(C) Weizmann Institute of Science, 2020-{year}", year = format(Sys.time(), "%Y"))
