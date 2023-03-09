@@ -127,7 +127,7 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 shinyjs::toggle(id = "proj_gene_module_selector", condition = input$color_proj == "Gene module")
             })
 
-            projection_selectors(ns, dataset, output, input, gene_modules, globals, weight = 1)
+            projection_selectors(ns, dataset, output, input, gene_modules, globals, session, weight = 1)
 
             clipboard_changed <- clipboard_changed_2d_reactive(input, globals)
 

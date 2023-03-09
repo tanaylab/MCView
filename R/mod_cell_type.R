@@ -50,7 +50,7 @@ mod_cell_type_sidebar_ui <- function(id) {
     ns <- NS(id)
     tagList(
         list(
-            axis_selector("boxplot_axis", "Gene", ns, choices = c("Metadata", "Gene", "Gene module"), orientation = "vertical"),
+            axis_selector("boxplot_axis", "Gene", ns, choices = c("Metadata", "Gene", "Gene module"), orientation = "vertical", wrap_in_box = FALSE),
             uiOutput(ns("confusion_color_by_selector")),
             uiOutput(ns("cell_type_list"))
         )

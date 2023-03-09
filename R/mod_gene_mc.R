@@ -60,7 +60,7 @@ mod_gene_mc_server <- function(id, dataset, metacell_types, cell_type_colors, ge
             mod_gene_mc_globals_observers(input, session, globals, dataset)
 
             scatter_selectors(ns, dataset, output, globals)
-            projection_selectors(ns, dataset, output, input, gene_modules, globals, weight = 0.6)
+            projection_selectors(ns, dataset, output, input, gene_modules, globals, session, weight = 0.6)
 
             clipboard_changed <- clipboard_changed_2d_reactive(input, globals)
 

@@ -594,7 +594,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
             observer_mc_select_event("gene_time_mc_plot1_annot", input, cell_type_colors, metacell_types, selected_metacell_types)
             observer_mc_select_event("gene_time_mc_plot2_annot", input, cell_type_colors, metacell_types, selected_metacell_types)
 
-            projection_selectors(ns, dataset, output, input, gene_modules, globals, weight = 0.6)
+            projection_selectors(ns, dataset, output, input, gene_modules, globals, session, weight = 0.6)
             scatter_selectors(ns, dataset, output, globals)
 
             # Projection plots

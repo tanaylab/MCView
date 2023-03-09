@@ -219,7 +219,7 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
 
 
             scatter_selectors(ns, dataset, output, globals)
-            projection_selectors(ns, dataset, output, input, gene_modules, globals, weight = 0.6)
+            projection_selectors(ns, dataset, output, input, gene_modules, globals, session, weight = 0.6)
             top_correlated_selector("axis_var", "axis", "axis_type", input, output, session, dataset, ns, button_labels = c("Axes", "Color"), ids = c("axis", "color"))
 
             group_selectors_mod_query(input, output, session, dataset, ns, group, metacell_types, cell_type_colors, globals)

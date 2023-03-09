@@ -90,7 +90,7 @@ mod_samples_server <- function(id, dataset, metacell_types, cell_type_colors, ge
             output$cell_type_list <- cell_type_selector(dataset, ns, id = "selected_cell_types", label = "Cell types", cell_type_colors = cell_type_colors)
 
             scatter_selectors(ns, dataset, output, globals)
-            projection_selectors(ns, dataset, output, input, gene_modules, globals, weight = 0.6)
+            projection_selectors(ns, dataset, output, input, gene_modules, globals, session, weight = 0.6)
 
             output$sample_select_ui <- renderUI({
                 req(dataset())

@@ -150,7 +150,7 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
     }) %>% bindCache(dataset(), input$x_axis_var, input$x_axis_type, input$y_axis_var, input$y_axis_type, input$color_by_type, input$color_by_var, metacell_types(), cell_type_colors(), gene_modules(), input$gene_gene_point_size, input$gene_gene_stroke, input$use_atlas_limits, input$gene_gene_fixed_limits, input$gene_gene_xyline, dragmode, plotly_buttons, clipboard_changed(), input$show_legend_scatter)
 }
 
-axis_selector <- function(axis, selected, ns, choices = c("Metadata", "Gene", "Gene module"), orientation = "horizontal") {
+axis_selector <- function(axis, selected, ns, choices = c("Metadata", "Gene", "Gene module"), orientation = "horizontal", wrap_in_box = TRUE) {
     radio_buttons <- shinyWidgets::prettyRadioButtons(
         ns(glue("{axis}_type")),
         label = "",
@@ -160,15 +160,25 @@ axis_selector <- function(axis, selected, ns, choices = c("Metadata", "Gene", "G
         fill = TRUE,
         selected = selected
     )
-    if (orientation == "horizontal") {
+    if (wrap_in_box) {
         select_input <- shinyWidgets::virtualSelectInput(
             ns(glue("{axis}_var")),
             "",
             choices = c(),
             multiple = FALSE,
             search = TRUE,
-            dropboxWrapper = "body" # we assume horizontal orientation is used inside a box
+            dropboxWrapper = "body"
         )
+    } else {
+        select_input <- shinyWidgets::virtualSelectInput(
+            ns(glue("{axis}_var")),
+            "",
+            choices = c(),
+            multiple = FALSE,
+            search = TRUE,
+        )
+    }
+    if (orientation == "horizontal") {
         return(fluidRow(
             column(
                 width = 7,
@@ -180,13 +190,6 @@ axis_selector <- function(axis, selected, ns, choices = c("Metadata", "Gene", "G
             )
         ))
     } else {
-        select_input <- shinyWidgets::virtualSelectInput(
-            ns(glue("{axis}_var")),
-            "",
-            choices = c(),
-            multiple = FALSE,
-            search = TRUE
-        )
         return(fluidRow(
             column(
                 width = 12,

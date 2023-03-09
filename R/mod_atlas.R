@@ -111,7 +111,7 @@ mod_atlas_server <- function(id, dataset, metacell_types, cell_type_colors, gene
                 return(mods)
             })
 
-            projection_selectors(ns, dataset, output, input, atlas_gene_modules, globals, weight = 1, atlas = TRUE)
+            projection_selectors(ns, dataset, output, input, atlas_gene_modules, globals, session, weight = 1, atlas = TRUE)
             output$top_correlated_select_color_proj <- renderUI({
                 req(input$gene1)
                 req(has_gg_mc_top_cor(project, dataset()))

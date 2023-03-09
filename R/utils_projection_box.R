@@ -57,64 +57,67 @@ projection_box <- function(ns,
                     fill = TRUE
                 ),
                 ...,
-                uiOutput(ns("gene_selector")),
-                uiOutput(ns("proj_gene_module_selector")),
-                uiOutput(ns("metadata_selector")),
+                shinyWidgets::virtualSelectInput(
+                    ns("color_proj_gene"),
+                    "Gene:",
+                    choices = c(),
+                    multiple = FALSE,
+                    search = TRUE,
+                    dropboxWrapper = "body"
+                ),
+                shinyWidgets::virtualSelectInput(
+                    ns("color_proj_metadata"),
+                    "Metadata:",
+                    choices = c(),
+                    multiple = FALSE,
+                    search = TRUE,
+                    dropboxWrapper = "body"
+                ),
+                shinyWidgets::virtualSelectInput(
+                    ns("color_proj_gene_module"),
+                    "Gene module:",
+                    choices = c(),
+                    multiple = FALSE,
+                    search = TRUE,
+                    dropboxWrapper = "body"
+                ),
                 checkboxInput(ns("show_legend_projection"), "Show legend", value = show_legend)
             )
         )
     )
 }
 
-projection_selectors <- function(ns, dataset, output, input, gene_modules, globals, weight = 1, atlas = FALSE) {
-    output$gene_selector <- renderUI({
-        shinyWidgets::virtualSelectInput(
-            ns("color_proj_gene"),
-            label = "Gene:",
+projection_selectors <- function(ns, dataset, output, input, gene_modules, globals, session, weight = 1, atlas = FALSE) {
+    observe({
+        shinyWidgets::updateVirtualSelect(
+            session = session,
+            inputId = "color_proj_gene",
             choices = gene_names(dataset(), atlas = atlas),
-            selected = default_gene1,
-            width = "70%",
-            multiple = FALSE,
-            search = TRUE
+            selected = default_gene1
+        )
+
+        shinyWidgets::updateVirtualSelect(
+            session = session,
+            inputId = "color_proj_metadata",
+            choices = c("Clipboard", dataset_metadata_fields(dataset(), atlas = atlas)),
+            selected = dataset_metadata_fields(dataset(), atlas = atlas)[1]
+        )
+
+        shinyWidgets::updateVirtualSelect(
+            session = session,
+            inputId = "color_proj_gene_module",
+            choices = levels(gene_modules()$module),
+            selected = NULL
         )
     })
 
     picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "contains", dropupAuto = FALSE)
 
-    output$metadata_selector <- renderUI({
-        if (!has_metadata(dataset())) {
-            print(glue("Dataset doesn't have any metadata."))
-        } else {
-            shinyWidgets::pickerInput(
-                ns("color_proj_metadata"),
-                label = "Metadata:",
-                choices = c("Clipboard", dataset_metadata_fields(dataset(), atlas = atlas)),
-                selected = dataset_metadata_fields(dataset(), atlas = atlas)[1],
-                width = "70%",
-                multiple = FALSE,
-                options = picker_options
-            )
-        }
-    })
-
-    output$proj_gene_module_selector <- renderUI({
-        req(gene_modules())
-        req(levels(gene_modules()$module))
-        shinyWidgets::pickerInput(
-            ns("color_proj_gene_module"),
-            "Gene module:",
-            choices = levels(gene_modules()$module),
-            selected = NULL,
-            multiple = FALSE,
-            options = picker_options
-        )
-    })
-
     observe({
         req(input$color_proj)
-        shinyjs::toggle(id = "gene_selector", condition = input$color_proj == "Gene")
-        shinyjs::toggle(id = "metadata_selector", condition = input$color_proj == "Metadata")
-        shinyjs::toggle(id = "proj_gene_module_selector", condition = input$color_proj == "Gene module")
+        shinyjs::toggle(id = "color_proj_gene", condition = input$color_proj == "Gene")
+        shinyjs::toggle(id = "color_proj_metadata", condition = input$color_proj == "Metadata")
+        shinyjs::toggle(id = "color_proj_gene_module", condition = input$color_proj == "Gene module")
     })
 
 
