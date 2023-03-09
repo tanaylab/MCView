@@ -37,18 +37,18 @@ Additional tabs can be added from the right sidebar which can be opened by click
 
 #### QC tabs: 
 
-- __Inner-fold__: 
-- __Outliers__: 
+- __Inner-fold__
+- __Outliers__
 
 #### Atlas projection tabs: 
 
 - __Query__: Examine the results of a projection of the metacell model over an atlas.
 - __Atlas__: View the 2d projection of the atlas.
-- __Projected-fold__:
+- __Projected-fold__
  
 #### Additional tabs:
 
-- __Samples__:
+- __Samples__
 
 
 
