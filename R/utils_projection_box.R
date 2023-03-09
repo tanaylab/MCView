@@ -81,6 +81,14 @@ projection_box <- function(ns,
                     search = TRUE,
                     dropboxWrapper = "body"
                 ),
+                shinyWidgets::prettyRadioButtons(
+                    ns("scatter_axis_proj"),
+                    label = "Axis:",
+                    choices = c("x", "y"),
+                    inline = TRUE,
+                    status = "danger",
+                    fill = TRUE
+                ),
                 checkboxInput(ns("show_legend_projection"), "Show legend", value = show_legend)
             )
         )
@@ -118,6 +126,7 @@ projection_selectors <- function(ns, dataset, output, input, gene_modules, globa
         shinyjs::toggle(id = "color_proj_gene", condition = input$color_proj == "Gene")
         shinyjs::toggle(id = "color_proj_metadata", condition = input$color_proj == "Metadata")
         shinyjs::toggle(id = "color_proj_gene_module", condition = input$color_proj == "Gene module")
+        shinyjs::toggle(id = "scatter_axis_proj", condition = input$color_proj == "Scatter Axis")
     })
 
 

@@ -18,7 +18,7 @@ mod_gene_mc_ui <- function(id) {
             ),
             generic_column(
                 width = 5,
-                projection_box(ns, "gene_projection", title = "Gene projections", collapsed_accordion = FALSE, show_legend = FALSE)
+                projection_box(ns, "gene_projection", title = "Gene projections", collapsed_accordion = FALSE, show_legend = FALSE, color_choices = c("Scatter Axis", "Cell type", "Gene", "Gene module", "Metadata"))
             )
         )
     )
@@ -66,7 +66,7 @@ mod_gene_mc_server <- function(id, dataset, metacell_types, cell_type_colors, ge
 
             # Projection plots
             output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, source = "proj_mc_plot_gene_tab") %>%
-                bindCache(dataset(), input$color_proj, metacell_types(), cell_type_colors(), input$point_size, input$stroke, input$min_edge_size, input$set_range, input$metacell1, input$metacell2, input$proj_stat, input$expr_range, input$lfp, input$color_proj_gene, input$color_proj_metadata, input$color_proj_gene_module, clipboard_changed(), input$graph_name, input$legend_orientation, input$show_legend_projection)
+                bindCache(dataset(), input$color_proj, metacell_types(), cell_type_colors(), input$point_size, input$stroke, input$min_edge_size, input$set_range, input$metacell1, input$metacell2, input$proj_stat, input$expr_range, input$lfp, input$color_proj_gene, input$color_proj_metadata, input$color_proj_gene_module, clipboard_changed(), input$graph_name, input$legend_orientation, input$show_legend_projection, input$scatter_axis_proj, input$x_axis_var, input$x_axis_type, input$y_axis_var, input$y_axis_type)
 
             connect_gene_plots(input, output, session, ns, source = "proj_mc_plot_gene_tab")
 
