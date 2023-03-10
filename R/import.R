@@ -461,8 +461,9 @@ import_dataset <- function(project,
         names(gene_max_folds) <- colnames(zero_fold)
         top_bad_genes <- head(sort(gene_max_folds, decreasing = TRUE), n = 100)
         # other_genes <- sample(gene_max_folds, 1e3)
-        other_genes <- gene_max_folds[marker_genes$gene]
-        all_genes <- c(top_bad_genes, other_genes)
+        # other_genes <- gene_max_folds[marker_genes$gene]
+        # all_genes <- c(top_bad_genes, other_genes)
+        all_genes <- top_bad_genes
         idxs <- apply(zero_fold[, names(all_genes)], 2, which.max)
 
         zero_fold_df <- tibble::enframe(all_genes, name = "gene", value = "zero_fold") %>%
