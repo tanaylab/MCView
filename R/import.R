@@ -143,6 +143,7 @@ import_dataset <- function(project,
         cli_abort("The file {.file {anndata_file}} doesn't contain the metacell sum. Please convert it to the new format and try again.")
     }
     mc_sum <- adata$obs$total_umis
+    names(mc_sum) <- rownames(adata$obs)
     serialize_shiny_data(mc_sum, "mc_sum", dataset = dataset, cache_dir = cache_dir)
 
     mc_mat <- t(adata$X * mc_sum)
@@ -459,14 +460,18 @@ import_dataset <- function(project,
         gene_max_folds <- matrixStats::colMaxs(zero_fold)
         names(gene_max_folds) <- colnames(zero_fold)
         top_bad_genes <- head(sort(gene_max_folds, decreasing = TRUE), n = 100)
-        idxs <- apply(zero_fold[, names(top_bad_genes)], 2, which.max)
+        # other_genes <- sample(gene_max_folds, 1e3)
+        other_genes <- gene_max_folds[marker_genes$gene]
+        all_genes <- c(top_bad_genes, other_genes)
+        idxs <- apply(zero_fold[, names(all_genes)], 2, which.max)
 
-        zero_fold_df <- tibble::enframe(top_bad_genes, name = "gene", value = "zero_fold") %>%
+        zero_fold_df <- tibble::enframe(all_genes, name = "gene", value = "zero_fold") %>%
             mutate(
                 obs = purrr::map2_dbl(gene, idxs, ~ obs_zeros[.y, .x]),
                 exp = purrr::map2_dbl(gene, idxs, ~ exp_zeros[.y, .x]),
                 metacell = rownames(obs_zeros)[idxs],
-                gene = modify_gene_names(gene, gene_names)
+                gene = modify_gene_names(gene, gene_names),
+                lateral = gene %in% lateral_genes
             )
 
         mc_max_folds <- matrixStats::rowMaxs(zero_fold)
