@@ -62,16 +62,15 @@ This would pre-process the metacell dataset in order to view it in the shiny app
 ```{r, eval=FALSE}
 import_dataset(
     project = "PBMC",
-    dataset = "PBMC163k",
+    dataset = "PBMC",
     anndata_file = "raw/metacells.h5ad",
-    cell_type_field = "cluster",
-    cell_type_colors_file = "raw/cluster-colors.csv"
+    cell_type_field = "type"
 )
 ```
 
 The most important field is the `anndata` field which points to the h5ad file we downloaded. 
 
-You can see that we also specified a field in the `h5ad` object that has pre-computed cluster assignments per metacell, and the path of a file which contains color assignment per cluster, but these where optional, as __MCView__ can generate initial clustering and coloring automatically. 
+You can see that we also specified a field in the `h5ad` object that has pre-computed cluster assignments per metacell at the 'type' field. 
 
 Note that the import part might take a few minutes, depending (mostly) on the number of metacells. If you see that it takes too long - set `calc_gg_cor` to `FALSE` in order to skip calculating correlation between all genes. This would save significant amount of import time but would make this feature unavailable in the app. 
 
@@ -121,10 +120,8 @@ You can load metadata fields for each metacell using the `metadata` parameter in
 ```{r, eval=FALSE}
 import_dataset(
     project = "PBMC",
-    dataset = "PBMC163k",
+    dataset = "PBMC",
     anndata_file = "raw/metacells.h5ad",
-    cell_type_field = "cluster",
-    cell_type_colors_file = "raw/cluster-colors.csv",
     metadata = "raw/metadata.csv"
 )
 ```

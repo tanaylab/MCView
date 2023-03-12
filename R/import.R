@@ -264,7 +264,6 @@ import_dataset <- function(project,
         pivot_wider(names_from = "rank", values_from = c("gene", "fp"))
 
     colnames(mc_genes_top2) <- c("metacell", "top1_gene", "top2_gene", "top1_lfp", "top2_lfp")
-
     cell_type_colors <- NULL
     if (!is.null(metacell_types_file)) {
         if (!is.null(cell_type_field)) {
@@ -280,7 +279,11 @@ import_dataset <- function(project,
         }
         metacell_types <- parse_metacell_types(metacell_types, metacells)
     } else {
-        if (!is.null(cell_type_field) && !is.null(adata$obs[[cell_type_field]])) {
+        if (!is.null(cell_type_field)) {
+            if (!has_name(adata$obs, cell_type_field)) {
+                cli_abort("{.field {cell_type_field}} is not a field in the anndata object")
+            }
+
             cli_alert_info("Taking cell type annotations from {.field {cell_type_field}} field in the anndata object")
             metacell_types <- adata$obs %>%
                 select(cell_type = !!cell_type_field) %>%
@@ -326,12 +329,12 @@ import_dataset <- function(project,
 
         if (length(missing_cell_types) > 0) {
             cli_alert_warning("The following cell types are missing from the color annotations: {.field {missing_cell_types}}. Adding them to the color annotations with random colors.")
-
             new_cell_type_colors <- color_cell_types(adata, mc_egc, metacell_types) %>%
-                filter(cell_type %in% missing_cell_types)
+                filter(cell_type %in% missing_cell_types) %>%
+                mutate(cell_type = as.character(cell_type))
 
             cell_type_colors <- bind_rows(
-                cell_type_colors,
+                cell_type_colors %>% mutate(cell_type = as.character(cell_type)),
                 new_cell_type_colors
             ) %>%
                 distinct(cell_type, color) %>%

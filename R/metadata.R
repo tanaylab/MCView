@@ -415,7 +415,7 @@ cell_metadata_to_metacell_from_h5ad <- function(anndata_file, metadata_fields, f
         select(cell_id, one_of(metadata_fields))
 
     cell_to_metacell <- df %>%
-        select(cell_id, metacell)
+        select(cell_id, metacell = metacell_name)
 
 
     cell_metadata_to_metacell(cell_metadata = cell_metadata, cell_to_metacell = cell_to_metacell, func = func, categorical = categorical)
