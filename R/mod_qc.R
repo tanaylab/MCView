@@ -13,11 +13,11 @@ mod_qc_ui <- function(id) {
         column(
             width = 12,
             fluidRow(
-                shinydashboard::valueBoxOutput(ns("num_umis"), width = 3),
-                shinydashboard::valueBoxOutput(ns("num_cells"), width = 2),
-                shinydashboard::valueBoxOutput(ns("num_outliers"), width = 3),
+                shinydashboard::valueBoxOutput(ns("num_metacells"), width = 2),
                 shinydashboard::valueBoxOutput(ns("median_umis_per_metacell"), width = 2),
-                shinydashboard::valueBoxOutput(ns("median_cells_per_metacell"), width = 2)
+                shinydashboard::valueBoxOutput(ns("num_cells"), width = 2),
+                shinydashboard::valueBoxOutput(ns("median_cells_per_metacell"), width = 2),
+                shinydashboard::valueBoxOutput(ns("num_outliers"), width = 3),
             )
         ),
         generic_column(
@@ -66,7 +66,7 @@ mod_qc_server <- function(id, dataset, metacell_types, cell_type_colors, gene_mo
             ns <- session$ns
 
             # Value boxes
-            output$num_umis <- qc_value_box("n_umis", "Total number of UMIs", dataset, color = "black")
+            output$num_metacells <- qc_value_box("n_metacells", "Number of metacells", dataset, color = "black")
             output$num_cells <- qc_value_box("n_cells", "Number of cells", dataset, color = "purple")
             output$num_outliers <- shinydashboard::renderValueBox({
                 num_cells <- get_mc_data(dataset(), "qc_stats")$n_cells
@@ -91,7 +91,7 @@ mod_qc_server <- function(id, dataset, metacell_types, cell_type_colors, gene_mo
             output$plot_qc_umis <- qc_stat_plot("umis", "Number of UMIs per metacell", dataset, input, "plot_qc_umis_type", log_scale = TRUE)
             output$plot_qc_cell_num <- qc_stat_plot("cells", "Number of cells per metacell", dataset, input, "plot_qc_cell_num_type")
             output$plot_qc_inner_fold <- qc_stat_plot("max_inner_fold", "Max inner-fold per metacell", dataset, input, "plot_qc_inner_fold_type")
-            output$plot_mc_zero_fold <- qc_stat_plot("zero_fold", "Max zero-fold per metacell", dataset, input, "plot_mc_zero_fold_type")
+            output$plot_mc_zero_fold <- qc_stat_plot("zero_fold", "Max log2(# of zero cells / expected) per metacell", dataset, input, "plot_mc_zero_fold_type")
             output$plot_zero_fold <- zero_fold_gene_plot(dataset, input)
 
 
@@ -102,10 +102,15 @@ mod_qc_server <- function(id, dataset, metacell_types, cell_type_colors, gene_mo
 
 qc_value_box <- function(field, title, dataset, color = "black") {
     shinydashboard::renderValueBox({
-        qc_stats <- get_mc_data(dataset(), "qc_stats")
-        req(qc_stats)
-        stat <- qc_stats[[field]]
+        if (field == "n_metacells") {
+            stat <- ncol(get_mc_data(dataset(), "mc_mat"))
+        } else {
+            qc_stats <- get_mc_data(dataset(), "qc_stats")
+            req(qc_stats)
+            stat <- qc_stats[[field]]
+        }
         req(stat)
+
         shinydashboard::valueBox(
             scales::comma(stat),
             title,
@@ -165,7 +170,10 @@ zero_fold_table <- function(dataset, input) {
             zero_fold_df <- get_mc_data(dataset(), "gene_zero_fold")
             req(zero_fold_df)
             zero_fold_df %>%
-                rename(Observed = obs, Expected = exp, FC = zero_fold) %>%
+                filter(avg >= -10) %>%
+                slice(1:100) %>%
+                select(Gene = gene, Observed = obs, Expected = exp, FC = zero_fold, Expression = avg, Metacell = metacell) %>%
+                mutate(Expected = round(Expected, digits = 1), FC = round(FC, digits = 2), Expression = round(Expression, digits = 2)) %>%
                 DT::datatable(
                     rownames = FALSE,
                     options = list(
@@ -191,19 +199,19 @@ zero_fold_gene_plot <- function(dataset, input) {
         zero_fold_df <- get_mc_data(dataset(), "gene_zero_fold")
         req(zero_fold_df)
 
-        limits <- c(0, max(zero_fold_df$obs, zero_fold_df$exp) + 1)
-
         p <- zero_fold_df %>%
-            rename(Observed = obs, Expected = exp) %>%
-            ggplot(aes(x = Observed, y = Expected, label = gene, metacell = metacell, FC = zero_fold)) +
+            rename(Expression = avg, FC = zero_fold, Gene = gene, Lateral = lateral, Metacell = metacell) %>%
+            mutate(Observed = obs, Expected = round(exp, digits = 1)) %>%
+            ggplot(aes(x = Expression, y = FC, label = Gene, color = Lateral, Observed = Observed, Expected = Expected, Metacell = Metacell)) +
+            scale_color_manual(values = c("gray", "red")) +
             geom_point(size = 0.5) +
             geom_abline(intercept = 0, slope = 1, color = "black", linetype = "dashed") +
-            xlab("# of cells with 0 UMIs (observed)") +
-            ylab("# of cells with 0 UMIs (expected)") +
-            ylim(limits) +
-            xlim(limits)
+            xlab("log2(gene expression)") +
+            ylab("log2(# of zero cells / expected)")
 
         plotly::ggplotly(p) %>%
+            sanitize_for_WebGL() %>%
+            plotly::toWebGL() %>%
             sanitize_plotly_buttons()
     }) %>% bindCache(dataset())
 }

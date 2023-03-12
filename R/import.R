@@ -218,7 +218,7 @@ import_dataset <- function(project,
     }
 
     serialize_shiny_data(lateral_genes, "lateral_genes", dataset = dataset, cache_dir = cache_dir)
-    
+
     if (is.null(adata$var[, "marker_gene"])) {
         marker_genes <- calc_marker_genes(mc_egc[!lateral, ], 20, minimal_max_log_fraction = minimal_max_log_fraction, minimal_relative_log_fraction = minimal_relative_log_fraction)
     } else {
@@ -453,34 +453,32 @@ import_dataset <- function(project,
     if (!is.null(adata$layers[["zeros"]]) && has_name(adata$obs, "__zeros_downsample_umis")) {
         obs_zeros <- adata$layers[["zeros"]]
 
-        # expected number of zeros assuming a poisson distribution: e^(-T * lambda)*N where T is the number of UMIs (downsampled) and lambda is the average number of UMIs per cell and N is the number of cells
+        # expected number of zeros assuming a poisson distribution: e^(-T * lambda)*N where T is the number of UMIs (downsampled), lambda is the average number of UMIs per cell and N is the number of cells
         exp_zeros <- t(exp(-t(as.matrix(adata$X)) * adata$obs$`__zeros_downsample_umis`) * adata$obs$grouped)
-
         zero_fold <- log(obs_zeros + 1) - log(exp_zeros + 1)
         gene_max_folds <- matrixStats::colMaxs(zero_fold)
         names(gene_max_folds) <- colnames(zero_fold)
-        top_bad_genes <- head(sort(gene_max_folds, decreasing = TRUE), n = 100)
-        # other_genes <- sample(gene_max_folds, 1e3)
-        # other_genes <- gene_max_folds[marker_genes$gene]
-        # all_genes <- c(top_bad_genes, other_genes)
-        all_genes <- top_bad_genes
-        idxs <- apply(zero_fold[, names(all_genes)], 2, which.max)
+        gene_avgs <- log2(rowMeans(mc_egc) + 1e-5)
+        idxs <- apply(zero_fold, 2, which.max)
 
-        zero_fold_df <- tibble::enframe(all_genes, name = "gene", value = "zero_fold") %>%
+        gene_zero_fold_df <- tibble::enframe(gene_max_folds, name = "gene", value = "zero_fold") %>%
             mutate(
+                gene = modify_gene_names(gene, gene_names),
+                avg = gene_avgs[gene],
                 obs = purrr::map2_dbl(gene, idxs, ~ obs_zeros[.y, .x]),
                 exp = purrr::map2_dbl(gene, idxs, ~ exp_zeros[.y, .x]),
                 metacell = rownames(obs_zeros)[idxs],
-                gene = modify_gene_names(gene, gene_names),
                 lateral = gene %in% lateral_genes
-            )
+            ) %>%
+            arrange(desc(zero_fold))
+
+        serialize_shiny_data(gene_zero_fold_df, "gene_zero_fold", dataset = dataset, cache_dir = cache_dir)
 
         mc_max_folds <- matrixStats::rowMaxs(zero_fold)
         names(mc_max_folds) <- rownames(zero_fold)
+
         mc_qc_metadata <- mc_qc_metadata %>%
             mutate(zero_fold = mc_max_folds[metacell])
-
-        serialize_shiny_data(zero_fold_df, "gene_zero_fold", dataset = dataset, cache_dir = cache_dir)
     }
 
     serialize_shiny_data(mc_qc_metadata, "mc_qc_metadata", dataset = dataset, cache_dir = cache_dir)
