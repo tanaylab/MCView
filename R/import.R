@@ -226,7 +226,6 @@ import_dataset <- function(project,
     }
     serialize_shiny_data(marker_genes, "marker_genes", dataset = dataset, cache_dir = cache_dir)
 
-
     # cache metacell correlations of default marker genes
     cli_alert_info("Calculating metacell correlations of default marker genes")
     default_markers <- choose_markers(marker_genes, 100)
@@ -299,14 +298,7 @@ import_dataset <- function(project,
                 as_tibble()
         } else if (cluster_metacells) {
             cli_alert_info("Clustering in order to get initial annotation.")
-            # we generate clustering as initial annotation
-            if (rlang::has_name(adata$var, "top_feature_gene")) {
-                feat_mat <- mc_egc[adata$var$top_feature_gene, ]
-            } else if (rlang::has_name(adata$var, "feature_gene")) {
-                feat_mat <- mc_egc[adata$var$feature_gene, ]
-            } else {
-                cli_abort("{anndata_file} object doesn't have a 'var' field named 'top_feature_gene' or 'feature_gene'")
-            }
+            feat_mat <- mc_egc[choose_markers(marker_genes, 1e3), ]
 
             km <- cluster_egc(feat_mat, verbose = verbose, k = cluster_k)
             metacell_types <- km$clusters %>%
@@ -329,7 +321,7 @@ import_dataset <- function(project,
 
         if (length(missing_cell_types) > 0) {
             cli_alert_warning("The following cell types are missing from the color annotations: {.field {missing_cell_types}}. Adding them to the color annotations with random colors.")
-            new_cell_type_colors <- color_cell_types(adata, mc_egc, metacell_types) %>%
+            new_cell_type_colors <- color_cell_types(adata, mc_egc, metacell_types, choose_markers(marker_genes, 1e3)) %>%
                 filter(cell_type %in% missing_cell_types) %>%
                 mutate(cell_type = as.character(cell_type))
 
@@ -358,7 +350,7 @@ import_dataset <- function(project,
                 cli_abort("The following cell types do not have colors at the atlas: {.field {types_without_colors}}. To fix it either provide {.code cell_type_colors_file} or add the cell type(s) to the atlas colors.")
             }
         } else {
-            cell_type_colors <- color_cell_types(adata, mc_egc, metacell_types)
+            cell_type_colors <- color_cell_types(adata, mc_egc, metacell_types, choose_markers(marker_genes, 1e3))
         }
     }
 
@@ -588,15 +580,9 @@ calc_gg_mc_top_cor <- function(egc, k = 30, egc_epsilon = 1e-5) {
     return(gg_mc_top_cor)
 }
 
-color_cell_types <- function(adata, mc_egc, metacell_types) {
+color_cell_types <- function(adata, mc_egc, metacell_types, marker_genes) {
     cli_alert_info("Generating cell type colors using {.pkg chameleon} package.")
-    if (rlang::has_name(adata$var, "top_feature_gene")) {
-        feat_mat <- mc_egc[adata$var$top_feature_gene, ]
-    } else if (rlang::has_name(adata$var, "feature_gene")) {
-        feat_mat <- mc_egc[adata$var$feature_gene, ]
-    } else {
-        cli_abort("{anndata_file} object doesn't have a 'var' field named 'top_feature_gene' or 'feature_gene'")
-    }
+    feat_mat <- mc_egc[marker_genes, ]
 
     if (all(c("u", "v", "w") %in% colnames(adata$obs))) {
         cli_alert_info("Coloring using pre-calculated 3D umap")
