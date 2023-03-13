@@ -13,13 +13,22 @@ mod_about_ui <- function(id) {
         fluidRow(
             generic_box(
                 id = ns("about"),
-                title = "About",
+                title = config$about_title %||% "About",
                 collapsible = FALSE,
                 closable = FALSE,
                 width = 12,
                 height = "80vh",
-                includeRMarkdown(about_file),
-                plotOutput(ns("about_2d_plot"))
+                fluidRow(
+                    column(
+                        width = 6,
+                        includeRMarkdown(about_file)
+                    ),
+                    column(
+                        width = 6,
+                        plotOutput(ns("about_2d_plot")),
+                        plotOutput(ns("about_scatter_plot"))
+                    )
+                )
             )
         )
     )
@@ -64,11 +73,17 @@ mod_about_server <- function(id, dataset, metacell_types, cell_type_colors, gene
                         theme(legend.position = "none") +
                         theme(aspect.ratio = 1) +
                         guides(color = "none")
-                    p_gg <- plot_gg_over_mc(dataset(), default_gene1, default_gene2, metacell_types = metacell_types(), cell_type_colors = cell_type_colors(), plot_text = FALSE) +
+                    p_proj
+                },
+                res = 96
+            ) %>% bindCache(dataset(), metacell_types(), cell_type_colors())
+
+            output$about_scatter_plot <- renderPlot(
+                {
+                    plot_gg_over_mc(dataset(), default_gene1, default_gene2, metacell_types = metacell_types(), cell_type_colors = cell_type_colors(), plot_text = FALSE) +
                         theme(legend.position = "none") +
                         theme(aspect.ratio = 1) +
                         guides(color = "none")
-                    cowplot::plot_grid(p_proj, p_gg, ncol = 2)
                 },
                 res = 96
             ) %>% bindCache(dataset(), metacell_types(), cell_type_colors())

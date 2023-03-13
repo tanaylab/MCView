@@ -259,7 +259,6 @@ qc_density <- function(qc_df, field, xlab, ylab, log_scale = FALSE) {
     }
 
     max_y <- layer_scales(p)$y$get_limits()[2]
-
     p <- plotly::ggplotly(p) %>%
         plotly::add_annotations(
             x = quants,
