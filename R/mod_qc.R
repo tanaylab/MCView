@@ -171,7 +171,7 @@ zero_fold_table <- function(dataset, input) {
             zero_fold_df %>%
                 filter(avg >= -10) %>%
                 slice(1:100) %>%
-                select(Gene = gene, Observed = obs, Expected = exp, FC = zero_fold, Expression = avg, Metacell = metacell) %>%
+                select(Gene = gene, Observed = obs, Expected = exp, FC = zero_fold, Type = type, Expression = avg, Metacell = metacell) %>%
                 mutate(Expected = round(Expected, digits = 1), FC = round(FC, digits = 2), Expression = round(Expression, digits = 2)) %>%
                 DT::datatable(
                     rownames = FALSE,
@@ -199,10 +199,10 @@ zero_fold_gene_plot <- function(dataset, input) {
         req(zero_fold_df)
 
         p <- zero_fold_df %>%
-            rename(Expression = avg, FC = zero_fold, Gene = gene, Lateral = lateral, Metacell = metacell) %>%
+            rename(Expression = avg, FC = zero_fold, Gene = gene, Type = type, Metacell = metacell) %>%
             mutate(Observed = obs, Expected = round(exp, digits = 1)) %>%
-            ggplot(aes(x = Expression, y = FC, label = Gene, color = Lateral, Observed = Observed, Expected = Expected, Metacell = Metacell)) +
-            scale_color_manual(values = c("gray", "red")) +
+            ggplot(aes(x = Expression, y = FC, label = Gene, color = Type, Observed = Observed, Expected = Expected, Metacell = Metacell)) +
+            scale_color_manual(values = c("other" = "gray", "lateral" = "red", "noisy" = "purple")) +
             geom_point(size = 0.5) +
             geom_abline(intercept = 0, slope = 1, color = "black", linetype = "dashed") +
             xlab("log2(gene expression)") +

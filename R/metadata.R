@@ -192,7 +192,7 @@ add_tab <- function(tab, project) {
         config$tabs <- c(tabs, tab)
     }
     yaml::write_yaml(config, config_file)
-    cli_alert("Added the {.field {tab}} tab to the config file. To change the tab order to remove it - edit the {.field tabs} section at: {.file {config_file}}")
+    cli_alert("Added the {.field {tab}} tab to the config file. To change the tab order or remove it - edit the {.field tabs} section at: {.file {config_file}}")
 }
 
 #' Convert cell metadata to metacell metadata
