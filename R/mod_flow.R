@@ -20,25 +20,27 @@ mod_flow_ui <- function(id) {
                     collapsible = TRUE,
                     closable = FALSE,
                     width = 12,
-                    sidebar = shinydashboardPlus::boxSidebar(
-                        startOpen = FALSE,
-                        width = 100,
-                        id = ns("vein_plot_sidebar"),
-                        shinyWidgets::prettyRadioButtons(
-                            ns("color_gene_vein"),
-                            label = "Color by:",
-                            choices = c("Gene", "Cell type"),
-                            selected = "Cell type",
-                            inline = TRUE,
-                            status = "danger",
-                            fill = TRUE
-                        ),
-                        uiOutput(ns("gene_selector")),
-                        uiOutput(ns("vein_gene_foc_type_select"))
-                    ),
                     shinycssloaders::withSpinner(
                         plotOutput(ns("gene_vein_plot"), height = 600)
-                    )
+                    ),
+                    shinyWidgets::prettyRadioButtons(
+                        ns("color_gene_vein"),
+                        label = "Color by:",
+                        choices = c("Gene", "Cell type"),
+                        selected = "Cell type",
+                        inline = TRUE,
+                        status = "danger",
+                        fill = TRUE
+                    ),
+                    shinyWidgets::virtualSelectInput(
+                        ns("gene"),
+                        "",
+                        choices = c(),
+                        multiple = FALSE,
+                        search = TRUE,
+                        dropboxWrapper = "body"
+                    ),
+                    uiOutput(ns("vein_gene_foc_type_select"))
                 ),
                 generic_box(
                     title = "Genes Trajectory",
@@ -47,12 +49,7 @@ mod_flow_ui <- function(id) {
                     collapsible = TRUE,
                     closable = FALSE,
                     width = 12,
-                    sidebar = shinydashboardPlus::boxSidebar(
-                        startOpen = FALSE,
-                        width = 100,
-                        id = ns("traj_plot_sidebar"),
-                        uiOutput(ns("traj_gene_selector"))
-                    ),
+                    uiOutput(ns("traj_gene_selector")),
                     shinycssloaders::withSpinner(
                         plotly::plotlyOutput(ns("plot_mc_traj"))
                     )
@@ -74,7 +71,8 @@ mod_flow_ui <- function(id) {
                     # ),
                     shinycssloaders::withSpinner(
                         plotOutput(ns("plot_metacell_flow"), height = 600)
-                    )
+                    ),
+                    uiOutput(ns("metacell_selector"))
                 )
             )
         )
@@ -94,9 +92,7 @@ mod_flow_ui <- function(id) {
 mod_flow_sidebar_ui <- function(id) {
     ns <- NS(id)
     tagList(
-        list(
-            uiOutput(ns("metacell_selector"))
-        )
+        list()
     )
 }
 
@@ -116,15 +112,13 @@ mod_flow_server <- function(id, dataset, metacell_types, cell_type_colors, gene_
 
             picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "contains", dropupAuto = FALSE)
 
-            output$gene_selector <- renderUI({
-                shinyWidgets::pickerInput(
-                    ns("gene"),
-                    label = "Gene:",
+            observe({
+                shinyWidgets::updateVirtualSelect(
+                    session = session,
+                    inputId = "gene",
                     choices = gene_names(dataset()),
                     selected = default_gene1,
-                    width = "70%",
-                    multiple = FALSE,
-                    options = picker_options
+                    label = "Gene"
                 )
             })
 
@@ -147,7 +141,7 @@ mod_flow_server <- function(id, dataset, metacell_types, cell_type_colors, gene_
 
             observe({
                 req(input$color_gene_vein)
-                shinyjs::toggle(id = "gene_selector", condition = input$color_gene_vein == "Gene")
+                shinyjs::toggle(id = "gene", condition = input$color_gene_vein == "Gene")
                 shinyjs::toggle(id = "vein_gene_foc_type_select", condition = input$color_gene_vein == "Cell type")
             })
 
@@ -193,8 +187,8 @@ mod_flow_server <- function(id, dataset, metacell_types, cell_type_colors, gene_
                     plot_propagation_net_metacell(dataset(), input$selected_metacell, metacell_types = metacell_types()) +
                         ggtitle(glue("metacell #{input$selected_metacell} ({mc_data$cell_type[1]})")) +
                         theme(plot.title = element_text(colour = "darkblue"))
-                },
-                res = 96
+                } # ,
+                # res = 96
             )
 
 

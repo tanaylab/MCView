@@ -62,9 +62,10 @@
 #' (in log fraction units - normalized egc) above this threshold
 #' @param minimal_relative_log_fraction When choosing marker genes: take only genes with relative
 #' log fraction (mc_fp) above this this value
+#' @param flow_file path to a tabular file (csv,tsv) with flow data or a data frame which contains it. Should have the following columns: 'mc1', 'mc2', 'time1', 'time2', 'type1', 'type2' and 'flow'. The 'mc1' and 'mc2' columns should contain the metacell ids, 'time1' and 'time2' should contain the time points, 'type1' and 'type2' should contain the types of the edges and 'flow' should contain the flow value.
+#' @param time_annotation_file path to a tabular file (csv,tsv) with time annotation data or a data frame which contains it. Should have a field named "time_bin" with the time bin id and another field named "label" which contains the description of the time bin. If NULL - the time bins would be named numerically.
 #'
 #' @return invisibly returns an \code{AnnDataR6} object of the read \code{anndata_file}
-#'
 #'
 #' @examples
 #' \dontrun{
@@ -106,6 +107,8 @@ import_dataset <- function(project,
                            copy_atlas = TRUE,
                            minimal_max_log_fraction = -13,
                            minimal_relative_log_fraction = 2,
+                           flow_file = NULL,
+                           time_annotation_file = NULL,
                            ...) {
     verbose <- !is.null(getOption("MCView.verbose")) && getOption("MCView.verbose")
     verify_project_dir(project, create = TRUE, atlas = !is.null(atlas_project), ...)
@@ -204,6 +207,10 @@ import_dataset <- function(project,
     }
 
     mc_egc <- t(t(mc_mat) / mc_sum)
+
+    if (!is.null(flow_file)) {
+        load_flow(flow_file, mc_egc, project, dataset, time_annotation_file, gene_names = gene_names)
+    }
 
     cli_alert_info("Calculating top genes per metacell (marker genes)")
     lateral_field <- "lateral_gene"
@@ -346,7 +353,6 @@ import_dataset <- function(project,
                 cell_type_colors <- atlas_colors
             } else {
                 types_without_colors <- setdiff(unique(metacell_types$cell_type), atlas_colors$cell_type)
-                types_without_colors <- paste(types_without_colors, collapse = ", ")
                 cli_abort("The following cell types do not have colors at the atlas: {.field {types_without_colors}}. To fix it either provide {.code cell_type_colors_file} or add the cell type(s) to the atlas colors.")
             }
         } else {

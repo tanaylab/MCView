@@ -30,6 +30,8 @@ import_dataset(
   copy_atlas = TRUE,
   minimal_max_log_fraction = -13,
   minimal_relative_log_fraction = 2,
+  flow_file = NULL,
+  time_annotation_file = NULL,
   ...
 )
 }
@@ -114,6 +116,10 @@ name of a delimited file which contains such data frame.}
 
 \item{minimal_relative_log_fraction}{When choosing marker genes: take only genes with relative
 log fraction (mc_fp) above this this value}
+
+\item{flow_file}{path to a tabular file (csv,tsv) with flow data or a data frame which contains it. Should have the following columns: 'mc1', 'mc2', 'time1', 'time2', 'type1', 'type2' and 'flow'. The 'mc1' and 'mc2' columns should contain the metacell ids, 'time1' and 'time2' should contain the time points, 'type1' and 'type2' should contain the types of the edges and 'flow' should contain the flow value.}
+
+\item{time_annotation_file}{path to a tabular file (csv,tsv) with time annotation data or a data frame which contains it. Should have a field named "time_bin" with the time bin id and another field named "label" which contains the description of the time bin. If NULL - the time bins would be named numerically.}
 
 \item{...}{
   Arguments passed on to \code{\link[=create_project]{create_project}}

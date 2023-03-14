@@ -147,8 +147,7 @@ import_cell_metadata <- function(project, dataset, cell_metadata, cell_to_metace
     metacells <- get_metacell_ids(project, dataset)
     non_existing_metacells <- unique(cell_to_metacell$metacell[!(cell_to_metacell$metacell %in% metacells)])
     if (length(non_existing_metacells) > 0) {
-        mcs <- paste(non_existing_metacells, collapse = ",")
-        cli_alert_warning("The following metacells from {.field cell_to_metacell} do not exist in the dataset: {.file {mcs}}")
+        cli_alert_warning("The following metacells from {.field cell_to_metacell} do not exist in the dataset: {.val {non_existing_metacells}}")
     }
 
     cell_metadata <- cell_metadata %>%
