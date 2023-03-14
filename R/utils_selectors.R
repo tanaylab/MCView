@@ -157,6 +157,10 @@ top_correlated_selector <- function(gene_id, id, type_id, input, output, session
         req(input[["color_proj"]] == "Gene")
         shinyWidgets::updateVirtualSelect(session = session, inputId = "color_proj_gene", selected = input[[glue("selected_top_{id}")]])
     })
+    observeEvent(input[[glue("select_top_cor_{id}_boxplot")]], {
+        req(input[["boxplot_axis_type"]] == "Gene")
+        shinyWidgets::updateVirtualSelect(session = session, inputId = "boxplot_axis_var", selected = input[[glue("selected_top_{id}")]])
+    })
 }
 
 top_correlated_selectors <- function(input, output, session, dataset, ns, button_labels = c("X", "Y", "Color", "2D")) {

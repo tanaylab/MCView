@@ -106,7 +106,7 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
         if (has_name(prev_metadata, "similar")) {
             if (!all(prev_metadata$similar == proj_metacell_types$similar)) {
                 cli_warn("Metacell metadata includes a field named {.field similar}. Overwriting it with the one from the projection file.")
-                prev_metadata$similar <- proj_metacell_types$similar                
+                prev_metadata$similar <- proj_metacell_types$similar
             }
             metadata <- prev_metadata
         } else {

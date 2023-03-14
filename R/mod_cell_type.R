@@ -52,7 +52,8 @@ mod_cell_type_sidebar_ui <- function(id) {
         list(
             axis_selector("boxplot_axis", "Gene", ns, choices = c("Metadata", "Gene", "Gene module"), orientation = "vertical", wrap_in_box = FALSE),
             uiOutput(ns("confusion_color_by_selector")),
-            uiOutput(ns("cell_type_list"))
+            uiOutput(ns("cell_type_list")),
+            uiOutput(ns("top_correlated_select_boxplot_axis"))
         )
     )
 }
@@ -65,8 +66,8 @@ mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, 
         id,
         function(input, output, session) {
             ns <- session$ns
-            # scatter_selectors(ns, dataset, output, globals, "boxplot")
-            top_correlated_selector("boxplot_axis_var", "boxplot_axis", "boxplot_axis_type", input, output, session, dataset, ns, button_labels = c("Axes", "Color"), ids = c("boxplot_axis", "color"))
+
+            top_correlated_selector("boxplot_axis_var", "boxplot_axis", "boxplot_axis_type", input, output, session, dataset, ns, button_labels = c("Select"), ids = c("boxplot"))
 
             render_axis_select_ui("boxplot_axis", "Data", "boxplot_axis_select", md_choices = dataset_metadata_fields(dataset()), md_selected = dataset_metadata_fields(dataset())[1], selected_gene = default_gene1, input = input, output = output, ns = ns, dataset = dataset, gene_modules = gene_modules, session = session)
 
