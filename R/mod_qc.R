@@ -23,15 +23,13 @@ mod_qc_ui <- function(id) {
         generic_column(
             width = 6,
             qc_stat_box(ns, id, "# of UMIs per metacell", "plot_qc_umis"),
-            qc_stat_box(ns, id, "Max inner-fold per metacell", "plot_qc_inner_fold")
+            qc_stat_box(ns, id, "Max inner-fold per metacell", "plot_qc_inner_fold"),
+            qc_stat_box(ns, id, "Max inner-stdev per metacell", "plot_qc_std")
         ),
         generic_column(
             width = 6,
             qc_stat_box(ns, id, "# of cells per metacell", "plot_qc_cell_num"),
             qc_stat_box(ns, id, "Max zero-fold per metacell", "plot_mc_zero_fold"),
-        ),
-        generic_column(
-            width = 6,
             zero_fold_stat_box(ns, id, "# of cells with zero UMIs per gene", "plot_zero_fold")
         )
     )
@@ -91,6 +89,7 @@ mod_qc_server <- function(id, dataset, metacell_types, cell_type_colors, gene_mo
             output$plot_qc_umis <- qc_stat_plot("umis", "Number of UMIs per metacell", dataset, input, "plot_qc_umis_type", log_scale = TRUE)
             output$plot_qc_cell_num <- qc_stat_plot("cells", "Number of cells per metacell", dataset, input, "plot_qc_cell_num_type")
             output$plot_qc_inner_fold <- qc_stat_plot("max_inner_fold", "Max inner-fold per metacell", dataset, input, "plot_qc_inner_fold_type")
+            output$plot_qc_std <- qc_stat_plot("max_inner_stdev_log", "Max stdev(log(fractions)) per metacell", dataset, input, "plot_qc_std_type")
             output$plot_mc_zero_fold <- qc_stat_plot("zero_fold", "Max log2(# of zero cells / expected) per metacell", dataset, input, "plot_mc_zero_fold_type")
             output$plot_zero_fold <- zero_fold_gene_plot(dataset, input)
 

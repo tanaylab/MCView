@@ -445,6 +445,13 @@ import_dataset <- function(project,
             left_join(max_inner_fold, by = "metacell")
     }
 
+    if (!is.null(adata$layers[["inner_stdev_log"]])) {
+        max_inner_stdev_log <- apply(adata$layers[["inner_stdev_log"]], 1, max, na.rm = TRUE) %>%
+            tibble::enframe(name = "metacell", value = "max_inner_stdev_log")
+        mc_qc_metadata <- mc_qc_metadata %>%
+            left_join(max_inner_stdev_log, by = "metacell")
+    }
+
     if (!is.null(adata$layers[["zeros"]]) && has_name(adata$obs, "__zeros_downsample_umis")) {
         obs_zeros <- adata$layers[["zeros"]]
 
