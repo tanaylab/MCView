@@ -266,9 +266,9 @@ create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overw
         bundle_config_file <- project_config_file(fs::path(bundle_dir, "project"))
         bundle_config <- yaml::read_yaml(bundle_config_file)
         bundle_config$light_version <- TRUE
-        bundle_config$excluded_tabs <- c("Gene modules", "Annotate", "Inner-fold")
+        bundle_config$excluded_tabs <- c("Gene modules", "Annotate", "Inner-fold", "Stdev-fold")
         yaml::write_yaml(bundle_config, bundle_config_file)
-        cli::cli_alert("Creating a light version of the bundle. Excluded tabs: {.field Gene modules, Annotate, Inner-fold}. To change this, edit the {.file project/config.yaml} file.")
+        cli::cli_alert("Creating a light version of the bundle. Excluded tabs: {.field Gene modules, Annotate, Inner-fold, Stdev-fold}. To change this, edit the {.file project/config.yaml} file.")
     }
 
     if (restart) {

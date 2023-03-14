@@ -253,7 +253,24 @@ import_dataset <- function(project,
         marker_genes_inner_fold <- tibble(gene = inner_fold_genes, fp = inner_fold_gene_metacells) %>%
             arrange(desc(fp))
         serialize_shiny_data(marker_genes_inner_fold, "marker_genes_inner_fold", dataset = dataset, cache_dir = cache_dir)
-        cli_alert_info("Add the {.field \"Inner-fold\"} tab to your config file to view the inner-fold matrix")
+        add_tab("Inner-fold", project)
+    }
+
+    if (!is.null(adata$layers[["inner_stdev_log"]])) {
+        cli_alert_info("Processing inner-stdev matrix")
+        inner_stdev_mat <- t(adata$layers[["inner_stdev_log"]])
+        rownames(inner_stdev_mat) <- rownames(mc_mat)
+        colnames(inner_stdev_mat) <- colnames(mc_mat)
+        serialize_shiny_data(inner_stdev_mat, "inner_stdev_mat", dataset = dataset, cache_dir = cache_dir)
+
+        cli_alert_info("Calculating top inner-stdev genes")
+        inner_stdev_genes <- rownames(inner_stdev_mat)[Matrix::rowSums(inner_stdev_mat) > 0]
+        inner_stdev_gene_metacells <- matrixStats::rowSums2(as.matrix(inner_stdev_mat[inner_stdev_genes, , drop = FALSE]) > 0)
+        # fp here is the number of non-zero entries per gene
+        marker_genes_inner_stdev <- tibble(gene = inner_stdev_genes, fp = inner_stdev_gene_metacells) %>%
+            arrange(desc(fp))
+        serialize_shiny_data(marker_genes_inner_stdev, "marker_genes_inner_stdev", dataset = dataset, cache_dir = cache_dir)
+        add_tab("Stdev-fold", project)
     }
 
     mc_genes_top2 <- marker_genes %>%

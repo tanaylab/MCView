@@ -265,6 +265,13 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
         mc_fp <- mc_fp[intersect(markers, rownames(mc_fp)), , drop = FALSE]
         epsilon <- 1e-5
         log_transform <- FALSE
+    } else if (mode == "Stdev") {
+        mc_fp <- get_mc_data(dataset, "inner_stdev_mat")
+        req(mc_fp)
+        mc_fp <- as.matrix(mc_fp[Matrix::rowSums(mc_fp) > 0, ])
+        mc_fp <- mc_fp[intersect(markers, rownames(mc_fp)), , drop = FALSE]
+        epsilon <- 1e-5
+        log_transform <- FALSE
     } else if (mode == "Proj") {
         mc_fp <- get_mc_data(dataset, "projected_fold")
         req(mc_fp)
@@ -335,6 +342,14 @@ get_marker_genes <- function(dataset, mode = "Markers") {
             req(FALSE)
         }
         return(get_mc_data(dataset, "marker_genes_inner_fold"))
+    } else if (mode == "Stdev") {
+        if (is.null(get_mc_data(dataset, "inner_stdev_mat"))) {
+            if ("Stdev-fold" %in% config$original_tabs) {
+                showNotification(glue("Inner-stdev matrix was not computed. Please compute it in python using the metacells package and rerun the import"), type = "error")
+            }
+            req(FALSE)
+        }
+        return(get_mc_data(dataset, "marker_genes_inner_stdev"))
     } else if (mode == "Proj") {
         if (is.null(get_mc_data(dataset, "projected_fold"))) {
             if ("Projected-fold" %in% config$original_tabs) {
