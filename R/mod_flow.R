@@ -52,7 +52,8 @@ mod_flow_ui <- function(id) {
                     uiOutput(ns("traj_gene_selector")),
                     shinycssloaders::withSpinner(
                         plotly::plotlyOutput(ns("plot_mc_traj"))
-                    )
+                    ),
+                    uiOutput(ns("metacell_selector_traj"))
                 )
             ),
             generic_column(
@@ -109,6 +110,7 @@ mod_flow_server <- function(id, dataset, metacell_types, cell_type_colors, gene_
             metacell_colors <- metacell_colors_reactive(dataset, metacell_names, metacell_types)
 
             output$metacell_selector <- colored_metacell_selector(dataset, ns, "selected_metacell", "Metacell", metacell_colors, metacell_names)
+            output$metacell_selector_traj <- colored_metacell_selector(dataset, ns, "selected_metacell_traj", "Metacell", metacell_colors, metacell_names)
 
             picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "contains", dropupAuto = FALSE)
 
@@ -175,7 +177,7 @@ mod_flow_server <- function(id, dataset, metacell_types, cell_type_colors, gene_
                     plot_vein(dataset(), gene = gene, foc_type = foc_type, color_order = color_order, metacell_types = metacell_types())
                 },
                 res = 96
-            )
+            ) %>% bind_cache(dataset(), input$color_gene_vein, input$gene, input$vein_gene_foc_type, metacell_types(), cell_type_colors())
 
             # Metacell flow
             output$plot_metacell_flow <- renderPlot(
@@ -189,7 +191,7 @@ mod_flow_server <- function(id, dataset, metacell_types, cell_type_colors, gene_
                         theme(plot.title = element_text(colour = "darkblue"))
                 } # ,
                 # res = 96
-            )
+            ) %>% bindCache(dataset(), input$selected_metacell, metacell_types())
 
 
             top_var_genes <- reactive({
@@ -213,10 +215,10 @@ mod_flow_server <- function(id, dataset, metacell_types, cell_type_colors, gene_
             output$plot_mc_traj <- plotly::renderPlotly({
                 req(input$traj_genes)
                 req(has_network(dataset()))
-                req(input$selected_metacell)
+                req(input$selected_metacell_traj)
 
-                plotly::ggplotly(plot_gene_trajectory(dataset(), input$traj_genes, input$selected_metacell, anchor_gene = NULL) + theme(axis.title.y = element_text(color = "darkblue")), source = "traj_plot", tooltip = "tooltip_text") %>% sanitize_plotly_buttons()
-            })
+                plotly::ggplotly(plot_gene_trajectory(dataset(), input$traj_genes, input$selected_metacell_traj, anchor_gene = NULL) + theme(axis.title.y = element_text(color = "darkblue")), source = "traj_plot", tooltip = "tooltip_text") %>% sanitize_plotly_buttons()
+            }) %>% bind_cache(dataset(), input$selected_metacell_traj, input$traj_genes)
         }
     )
 }
