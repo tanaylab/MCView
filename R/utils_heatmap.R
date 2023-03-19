@@ -171,9 +171,11 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
     })
 
     output$add_genes_ui <- renderUI({
-        if (mode %in% c("Inner", "Outliers")) {
+        if (mode %in% c("Inner", "Outliers", "Stdev")) {
             if (mode == "Inner") {
                 mc_fp <- get_mc_data(dataset(), "inner_fold_mat")
+            } else if (mode == "Stdev") {
+                mc_fp <- get_mc_data(dataset(), "inner_stdev_mat")
             } else {
                 mc_fp <- get_mc_data(dataset(), "deviant_fold_mat")
             }
@@ -427,7 +429,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                         col_names = ncol(m) <= 100,
                         top_cell_type_bar = ncol(m) <= 100,
                         interleave = nrow(m) > 80,
-                        vertial_gridlines = mode %in% c("Inner", "Proj"),
+                        vertial_gridlines = mode %in% c("Inner", "Proj", "Stdev"),
                         separate_gtable = TRUE
                     )
 

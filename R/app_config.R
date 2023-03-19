@@ -131,6 +131,11 @@ init_tab_defs <- function() {
             module_name = "inner_fold",
             icon = "cloud-sun-rain"
         ),
+        "Stdev-fold" = list(
+            title = "Stdev-fold",
+            module_name = "stdev_fold",
+            icon = "cloud-sun-rain"
+        ),
         "Outliers" = list(
             title = "Outliers",
             module_name = "outliers",

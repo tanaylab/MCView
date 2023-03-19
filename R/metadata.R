@@ -178,19 +178,22 @@ import_cell_metadata <- function(project, dataset, cell_metadata, cell_to_metace
     }
 
     if (add_samples_tab && has_name(cell_metadata, "samp_id")) {
-        config_file <- project_config_file(project)
-        config <- yaml::read_yaml(config_file)
-        tabs <- config$tabs
-        if (!("Samples" %in% tabs)) {
-            config$tabs <- c(tabs, "Samples")
-        }
-        yaml::write_yaml(config, config_file)
-        cli_alert("Added the {.field Samples} tab to the config file. To change the tab order to remove it - edit the {.field tabs} section at: {.file {config_file}}")
+        add_tab("Samples", project)
     }
 
     cli_alert_success("Imported cell metadata")
 }
 
+add_tab <- function(tab, project) {
+    config_file <- project_config_file(project)
+    config <- yaml::read_yaml(config_file)
+    tabs <- config$tabs
+    if (!(tab %in% tabs)) {
+        config$tabs <- c(tabs, tab)
+    }
+    yaml::write_yaml(config, config_file)
+    cli_alert("Added the {.field {tab}} tab to the config file. To change the tab order or remove it - edit the {.field tabs} section at: {.file {config_file}}")
+}
 
 #' Convert cell metadata to metacell metadata
 #'

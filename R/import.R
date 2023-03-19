@@ -219,6 +219,18 @@ import_dataset <- function(project,
 
     serialize_shiny_data(lateral_genes, "lateral_genes", dataset = dataset, cache_dir = cache_dir)
 
+    if (has_name(adata$var, "noisy_gene")) {
+        noisy <- adata$var[, "noisy_gene"]
+        noisy_genes <- rownames(adata$var)[adata$var[, "noisy_gene"]]
+        noisy_genes <- modify_gene_names(noisy_genes, gene_names)
+    } else {
+        noisy <- rep(FALSE, nrow(mc_egc))
+        noisy_genes <- c()
+    }
+
+    serialize_shiny_data(noisy_genes, "noisy_genes", dataset = dataset, cache_dir = cache_dir)
+
+
     if (is.null(adata$var[, "marker_gene"])) {
         marker_genes <- calc_marker_genes(mc_egc[!lateral, ], 20, minimal_max_log_fraction = minimal_max_log_fraction, minimal_relative_log_fraction = minimal_relative_log_fraction)
     } else {
@@ -237,13 +249,14 @@ import_dataset <- function(project,
     serialize_shiny_data(default_markers_dist, "default_markers_dist", dataset = dataset, cache_dir = cache_dir)
     serialize_shiny_data(default_markers, "default_markers", dataset = dataset, cache_dir = cache_dir)
 
-
     # serialize the inner fold matrix (if exists)
     if (!is.null(adata$layers[["inner_fold"]])) {
         cli_alert_info("Processing inner-folds matrix")
         inner_fold_mat <- t(adata$layers[["inner_fold"]])
         rownames(inner_fold_mat) <- rownames(mc_mat)
         colnames(inner_fold_mat) <- colnames(mc_mat)
+        inner_fold_mat <- inner_fold_mat[!noisy, , drop = FALSE]
+
         serialize_shiny_data(inner_fold_mat, "inner_fold_mat", dataset = dataset, cache_dir = cache_dir)
 
         cli_alert_info("Calculating top inner-fold genes")
@@ -253,7 +266,26 @@ import_dataset <- function(project,
         marker_genes_inner_fold <- tibble(gene = inner_fold_genes, fp = inner_fold_gene_metacells) %>%
             arrange(desc(fp))
         serialize_shiny_data(marker_genes_inner_fold, "marker_genes_inner_fold", dataset = dataset, cache_dir = cache_dir)
-        cli_alert_info("Add the {.field \"Inner-fold\"} tab to your config file to view the inner-fold matrix")
+        add_tab("Inner-fold", project)
+    }
+
+    if (!is.null(adata$layers[["inner_stdev_log"]])) {
+        cli_alert_info("Processing inner-stdev matrix")
+        inner_stdev_mat <- t(adata$layers[["inner_stdev_log"]])
+        rownames(inner_stdev_mat) <- rownames(mc_mat)
+        colnames(inner_stdev_mat) <- colnames(mc_mat)
+        inner_stdev_mat <- inner_stdev_mat[!noisy, , drop = FALSE]
+
+        serialize_shiny_data(inner_stdev_mat, "inner_stdev_mat", dataset = dataset, cache_dir = cache_dir)
+
+        cli_alert_info("Calculating top inner-stdev genes")
+        inner_stdev_genes <- rownames(inner_stdev_mat)[Matrix::rowSums(inner_stdev_mat) > 0]
+        inner_stdev_gene_metacells <- matrixStats::rowSums2(as.matrix(inner_stdev_mat[inner_stdev_genes, , drop = FALSE]) > 0)
+        # fp here is the number of non-zero entries per gene
+        marker_genes_inner_stdev <- tibble(gene = inner_stdev_genes, fp = inner_stdev_gene_metacells) %>%
+            arrange(desc(fp))
+        serialize_shiny_data(marker_genes_inner_stdev, "marker_genes_inner_stdev", dataset = dataset, cache_dir = cache_dir)
+        add_tab("Stdev-fold", project)
     }
 
     mc_genes_top2 <- marker_genes %>%
@@ -446,7 +478,7 @@ import_dataset <- function(project,
     }
 
     if (!is.null(adata$layers[["inner_stdev_log"]])) {
-        max_inner_stdev_log <- apply(adata$layers[["inner_stdev_log"]], 1, max, na.rm = TRUE) %>%
+        max_inner_stdev_log <- apply(inner_stdev_mat, 2, max, na.rm = TRUE) %>%
             tibble::enframe(name = "metacell", value = "max_inner_stdev_log")
         mc_qc_metadata <- mc_qc_metadata %>%
             left_join(max_inner_stdev_log, by = "metacell")
@@ -458,7 +490,7 @@ import_dataset <- function(project,
         # expected number of zeros assuming a poisson distribution: e^(-T * lambda)*N where T is the number of UMIs (downsampled), lambda is the average number of UMIs per cell and N is the number of cells
         exp_zeros <- t(exp(-t(as.matrix(adata$X)) * adata$obs$`__zeros_downsample_umis`) * adata$obs$grouped)
         zero_fold <- log(obs_zeros + 1) - log(exp_zeros + 1)
-        gene_max_folds <- matrixStats::colMaxs(zero_fold)
+        gene_max_folds <- matrixStats::colMaxs(zero_fold[, !noisy, drop = FALSE])
         names(gene_max_folds) <- colnames(zero_fold)
         gene_avgs <- log2(rowMeans(mc_egc) + 1e-5)
         idxs <- apply(zero_fold, 2, which.max)
@@ -470,7 +502,11 @@ import_dataset <- function(project,
                 obs = purrr::map2_dbl(gene, idxs, ~ obs_zeros[.y, .x]),
                 exp = purrr::map2_dbl(gene, idxs, ~ exp_zeros[.y, .x]),
                 metacell = rownames(obs_zeros)[idxs],
-                lateral = gene %in% lateral_genes
+                type = case_when(
+                    gene %in% noisy_genes ~ "noisy",
+                    gene %in% lateral_genes ~ "lateral",
+                    TRUE ~ "other"
+                )
             ) %>%
             arrange(desc(zero_fold))
 

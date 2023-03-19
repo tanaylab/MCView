@@ -53,6 +53,9 @@ app_server <- function(input, output, session) {
         if (is.null(get_mc_data(dataset(), "inner_fold_mat"))) {
             available_tabs <- available_tabs[available_tabs != "Inner-fold"]
         }
+        if (is.null(get_mc_data(dataset(), "inner_stdev_mat"))) {
+            available_tabs <- available_tabs[available_tabs != "Stdev-fold"]
+        }
         if (is.null(get_mc_data(dataset(), "deviant_fold_mat"))) {
             available_tabs <- available_tabs[available_tabs != "Outliers"]
         }

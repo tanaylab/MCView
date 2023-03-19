@@ -4,6 +4,7 @@
 * Added two static plots to About tab.
 * Added "top-correlated" panel to "Cell types" tab.
 * Added "inner-std" plot to QC panel. 
+* Added "Stdev-fold" tab.
 
 # MCView 0.2.9
 
