@@ -347,6 +347,9 @@ cell_metadata_to_metacell <- function(cell_metadata, cell_to_metacell, func = me
             left_join(metadata_numeric, by = "metacell")
     }
 
+    metadata <- metadata %>%
+        filter(metacell != "Outliers")
+
     return(metadata)
 }
 

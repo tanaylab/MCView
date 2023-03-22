@@ -5,6 +5,7 @@
 * Added "top-correlated" panel to "Cell types" tab.
 * Added "inner-std" plot to QC panel. 
 * Added "Stdev-fold" tab.
+* Fix: differential expression between metacells did not work with most recent version of `qs`.
 
 # MCView 0.2.9
 

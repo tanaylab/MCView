@@ -67,6 +67,7 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
 
     proj_types <- unique(query_md$projected_type)
     atlas_metacell_types <- get_mc_data(dataset, "metacell_types", atlas = TRUE)
+    validate_proj_weights(proj_weights, colnames(mc_mat), atlas_metacell_types$metacell)
 
     query_atlas_cell_type_fracs <- proj_weights %>%
         left_join(
@@ -203,4 +204,25 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
 
 
     cli_alert_success("succesfully imported atlas projections")
+}
+
+
+validate_proj_weights <- function(proj_weights, query_mcs, atlas_mcs) {
+    # validate that all proj_weights$query metacells are in query_mcs
+    missing_mcs <- setdiff(proj_weights$query, query_mcs)
+    if (length(missing_mcs) > 0) {
+        cli_abort("The following query metacells are missing from the query h5ad: {.val {missing_mcs}}")
+    }
+
+    # validate that all query_mcs are in proj_weights$query
+    missing_mcs <- setdiff(query_mcs, proj_weights$query)
+    if (length(missing_mcs) > 0) {
+        cli_abort("The following query metacells are missing from the projection file: {.val {missing_mcs}}")
+    }
+
+    # validate that all proj_weights$atlas metacells are in atlas_mcs
+    missing_mcs <- setdiff(proj_weights$atlas, atlas_mcs)
+    if (length(missing_mcs) > 0) {
+        cli_abort("The following atlas metacells are missing from the atlas h5ad: {.val {missing_mcs}}")
+    }
 }

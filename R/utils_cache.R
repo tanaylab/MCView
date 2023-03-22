@@ -379,9 +379,17 @@ is_numeric_field <- function(df, field) {
 }
 
 get_metacell_ids <- function(project, dataset) {
-    names(load_shiny_data("mc_sum", dataset, project_cache_dir(project)))
+    colnames(load_shiny_data("mc_mat", dataset, project_cache_dir(project)))
 }
 
 has_gg_mc_top_cor <- function(project, dataset) {
     !is.null(get_mc_data(dataset, "gg_mc_top_cor"))
+}
+
+get_mc_sum <- function(dataset, atlas = FALSE) {
+    mc_sum <- get_mc_data(dataset, "mc_sum", atlas = atlas)
+    mc_mat <- get_mc_data(dataset, "mc_mat", atlas = atlas)
+    names(mc_sum) <- colnames(mc_mat)
+
+    return(mc_sum)
 }

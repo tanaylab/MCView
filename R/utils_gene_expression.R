@@ -1,6 +1,6 @@
 get_mc_egc <- function(dataset, genes = NULL, atlas = FALSE) {
     mc_mat <- get_mc_data(dataset, "mc_mat", atlas = atlas)
-    mc_sum <- get_mc_data(dataset, "mc_sum", atlas = atlas)
+    mc_sum <- get_mc_sum(dataset, atlas = atlas)
 
     if (!is.null(genes)) {
         mc_mat <- mc_mat[genes, , drop = FALSE]
@@ -20,7 +20,7 @@ get_mc_fp <- function(dataset, genes = NULL, atlas = FALSE) {
 
 get_mc_gene_modules_egc <- function(dataset, modules = NULL, gene_modules = NULL, atlas = FALSE) {
     mc_mat <- get_mc_data(dataset, "mc_mat", atlas = atlas)
-    mc_sum <- get_mc_data(dataset, "mc_sum", atlas = atlas)
+    mc_sum <- get_mc_sum(dataset, atlas = atlas)
 
     gene_modules <- gene_modules %||% get_mc_data(dataset, "gene_modules", atlas = atlas)
     if (!is.null(modules)) {
@@ -64,9 +64,10 @@ get_gene_egc <- function(gene, dataset, projected = FALSE, atlas = FALSE) {
     if (projected) {
         mc_mat <- get_mc_data(dataset, "projected_mat")
         mc_sum <- get_mc_data(dataset, "projected_mat_sum")
+        names(mc_sum) <- colnames(mc_mat)
     } else {
         mc_mat <- get_mc_data(dataset, "mc_mat", atlas = atlas)
-        mc_sum <- get_mc_data(dataset, "mc_sum", atlas = atlas)
+        mc_sum <- get_mc_sum(dataset, atlas = atlas)
     }
 
 
@@ -84,9 +85,10 @@ get_metacells_egc <- function(metacells, dataset, projected = FALSE, atlas = FAL
     if (projected) {
         mc_mat <- get_mc_data(dataset, "projected_mat")
         mc_sum <- get_mc_data(dataset, "projected_mat_sum")
+        names(mc_sum) <- colnames(mc_mat)
     } else {
         mc_mat <- get_mc_data(dataset, "mc_mat", atlas = atlas)
-        mc_sum <- get_mc_data(dataset, "mc_sum", atlas = atlas)
+        mc_sum <- get_mc_sum(dataset, atlas = atlas)
     }
 
     mc_egc <- t(t(mc_mat[, metacells]) / mc_sum[metacells])

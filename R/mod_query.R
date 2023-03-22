@@ -231,6 +231,7 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
 
                 if (input$mode == "MC") {
                     req(input$metacell1)
+                    req(input$metacell1 %in% metacell_names())
                     df <- calc_obs_exp_mc_df(dataset(), input$metacell1)
                 } else if (input$mode == "Type") {
                     req(input$metacell1)
