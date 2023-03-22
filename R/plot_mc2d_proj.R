@@ -383,15 +383,16 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
 
         fig <- fig %>% plotly::event_register("plotly_restyle")
 
-        fig <- fig %>% sanitize_plotly_buttons(buttons = buttons)
-
         fig$x$source <- source
 
         if (!is.null(dragmode)) {
             fig <- fig %>% plotly::layout(dragmode = dragmode)
         } else if (!is.null(input$mode) && input$mode %in% c("Groups", "Group")) {
             fig <- fig %>% plotly::layout(dragmode = "select")
+            buttons <- buttons[!(buttons %in% c("select2d", "lasso2d"))]
         }
+
+        fig <- fig %>% sanitize_plotly_buttons(buttons = buttons)
 
         if (!is.null(input$legend_orientation)) {
             if (input$legend_orientation == "Horizontal") {
