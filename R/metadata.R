@@ -389,13 +389,13 @@ cell_metadata_to_metacell_from_h5ad <- function(anndata_file, metadata_fields, f
     library(anndata)
     adata <- anndata::read_h5ad(anndata_file)
 
-    if (!("metacell" %in% colnames(adata$obs))) {
-        cli_abort("h5ad object doesn't have a 'metacell' field.")
+    if (!("metacell_name" %in% colnames(adata$obs))) {
+        cli_abort("h5ad object doesn't have a 'metacell_name' field.")
     }
 
     if (length(metadata_fields) == 1 && metadata_fields == "all") {
         metadata_fields <- colnames(adata$obs)
-        forbidden_fields <- c("metacell", "outlier")
+        forbidden_fields <- c("metacell", "outlier", "metacell_name")
         metadata_fields <- metadata_fields[!(metadata_fields %in% forbidden_fields)]
     } else {
         purrr::walk(metadata_fields, ~ {
