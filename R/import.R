@@ -127,7 +127,11 @@ import_dataset <- function(project,
         adata <- anndata::read_h5ad(anndata_file)
     }
 
-    if (is.null(adata$uns$mcview_format) || adata$uns$mcview_format != "1.0") {
+    if (is.null(adata$uns$mcview_format)){
+        cli_abort("The anndata file {.file {anndata_file}} is missing the {.field mcview_format} field. Did you run the {.code compute_for_mcview()} function in the {.pkg metacells} package?")
+    }
+
+    if (adata$uns$mcview_format != "1.0") {
         cli_abort("The file {.file {anndata_file}} was created by an old version of {.pkg metacells}. Please convert it to the new format and try again. The conversion script can be found at: {.url https://github.com/tanaylab/metacells/blob/master/bin/convert_0.8_to_0.9.py}")
     }
 
