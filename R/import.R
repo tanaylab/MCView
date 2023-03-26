@@ -492,7 +492,7 @@ import_dataset <- function(project,
         obs_zeros <- adata$layers[["zeros"]]
 
         # expected number of zeros assuming a poisson distribution: e^(-T * lambda)*N where T is the number of UMIs (downsampled), lambda is the average number of UMIs per cell and N is the number of cells
-        exp_zeros <- t(exp(-t(as.matrix(adata$X)) * adata$obs$`__zeros_downsample_umis`) * adata$obs$grouped)
+        exp_zeros <- exp(-as.matrix(adata$X) * adata$obs$`__zeros_downsample_umis`) * adata$obs$grouped
         zero_fold <- log(obs_zeros + 1) - log(exp_zeros + 1)
         gene_max_folds <- matrixStats::colMaxs(zero_fold[, !noisy, drop = FALSE])
         names(gene_max_folds) <- colnames(zero_fold)
