@@ -851,10 +851,10 @@ plot_obs_proj_scatter <- function(dataset,
         #     left_join(metadata %>% select(metacell, !!x_var), by = "metacell") %>%
         #     mutate(x_str = glue("{x_name}: {x_values}", x_values = round(!!sym(x_var), digits = 3)))
     } else {
-        egc_obs <- get_gene_egc(axis_var, dataset) + egc_epsilon
+        egc_obs <- get_gene_egc(axis_var, dataset, corrected = TRUE) + egc_epsilon
         egc_proj <- get_gene_egc(axis_var, dataset, projected = TRUE) + egc_epsilon
 
-        x_var <- glue("{axis_var} - observed")
+        x_var <- glue("{axis_var} - observed (corrected)")
         y_var <- glue("{axis_var} - projected")
         df <- df %>%
             mutate(!!x_var := egc_obs[metacell], !!y_var := egc_proj[metacell]) %>%

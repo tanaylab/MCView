@@ -127,7 +127,7 @@ import_dataset <- function(project,
         adata <- anndata::read_h5ad(anndata_file)
     }
 
-    if (is.null(adata$uns$mcview_format)){
+    if (is.null(adata$uns$mcview_format)) {
         cli_abort("The anndata file {.file {anndata_file}} is missing the {.field mcview_format} field. Did you run the {.code compute_for_mcview()} function in the {.pkg metacells} package?")
     }
 
@@ -533,6 +533,10 @@ import_dataset <- function(project,
         median_cells_per_metacell = median(mc_qc_metadata$cells, na.rm = TRUE)
     )
     serialize_shiny_data(qc_stats, "qc_stats", dataset = dataset, cache_dir = cache_dir)
+
+    if (!is.null(atlas_dataset) && is.null(atlas_project)) {
+        cli_abort("Please provide {.code atlas_project} if you provide {.code atlas_dataset}")
+    }
 
     if (!is.null(atlas_project)) {
         if (is.null(atlas_dataset)) {

@@ -46,16 +46,16 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
     mc_sum <- query$obs$total_atlas_umis
     serialize_shiny_data(mc_sum, "mc_sum", dataset = dataset, cache_dir = cache_dir)
 
-    mc_mat <- t(query$layers[["corrected_fraction"]] * mc_sum)
+    mc_mat_corrected <- t(query$layers[["corrected_fraction"]] * mc_sum)
     if (!is.null(gene_names)) {
-        rownames(mc_mat) <- modify_gene_names(rownames(mc_mat), gene_names)
+        rownames(mc_mat_corrected) <- modify_gene_names(rownames(mc_mat_corrected), gene_names)
     }
 
     # if corrected_fraction is a sparse matrix, convert it to dense
-    if (methods::is(mc_mat, "dgCMatrix")) {
-        mc_mat <- as.matrix(mc_mat)
+    if (methods::is(mc_mat_corrected, "dgCMatrix")) {
+        mc_mat_corrected <- as.matrix(mc_mat_corrected)
     }
-    serialize_shiny_data(mc_mat, "mc_mat", dataset = dataset, cache_dir = cache_dir)
+    serialize_shiny_data(mc_mat_corrected, "mc_mat_corrected", dataset = dataset, cache_dir = cache_dir)
 
     proj_weights <- tgutil::fread(projection_weights_file) %>%
         mutate(atlas = as.character(atlas), query = as.character(query)) %>%
@@ -67,7 +67,7 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
 
     proj_types <- unique(query_md$projected_type)
     atlas_metacell_types <- get_mc_data(dataset, "metacell_types", atlas = TRUE)
-    validate_proj_weights(proj_weights, colnames(mc_mat), atlas_metacell_types$metacell)
+    validate_proj_weights(proj_weights, colnames(query_mat), atlas_metacell_types$metacell)
 
     query_atlas_cell_type_fracs <- proj_weights %>%
         left_join(
