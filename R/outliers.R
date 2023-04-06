@@ -17,10 +17,10 @@ load_outliers <- function(outliers_anndata_file, project, dataset, gene_names = 
         cli_abort("File {.file {outliers_anndata_file}} does not contain the column {.field most_similar}.")
     }
 
-    if (is.null(outliers$layers[["deviant_folds"]])) {
-        cli_abort("File {.file {outliers_anndata_file}} does not contain the layer {.field deviant_folds}.")
+    if (is.null(outliers$layers[["deviant_fold"]])) {
+        cli_abort("File {.file {outliers_anndata_file}} does not contain the layer {.field deviant_fold}.")
     }
-    deviant_fold_mat <- t(outliers$layers[["deviant_folds"]])
+    deviant_fold_mat <- t(outliers$layers[["deviant_fold"]])
     rownames(deviant_fold_mat) <- modify_gene_names(rownames(deviant_fold_mat), gene_names)
     serialize_shiny_data(deviant_fold_mat, "deviant_fold_mat", dataset = dataset, cache_dir = cache_dir)
 
