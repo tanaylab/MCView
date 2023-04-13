@@ -56,13 +56,13 @@ mod_manifold_sidebar_ui <- function(id) {
     ns <- NS(id)
     tagList(
         list(
-            shinycssloaders::withSpinner(uiOutput(ns("color_by_selector"))),
-            shinycssloaders::withSpinner(uiOutput(ns("metadata_selector"))),
-            shinycssloaders::withSpinner(uiOutput(ns("gene_selectors"))),
-            shinycssloaders::withSpinner(uiOutput(ns("proj_gene_module_selector"))),
-            shinycssloaders::withSpinner(uiOutput(ns("top_correlated_select_gene1"))),
-            shinycssloaders::withSpinner(uiOutput(ns("top_correlated_select_gene2"))),
-            shinycssloaders::withSpinner(uiOutput(ns("genecards_buttons")))
+            uiOutput(ns("color_by_selector")),
+            uiOutput(ns("metadata_selector")),
+            uiOutput(ns("gene_selectors")),
+            uiOutput(ns("proj_gene_module_selector")),
+            uiOutput(ns("top_correlated_select_gene1")),
+            uiOutput(ns("top_correlated_select_gene2")),
+            uiOutput(ns("genecards_buttons"))
         )
     )
 }
