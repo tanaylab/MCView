@@ -364,7 +364,9 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
 
             observe({
                 req(input$gene_metadata_cell_type)
-                current_gene_table(get_mc_data(dataset(), "gene_metadata") %>%
+                gene_metadata <- get_mc_data(dataset(), "gene_metadata")
+                req(gene_metadata)
+                current_gene_table(gene_metadata %>%
                     filter(cell_type %in% input$gene_metadata_cell_type))
             })
 
