@@ -310,7 +310,7 @@ includeRMarkdown <- function(path) {
         output_dir = tempdir(),
         output_file = md, quiet = TRUE
     )
-    html <- markdown::mark_html(md, fragment.only = TRUE)
+    html <- markdown::markdownToHTML(md, fragment.only = TRUE)
     Encoding(html) <- "UTF-8"
     return(HTML(html))
 }
