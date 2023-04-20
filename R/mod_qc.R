@@ -77,8 +77,13 @@ mod_qc_server <- function(id, dataset, metacell_types, cell_type_colors, gene_mo
                 } else {
                     color <- "green"
                 }
+                if (p_outliers < 0.01) {
+                    p_outliers <- scales::percent(p_outliers, accuracy = 0.01)
+                } else {
+                    p_outliers <- scales::percent(p_outliers)
+                }
                 shinydashboard::valueBox(
-                    glue("{scales::comma(num_outliers)} ({scales::percent(p_outliers)})"),
+                    glue("{scales::comma(num_outliers)} ({p_outliers})"),
                     "Number of outlier cells",
                     color = color
                 )
