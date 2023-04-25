@@ -25,10 +25,12 @@ load_shiny_data <- function(name, dataset, cache_dir, atlas = FALSE) {
         cache_dir <- fs::path(cache_dir, dataset)
     }
 
-
     flat_file <- fs::path(cache_dir, glue("{name}.tsv"))
     if (fs::file_exists(flat_file)) {
         object <- fread(flat_file) %>% as_tibble()
+        if (has_name(object, "metacell")) {
+            object$metacell <- as.character(object$metacell)
+        }
     } else {
         object <- qs::qread(fs::path(cache_dir, glue("{name}.qs")))
     }
