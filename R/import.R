@@ -534,6 +534,22 @@ import_dataset <- function(project,
     )
     serialize_shiny_data(qc_stats, "qc_stats", dataset = dataset, cache_dir = cache_dir)
 
+    # genes QC
+    if (has_name(adata$var, "significant_inner_folds_count")) {
+        gene_inner_fold <- adata$var %>%
+            rownames_to_column("gene") %>%
+            select(gene, significant_inner_folds_count) %>%
+            mutate(max_expr = matrixStats::rowMaxs(mc_egc)) %>%
+            mutate(type = case_when(
+                gene %in% noisy_genes ~ "noisy",
+                gene %in% lateral_genes ~ "lateral",
+                TRUE ~ "other"
+            )) %>%
+            arrange(desc(significant_inner_folds_count)) %>%
+            as_tibble()
+        serialize_shiny_data(gene_inner_fold, "gene_inner_fold", dataset = dataset, cache_dir = cache_dir)
+    }
+
     if (!is.null(atlas_dataset) && is.null(atlas_project)) {
         cli_abort("Please provide {.code atlas_project} if you provide {.code atlas_dataset}")
     }

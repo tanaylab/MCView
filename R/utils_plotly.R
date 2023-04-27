@@ -52,3 +52,14 @@ sanitize_plotly_buttons <- function(p,
                                     ...) {
     p %>% plotly::config(displaylogo = FALSE, modeBarButtonsToRemove = buttons, ...)
 }
+
+plotly_text_plot <- function(text) {
+    p <- ggplot() +
+        annotate("text",
+            x = 1,
+            y = 1,
+            label = text
+        ) +
+        theme_void()
+    return(plotly:::ggplotly(p))
+}

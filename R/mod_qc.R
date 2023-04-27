@@ -24,13 +24,14 @@ mod_qc_ui <- function(id) {
             width = 6,
             qc_stat_box(ns, id, "# of UMIs per metacell", "plot_qc_umis"),
             qc_stat_box(ns, id, "Max inner-fold per metacell", "plot_qc_inner_fold"),
+            zero_fold_stat_box(ns, id, "# of cells with zero UMIs per gene", "plot_zero_fold"),
             qc_stat_box(ns, id, "Max inner-stdev per metacell", "plot_qc_std")
         ),
         generic_column(
             width = 6,
             qc_stat_box(ns, id, "# of cells per metacell", "plot_qc_cell_num"),
             qc_stat_box(ns, id, "Max zero-fold per metacell", "plot_mc_zero_fold"),
-            zero_fold_stat_box(ns, id, "# of cells with zero UMIs per gene", "plot_zero_fold")
+            gene_inner_fold_stat_box(ns, id, "# of metacells with significant inner-fold", "plot_gene_inner_fold_scatter")
         )
     )
 }
@@ -96,10 +97,12 @@ mod_qc_server <- function(id, dataset, metacell_types, cell_type_colors, gene_mo
             output$plot_qc_inner_fold <- qc_stat_plot("max_inner_fold", "Max inner-fold per metacell", dataset, input, "plot_qc_inner_fold_type")
             output$plot_qc_std <- qc_stat_plot("max_inner_stdev_log", "Max stdev(log(fractions)) per metacell", dataset, input, "plot_qc_std_type")
             output$plot_mc_zero_fold <- qc_stat_plot("zero_fold", "Max log2(# of zero cells / expected) per metacell", dataset, input, "plot_mc_zero_fold_type")
+
             output$plot_zero_fold <- zero_fold_gene_plot(dataset, input)
-
-
             output$zero_fold_table <- zero_fold_table(dataset, input)
+
+            output$plot_gene_inner_fold_scatter <- gene_inner_fold_scatter_plot(dataset, input)
+            output$gene_inner_fold_table <- gene_inner_fold_table(dataset, input)
         }
     )
 }
@@ -185,7 +188,7 @@ zero_fold_table <- function(dataset, input) {
                         scrollX = TRUE,
                         scrollY = "300px",
                         scrollCollapse = TRUE,
-                        dom = "tp",
+                        dom = "ftp",
                         columnDefs = list(
                             list(
                                 targets = 0,
@@ -219,6 +222,79 @@ zero_fold_gene_plot <- function(dataset, input) {
             sanitize_plotly_buttons()
     }) %>% bindCache(dataset())
 }
+
+gene_inner_fold_stat_box <- function(ns, id, title, output_id, width = 12, height = "35vh") {
+    generic_box(
+        id = ns(id),
+        title = title,
+        status = "primary",
+        solidHeader = TRUE,
+        collapsible = TRUE,
+        closable = FALSE,
+        width = width,
+        shinycssloaders::withSpinner(
+            plotly::plotlyOutput(ns(output_id), height = height)
+        ),
+        shinyWidgets::prettySwitch(inputId = ns("show_gene_inner_fold_table"), value = FALSE, label = "Show table"),
+        DT::DTOutput(ns("gene_inner_fold_table"))
+    )
+}
+
+gene_inner_fold_table <- function(dataset, input) {
+    DT::renderDT(
+        if (input$show_gene_inner_fold_table) {
+            gene_inner_fold_df <- get_mc_data(dataset(), "gene_inner_fold")
+            req(gene_inner_fold_df)
+            gene_inner_fold_df %>%
+                filter(significant_inner_folds_count > 0) %>%
+                mutate(max_expr = log2(max_expr + 1e-5)) %>%
+                select(Gene = gene, `# of metacells` = significant_inner_folds_count, `Max expression` = max_expr, Type = type) %>%
+                mutate(`# of metacells` = round(`# of metacells`, digits = 1), `Max expression` = round(`Max expression`, digits = 2)) %>%
+                DT::datatable(
+                    rownames = FALSE,
+                    options = list(
+                        pageLength = 20,
+                        scrollX = TRUE,
+                        scrollY = "300px",
+                        scrollCollapse = TRUE,
+                        dom = "ftp",
+                        columnDefs = list(
+                            list(
+                                targets = 0,
+                                width = "100px"
+                            )
+                        )
+                    )
+                )
+        }
+    )
+}
+
+gene_inner_fold_scatter_plot <- function(dataset, input) {
+    plotly::renderPlotly({
+        gene_inner_fold_df <- get_mc_data(dataset(), "gene_inner_fold")
+        if (is.null(gene_inner_fold_df)) {
+            return(plotly_text_plot("Please recompute the metacells\nusing the latest version\nin order to see this plot."))
+        }
+        req(gene_inner_fold_df)
+
+        p <- gene_inner_fold_df %>%
+            mutate(max_expr = log2(max_expr + 1e-5)) %>%
+            rename(Gene = gene, `# of metacells` = significant_inner_folds_count, `Max expression` = max_expr, Type = type) %>%
+            ggplot(aes(x = `Max expression`, y = `# of metacells`, label = Gene, color = Type)) +
+            scale_color_manual(values = c("other" = "gray", "lateral" = "red", "noisy" = "purple")) +
+            geom_point(size = 0.5) +
+            xlab("log2(gene expression)") +
+            ylab("# of metacells with significant inner-fold")
+
+        plotly::ggplotly(p) %>%
+            sanitize_for_WebGL() %>%
+            plotly::toWebGL() %>%
+            sanitize_plotly_buttons()
+    }) %>% bindCache(dataset())
+}
+
+
 
 qc_stat_plot <- function(field, xlab, dataset, input, plot_type_id, ylab = NULL, log_scale = FALSE) {
     plotly::renderPlotly({
