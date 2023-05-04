@@ -246,13 +246,11 @@ mc2d_plot_metadata_ggp_numeric <- function(mc2d_df,
                 line = list(
                     color = "black",
                     width = 0.2
-                ),
-                color = ifelse(is.na(mc2d_df$value), "lightgray", md_colors$colors)
+                )
             ),
             showlegend = showlegend
         )
     }
-
     fig <- plotly::plot_ly() %>% add_scatter_layer()
 
     if (nrow(graph) > 0) {
@@ -401,7 +399,6 @@ plot_mc_scatter <- function(dataset,
             palette <- circlize::colorRamp2(colors = md_colors$colors, breaks = md_colors$breaks)
             df$color <- palette(df[[color_var]])
             df$color_values <- df[[color_var]]
-            df$color[is.na(df$color)] <- "lightgray"
             df <- df %>%
                 mutate(color_str = glue("{color_name}: {color_values}\nCell type: {`Cell type`}", color_values = round(!!sym(color_var), digits = 3)))
         } else {
