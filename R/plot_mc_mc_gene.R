@@ -175,7 +175,7 @@ render_mc_mc_gene_diff_table <- function(input, output, session, ns, dataset, mc
 
             if (input$show_diff_expr_table) {
                 DT::datatable(
-                    mc_mc_gene_scatter_df() %>%
+                    df %>%
                         mutate(type = annotate_genes(gene, dataset())) %>%
                         filter(col != "gray") %>%
                         arrange(diff) %>%

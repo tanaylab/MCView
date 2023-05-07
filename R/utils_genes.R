@@ -3,6 +3,7 @@ annotate_genes <- function(genes, dataset) {
     noisy_genes <- get_mc_data(dataset, "noisy_genes")
 
     case_when(
+        (genes %in% lateral_genes) & (genes %in% noisy_genes) ~ "lateral, noisy",
         genes %in% lateral_genes ~ "lateral",
         genes %in% noisy_genes ~ "noisy",
         TRUE ~ "other"

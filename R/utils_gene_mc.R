@@ -37,8 +37,10 @@ get_top_cor_gene <- function(dataset, gene, type = "pos", atlas = FALSE) {
 
     res <- df %>%
         mutate(
+            type = annotate_genes(gene2, dataset),
             gene2 = as.character(gene2),
-            label = glue("{gene2} ({cr})", cr = round(cor, digits = 2))
+            label = glue("{gene2} ({cr})", cr = round(cor, digits = 2)),
+            label = ifelse(type == "other", label, glue("{label} ({type})"))
         ) %>%
         select(label, gene2) %>%
         tibble::deframe()
