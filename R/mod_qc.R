@@ -318,9 +318,16 @@ qc_density <- function(qc_df, field, xlab, ylab, log_scale = FALSE) {
         ylab <- "Density"
     }
     quants <- quantile(qc_df[[field]], probs = c(0.1, 0.5, 0.9))
+    if (log_scale) {
+        qc_df[[glue("log10({field})")]] <- qc_df[[field]]
+        p <- qc_df %>%
+            ggplot(aes(x = !!sym(glue("log10({field})"))))
+    } else {
+        p <- qc_df %>%
+            ggplot(aes(x = !!sym(field)))
+    }
 
-    p <- qc_df %>%
-        ggplot(aes(x = !!sym(field))) +
+    p <- p +
         geom_density(fill = "black", alpha = 0.2, color = "black") +
         xlab(xlab) +
         ylab(ylab) +
