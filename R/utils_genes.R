@@ -9,3 +9,8 @@ annotate_genes <- function(genes, dataset) {
         TRUE ~ "other"
     )
 }
+
+gene_label <- function(genes, dataset) {
+    type <- annotate_genes(genes, dataset)
+    ifelse(type == "other", genes, glue("{genes} ({type})"))
+}
