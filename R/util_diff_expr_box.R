@@ -16,6 +16,8 @@ diff_expr_box <- function(ns,
             startOpen = FALSE,
             width = 80,
             id = ns("mc_mc_sidebar"),
+            checkboxInput(ns("hide_lateral"), "Hide lateral genes", value = FALSE),
+            checkboxInput(ns("hide_noisy"), "Hide noisy genes", value = FALSE),
             shinyWidgets::radioGroupButtons(
                 inputId = ns("mode"),
                 label = "Compare:",

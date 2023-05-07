@@ -115,9 +115,21 @@ render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, mc_mc_
             source <- glue("projection_diff_expr_plot{source_suffix}")
         }
 
+        df <- mc_mc_gene_scatter_df()
+
+        if (!is.null(input$hide_lateral) && input$hide_lateral) {
+            df <- df %>%
+                filter(!(gene %in% get_mc_data(dataset(), "lateral_genes")))
+        }
+
+        if (!is.null(input$hide_noisy) && input$hide_noisy) {
+            df <- df %>%
+                filter(!(gene %in% get_mc_data(dataset(), "noisy_genes")))
+        }
+
         fig <- plotly::ggplotly(
             plot_mc_mc_gene(
-                mc_mc_gene_scatter_df(),
+                df,
                 xlab,
                 ylab,
                 highlight = gene,
@@ -149,12 +161,25 @@ render_mc_mc_gene_diff_table <- function(input, output, session, ns, dataset, mc
                 req(input$metacell2)
             }
 
+            df <- mc_mc_gene_scatter_df()
+
+            if (!is.null(input$hide_lateral) && input$hide_lateral) {
+                df <- df %>%
+                    filter(!(gene %in% get_mc_data(dataset(), "lateral_genes")))
+            }
+
+            if (!is.null(input$hide_noisy) && input$hide_noisy) {
+                df <- df %>%
+                    filter(!(gene %in% get_mc_data(dataset(), "noisy_genes")))
+            }
+
             if (input$show_diff_expr_table) {
                 DT::datatable(
                     mc_mc_gene_scatter_df() %>%
+                        mutate(type = annotate_genes(gene, dataset())) %>%
                         filter(col != "gray") %>%
                         arrange(diff) %>%
-                        select(Gene = gene, `Diff (log2)` = diff, `P-value` = pval, any_of(c("Disjoined"))) %>%
+                        select(Gene = gene, `Diff (log2)` = diff, `P-value` = pval, any_of(c("Disjoined")), Type = type) %>%
                         mutate(GeneCards = glue("<a href='{link}' target='_blank'>Open</a>", link = paste0("https://www.genecards.org/cgi-bin/carddisp.pl?gene=", Gene))),
                     selection = "single",
                     escape = FALSE,
