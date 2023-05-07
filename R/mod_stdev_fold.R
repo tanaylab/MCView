@@ -13,7 +13,7 @@ mod_stdev_fold_ui <- function(id) {
         fluidRow(
             generic_column(
                 width = 12,
-                heatmap_box(ns("stdev_fold_heatmap"), "Stdev-fold Heatmap")
+                heatmap_box(ns("stdev_fold_heatmap"), "Stdev-fold Heatmap", fold_change_range = c(0, 1), low_color = "white", midpoint = 0.01, mid_color = "white", high_color = "red")
             )
         )
     )
