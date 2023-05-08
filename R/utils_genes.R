@@ -10,7 +10,19 @@ annotate_genes <- function(genes, dataset) {
     )
 }
 
-gene_label <- function(genes, dataset) {
+gene_label <- function(genes, dataset, gene_modules = NULL) {
     type <- annotate_genes(genes, dataset)
-    ifelse(type == "other", genes, glue("{genes} ({type})"))
+    if (!is.null(gene_modules)) {
+        modules <- tibble(gene = genes) %>%
+            left_join(gene_modules, by = join_by(gene)) %>%
+            pull(module) %>%
+            as.character()
+    }
+    new_names <- ifelse(type == "other", genes, glue("{genes} ({type})"))
+
+    if (!is.null(gene_modules)) {
+        new_names <- ifelse(!is.na(modules), glue("{new_names}<br />Gene module: {modules}"), new_names)
+    }
+
+    return(new_names)
 }

@@ -507,7 +507,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
 
                 if (mode == "Outliers") {
                     mcell_tooltip <- paste(
-                        glue("Gene: {gene_label(gene, dataset())}"),
+                        glue("Gene: {gene_name}", gene_name = gene_label(gene, dataset(), gene_modules())),
                         glue("Cell: {metacell}"),
                         glue("Value: {round(value, digits=2)}"),
                         glue("Most similar metacell: {mcell_stats$most_similar_metacell}"),
@@ -522,7 +522,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                         gene_prefix <- "Gene module"
                     }
 
-                    gene_name <- gene_label(gene, dataset())
+                    gene_name <- gene_label(gene, dataset(), gene_modules())
                     if (mode == "Gene modules") {
                         gene_name <- gene
                     }
