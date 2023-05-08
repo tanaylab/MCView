@@ -27,7 +27,7 @@ plot_mc_mc_gene <- function(df, metacell1, metacell2, highlight = NULL, label_pr
             expr_text2 = scales::scientific(!!sym(metacell2)),
             pval_text = ifelse(is.na(pval), "Not computed", scales::scientific(pval, digits = 2)),
             Gene = paste(
-                glue("{gene}"),
+                glue("{gene_name}"),
                 glue("{label_prefix}{metacell1} expression: {expr_text1}"),
                 glue("{label_prefix}{metacell2} expression: {expr_text2}"),
                 glue("Diff (log2): {round(diff, digits=3)}"),
@@ -49,7 +49,7 @@ plot_mc_mc_gene <- function(df, metacell1, metacell2, highlight = NULL, label_pr
     return(p)
 }
 
-render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, mc_mc_gene_scatter_df = NULL, metacell_names = NULL, cell_type_colors = NULL, mode = NULL, source_suffix = "", dragmode = NULL, plotly_buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines")) {
+render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, gene_modules, mc_mc_gene_scatter_df = NULL, metacell_names = NULL, cell_type_colors = NULL, mode = NULL, source_suffix = "", dragmode = NULL, plotly_buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines")) {
     plotly::renderPlotly({
         req(mc_mc_gene_scatter_df)
 
@@ -126,6 +126,9 @@ render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, mc_mc_
             df <- df %>%
                 filter(!(gene %in% get_mc_data(dataset(), "noisy_genes")))
         }
+
+        df <- df %>%
+            mutate(gene_name = gene_label(gene, dataset(), gene_modules()))
 
         fig <- plotly::ggplotly(
             plot_mc_mc_gene(

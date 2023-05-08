@@ -99,7 +99,8 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
     serialize_shiny_data(proj_metacell_types, "projected_metacell_types", dataset = dataset, cache_dir = cache_dir, flat = TRUE)
 
     # Add similar to regular metadata
-    prev_metadata <- get_mc_data(dataset, "metadata")
+    prev_metadata <- get_mc_data(dataset, "metadata", atlas = FALSE)
+
     if (is.null(prev_metadata)) {
         metadata <- proj_metacell_types %>%
             select(metacell, similar)

@@ -182,7 +182,7 @@ mod_gene_modules_server <- function(id, dataset, metacell_types, cell_type_color
             scatter_box_outputs(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, ns, plotly_source = "gene_modules_md_md_plot")
 
             # Diff. expression
-            diff_expr_outputs(input, output, session, dataset, metacell_types, cell_type_colors, globals, ns, source_suffix = "_gene_modules", dragmode = "select", plotly_buttons = c("hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"))
+            diff_expr_outputs(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, ns, source_suffix = "_gene_modules", dragmode = "select", plotly_buttons = c("hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"))
 
             output$add_selected_genes_button <- renderUI({
                 actionButton(ns("add_selected_genes"), "Add to gene module")

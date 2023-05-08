@@ -618,7 +618,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
             connect_gene_plots(input, output, session, ns, source = "proj_annot_plot")
 
             # MC/MC diff gene expression plots
-            diff_expr_outputs(input, output, session, dataset, metacell_types, cell_type_colors, globals, ns, source_suffix = "_annot")
+            diff_expr_outputs(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, ns, source_suffix = "_annot")
 
             mod_gene_mc_plotly_observers(input, session, source = "mc_mc_plot_annot", notification_suffix = "")
         }

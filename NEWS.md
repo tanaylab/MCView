@@ -9,6 +9,7 @@
 * Added Lasso selection in Annotation and Differential Expression tabs.
 * Added "# of metacells with significant inner-fold" to the "QC" tab.
 * Filter lateral/noisy genes from diff expression plots.
+* Annotate genes with their lateral/noisy status + gene modules.
 
 # MCView 0.2.9
 
