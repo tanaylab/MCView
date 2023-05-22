@@ -299,6 +299,7 @@ gene_inner_fold_scatter_plot <- function(dataset, input) {
 qc_stat_plot <- function(field, xlab, dataset, input, plot_type_id, ylab = NULL, log_scale = FALSE) {
     plotly::renderPlotly({
         qc_df <- as_tibble(get_mc_data(dataset(), "mc_qc_metadata"))
+
         req(qc_df[[field]])
 
         req(input[[plot_type_id]])

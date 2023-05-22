@@ -523,6 +523,11 @@ import_dataset <- function(project,
             mutate(zero_fold = mc_max_folds[metacell])
     }
 
+    if (has_name(adata$obs, "projected_correlation")) {
+        mc_qc_metadata <- mc_qc_metadata %>%
+            mutate(projected_correlation = adata$obs$projected_correlation)
+    }
+
     serialize_shiny_data(mc_qc_metadata, "mc_qc_metadata", dataset = dataset, cache_dir = cache_dir)
 
     qc_stats <- list(
@@ -547,6 +552,10 @@ import_dataset <- function(project,
             )) %>%
             arrange(desc(significant_inner_folds_count)) %>%
             as_tibble()
+        if (has_name(adata$var, "correction_factor")) {
+            gene_inner_fold <- gene_inner_fold %>%
+                left_join(adata$var %>% rownames_to_column("gene") %>% select(gene, correction_factor, starts_with("fitted_gene")), by = "gene")
+        }
         serialize_shiny_data(gene_inner_fold, "gene_inner_fold", dataset = dataset, cache_dir = cache_dir)
     }
 
