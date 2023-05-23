@@ -168,6 +168,7 @@ app_ui <- function(request) {
         tags$script(screen_size_jscode),
         shinyjs::useShinyjs(), # Set up shinyjs
         rintrojs::introjsUI(),
+        golem_add_external_resources(),
         shinybusy::add_busy_spinner(spin = "breeding-rhombus", position = "bottom-right", timeout = 100),
         dashboard_page
     )
