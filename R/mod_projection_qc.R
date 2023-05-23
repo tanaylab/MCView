@@ -17,14 +17,14 @@ mod_projection_qc_ui <- function(id) {
                 shinydashboard::valueBoxOutput(ns("num_metacells_query"), width = 2),
                 shinydashboard::valueBoxOutput(ns("num_metacells_similar"), width = 2),
                 shinydashboard::valueBoxOutput(ns("avg_projection_cor"), width = 2),
-                shinydashboard::valueBoxOutput(ns("num_disjoined_genes"), width = 2)
+                shinydashboard::valueBoxOutput(ns("common_genes"), width = 2)
             )
         ),
         generic_column(
             width = 7,
             generic_box(
                 id = ns("metacell_projection"),
-                title = "Type predictions",
+                title = "Type Projections",
                 status = "primary",
                 solidHeader = TRUE,
                 collapsible = TRUE,
@@ -38,7 +38,7 @@ mod_projection_qc_ui <- function(id) {
         ),
         generic_column(
             width = 5,
-            gene_correction_factor_stat_box(ns, id, "Correction factor per gene", "plot_correction_factor_scatter")
+            uiOutput(ns("correction_factor_box"))
         )
     )
 }
@@ -109,19 +109,20 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
                 )
             })
 
-            output$num_disjoined_genes <- shinydashboard::renderValueBox({
-                disjoined_genes_no_atlas <- get_mc_data(dataset(), "disjoined_genes_no_atlas")
-                disjoined_genes_no_query <- get_mc_data(dataset(), "disjoined_genes_no_query")
+            output$common_genes <- shinydashboard::renderValueBox({
+                query_mat <- get_mc_data(dataset(), "mc_mat")
+                atlas_mat <- get_mc_data(dataset(), "mc_mat", atlas = TRUE)
+                req(query_mat)
+                req(atlas_mat)
 
-                disjoined <- intersect(disjoined_genes_no_atlas, disjoined_genes_no_query)
+                common_genes <- intersect(rownames(query_mat), rownames(atlas_mat))
 
-                req(!is.null(disjoined))
-
-                num_disjoined <- length(disjoined)
+                p_atlas <- scales::percent(length(common_genes) / nrow(atlas_mat))
+                p_query <- scales::percent(length(common_genes) / nrow(query_mat))
 
                 shinydashboard::valueBox(
-                    scales::comma(num_disjoined),
-                    "Number of disjoined genes",
+                    scales::comma(length(common_genes)),
+                    glue("Common genes ({p_atlas} of atlas, {p_query} of query)"),
                     color = "blue"
                 )
             })
@@ -142,6 +143,8 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
 
             output$plot_projected_correlation <- qc_stat_plot("projected_correlation", "Projected correlation per metacell", dataset, input, "plot_projected_correlation_type")
 
+            output$correction_factor_box <- gene_correction_factor_stat_box(ns, id, dataset, "Correction factor per gene", "plot_correction_factor_scatter")
+
             output$plot_correction_factor_scatter <- gene_correction_factor_scatter_plot(dataset, input)
             output$gene_correction_factor_table <- gene_correction_factor_table(dataset, input)
 
@@ -152,21 +155,26 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
 
 
 
-gene_correction_factor_stat_box <- function(ns, id, title, output_id, width = 12, height = "35vh") {
-    generic_box(
-        id = ns(id),
-        title = title,
-        status = "primary",
-        solidHeader = TRUE,
-        collapsible = TRUE,
-        closable = FALSE,
-        width = width,
-        shinycssloaders::withSpinner(
-            plotly::plotlyOutput(ns(output_id), height = height)
-        ),
-        shinyWidgets::prettySwitch(inputId = ns("show_correction_factor_table"), value = FALSE, label = "Show table"),
-        DT::DTOutput(ns("gene_correction_factor_table"))
-    )
+gene_correction_factor_stat_box <- function(ns, id, dataset, title, output_id, width = 12, height = "35vh") {
+    renderUI({
+        gene_qc <- get_mc_data(dataset(), "gene_inner_fold")
+        req(gene_qc)
+        req(has_name(gene_qc, "correction_factor"))
+        generic_box(
+            id = ns(id),
+            title = title,
+            status = "primary",
+            solidHeader = TRUE,
+            collapsible = TRUE,
+            closable = FALSE,
+            width = width,
+            shinycssloaders::withSpinner(
+                plotly::plotlyOutput(ns(output_id), height = height)
+            ),
+            shinyWidgets::prettySwitch(inputId = ns("show_correction_factor_table"), value = FALSE, label = "Show table"),
+            DT::DTOutput(ns("gene_correction_factor_table"))
+        )
+    })
 }
 
 gene_correction_factor_scatter_plot <- function(dataset, input) {
@@ -181,11 +189,13 @@ gene_correction_factor_scatter_plot <- function(dataset, input) {
 
 
         p <- gene_qc %>%
+            filter(correction_factor != 0, correction_factor != 1) %>%
             mutate(max_expr = log2(max_expr + 1e-5)) %>%
             rename(Gene = gene, `Correction factor` = correction_factor, `Max expression` = max_expr, Type = type) %>%
             ggplot(aes(x = `Max expression`, y = `Correction factor`, label = Gene, color = Type)) +
             scale_color_manual(values = c("other" = "gray", "lateral" = "red", "noisy" = "purple")) +
             geom_point(size = 0.5) +
+            tgutil::scale_y_log2() +
             xlab("log2(gene expression)") +
             ylab("Correction factor")
 
@@ -203,6 +213,7 @@ gene_correction_factor_table <- function(dataset, input) {
             req(gene_qc)
             req(gene_qc$correction_factor)
             gene_qc %>%
+                filter(correction_factor != 0, correction_factor != 1) %>%
                 arrange(desc(correction_factor)) %>%
                 mutate(max_expr = log2(max_expr + 1e-5)) %>%
                 select(Gene = gene, `Correction factor` = correction_factor, `Max expression` = max_expr, Type = type) %>%
