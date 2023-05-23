@@ -182,7 +182,7 @@ render_mc_mc_gene_diff_table <- function(input, output, session, ns, dataset, mc
                         mutate(type = annotate_genes(gene, dataset())) %>%
                         filter(col != "gray") %>%
                         arrange(diff) %>%
-                        select(Gene = gene, `Diff (log2)` = diff, `P-value` = pval, any_of(c("Disjoined")), Type = type) %>%
+                        select(Gene = gene, `Diff (log2)` = diff, `P-value` = pval, Type = type) %>%
                         mutate(GeneCards = glue("<a href='{link}' target='_blank'>Open</a>", link = paste0("https://www.genecards.org/cgi-bin/carddisp.pl?gene=", Gene))),
                     selection = "single",
                     escape = FALSE,
