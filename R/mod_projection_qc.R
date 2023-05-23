@@ -152,6 +152,9 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
             output$plot_mc_stacked_type <- plot_type_predictions_bar(dataset, metacell_types, cell_type_colors)
 
             output$plot_fitted_genes_per_cell_type <- fitted_genes_per_cell_type_plot(dataset, input)
+            output$fitted_genes_per_cell_type_table <- fitted_genes_per_cell_type_table(dataset, input)
+
+            output$fitted_gene_per_cell_type_selector <- fitted_gene_per_cell_type_selector(ns, dataset, input)
         }
     )
 }
@@ -190,17 +193,17 @@ gene_correction_factor_scatter_plot <- function(dataset, input) {
 
         req(gene_qc$correction_factor)
 
-
         p <- gene_qc %>%
             filter(correction_factor != 0, correction_factor != 1) %>%
             mutate(max_expr = log2(max_expr + 1e-5)) %>%
+            mutate(correction_factor = log2(correction_factor)) %>%
             rename(Gene = gene, `Correction factor` = correction_factor, `Max expression` = max_expr, Type = type) %>%
             ggplot(aes(x = `Max expression`, y = `Correction factor`, label = Gene, color = Type)) +
             scale_color_manual(values = c("other" = "gray", "lateral" = "red", "noisy" = "purple")) +
             geom_point(size = 0.5) +
-            tgutil::scale_y_log2() +
+            geom_hline(yintercept = 0, linetype = "dashed") +
             xlab("log2(gene expression)") +
-            ylab("Correction factor")
+            ylab("log2(correction factor)")
 
         plotly::ggplotly(p) %>%
             sanitize_for_WebGL() %>%
@@ -252,7 +255,64 @@ fitted_genes_per_cell_type_stat_box <- function(ns, id, title, output_id, width 
         width = width,
         shinycssloaders::withSpinner(
             plotly::plotlyOutput(ns(output_id), height = height)
+        ),
+        shinyWidgets::prettySwitch(inputId = ns("show_genes_per_cell_type_table"), value = FALSE, label = "Show table"),
+        uiOutput(ns("fitted_gene_per_cell_type_selector")),
+        DT::DTOutput(ns("fitted_genes_per_cell_type_table"))
+    )
+}
+
+fitted_gene_per_cell_type_selector <- function(ns, dataset, input) {
+    renderUI({
+        req(has_atlas(dataset()))
+        cell_types <- get_mc_data(dataset(), "cell_type_colors", atlas = TRUE)$cell_type
+        req(cell_types)
+        req(input$show_genes_per_cell_type_table)
+        shinyWidgets::pickerInput(
+            inputId = ns("fitted_gene_per_cell_type_selector"),
+            label = "Select cell type",
+            choices = c("all", cell_types),
+            selected = "all",
+            multiple = FALSE
         )
+    })
+}
+
+
+fitted_genes_per_cell_type_table <- function(dataset, input) {
+    DT::renderDT(
+        if (input$show_genes_per_cell_type_table) {
+            gene_qc <- get_mc_data(dataset(), "gene_inner_fold")
+            req(gene_qc)
+            df <- gene_qc %>%
+                select(gene, starts_with("fitted_gene_of")) %>%
+                gather(key = "type", value = "fitted_gene_of", -gene) %>%
+                filter(fitted_gene_of) %>%
+                mutate(type = gsub("fitted_gene_of_", "", type))
+
+            if (!is.null(input$fitted_gene_per_cell_type_selector) && input$fitted_gene_per_cell_type_selector != "all") {
+                df <- df %>%
+                    filter(type == input$fitted_gene_per_cell_type_selector)
+            }
+            df %>%
+                select(gene, type) %>%
+                DT::datatable(
+                    rownames = FALSE,
+                    options = list(
+                        pageLength = 20,
+                        scrollX = TRUE,
+                        scrollY = "300px",
+                        scrollCollapse = TRUE,
+                        dom = "ftp",
+                        columnDefs = list(
+                            list(
+                                targets = 0,
+                                width = "100px"
+                            )
+                        )
+                    )
+                )
+        }
     )
 }
 
@@ -279,11 +339,22 @@ fitted_genes_per_cell_type_plot <- function(dataset, input) {
         fitted_per_type <- tibble::enframe(colSums(m_f), "type", "n") %>%
             mutate(type = gsub("fitted_gene_of_", "", type))
 
+
+        req(has_atlas(dataset()))
+        atlas_colors <- get_mc_data(dataset(), "cell_type_colors", atlas = TRUE) %>%
+            select(cell_type, color) %>%
+            tibble::deframe()
+
+        fitted_per_type <- fitted_per_type %>%
+            mutate(type = factor(type, levels = names(atlas_colors)))
+
         p <- fitted_per_type %>%
-            ggplot(aes(x = type, y = n)) +
+            ggplot(aes(x = type, y = n, fill = type)) +
             geom_col() +
             xlab("Cell type") +
             ylab("Number of non-common fitted genes") +
+            scale_fill_manual(values = atlas_colors) +
+            guides(fill = "none") +
             theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
             ggtitle(glue("Common set: {sum(common_set)} genes"))
 
