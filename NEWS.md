@@ -5,6 +5,7 @@
 * Added "top-correlated" panel to "Cell types" tab.
 * Added "inner-std" plot to QC panel. 
 * Added "Stdev-fold" tab.
+* Added "Projection QC" tab
 * Fix: differential expression between metacells did not work with most recent version of `qs`.
 * Added Lasso selection in Annotation and Differential Expression tabs.
 * Added "# of metacells with significant inner-fold" to the "QC" tab.
