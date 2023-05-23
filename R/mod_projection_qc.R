@@ -38,7 +38,8 @@ mod_projection_qc_ui <- function(id) {
         ),
         generic_column(
             width = 5,
-            uiOutput(ns("correction_factor_box"))
+            uiOutput(ns("correction_factor_box")),
+            fitted_genes_per_cell_type_stat_box(ns, id, "Fitted genes per cell type", "plot_fitted_genes_per_cell_type"),
         )
     )
 }
@@ -149,6 +150,8 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
             output$gene_correction_factor_table <- gene_correction_factor_table(dataset, input)
 
             output$plot_mc_stacked_type <- plot_type_predictions_bar(dataset, metacell_types, cell_type_colors)
+
+            output$plot_fitted_genes_per_cell_type <- fitted_genes_per_cell_type_plot(dataset, input)
         }
     )
 }
@@ -236,4 +239,54 @@ gene_correction_factor_table <- function(dataset, input) {
                 )
         }
     )
+}
+
+fitted_genes_per_cell_type_stat_box <- function(ns, id, title, output_id, width = 12, height = "35vh") {
+    generic_box(
+        id = ns(id),
+        title = title,
+        status = "primary",
+        solidHeader = TRUE,
+        collapsible = TRUE,
+        closable = FALSE,
+        width = width,
+        shinycssloaders::withSpinner(
+            plotly::plotlyOutput(ns(output_id), height = height)
+        )
+    )
+}
+
+fitted_genes_per_cell_type_plot <- function(dataset, input) {
+    plotly::renderPlotly({
+        gene_qc <- get_mc_data(dataset(), "gene_inner_fold")
+        if (is.null(gene_qc)) {
+            return(plotly_text_plot("Please recompute the metacells\nusing the latest version\nin order to see this plot."))
+        }
+        req(gene_qc)
+
+        req(gene_qc$correction_factor)
+
+        req(any(grepl("fitted_gene_of", colnames(gene_qc))))
+
+        m <- gene_qc %>%
+            select(starts_with("fitted_gene_of")) %>%
+            as.matrix()
+
+        common_set <- rowSums(m) == ncol(m)
+
+        m_f <- m[!common_set, , drop = FALSE]
+
+        fitted_per_type <- tibble::enframe(colSums(m_f), "type", "n") %>%
+            mutate(type = gsub("fitted_gene_of_", "", type))
+
+        p <- fitted_per_type %>%
+            ggplot(aes(x = type, y = n)) +
+            geom_col() +
+            xlab("Cell type") +
+            ylab("Number of non-common fitted genes") +
+            theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+            ggtitle(glue("Common set: {sum(common_set)} genes"))
+
+        plotly::ggplotly(p) %>% sanitize_plotly_buttons()
+    })
 }
