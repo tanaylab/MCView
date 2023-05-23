@@ -31,12 +31,6 @@ mod_query_ui <- function(id) {
                     collapsible = TRUE,
                     closable = FALSE,
                     width = 12,
-                    sidebar = shinydashboardPlus::boxSidebar(
-                        id = ns("diff_expr_sidebar"),
-                        startOpen = FALSE,
-                        width = 60,
-                        checkboxInput(ns("mark_disjoined"), "Mark disjoined genes", value = TRUE)
-                    ),
                     shinycssloaders::withSpinner(
                         plotly::plotlyOutput(ns("plot_mc_mc_gene_scatter"))
                     ),
@@ -50,7 +44,7 @@ mod_query_ui <- function(id) {
                 width = 7,
                 generic_box(
                     id = ns("metacell_projection"),
-                    title = "Type predictions",
+                    title = "Type Projections",
                     status = "primary",
                     solidHeader = TRUE,
                     collapsible = TRUE,
@@ -227,7 +221,6 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
 
             mc_mc_gene_scatter_df <- reactive({
                 req(input$mode)
-                req(!is.null(input$mark_disjoined))
 
                 if (input$mode == "MC") {
                     req(input$metacell1)
@@ -247,16 +240,8 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
                 }
 
                 disjoined <- get_mc_data(dataset(), "disjoined_genes_no_atlas")
-
-                if (input$mark_disjoined) {
-                    prev_levels <- levels(df$col)
-                    df <- df %>%
-                        mutate(col = ifelse(gene %in% disjoined, "#00b7ff", as.character(col))) %>%
-                        mutate(col = factor(col, levels = c("#00b7ff", "purple", prev_levels)))
-                }
-
                 df <- df %>%
-                    mutate(Disjoined = gene %in% disjoined)
+                    filter(!(gene %in% disjoined))
 
                 return(df)
             })
