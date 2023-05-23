@@ -13,18 +13,31 @@ mod_projection_qc_ui <- function(id) {
         column(
             width = 12,
             fluidRow(
-                shinydashboard::valueBoxOutput(ns("num_metacells_atlas"), width = 3),
-                shinydashboard::valueBoxOutput(ns("num_metacells_query"), width = 3),
-                shinydashboard::valueBoxOutput(ns("num_metacells_similar"), width = 3),
-                shinydashboard::valueBoxOutput(ns("num_disjoined_genes"), width = 3),
+                shinydashboard::valueBoxOutput(ns("num_metacells_atlas"), width = 2),
+                shinydashboard::valueBoxOutput(ns("num_metacells_query"), width = 2),
+                shinydashboard::valueBoxOutput(ns("num_metacells_similar"), width = 2),
+                shinydashboard::valueBoxOutput(ns("avg_projection_cor"), width = 2),
+                shinydashboard::valueBoxOutput(ns("num_disjoined_genes"), width = 2)
             )
         ),
         generic_column(
-            width = 6,
-            qc_stat_box(ns, id, "Projected correlation per metacell", "plot_projected_correlation"),
+            width = 7,
+            generic_box(
+                id = ns("metacell_projection"),
+                title = "Type predictions",
+                status = "primary",
+                solidHeader = TRUE,
+                collapsible = TRUE,
+                closable = FALSE,
+                width = 12,
+                shinycssloaders::withSpinner(
+                    plotOutput(ns("plot_mc_stacked_type"))
+                )
+            ),
+            qc_stat_box(ns, id, "Projected correlation per metacell", "plot_projected_correlation")
         ),
         generic_column(
-            width = 6,
+            width = 5,
             gene_correction_factor_stat_box(ns, id, "Correction factor per gene", "plot_correction_factor_scatter")
         )
     )
@@ -90,8 +103,8 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
                 p_similar <- scales::percent(p_similar)
 
                 shinydashboard::valueBox(
-                    glue("{scales::comma(num_similar)} ({p_similar})"),
-                    "Number of similar metacells",
+                    p_similar,
+                    "Percentage of 'similar' metacells",
                     color = color
                 )
             })
@@ -109,6 +122,20 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
                 shinydashboard::valueBox(
                     scales::comma(num_disjoined),
                     "Number of disjoined genes",
+                    color = "blue"
+                )
+            })
+
+            output$avg_projection_cor <- shinydashboard::renderValueBox({
+                qc_df <- as_tibble(get_mc_data(dataset(), "mc_qc_metadata"))
+                req(qc_df)
+                req(qc_df$projected_correlation)
+
+                avg_projection_cor <- mean(qc_df$projected_correlation, na.rm = TRUE)
+
+                shinydashboard::valueBox(
+                    round(avg_projection_cor, 2),
+                    "Average projection correlation",
                     color = "maroon"
                 )
             })
@@ -117,6 +144,8 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
 
             output$plot_correction_factor_scatter <- gene_correction_factor_scatter_plot(dataset, input)
             output$gene_correction_factor_table <- gene_correction_factor_table(dataset, input)
+
+            output$plot_mc_stacked_type <- plot_type_predictions_bar(dataset, metacell_types, cell_type_colors)
         }
     )
 }

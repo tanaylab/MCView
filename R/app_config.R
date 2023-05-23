@@ -94,7 +94,7 @@ init_tab_defs <- function() {
         "Projection QC" = list(
             title = "Projection QC",
             module_name = "projection_qc",
-            icon = "check"
+            icon = "clipboard-check"
         ),
         "Manifold" = list(
             title = "Manifold",
