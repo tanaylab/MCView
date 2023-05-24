@@ -284,18 +284,29 @@ fitted_genes_per_cell_type_table <- function(dataset, input) {
         if (input$show_genes_per_cell_type_table) {
             gene_qc <- get_mc_data(dataset(), "gene_inner_fold")
             req(gene_qc)
-            df <- gene_qc %>%
+
+            m <- gene_qc %>%
+                select(starts_with("fitted_gene_of")) %>%
+                as.matrix()
+
+            sums <- rowSums(m)
+            common_set <- gene_qc$gene[sums == ncol(m)]
+            fitted_set <- sums > 0
+
+            df <- gene_qc[fitted_set, ] %>%
                 select(gene, starts_with("fitted_gene_of")) %>%
                 gather(key = "type", value = "fitted_gene_of", -gene) %>%
                 filter(fitted_gene_of) %>%
-                mutate(type = gsub("fitted_gene_of_", "", type))
+                mutate(type = gsub("fitted_gene_of_", "", type)) %>%
+                mutate(common = gene %in% common_set)
 
             if (!is.null(input$fitted_gene_per_cell_type_selector) && input$fitted_gene_per_cell_type_selector != "all") {
                 df <- df %>%
                     filter(type == input$fitted_gene_per_cell_type_selector)
             }
             df %>%
-                select(gene, type) %>%
+                select(gene, type, common) %>%
+                arrange(common, type, gene) %>%
                 DT::datatable(
                     rownames = FALSE,
                     options = list(
