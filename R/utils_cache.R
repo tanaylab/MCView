@@ -395,3 +395,12 @@ get_mc_sum <- function(dataset, atlas = FALSE) {
 
     return(mc_sum)
 }
+
+get_gene_qc <- function(dataset) {
+    gene_qc <- get_mc_data(dataset, "gene_qc")
+    if (is.null(gene_qc)) {
+        gene_qc <- get_mc_data(dataset, "gene_inner_fold")
+    }
+
+    return(gene_qc)
+}

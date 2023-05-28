@@ -243,8 +243,9 @@ gene_inner_fold_stat_box <- function(ns, id, title, output_id, width = 12, heigh
 gene_inner_fold_table <- function(dataset, input) {
     DT::renderDT(
         if (input$show_gene_inner_fold_table) {
-            gene_inner_fold_df <- get_mc_data(dataset(), "gene_inner_fold")
+            gene_inner_fold_df <- get_gene_qc(dataset())
             req(gene_inner_fold_df)
+            req(gene_inner_fold_df$significant_inner_folds_count)
             gene_inner_fold_df %>%
                 filter(significant_inner_folds_count > 0) %>%
                 mutate(max_expr = log2(max_expr + 1e-5)) %>%
@@ -272,11 +273,12 @@ gene_inner_fold_table <- function(dataset, input) {
 
 gene_inner_fold_scatter_plot <- function(dataset, input) {
     plotly::renderPlotly({
-        gene_inner_fold_df <- get_mc_data(dataset(), "gene_inner_fold")
-        if (is.null(gene_inner_fold_df)) {
+        gene_inner_fold_df <- get_gene_qc(dataset())
+        if (is.null(gene_inner_fold_df) || is.null(gene_inner_fold_df$significant_inner_folds_count)) {
             return(plotly_text_plot("Please recompute the metacells\nusing the latest version\nin order to see this plot."))
         }
         req(gene_inner_fold_df)
+        req(gene_inner_fold_df$significant_inner_folds_count)
 
         p <- gene_inner_fold_df %>%
             mutate(max_expr = log2(max_expr + 1e-5)) %>%

@@ -163,7 +163,7 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
 
 gene_correction_factor_stat_box <- function(ns, id, dataset, title, output_id, width = 12, height = "35vh") {
     renderUI({
-        gene_qc <- get_mc_data(dataset(), "gene_inner_fold")
+        gene_qc <- get_gene_qc(dataset())
         req(gene_qc)
         req(has_name(gene_qc, "correction_factor"))
         generic_box(
@@ -185,7 +185,7 @@ gene_correction_factor_stat_box <- function(ns, id, dataset, title, output_id, w
 
 gene_correction_factor_scatter_plot <- function(dataset, input) {
     plotly::renderPlotly({
-        gene_qc <- get_mc_data(dataset(), "gene_inner_fold")
+        gene_qc <- get_gene_qc(dataset())
         if (is.null(gene_qc)) {
             return(plotly_text_plot("Please recompute the metacells\nusing the latest version\nin order to see this plot."))
         }
@@ -215,7 +215,7 @@ gene_correction_factor_scatter_plot <- function(dataset, input) {
 gene_correction_factor_table <- function(dataset, input) {
     DT::renderDT(
         if (input$show_correction_factor_table) {
-            gene_qc <- get_mc_data(dataset(), "gene_inner_fold")
+            gene_qc <- get_gene_qc(dataset())
             req(gene_qc)
             req(gene_qc$correction_factor)
             gene_qc %>%
@@ -282,7 +282,7 @@ fitted_gene_per_cell_type_selector <- function(ns, dataset, input) {
 fitted_genes_per_cell_type_table <- function(dataset, input) {
     DT::renderDT(
         if (input$show_genes_per_cell_type_table) {
-            gene_qc <- get_mc_data(dataset(), "gene_inner_fold")
+            gene_qc <- get_gene_qc(dataset())
             req(gene_qc)
 
             m <- gene_qc %>%
@@ -329,7 +329,7 @@ fitted_genes_per_cell_type_table <- function(dataset, input) {
 
 fitted_genes_per_cell_type_plot <- function(dataset, input) {
     plotly::renderPlotly({
-        gene_qc <- get_mc_data(dataset(), "gene_inner_fold")
+        gene_qc <- get_gene_qc(dataset())
         if (is.null(gene_qc)) {
             return(plotly_text_plot("Please recompute the metacells\nusing the latest version\nin order to see this plot."))
         }
