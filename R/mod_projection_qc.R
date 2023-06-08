@@ -199,7 +199,7 @@ gene_correction_factor_scatter_plot <- function(dataset, input) {
             mutate(correction_factor = log2(correction_factor)) %>%
             rename(Gene = gene, `Correction factor` = correction_factor, `Max expression` = max_expr, Type = type) %>%
             ggplot(aes(x = `Max expression`, y = `Correction factor`, label = Gene, color = Type)) +
-            scale_color_manual(values = c("other" = "gray", "lateral" = "red", "noisy" = "purple")) +
+            scale_color_manual(values = c("other" = "gray", "lateral" = "blue", "noisy" = "red", "lateral, noisy" = "purple")) +
             geom_point(size = 0.5) +
             geom_hline(yintercept = 0, linetype = "dashed") +
             xlab("log2(gene expression)") +

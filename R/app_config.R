@@ -69,6 +69,17 @@ init_selected_genes <- function() {
             mc_egc <- mc_egc[intersect(rownames(mc_egc), rownames(mc_egc_atlas)), ]
         }
 
+        f <- rep(TRUE, nrow(mc_egc))
+        lateral_genes <- get_mc_data(dataset_ls(project)[1], "lateral_genes")        
+        if (!is.null(lateral_genes)) {
+            f <- f & !(rownames(mc_egc) %in% lateral_genes)
+        }
+        noisy_genes <- get_mc_data(dataset_ls(project)[1], "noisy_genes")
+        if (!is.null(noisy_genes)) {
+            f <- f & !(rownames(mc_egc) %in% noisy_genes)
+        }
+        mc_egc <- mc_egc[f, ]
+
         minmax <- matrixStats::rowMaxs(mc_egc, na.rm = TRUE) - matrixStats::rowMins(mc_egc, na.rm = TRUE)
         names(minmax) <- rownames(mc_egc)
         genes <- names(head(sort(minmax, decreasing = TRUE), n = 2))

@@ -509,6 +509,7 @@ import_dataset <- function(project,
                 exp = purrr::map2_dbl(gene, idxs, ~ exp_zeros[.y, .x]),
                 metacell = rownames(obs_zeros)[idxs],
                 type = case_when(
+                    (gene %in% lateral_genes) & (gene %in% noisy_genes) ~ "lateral, noisy",
                     gene %in% noisy_genes ~ "noisy",
                     gene %in% lateral_genes ~ "lateral",
                     TRUE ~ "other"
@@ -546,6 +547,7 @@ import_dataset <- function(project,
         select(gene) %>%
         mutate(max_expr = matrixStats::rowMaxs(mc_egc)) %>%
         mutate(type = case_when(
+            (gene %in% lateral_genes) & (gene %in% noisy_genes) ~ "lateral, noisy",
             gene %in% noisy_genes ~ "noisy",
             gene %in% lateral_genes ~ "lateral",
             TRUE ~ "other"

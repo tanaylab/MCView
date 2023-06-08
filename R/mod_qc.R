@@ -210,7 +210,7 @@ zero_fold_gene_plot <- function(dataset, input) {
             rename(Expression = avg, FC = zero_fold, Gene = gene, Type = type, Metacell = metacell) %>%
             mutate(Observed = obs, Expected = round(exp, digits = 1)) %>%
             ggplot(aes(x = Expression, y = FC, label = Gene, color = Type, Observed = Observed, Expected = Expected, Metacell = Metacell)) +
-            scale_color_manual(values = c("other" = "gray", "lateral" = "red", "noisy" = "purple")) +
+            scale_color_manual(values = c("other" = "gray", "lateral" = "blue", "noisy" = "red", "lateral, noisy" = "purple")) +
             geom_point(size = 0.5) +
             geom_abline(intercept = 0, slope = 1, color = "black", linetype = "dashed") +
             xlab("log2(gene expression)") +
@@ -284,7 +284,7 @@ gene_inner_fold_scatter_plot <- function(dataset, input) {
             mutate(max_expr = log2(max_expr + 1e-5)) %>%
             rename(Gene = gene, `# of metacells` = significant_inner_folds_count, `Max expression` = max_expr, Type = type) %>%
             ggplot(aes(x = `Max expression`, y = `# of metacells`, label = Gene, color = Type)) +
-            scale_color_manual(values = c("other" = "gray", "lateral" = "red", "noisy" = "purple")) +
+            scale_color_manual(values = c("other" = "gray", "lateral" = "blue", "noisy" = "red", "lateral, noisy" = "purple")) +
             geom_point(size = 0.5) +
             xlab("log2(gene expression)") +
             ylab("# of metacells with significant inner-fold")
