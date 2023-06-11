@@ -1,12 +1,13 @@
 get_gene_colors <- function(genes,
                             lateral_genes = NULL,
-                            forbidden_color = "darkgray",
-                            disjoined_genes = NULL,
-                            disjoined_color = "#00b7ff") {
+                            noisy_genes = NULL,
+                            disjoined_genes = NULL) {
     gene_colors <- tibble(gene = genes) %>%
         mutate(color = case_when(
-            gene %in% lateral_genes ~ forbidden_color,
-            gene %in% disjoined_genes ~ disjoined_color,
+            gene %in% lateral_genes & gene %in% noisy_genes ~ "purple",
+            gene %in% lateral_genes ~ "blue",
+            gene %in% noisy_genes ~ "red",
+            gene %in% disjoined_genes ~ "darkgray",
             TRUE ~ "black"
         )) %>%
         deframe()

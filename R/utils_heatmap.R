@@ -404,7 +404,8 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                         gene_colors <- get_gene_colors(
                             rownames(m),
                             lateral_genes = get_mc_data(dataset(), "lateral_genes"),
-                            disjoined_genes = get_mc_data(dataset(), "disjoined_genes_no_atlas")
+                            disjoined_genes = get_mc_data(dataset(), "disjoined_genes_no_atlas"),
+                            noisy_genes = get_mc_data(dataset(), "noisy_genes")
                         )
                     }
 

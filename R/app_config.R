@@ -70,7 +70,7 @@ init_selected_genes <- function() {
         }
 
         f <- rep(TRUE, nrow(mc_egc))
-        lateral_genes <- get_mc_data(dataset_ls(project)[1], "lateral_genes")        
+        lateral_genes <- get_mc_data(dataset_ls(project)[1], "lateral_genes")
         if (!is.null(lateral_genes)) {
             f <- f & !(rownames(mc_egc) %in% lateral_genes)
         }
