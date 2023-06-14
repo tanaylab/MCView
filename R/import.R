@@ -475,10 +475,13 @@ import_dataset <- function(project,
         select(metacell, umis = total_umis, cells = grouped)
 
     if (!is.null(adata$layers[["inner_fold"]])) {
-        max_inner_fold <- apply(inner_fold_mat, 2, max, na.rm = TRUE) %>%
+        max_inner_fold <- apply(inner_fold_mat[!(rownames(inner_fold_mat) %in% noisy_genes), , drop = FALSE], 2, max, na.rm = TRUE) %>%
             tibble::enframe(name = "metacell", value = "max_inner_fold")
+        max_inner_fold_no_lateral <- apply(inner_fold_mat[!(rownames(inner_fold_mat) %in% noisy_genes) & !(rownames(inner_fold_mat) %in% lateral_genes), , drop = FALSE], 2, max, na.rm = TRUE) %>%
+            tibble::enframe(name = "metacell", value = "max_inner_fold_no_lateral")
         mc_qc_metadata <- mc_qc_metadata %>%
-            left_join(max_inner_fold, by = "metacell")
+            left_join(max_inner_fold, by = "metacell") %>%
+            left_join(max_inner_fold_no_lateral, by = "metacell")
     }
 
     if (!is.null(adata$layers[["inner_stdev_log"]])) {

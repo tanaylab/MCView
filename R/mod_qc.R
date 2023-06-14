@@ -23,7 +23,10 @@ mod_qc_ui <- function(id) {
         generic_column(
             width = 6,
             qc_stat_box(ns, id, "# of UMIs per metacell", "plot_qc_umis"),
-            qc_stat_box(ns, id, "Max inner-fold per metacell", "plot_qc_inner_fold"),
+            qc_stat_box(ns, id, "Max inner-fold per metacell", "plot_qc_inner_fold",
+                width = 12, height = "27vh",
+                checkboxInput(ns("include_lateral"), label = "Include lateral", value = FALSE)
+            ),
             zero_fold_stat_box(ns, id, "# of cells with zero UMIs per gene", "plot_zero_fold"),
             qc_stat_box(ns, id, "Max inner-stdev per metacell", "plot_qc_std")
         ),
@@ -94,7 +97,7 @@ mod_qc_server <- function(id, dataset, metacell_types, cell_type_colors, gene_mo
 
             output$plot_qc_umis <- qc_stat_plot("umis", "Number of UMIs per metacell", dataset, input, "plot_qc_umis_type", log_scale = TRUE)
             output$plot_qc_cell_num <- qc_stat_plot("cells", "Number of cells per metacell", dataset, input, "plot_qc_cell_num_type")
-            output$plot_qc_inner_fold <- qc_stat_plot("max_inner_fold", "Max inner-fold per metacell", dataset, input, "plot_qc_inner_fold_type")
+            output$plot_qc_inner_fold <- qc_stat_plot(c("max_inner_fold", "max_inner_fold_no_lateral"), "Max inner-fold per metacell", dataset, input, "plot_qc_inner_fold_type", field_input = "include_lateral")
             output$plot_qc_std <- qc_stat_plot("max_inner_stdev_log", "Max stdev(log(fractions)) per metacell", dataset, input, "plot_qc_std_type")
             output$plot_mc_zero_fold <- qc_stat_plot("zero_fold", "Max log2(# of zero cells / expected) per metacell", dataset, input, "plot_mc_zero_fold_type")
 
@@ -126,7 +129,7 @@ qc_value_box <- function(field, title, dataset, color = "black") {
     })
 }
 
-qc_stat_box <- function(ns, id, title, output_id, width = 12, height = "27vh") {
+qc_stat_box <- function(ns, id, title, output_id, width = 12, height = "27vh", ...) {
     generic_box(
         id = ns(id),
         title = title,
@@ -146,7 +149,8 @@ qc_stat_box <- function(ns, id, title, output_id, width = 12, height = "27vh") {
                 status = "danger",
                 fill = TRUE,
                 selected = "Density"
-            )
+            ),
+            ...
         ),
         shinycssloaders::withSpinner(
             plotly::plotlyOutput(ns(output_id), height = height)
@@ -296,11 +300,22 @@ gene_inner_fold_scatter_plot <- function(dataset, input) {
     }) %>% bindCache(dataset())
 }
 
-
-
-qc_stat_plot <- function(field, xlab, dataset, input, plot_type_id, ylab = NULL, log_scale = FALSE) {
+qc_stat_plot <- function(field, xlab, dataset, input, plot_type_id, ylab = NULL, log_scale = FALSE, field_input = plot_type_id) {
     plotly::renderPlotly({
         qc_df <- as_tibble(get_mc_data(dataset(), "mc_qc_metadata"))
+
+        if (length(field) > 1) {
+            req(length(field) == 2)
+            req(!is.null(field_input))
+            req(field_input != plot_type_id)
+            req(length(field_input) == 1)
+            req(!is.null(input[[field_input]]))
+            if (input[[field_input]]) {
+                field <- field[1]
+            } else {
+                field <- field[2]
+            }
+        }
 
         req(qc_df[[field]])
 
@@ -313,7 +328,7 @@ qc_stat_plot <- function(field, xlab, dataset, input, plot_type_id, ylab = NULL,
         }
 
         return(p)
-    }) %>% bindCache(dataset(), input[[plot_type_id]], field, plot_type_id)
+    }) %>% bindCache(dataset(), input[[plot_type_id]], field, plot_type_id, input[[field_input]])
 }
 
 qc_density <- function(qc_df, field, xlab, ylab, log_scale = FALSE) {
