@@ -429,7 +429,7 @@ initial_proj_point_size <- function(dataset, screen_width = NULL, screen_height 
     n_metacells <- length(get_mc_data(dataset, "mc_sum", atlas = atlas))
     screen_width <- screen_width %||% 1920
     screen_height <- screen_height %||% 1080
-    point_size <- screen_width * screen_height / (n_metacells * 1400) * weight
+    point_size <- screen_width * screen_height / (n_metacells * 900) * weight
 
     return(max(1, min(3, point_size)))
 }

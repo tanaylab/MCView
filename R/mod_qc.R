@@ -27,14 +27,14 @@ mod_qc_ui <- function(id) {
                 width = 12, height = "27vh",
                 checkboxInput(ns("include_lateral"), label = "Include lateral", value = FALSE)
             ),
-            zero_fold_stat_box(ns, id, "# of cells with zero UMIs per gene", "plot_zero_fold"),
+            gene_inner_fold_stat_box(ns, id, "# of metacells with significant inner-fold", "plot_gene_inner_fold_scatter"),            
             qc_stat_box(ns, id, "Max inner-stdev per metacell", "plot_qc_std")
         ),
         generic_column(
             width = 6,
             qc_stat_box(ns, id, "# of cells per metacell", "plot_qc_cell_num"),
             qc_stat_box(ns, id, "Max zero-fold per metacell", "plot_mc_zero_fold"),
-            gene_inner_fold_stat_box(ns, id, "# of metacells with significant inner-fold", "plot_gene_inner_fold_scatter")
+            zero_fold_stat_box(ns, id, "# of cells with zero UMIs per gene", "plot_zero_fold")
         )
     )
 }
