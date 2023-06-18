@@ -27,7 +27,7 @@ mod_qc_ui <- function(id) {
                 width = 12, height = "27vh",
                 checkboxInput(ns("include_lateral"), label = "Include lateral", value = FALSE)
             ),
-            gene_inner_fold_stat_box(ns, id, "# of metacells with significant inner-fold", "plot_gene_inner_fold_scatter"),            
+            gene_inner_fold_stat_box(ns, id, "# of metacells with significant inner-fold", "plot_gene_inner_fold_scatter"),
             qc_stat_box(ns, id, "Max inner-stdev per metacell", "plot_qc_std")
         ),
         generic_column(
