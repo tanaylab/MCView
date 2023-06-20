@@ -9,7 +9,7 @@ update_metadata_colors(project, dataset, metadata_colors, overwrite = FALSE)
 \arguments{
 \item{project}{path to the project}
 
-\item{dataset}{name for the dataset, e.g. "PBMC"}
+\item{dataset}{name for the dataset, e.g. "PBMC". The name of the dataset can only contain alphanumeric characters, dashes and underscores.}
 
 \item{metadata_colors}{a named list with colors for each metadata column, or a name of a yaml file with such list.
 For numerical metadata columns, colors should be given as a list where the first element is a vector of colors and the second element is a vector of breaks. \cr

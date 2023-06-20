@@ -14,7 +14,7 @@
 #'
 #'
 #' @param project path to the project
-#' @param dataset name for the dataset, e.g. "PBMC"
+#' @param dataset name for the dataset, e.g. "PBMC". The name of the dataset can only contain alphanumeric characters, dashes and underscores.
 #' @param anndata_file path to \code{h5ad} file which contains the output of metacell2 pipeline (metacells python package) or a loaded anndata object of the same format.
 #' @param cell_type_field name of a field in the anndata \code{object$obs} which contains a cell type (optional).
 #' If the field doesn't exist and \code{metacell_types_file} is missing, MCView would first look
@@ -109,6 +109,10 @@ import_dataset <- function(project,
                            ...) {
     verbose <- !is.null(getOption("MCView.verbose")) && getOption("MCView.verbose")
     verify_project_dir(project, create = TRUE, atlas = !is.null(atlas_project), ...)
+
+    if (!grepl("^[A-Za-z0-9_-]+$", dataset)) {
+        cli_abort("Dataset name can only contain letters, numbers, '-' and '_'")
+    }
 
     cli_alert_info("Importing {.field {dataset}}")
 

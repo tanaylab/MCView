@@ -16,7 +16,7 @@ update_metadata(
 \arguments{
 \item{project}{path to the project}
 
-\item{dataset}{name for the dataset, e.g. "PBMC"}
+\item{dataset}{name for the dataset, e.g. "PBMC". The name of the dataset can only contain alphanumeric characters, dashes and underscores.}
 
 \item{metadata}{can be either a data frame with a column named "metacell" with the metacell id and other metadata columns
 or a name of a delimited file which contains such data frame. See \code{metadata_fields} for other details.}
