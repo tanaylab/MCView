@@ -27,7 +27,7 @@ import_dataset_metacell1(
 \arguments{
 \item{project}{path to the project}
 
-\item{dataset}{name for the dataset, e.g. "PBMC". The name of the dataset can only contain alphanumeric characters, dashes and underscores.}
+\item{dataset}{name for the dataset, e.g. "PBMC". The name of the dataset can only contain alphanumeric characters, dots, dashes and underscores.}
 
 \item{scdb}{path to R metacell single cell RNA database}
 

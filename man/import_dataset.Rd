@@ -36,7 +36,7 @@ import_dataset(
 \arguments{
 \item{project}{path to the project}
 
-\item{dataset}{name for the dataset, e.g. "PBMC". The name of the dataset can only contain alphanumeric characters, dashes and underscores.}
+\item{dataset}{name for the dataset, e.g. "PBMC". The name of the dataset can only contain alphanumeric characters, dots, dashes and underscores.}
 
 \item{anndata_file}{path to \code{h5ad} file which contains the output of metacell2 pipeline (metacells python package) or a loaded anndata object of the same format.}
 

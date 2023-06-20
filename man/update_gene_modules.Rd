@@ -9,7 +9,7 @@ update_gene_modules(project, dataset, gene_modules_file)
 \arguments{
 \item{project}{path to the project}
 
-\item{dataset}{name for the dataset, e.g. "PBMC". The name of the dataset can only contain alphanumeric characters, dashes and underscores.}
+\item{dataset}{name for the dataset, e.g. "PBMC". The name of the dataset can only contain alphanumeric characters, dots, dashes and underscores.}
 
 \item{gene_modules_file}{path to a tabular file (csv,tsv) with assignment of genes to gene modules. Should have a field named "gene" with the gene name and a field named "module" with the name of the gene module.}
 }

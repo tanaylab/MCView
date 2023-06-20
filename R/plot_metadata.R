@@ -40,9 +40,10 @@ mc2d_plot_metadata_ggp <- function(dataset,
             `Cell type` = cell_type
         )
     } else {
-        cell_type_colors <- get_cell_type_colors(dataset, atlas = atlas)
-        mc2d_df <- mc2d_df %>%
-            mutate(`Cell type` = factor(`Cell type`, levels = sort(names(cell_type_colors))))
+        if (!is.null(colors)) {
+            mc2d_df <- mc2d_df %>%
+                mutate(`Cell type` = factor(`Cell type`, levels = sort(names(colors))))
+        }
     }
 
     if (has_name(df, "mc_age")) {
