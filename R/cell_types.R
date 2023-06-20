@@ -117,6 +117,8 @@ parse_cell_type_colors <- function(cell_type_colors) {
     }
 
     cell_type_colors <- cell_type_colors %>%
+        filter(!is.na(cell_type), !is.na(color)) %>%
+        filter(cell_type != "(Missing)") %>%
         distinct(cell_type, .keep_all = TRUE)
 
     if (!has_name(cell_type_colors, "order")) {
