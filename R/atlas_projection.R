@@ -178,7 +178,6 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
             gene,
             contains("_of_"),
             any_of("lateral_gene"),
-            excluded_gene,
             any_of("atlas_lateral_gene"),
             any_of("atlas_marker_gene"),
             any_of("correction_factor"),
@@ -191,10 +190,7 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
         ) %>%
         spread(dtype, value) %>%
         select(
-            gene, cell_type, excluded_gene, everything()
-        ) %>%
-        arrange(
-            desc(excluded_gene)
+            gene, cell_type, everything()
         )
 
     if (!is.null(gene_names)) {
