@@ -1,4 +1,4 @@
-# MCView 0.2.9.9000
+# MCView 0.2.10
 
 * Changed zero-fold per gene plot to show expression vs zero-fold. 
 * Added two static plots to About tab.
