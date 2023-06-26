@@ -2,8 +2,8 @@ get_mc_egc <- function(dataset, genes = NULL, atlas = FALSE) {
     mc_mat <- get_mc_data(dataset, "mc_mat", atlas = atlas)
     mc_sum <- get_mc_sum(dataset, atlas = atlas)
 
-    if (!is.null(genes)) {
-        mc_mat <- mc_mat[genes, , drop = FALSE]
+    if (!is.null(genes)) {        
+        mc_mat <- mc_mat[intersect(genes, rownames(mc_mat)), , drop = FALSE]
     }
 
     return(t(t(mc_mat) / mc_sum))
