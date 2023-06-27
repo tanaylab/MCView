@@ -570,7 +570,12 @@ import_dataset <- function(project,
 
     if (has_name(adata$var, "correction_factor")) {
         gene_qc <- gene_qc %>%
-            left_join(adata$var %>% rownames_to_column("gene") %>% select(gene, correction_factor, starts_with("fitted_gene")), by = "gene")
+            left_join(adata$var %>% rownames_to_column("gene") %>% select(gene, correction_factor), by = "gene")
+    }
+
+    if (any(grepl("^fitted_gene", colnames(adata$var)))) {
+        gene_qc <- gene_qc %>%
+            left_join(adata$var %>% rownames_to_column("gene") %>% select(gene, starts_with("fitted_gene")), by = "gene")
     }
 
     serialize_shiny_data(gene_qc, "gene_qc", dataset = dataset, cache_dir = cache_dir)

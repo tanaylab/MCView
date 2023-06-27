@@ -1,3 +1,7 @@
+# MCView 0.2.11
+
+* Fix: fitted gene plot was not shown when 'corrected_factor' was missing from the input data.
+
 # MCView 0.2.10
 
 * Changed zero-fold per gene plot to show expression vs zero-fold. 

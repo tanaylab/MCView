@@ -186,7 +186,7 @@ gene_correction_factor_stat_box <- function(ns, id, dataset, title, output_id, w
 gene_correction_factor_scatter_plot <- function(dataset, input) {
     plotly::renderPlotly({
         gene_qc <- get_gene_qc(dataset())
-        if (is.null(gene_qc)) {
+        if (is.null(gene_qc) || is.null(gene_qc$correction_factor)) {
             return(plotly_text_plot("Please recompute the metacells\nusing the latest version\nin order to see this plot."))
         }
         req(gene_qc)
@@ -331,13 +331,11 @@ fitted_genes_per_cell_type_table <- function(dataset, input) {
 fitted_genes_per_cell_type_plot <- function(dataset, input) {
     plotly::renderPlotly({
         gene_qc <- get_gene_qc(dataset())
-        if (is.null(gene_qc) || is.null(gene_qc$correction_factor)) {
+        if (is.null(gene_qc)) {
             return(plotly_text_plot("Please recompute the metacells\nusing the latest version\nin order to see this plot."))
         }
 
         req(gene_qc)
-
-        req(gene_qc$correction_factor)
 
         req(any(grepl("fitted_gene_of", colnames(gene_qc))))
 
