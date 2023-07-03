@@ -251,6 +251,7 @@ calc_samp_mc_count <- function(dataset) {
     metadata <- get_mc_data(dataset, "cell_metadata")
     samp_mc_count <- metadata %>%
         filter(metacell != -1) %>%
+        filter(!is.na(samp_id)) %>%
         count(samp_id, metacell) %>%
         spread(metacell, n, fill = 0) %>%
         column_to_rownames("samp_id") %>%

@@ -3,13 +3,20 @@ get_cell_type_colors <- function(dataset, cell_type_colors = NULL, na_color = "g
         cell_type_colors <- get_mc_data(dataset, "cell_type_colors", atlas = atlas)
     }
 
-    res <- bind_rows(
-        tibble(cell_type = "(Missing)", color = na_color),
-        cell_type_colors %>%
+    if (!("(Missing)" %in% cell_type_colors$cell_type)) {
+        res <- bind_rows(
+            tibble(cell_type = "(Missing)", color = na_color),
+            cell_type_colors %>%
+                distinct(cell_type, color) %>%
+                select(cell_type, color)
+        ) %>%
+            deframe()
+    } else {
+        res <- cell_type_colors %>%
             distinct(cell_type, color) %>%
-            select(cell_type, color)
-    ) %>%
-        deframe()
+            select(cell_type, color) %>%
+            deframe()
+    }
 
     return(res)
 }

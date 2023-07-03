@@ -172,7 +172,7 @@ import_cell_metadata <- function(project, dataset, cell_metadata, cell_to_metace
         update_metadata(project, dataset, md, overwrite = FALSE)
     } else {
         if (has_name(cell_metadata, "samp_id")) {
-            md <- cell_metadata_to_metacell(cell_metadata %>% select(cell_id, samp_id), cell_to_metacell, ...)
+            md <- cell_metadata_to_metacell(cell_metadata %>% select(cell_id, samp_id) %>% mutate(samp_id = forcats::fct_na_value_to_level(samp_id, "(Missing)")), cell_to_metacell, ...)
             update_metadata(project, dataset, md, overwrite = FALSE)
         }
     }

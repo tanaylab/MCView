@@ -25,9 +25,6 @@ mod_samples_ui <- function(id) {
                         startOpen = FALSE,
                         width = 100,
                         id = ns("gene_gene_sidebar"),
-                        axis_selector("x_axis", "Metadata", ns, choices = c("Metadata", "Gene", "Cell type")),
-                        axis_selector("y_axis", "Metadata", ns, choices = c("Metadata", "Gene", "Cell type")),
-                        axis_selector("color_by", "Metadata", ns, choices = c("Metadata", "Gene", "Cell type")),
                         uiOutput(ns("gene_gene_point_size_ui")),
                         uiOutput(ns("gene_gene_stroke_ui"))
                     ),
@@ -35,6 +32,16 @@ mod_samples_ui <- function(id) {
                     textOutput(ns("no_samples1")),
                     shinycssloaders::withSpinner(
                         plotly::plotlyOutput(ns("plot_gene_gene_mc"))
+                    ),
+                    shinydashboardPlus::accordion(
+                        id = ns("gene_gene_accordion"),
+                        shinydashboardPlus::accordionItem(
+                            title = "Select axes",
+                            collapsed = FALSE,
+                            axis_selector("x_axis", "Metadata", ns, choices = c("Metadata", "Gene", "Cell type")),
+                            axis_selector("y_axis", "Metadata", ns, choices = c("Metadata", "Gene", "Cell type")),
+                            axis_selector("color_by", "Metadata", ns, choices = c("Metadata", "Gene", "Cell type"))
+                        )
                     )
                 ),
                 uiOutput(ns("diff_expr_box"))
@@ -195,6 +202,11 @@ mod_samples_server <- function(id, dataset, metacell_types, cell_type_colors, ge
                 req(input$selected_cell_types)
                 req(input$samp1)
                 req(input$samp2)
+                samp_frac <- get_samp_mc_frac(dataset())
+                req(input$samp1 %in% rownames(samp_frac))
+                req(input$samp2 %in% rownames(samp_frac))
+                req(sum(samp_frac[input$samp1, ], na.rm = TRUE) > 0)
+                req(sum(samp_frac[input$samp2, ], na.rm = TRUE) > 0)
                 calc_samp_samp_gene_df(dataset(), input$samp1, input$samp2, metacell_types(), cell_types = input$selected_cell_types)
             }) %>% bindCache(dataset(), input$selected_cell_type, input$samp1, input$samp2, metacell_types())
 

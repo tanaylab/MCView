@@ -138,9 +138,6 @@ get_cell_types_egc <- function(cell_types, metacell_types, dataset, mat = NULL, 
 get_samples_mat <- function(cell_types, metacell_types, dataset) {
     mc_mat <- get_mc_data(dataset, "mc_mat")
 
-    # samp_mc_count <- get_samp_mc_count(dataset)
-    # samp_mc_count <- samp_mc_count[, colnames(samp_mc_count) != "-1"]
-
     mc_types <- metacell_types %>%
         filter(cell_type %in% cell_types) %>%
         select(metacell, cell_type) %>%
@@ -148,15 +145,14 @@ get_samples_mat <- function(cell_types, metacell_types, dataset) {
 
     mc_mat <- mc_mat[, names(mc_types), drop = FALSE]
     samp_mc_frac <- get_samp_mc_frac(dataset)[, names(mc_types)]
+    samp_sums <- rowSums(samp_mc_frac)
+
+    # remove samples with no metacells
+    samp_mc_frac <- samp_mc_frac[samp_sums > 0, ]
+    mc_mat <- mc_mat[samp_sums > 0, ]
     samp_mc_frac <- samp_mc_frac / rowSums(samp_mc_frac)
 
     samp_mat <- mc_mat %*% t(samp_mc_frac)
-
-    # samp_egc <- mc_egc %*% t(samp_mc_frac)
-    # samp_mc_count <- samp_mc_count[, names(mc_types)]
-    # mc_samp_frac <- t(t(samp_mc_count) / colSums(samp_mc_count))
-
-    # samp_mat <- mc_mat %*% t(mc_samp_frac)
 
     return(samp_mat)
 }
