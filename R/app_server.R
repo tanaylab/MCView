@@ -40,6 +40,7 @@ app_server <- function(input, output, session) {
     observeEvent(input$update_tabs, {
         globals$active_tabs <- c(config$tabs, setdiff(input$selected_tabs, config$tabs))
         globals$active_tabs <- globals$active_tabs[globals$active_tabs %in% input$selected_tabs]
+        globals$active_tabs <- order_tabs(globals$active_tabs)
     })
 
     observe({

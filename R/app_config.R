@@ -209,6 +209,21 @@ init_tab_defs <- function() {
         warning("pandoc is not available, removing 'About' tab'")
         config$tabs <<- config$tabs[config$tabs != "About"]
     }
+
+    config$tabs <<- order_tabs(config$tabs)
+}
+
+order_tabs <- function(tabs) {
+    tabs_order <- c("QC", "Projection QC", "Manifold", "Genes", "Query", "Atlas", "Markers", "Gene modules", "Projected-fold", "Diff. Expression", "Samples", "Cell types", "Annotate")
+
+    # order the tabs according to the order in tabs_order. Tabs that are not in tabs_order will be added at the end
+    new_tabs <- c(tabs_order[tabs_order %in% tabs], tabs[!(tabs %in% tabs_order)])
+
+    if ("About" %in% tabs) {
+        new_tabs <- c(setdiff(new_tabs, "About"), "About")
+    }
+
+    return(new_tabs)
 }
 
 gene_names <- function(dataset, atlas = FALSE) {
