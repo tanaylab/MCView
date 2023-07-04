@@ -85,11 +85,14 @@ called 'categories' holds the categories.}
 \item{cell_metadata}{data frame with a column named "cell_id" with
 the cell id and other metadata columns, or a name of a delimited file which
 contains such data frame. For activating the "Samples" tab, the data frame should have an additional
-column named "samp_id" with a sample identifier per cell (e.g., batch id, patient etc.)}
+column named "samp_id" with a sample identifier per cell (e.g., batch id, patient etc.).
+Optionally, a column named "metacell" can be added to the data frame, which will be used instead
+of the \code{cell_to_metacell} parameter.}
 
 \item{cell_to_metacell}{data frame with a column named "cell_id" with cell id and
 another column named "metacell" with the metacell the cell is part of, or a
-name of a delimited file which contains such data frame.}
+name of a delimited file which contains such data frame. If NULL, the metacell
+will be inferred from the 'metacell' column in \code{cell_metadata}.}
 
 \item{gene_modules_file}{path to a tabular file (csv,tsv) with assignment of genes to gene modules. Should have a field named "gene" with the gene name and a field named "module" with the name of the gene module.}
 

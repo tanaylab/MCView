@@ -464,9 +464,6 @@ import_dataset <- function(project,
 
     # cell metadata
     if (!is.null(cell_metadata)) {
-        if (is.null(cell_to_metacell)) {
-            cli_abort("Please provide also {.field cell_to_metacell} in order to import {.field cell_metadata}")
-        }
         import_cell_metadata(project, dataset, cell_metadata, cell_to_metacell)
     }
 

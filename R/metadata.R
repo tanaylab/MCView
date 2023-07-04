@@ -110,10 +110,13 @@ update_metadata_colors <- function(project,
 #' @param cell_metadata data frame with a column named "cell_id" with
 #' the cell id and other metadata columns, or a name of a delimited file which
 #' contains such data frame. For activating the "Samples" tab, the data frame should have an additional
-#' column named "samp_id" with a sample identifier per cell (e.g., batch id, patient etc.)
+#' column named "samp_id" with a sample identifier per cell (e.g., batch id, patient etc.).
+#' Optionally, a column named "metacell" can be added to the data frame, which will be used instead
+#' of the \code{cell_to_metacell} parameter.
 #' @param cell_to_metacell data frame with a column named "cell_id" with cell id and
 #' another column named "metacell" with the metacell the cell is part of, or a
-#' name of a delimited file which contains such data frame.
+#' name of a delimited file which contains such data frame. If NULL, the metacell
+#' will be inferred from the 'metacell' column in \code{cell_metadata}.
 #' @param summarise_md summarise cell metadata to the metacell level.
 #' @param add_samples_tab add the 'Samples' tab to the config file if it doesn't exist
 #'
@@ -126,17 +129,25 @@ update_metadata_colors <- function(project,
 #' @inheritDotParams cell_metadata_to_metacell
 #'
 #' @export
-import_cell_metadata <- function(project, dataset, cell_metadata, cell_to_metacell, summarise_md = FALSE, add_samples_tab = TRUE, ...) {
+import_cell_metadata <- function(project, dataset, cell_metadata, cell_to_metacell = NULL, summarise_md = FALSE, add_samples_tab = TRUE, ...) {
     if (is.character(cell_metadata)) {
         cell_metadata <- tgutil::fread(cell_metadata) %>% as_tibble()
+    }
+
+    if (colnames(cell_metadata)[1] != "cell_id") {
+        cli_abort("First column of {.code cell_metadata} is not named {.field cell_id} (it is named {.field {colnames(cell_metadata)[1]}})")
     }
 
     if (is.character(cell_to_metacell)) {
         cell_to_metacell <- tgutil::fread(cell_to_metacell) %>% as_tibble()
     }
 
-    if (colnames(cell_metadata)[1] != "cell_id") {
-        cli_abort("First column of {.code cell_metadata} is not named {.field cell_id} (it is named {.field {colnames(cell_metadata)[1]}})")
+    if (is.null(cell_to_metacell)) {
+        if (has_name(cell_metadata, "metacell")) {
+            cell_to_metacell <- cell_metadata %>% select(cell_id, metacell)
+        } else {
+            cli_abort("No {.code cell_to_metacell} was given and no {.field metacell} column was found in {.code cell_metadata}")
+        }
     }
 
     if (colnames(cell_to_metacell)[2] != "metacell") {
@@ -152,6 +163,7 @@ import_cell_metadata <- function(project, dataset, cell_metadata, cell_to_metace
     }
 
     cell_metadata <- cell_metadata %>%
+        select(-any_of("metacell")) %>%
         left_join(cell_to_metacell, by = "cell_id")
 
     cell_metadata <- cell_metadata %>%
