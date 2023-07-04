@@ -1,7 +1,7 @@
 import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights_file, dataset, cache_dir, copy_atlas, gene_names = NULL) {
     cli_alert_info("Reading dataset {.file {atlas_dataset}} at project: {.file {atlas_project}}")
     if (!fs::dir_exists(fs::path(project_cache_dir(atlas_project), atlas_dataset))) {
-        # check if project cache dir only has a single dataset 
+        # check if project cache dir only has a single dataset
         if (length(fs::dir_ls(project_cache_dir(atlas_project))) == 1) {
             atlas_dataset_new <- basename(fs::dir_ls(project_cache_dir(atlas_project))[[1]])
             cli_alert_info("Project {.file {atlas_project}} only has a single dataset ({.file {atlas_dataset_new}}), using that one instead of {.file {atlas_dataset}}")

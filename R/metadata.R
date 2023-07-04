@@ -161,6 +161,16 @@ import_cell_metadata <- function(project, dataset, cell_metadata, cell_to_metace
         cli_abort("No cells left after filtering non-existing metacells. Please check your {.field cell_to_metacell} data frame.")
     }
 
+    if (has_name(cell_metadata, "samp_id")) {
+        if (has_name(cell_metadata, "cell_num")) {
+            cli_alert_warning("{.field cell_metadata} already contains a column named {.field cell_num}. It will be overwritten by number of cells per sample.}")
+        }
+        cell_metadata <- cell_metadata %>%
+            group_by(samp_id) %>%
+            mutate(cell_num = n()) %>%
+            ungroup()
+    }
+
     serialize_shiny_data(cell_metadata, "cell_metadata", dataset = dataset, cache_dir = cache_dir, flat = TRUE)
 
     if (summarise_md) {
@@ -172,7 +182,7 @@ import_cell_metadata <- function(project, dataset, cell_metadata, cell_to_metace
         update_metadata(project, dataset, md, overwrite = FALSE)
     } else {
         if (has_name(cell_metadata, "samp_id")) {
-            md <- cell_metadata_to_metacell(cell_metadata %>% select(cell_id, samp_id), cell_to_metacell, ...)
+            md <- cell_metadata_to_metacell(cell_metadata %>% select(cell_id, samp_id) %>% mutate(samp_id = forcats::fct_na_value_to_level(samp_id, "(Missing)")), cell_to_metacell, ...)
             update_metadata(project, dataset, md, overwrite = FALSE)
         }
     }

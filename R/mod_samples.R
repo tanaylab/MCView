@@ -12,6 +12,36 @@ mod_samples_ui <- function(id) {
     tagList(
         fluidRow(
             generic_column(
+                width = 12,
+                generic_box(
+                    id = ns("sample_types_box"),
+                    title = "Sample types",
+                    status = "primary",
+                    solidHeader = TRUE,
+                    collapsible = TRUE,
+                    closable = FALSE,
+                    width = 12,
+                    shinycssloaders::withSpinner(
+                        plotly::plotlyOutput(ns("plot_sample_stacked_types"))
+                    ),
+                    shinydashboardPlus::accordion(
+                        id = ns("sample_types_accordion"),
+                        shinydashboardPlus::accordionItem(
+                            title = "Order by",
+                            collapsed = FALSE,
+                            shinyWidgets::virtualSelectInput(
+                                ns("sample_types_ordering"),
+                                "",
+                                choices = c(),
+                                multiple = FALSE,
+                                search = TRUE,
+                                dropboxWrapper = "body"
+                            )
+                        )
+                    )
+                )
+            ),
+            generic_column(
                 width = 5,
                 generic_box(
                     id = ns("sample_sample_box"),
@@ -25,9 +55,6 @@ mod_samples_ui <- function(id) {
                         startOpen = FALSE,
                         width = 100,
                         id = ns("gene_gene_sidebar"),
-                        axis_selector("x_axis", "Metadata", ns, choices = c("Metadata", "Gene", "Cell type")),
-                        axis_selector("y_axis", "Metadata", ns, choices = c("Metadata", "Gene", "Cell type")),
-                        axis_selector("color_by", "Metadata", ns, choices = c("Metadata", "Gene", "Cell type")),
                         uiOutput(ns("gene_gene_point_size_ui")),
                         uiOutput(ns("gene_gene_stroke_ui"))
                     ),
@@ -35,6 +62,16 @@ mod_samples_ui <- function(id) {
                     textOutput(ns("no_samples1")),
                     shinycssloaders::withSpinner(
                         plotly::plotlyOutput(ns("plot_gene_gene_mc"))
+                    ),
+                    shinydashboardPlus::accordion(
+                        id = ns("gene_gene_accordion"),
+                        shinydashboardPlus::accordionItem(
+                            title = "Select axes",
+                            collapsed = FALSE,
+                            axis_selector("x_axis", "Metadata", ns, choices = c("Metadata", "Gene", "Cell type")),
+                            axis_selector("y_axis", "Metadata", ns, choices = c("Metadata", "Gene", "Cell type")),
+                            axis_selector("color_by", "Metadata", ns, choices = c("Metadata", "Gene", "Cell type"))
+                        )
                     )
                 ),
                 uiOutput(ns("diff_expr_box"))
@@ -88,6 +125,18 @@ mod_samples_server <- function(id, dataset, metacell_types, cell_type_colors, ge
             top_correlated_selectors(input, output, session, dataset, ns, button_labels = c("X", "Y", "Color"))
 
             output$cell_type_list <- cell_type_selector(dataset, ns, id = "selected_cell_types", label = "Cell types", cell_type_colors = cell_type_colors)
+
+            observe({
+                choices <- c(dataset_cell_metadata_fields_numeric(dataset()), "Default")
+                shinyWidgets::updateVirtualSelect(
+                    session = session,
+                    inputId = "sample_types_ordering",
+                    choices = choices,
+                    selected = choices[1]
+                )
+            })
+
+            output$plot_sample_stacked_types <- plot_sample_stacked_types(dataset, metacell_types, cell_type_colors, input)
 
             scatter_selectors(ns, dataset, output, globals)
             projection_selectors(ns, dataset, output, input, gene_modules, globals, session, weight = 0.6)
@@ -195,6 +244,11 @@ mod_samples_server <- function(id, dataset, metacell_types, cell_type_colors, ge
                 req(input$selected_cell_types)
                 req(input$samp1)
                 req(input$samp2)
+                samp_frac <- get_samp_mc_frac(dataset())
+                req(input$samp1 %in% rownames(samp_frac))
+                req(input$samp2 %in% rownames(samp_frac))
+                req(sum(samp_frac[input$samp1, ], na.rm = TRUE) > 0)
+                req(sum(samp_frac[input$samp2, ], na.rm = TRUE) > 0)
                 calc_samp_samp_gene_df(dataset(), input$samp1, input$samp2, metacell_types(), cell_types = input$selected_cell_types)
             }) %>% bindCache(dataset(), input$selected_cell_type, input$samp1, input$samp2, metacell_types())
 
@@ -280,6 +334,7 @@ mod_samples_server <- function(id, dataset, metacell_types, cell_type_colors, ge
             }) %>% bindCache(dataset(), input$x_axis_var, input$x_axis_type, input$y_axis_var, input$y_axis_type, input$color_by_type, input$color_by_var, metacell_types(), cell_type_colors(), input$gene_gene_point_size, input$gene_gene_stroke, input$selected_cell_types)
 
             sample_click_observer("samp_samp_plot", session, "samp1")
+            sample_click_observer("samp_types_plot", session, "samp1")
             observeEvent(plotly::event_data("plotly_click", source = "samp_samp_diff_expr_plot"), {
                 req(input$x_axis_type == "Gene")
                 el <- plotly::event_data("plotly_click", source = "samp_samp_diff_expr_plot")
