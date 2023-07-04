@@ -162,6 +162,11 @@ import_cell_metadata <- function(project, dataset, cell_metadata, cell_to_metace
         cli_alert_warning("The following metacells from {.field cell_to_metacell} do not exist in the dataset: {.file {mcs}}")
     }
 
+    # make sure there are no duplicated cell ids
+    if (anyDuplicated(cell_metadata$cell_id) > 0) {
+        cli_abort("There are duplicated cell ids in {.field cell_metadata}. Please make sure each cell has a unique id.")
+    }
+
     cell_metadata <- cell_metadata %>%
         select(-any_of("metacell")) %>%
         left_join(cell_to_metacell, by = "cell_id")
