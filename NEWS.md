@@ -1,3 +1,8 @@
+# MCView 0.2.12
+
+* Added `Sample types` plot to the `Samples` tab.
+* Fixed a few bugs in the `Samples` tab.
+
 # MCView 0.2.11
 
 * Fix: fitted gene plot was not shown when 'corrected_factor' was missing from the input data.
