@@ -47,7 +47,7 @@ plot_sample_stacked_types <- function(dataset, metacell_types, cell_type_colors,
         }
 
         p <- samp_types %>%
-            ggplot(aes(x = Sample, y = `Fraction`, fill = `Cell type`, customdata = `# of cells`)) +
+            ggplot(aes(x = Sample, y = `Fraction`, fill = `Cell type`, customdata = Sample, tooltip_text = `# of cells`)) +
             geom_col() +
             scale_fill_manual(name = "", values = cell_type_colors() %>%
                 select(cell_type, color) %>%
@@ -63,7 +63,7 @@ plot_sample_stacked_types <- function(dataset, metacell_types, cell_type_colors,
             xlab(xlab) +
             guides(fill = "none")
 
-        p <- plotly::ggplotly(p) %>%
+        p <- plotly::ggplotly(p, source = "samp_types_plot") %>%
             sanitize_plotly_buttons()
 
         return(p)

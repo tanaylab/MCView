@@ -334,6 +334,7 @@ mod_samples_server <- function(id, dataset, metacell_types, cell_type_colors, ge
             }) %>% bindCache(dataset(), input$x_axis_var, input$x_axis_type, input$y_axis_var, input$y_axis_type, input$color_by_type, input$color_by_var, metacell_types(), cell_type_colors(), input$gene_gene_point_size, input$gene_gene_stroke, input$selected_cell_types)
 
             sample_click_observer("samp_samp_plot", session, "samp1")
+            sample_click_observer("samp_types_plot", session, "samp1")
             observeEvent(plotly::event_data("plotly_click", source = "samp_samp_diff_expr_plot"), {
                 req(input$x_axis_type == "Gene")
                 el <- plotly::event_data("plotly_click", source = "samp_samp_diff_expr_plot")
