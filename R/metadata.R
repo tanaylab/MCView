@@ -161,6 +161,16 @@ import_cell_metadata <- function(project, dataset, cell_metadata, cell_to_metace
         cli_abort("No cells left after filtering non-existing metacells. Please check your {.field cell_to_metacell} data frame.")
     }
 
+    if (has_name(cell_metadata, "samp_id")) {
+        if (has_name(cell_metadata, "cell_num")) {
+            cli_alert_warning("{.field cell_metadata} already contains a column named {.field cell_num}. It will be overwritten by number of cells per sample.}")
+        }
+        cell_metadata <- cell_metadata %>%
+            group_by(samp_id) %>%
+            mutate(cell_num = n()) %>%
+            ungroup()
+    }
+
     serialize_shiny_data(cell_metadata, "cell_metadata", dataset = dataset, cache_dir = cache_dir, flat = TRUE)
 
     if (summarise_md) {

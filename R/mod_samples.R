@@ -12,6 +12,36 @@ mod_samples_ui <- function(id) {
     tagList(
         fluidRow(
             generic_column(
+                width = 12,
+                generic_box(
+                    id = ns("sample_types_box"),
+                    title = "Sample types",
+                    status = "primary",
+                    solidHeader = TRUE,
+                    collapsible = TRUE,
+                    closable = FALSE,
+                    width = 12,
+                    shinycssloaders::withSpinner(
+                        plotly::plotlyOutput(ns("plot_sample_stacked_types"))
+                    ),
+                    shinydashboardPlus::accordion(
+                        id = ns("sample_types_accordion"),
+                        shinydashboardPlus::accordionItem(
+                            title = "Order by",
+                            collapsed = FALSE,
+                            shinyWidgets::virtualSelectInput(
+                                ns("sample_types_ordering"),
+                                "",
+                                choices = c(),
+                                multiple = FALSE,
+                                search = TRUE,
+                                dropboxWrapper = "body"
+                            )
+                        )
+                    )
+                )
+            ),
+            generic_column(
                 width = 5,
                 generic_box(
                     id = ns("sample_sample_box"),
@@ -95,6 +125,18 @@ mod_samples_server <- function(id, dataset, metacell_types, cell_type_colors, ge
             top_correlated_selectors(input, output, session, dataset, ns, button_labels = c("X", "Y", "Color"))
 
             output$cell_type_list <- cell_type_selector(dataset, ns, id = "selected_cell_types", label = "Cell types", cell_type_colors = cell_type_colors)
+
+            observe({
+                choices <- c(dataset_cell_metadata_fields_numeric(dataset()), "Default")
+                shinyWidgets::updateVirtualSelect(
+                    session = session,
+                    inputId = "sample_types_ordering",
+                    choices = choices,
+                    selected = choices[1]
+                )
+            })
+
+            output$plot_sample_stacked_types <- plot_sample_stacked_types(dataset, metacell_types, cell_type_colors, input)
 
             scatter_selectors(ns, dataset, output, globals)
             projection_selectors(ns, dataset, output, input, gene_modules, globals, session, weight = 0.6)
