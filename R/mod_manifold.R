@@ -44,10 +44,26 @@ mod_manifold_sidebar_ui <- function(id) {
                 selectize = FALSE
             ),
             shinyWidgets::actionGroupButtons(ns("remove_genes"), labels = "Remove selected genes", size = "sm"),
+            downloadButton(ns("download_genes"), "Save genes", align = "center", style = "margin: 5px 5px 5px 15px; "),
+            fileInput(ns("load_genes"),
+                label = NULL,
+                buttonLabel = "Load genes",
+                multiple = FALSE,
+                accept =
+                    c(
+                        "text/csv",
+                        "text/comma-separated-values,text/plain",
+                        "text/tab-separated-values",
+                        ".csv",
+                        ".tsv"
+                    )
+            ),
             numericInput(ns("n_neighbors"), "Number of neighbors", value = 10, min = 1, max = 100, step = 1),
             numericInput(ns("min_dist"), "Minimum distance", value = 0.96, min = 0, max = 1, step = 0.01),
             numericInput(ns("n_epoch"), "Number of epochs", value = 500, min = 1, max = 10000, step = 1),
-            numericInput(ns("min_log_expr"), "Minimum log expression", value = -14, min = -50, max = 0, step = 0.1)
+            numericInput(ns("min_log_expr"), "Minimum log expression", value = -14, min = -50, max = 0, step = 0.1),
+            downloadButton(ns("download_projection"), "Download 2D positions", align = "center", style = "margin: 5px 5px 5px 15px; "),
+            downloadButton(ns("download_graph"), "Download edges", align = "center", style = "margin: 5px 5px 5px 15px; ")
         )
     )
 }
@@ -111,6 +127,53 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 globals$anchor_genes <- new_anchors
             })
 
+            output$download_genes <- downloadHandler(
+                filename = function() {
+                    paste0("anchor_genes_", dataset(), "_", Sys.Date(), ".csv")
+                },
+                content = function(file) {
+                    fwrite(tibble(gene = globals$anchor_genes), file, row.names = FALSE, col.names = FALSE)
+                }
+            )
+
+            output$download_projection <- downloadHandler(
+                filename = function() {
+                    paste0("projection_", dataset(), "_", Sys.Date(), ".csv")
+                },
+                content = function(file) {
+                    mc2d <- globals$mc2d
+                    req(mc2d)
+                    fwrite(mc2d_to_df(mc2d), file, row.names = FALSE)
+                }
+            )
+
+            output$download_graph <- downloadHandler(
+                filename = function() {
+                    paste0("graph_", dataset(), "_", Sys.Date(), ".csv")
+                },
+                content = function(file) {
+                    mc2d <- globals$mc2d
+                    req(mc2d)
+                    fwrite(mc2d$graph, file, row.names = FALSE)
+                }
+            )
+
+            observeEvent(input$load_genes, {
+                req(input$load_genes)
+                req(input$load_genes$datapath)
+                req(file.exists(input$load_genes$datapath))
+                new_anchors <- fread(input$load_genes$datapath, header = FALSE)[, 1]
+
+                # check if all genes are present in the dataset
+                unknown_genes <- setdiff(new_anchors, gene_names(dataset()))
+                if (length(unknown_genes) > 0) {
+                    showNotification(paste0("Unknown genes: ", paste(unknown_genes, collapse = ", ")), type = "error")
+                    new_anchors <- setdiff(new_anchors, unknown_genes)
+                }
+
+                req(length(new_anchors) > 0)
+                globals$anchor_genes <- new_anchors
+            })
 
             # Projection plots
             output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, source = "proj_manifold_plot") %>%
