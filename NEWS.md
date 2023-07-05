@@ -1,3 +1,7 @@
+# MCView 0.2.13 
+
+* Added UMAP computation given anchor genes to the 'Manifold' tab.
+
 # MCView 0.2.12
 
 * Added `Sample types` plot to the `Samples` tab.
