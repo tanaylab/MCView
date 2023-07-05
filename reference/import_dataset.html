@@ -14,7 +14,7 @@ which can be in the app using the right sidebar."><!-- mathjax --><script src="h
     
     <a class="navbar-brand me-2" href="../index.html">MCView</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.12</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.13</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -93,6 +93,10 @@ which can be in the app using the right sidebar.</p>
 <span>  copy_atlas <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  minimal_max_log_fraction <span class="op">=</span> <span class="op">-</span><span class="fl">13</span>,</span>
 <span>  minimal_relative_log_fraction <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  umap_anchors <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  umap_config <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  min_umap_log_expr <span class="op">=</span> <span class="op">-</span><span class="fl">14</span>,</span>
+<span>  genes_per_anchor <span class="op">=</span> <span class="fl">30</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -231,6 +235,22 @@ will be inferred from the 'metacell' column in <code>cell_metadata</code>.</p></
 <dt>minimal_relative_log_fraction</dt>
 <dd><p>When choosing marker genes: take only genes with relative
 log fraction (mc_fp) above this this value</p></dd>
+
+
+<dt>umap_anchors</dt>
+<dd><p>a vector of gene names to use for UMAP calculation. If NULL, the umap from the anndata object would be used.</p></dd>
+
+
+<dt>umap_config</dt>
+<dd><p>a named list with UMAP configuration. See <code><a href="https://rdrr.io/pkg/umap/man/umap.html" class="external-link">umap::umap</a></code> for more details. When NULL, the default configuration would be used, except for: min_dist=0.96, n_neighbors=10, n_epoch=500.</p></dd>
+
+
+<dt>min_umap_log_expr</dt>
+<dd><p>minimal log2 expression for genes to use for UMAP calculation.</p></dd>
+
+
+<dt>genes_per_anchor</dt>
+<dd><p>number of genes to use for each umap anchor.</p></dd>
 
 
 <dt>...</dt>
