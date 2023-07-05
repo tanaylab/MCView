@@ -63,6 +63,8 @@
 #' @param minimal_relative_log_fraction When choosing marker genes: take only genes with relative
 #' log fraction (mc_fp) above this this value
 #' @param umap_anchors a vector of gene names to use for UMAP calculation. If NULL, the umap from the anndata object would be used.
+#' @param umap_config a named list with UMAP configuration. See \code{umap::umap} for more details. When NULL, the default configuration would be used, except for: min_dist=0.96, n_neighbors=10, n_epoch=500.
+#' @param min_umap_log_expr minimal log2 expression for genes to use for UMAP calculation.
 #'
 #' @return invisibly returns an \code{AnnDataR6} object of the read \code{anndata_file}
 #'
@@ -108,6 +110,8 @@ import_dataset <- function(project,
                            minimal_max_log_fraction = -13,
                            minimal_relative_log_fraction = 2,
                            umap_anchors = NULL,
+                           umap_config = NULL,
+                           min_umap_log_expr = -14,
                            ...) {
     verbose <- !is.null(getOption("MCView.verbose")) && getOption("MCView.verbose")
     verify_project_dir(project, create = TRUE, atlas = !is.null(atlas_project), ...)
@@ -189,7 +193,7 @@ import_dataset <- function(project,
     cli_alert_info("Processing 2d projection")
     mc2d_list <- NULL
     if (!is.null(umap_anchors)) {
-        mc2d_list <- compute_umap(mc_egc, umap_anchors)
+        mc2d_list <- compute_umap(mc_egc, umap_anchors, min_log_expr = min_umap_log_expr, config = umap_config)
         if (!is.null(mc2d_list)) {
             serialize_shiny_data(umap_anchors, "umap_anchors", dataset = dataset, cache_dir = cache_dir)
         }

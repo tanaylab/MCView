@@ -31,6 +31,8 @@ import_dataset(
   minimal_max_log_fraction = -13,
   minimal_relative_log_fraction = 2,
   umap_anchors = NULL,
+  umap_config = NULL,
+  min_umap_log_expr = -14,
   ...
 )
 }
@@ -120,6 +122,10 @@ will be inferred from the 'metacell' column in \code{cell_metadata}.}
 log fraction (mc_fp) above this this value}
 
 \item{umap_anchors}{a vector of gene names to use for UMAP calculation. If NULL, the umap from the anndata object would be used.}
+
+\item{umap_config}{a named list with UMAP configuration. See \code{umap::umap} for more details. When NULL, the default configuration would be used, except for: min_dist=0.96, n_neighbors=10, n_epoch=500.}
+
+\item{min_umap_log_expr}{minimal log2 expression for genes to use for UMAP calculation.}
 
 \item{...}{
   Arguments passed on to \code{\link[=create_project]{create_project}}
