@@ -33,6 +33,7 @@ import_dataset(
   umap_anchors = NULL,
   umap_config = NULL,
   min_umap_log_expr = -14,
+  genes_per_anchor = 30,
   ...
 )
 }
@@ -126,6 +127,8 @@ log fraction (mc_fp) above this this value}
 \item{umap_config}{a named list with UMAP configuration. See \code{umap::umap} for more details. When NULL, the default configuration would be used, except for: min_dist=0.96, n_neighbors=10, n_epoch=500.}
 
 \item{min_umap_log_expr}{minimal log2 expression for genes to use for UMAP calculation.}
+
+\item{genes_per_anchor}{number of genes to use for each umap anchor.}
 
 \item{...}{
   Arguments passed on to \code{\link[=create_project]{create_project}}

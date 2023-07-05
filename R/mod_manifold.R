@@ -58,6 +58,7 @@ mod_manifold_sidebar_ui <- function(id) {
                         ".tsv"
                     )
             ),
+            numericInput(ns("genes_per_anchor"), "Genes per anchor", value = 30, min = 1, max = 100, step = 1),
             numericInput(ns("n_neighbors"), "Number of neighbors", value = 10, min = 1, max = 100, step = 1),
             numericInput(ns("min_dist"), "Minimum distance", value = 0.96, min = 0, max = 1, step = 0.01),
             numericInput(ns("n_epoch"), "Number of epochs", value = 500, min = 1, max = 10000, step = 1),
@@ -89,7 +90,7 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 showNotification("Recomputing 2D projection")
                 mc_egc <- get_mc_egc(dataset())
 
-                mc2d <- compute_umap(mc_egc, globals$anchor_genes, n_neighbors = input$n_neighbors, min_dist = input$min_dist, n_epoch = input$n_epoch, min_log_expr = input$min_log_expr)
+                mc2d <- compute_umap(mc_egc, globals$anchor_genes, n_neighbors = input$n_neighbors, min_dist = input$min_dist, n_epoch = input$n_epoch, min_log_expr = input$min_log_expr, genes_per_anchor = input$genes_per_anchor)
                 if (is.null(mc2d)) {
                     showNotification("Recomputing 2D projection failed", type = "error")
                 }

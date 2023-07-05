@@ -1,7 +1,7 @@
 #' Compute a umap 2D projection based on gene anchors
 #'
 #' @noRd
-compute_umap <- function(mc_egc, anchors, min_dist = 0.96, n_neighbors = 10, n_epoch = 500, min_log_expr = -14, config = NULL) {
+compute_umap <- function(mc_egc, anchors, min_dist = 0.96, n_neighbors = 10, n_epoch = 500, min_log_expr = -14, genes_per_anchor = 30, config = NULL) {
     if (!all(anchors %in% rownames(mc_egc))) {
         cli::cli_abort("Umap gene{?s} {.val {anchors[!(anchors %in% rownames(mc_egc))]}} not found in metacell gene expression data")
     }
@@ -21,7 +21,7 @@ compute_umap <- function(mc_egc, anchors, min_dist = 0.96, n_neighbors = 10, n_e
         return(NULL)
     }
 
-    knn <- tgs_cor_knn(t(legc[anchors, ]), t(legc), knn = 30)
+    knn <- tgs_cor_knn(t(legc[anchors, ]), t(legc), knn = genes_per_anchor)
     gmods <- knn$col1
     names(gmods) <- knn$col2
     legc_anchors <- legc[names(gmods), ]
