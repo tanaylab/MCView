@@ -3,8 +3,8 @@
 #' @param dataset name of metacell object
 #'
 #' @noRd
-mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_size(dataset), min_d = min_edge_length(dataset), stroke = initial_proj_stroke(dataset), graph_color = "black", graph_width = 0.1, id = NULL, max_lfp = NULL, min_lfp = NULL, max_expr = NULL, min_expr = NULL, stat = "expression", atlas = FALSE, gene_name = NULL, graph_name = NULL) {
-    mc2d <- get_mc_data(dataset, "mc2d", atlas = atlas)
+mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_size(dataset), min_d = min_edge_length(dataset), stroke = initial_proj_stroke(dataset), graph_color = "black", graph_width = 0.1, id = NULL, max_lfp = NULL, min_lfp = NULL, max_expr = NULL, min_expr = NULL, stat = "expression", atlas = FALSE, gene_name = NULL, graph_name = NULL, mc2d = NULL) {
+    mc2d <- mc2d %||% get_mc_data(dataset, "mc2d", atlas = atlas)
     metacell_types <- get_mc_data(dataset, "metacell_types", atlas = atlas)
     min_lfp <- min_lfp %||% -3
     max_lfp <- max_lfp %||% 3
@@ -164,6 +164,8 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
         req(input$stroke)
         req(input$min_edge_size)
 
+        mc2d <- globals$mc2d %||% get_mc_data(dataset, "mc2d")
+
         plot_2d_gene <- function(gene, gene_name = NULL) {
             req(proj_stat)
             if (proj_stat == "enrichment") {
@@ -189,7 +191,8 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
                 stat = proj_stat,
                 atlas = atlas,
                 gene_name = gene_name,
-                graph_name = input$graph_name
+                graph_name = input$graph_name,
+                mc2d = mc2d
             )
 
             fig <- fig %>% rm_plotly_grid()
@@ -208,7 +211,8 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
                 metadata = metadata,
                 colors = colors,
                 color_breaks = color_breaks,
-                graph_name = input$graph_name
+                graph_name = input$graph_name,
+                mc2d = mc2d
             )
 
             return(fig)
@@ -288,7 +292,8 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
                 atlas = atlas,
                 metadata = metacell_types() %>% rename(`Cell type` = cell_type),
                 colors = get_cell_type_colors(dataset, cell_type_colors = cell_type_colors(), atlas = atlas),
-                graph_name = input$graph_name
+                graph_name = input$graph_name,
+                mc2d = mc2d
             )
         } else if (color_proj == "Gene A") {
             req(input$gene1)

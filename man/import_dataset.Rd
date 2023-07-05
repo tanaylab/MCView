@@ -30,6 +30,7 @@ import_dataset(
   copy_atlas = TRUE,
   minimal_max_log_fraction = -13,
   minimal_relative_log_fraction = 2,
+  umap_anchors = NULL,
   ...
 )
 }
@@ -117,6 +118,8 @@ will be inferred from the 'metacell' column in \code{cell_metadata}.}
 
 \item{minimal_relative_log_fraction}{When choosing marker genes: take only genes with relative
 log fraction (mc_fp) above this this value}
+
+\item{umap_anchors}{a vector of gene names to use for UMAP calculation. If NULL, the umap from the anndata object would be used.}
 
 \item{...}{
   Arguments passed on to \code{\link[=create_project]{create_project}}

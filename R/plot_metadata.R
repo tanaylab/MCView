@@ -18,8 +18,9 @@ mc2d_plot_metadata_ggp <- function(dataset,
                                    metacell_types = NULL,
                                    atlas = FALSE,
                                    metadata = NULL,
-                                   graph_name = NULL) {
-    mc2d <- get_mc_data(dataset, "mc2d", atlas = atlas)
+                                   graph_name = NULL,
+                                   mc2d = NULL) {
+    mc2d <- mc2d %||% get_mc_data(dataset, "mc2d", atlas = atlas)
     metadata <- metadata %||% get_mc_data(dataset, "metadata", atlas = atlas)
 
     metadata <- metadata %>% mutate(metacell = as.character(metacell))
