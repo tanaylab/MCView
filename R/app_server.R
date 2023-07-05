@@ -20,6 +20,8 @@ app_server <- function(input, output, session) {
         globals$screen_height <- input$screen_height
         globals$clipboard <- character(0)
         globals$active_tabs <- config$tabs
+        globals$mc2d <- get_mc_data(dataset(), "mc2d")
+        globals$anchor_genes <- get_mc_data(dataset(), "umap_anchors")
     })
 
     output$menu <- shinydashboard::renderMenu({
