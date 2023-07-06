@@ -46,6 +46,8 @@ mod_manifold_sidebar_ui <- function(id) {
                 selectize = FALSE
             ),
             shinyWidgets::actionGroupButtons(ns("remove_genes"), labels = "Remove selected genes", size = "sm"),
+            uiOutput(ns("add_gene_modules_ui")),
+            tags$hr(),
             downloadButton(ns("download_genes"), "Save genes", align = "center", style = "margin: 5px 5px 5px 15px; "),
             fileInput(ns("load_genes"),
                 label = NULL,
@@ -161,6 +163,35 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
             observeEvent(input$remove_genes, {
                 new_anchors <- setdiff(globals$anchor_genes, input$selected_anchor_genes)
                 globals$anchor_genes <- new_anchors
+            })
+
+            output$add_gene_modules_ui <- renderUI({
+                modules <- unique(gene_modules()$module)
+                tagList(
+                    shinyWidgets::virtualSelectInput(ns("gene_modules_to_add"),
+                        label = "Add gene modules",
+                        choices = modules,
+                        selected = c(),
+                        multiple = TRUE,
+                        showSelectedOptionsFirst = TRUE,
+                        search = TRUE
+                    ),
+                    shinyWidgets::actionGroupButtons(c(ns("add_gene_modules"), ns("remove_gene_modules")), labels = c("Add gene modules", "Remove gene modules"), size = "sm")
+                )
+            })
+
+            observeEvent(input$add_gene_modules, {
+                req(input$gene_modules_to_add)
+                new_anchors <- sort(unique(c(globals$anchor_genes, gene_modules()$gene[gene_modules()$module %in% input$gene_modules_to_add])))
+                globals$anchor_genes <- new_anchors
+                shinyWidgets::updateVirtualSelect(session = session, inputId = "gene_modules_to_add", selected = character(0))
+            })
+
+            observeEvent(input$remove_gene_modules, {
+                req(input$gene_modules_to_add)
+                new_anchors <- setdiff(globals$anchor_genes, gene_modules()$gene[gene_modules()$module %in% input$gene_modules_to_add])
+                globals$anchor_genes <- new_anchors
+                shinyWidgets::updateVirtualSelect(session = session, inputId = "gene_modules_to_add", selected = character(0))
             })
 
             output$download_genes <- downloadHandler(
