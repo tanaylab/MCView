@@ -97,6 +97,8 @@ which can be in the app using the right sidebar.</p>
 <span>  umap_config <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  min_umap_log_expr <span class="op">=</span> <span class="op">-</span><span class="fl">14</span>,</span>
 <span>  genes_per_anchor <span class="op">=</span> <span class="fl">30</span>,</span>
+<span>  layout <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  default_graph <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -251,6 +253,14 @@ log fraction (mc_fp) above this this value</p></dd>
 
 <dt>genes_per_anchor</dt>
 <dd><p>number of genes to use for each umap anchor.</p></dd>
+
+
+<dt>layout</dt>
+<dd><p>a data frame with a column named "metacell" with the metacell id and other columns with the x and y coordinates of the metacell. If NULL, the layout would be taken from the anndata object.</p></dd>
+
+
+<dt>default_graph</dt>
+<dd><p>a data frame with a column named "from", "to" and "weight" with the ids of the metacells and the weight of the edge. If NULL, the graph would be taken from the anndata object.</p></dd>
 
 
 <dt>...</dt>
