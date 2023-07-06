@@ -34,6 +34,8 @@ import_dataset(
   umap_config = NULL,
   min_umap_log_expr = -14,
   genes_per_anchor = 30,
+  layout = NULL,
+  default_graph = NULL,
   ...
 )
 }
@@ -129,6 +131,10 @@ log fraction (mc_fp) above this this value}
 \item{min_umap_log_expr}{minimal log2 expression for genes to use for UMAP calculation.}
 
 \item{genes_per_anchor}{number of genes to use for each umap anchor.}
+
+\item{layout}{a data frame with a column named "metacell" with the metacell id and other columns with the x and y coordinates of the metacell. If NULL, the layout would be taken from the anndata object.}
+
+\item{default_graph}{a data frame with a column named "from", "to" and "weight" with the ids of the metacells and the weight of the edge. If NULL, the graph would be taken from the anndata object.}
 
 \item{...}{
   Arguments passed on to \code{\link[=create_project]{create_project}}

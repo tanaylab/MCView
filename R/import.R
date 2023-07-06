@@ -66,6 +66,8 @@
 #' @param umap_config a named list with UMAP configuration. See \code{umap::umap} for more details. When NULL, the default configuration would be used, except for: min_dist=0.96, n_neighbors=10, n_epoch=500.
 #' @param min_umap_log_expr minimal log2 expression for genes to use for UMAP calculation.
 #' @param genes_per_anchor number of genes to use for each umap anchor.
+#' @param layout a data frame with a column named "metacell" with the metacell id and other columns with the x and y coordinates of the metacell. If NULL, the layout would be taken from the anndata object.
+#' @param default_graph a data frame with a column named "from", "to" and "weight" with the ids of the metacells and the weight of the edge. If NULL, the graph would be taken from the anndata object.
 #'
 #' @return invisibly returns an \code{AnnDataR6} object of the read \code{anndata_file}
 #'
@@ -114,6 +116,8 @@ import_dataset <- function(project,
                            umap_config = NULL,
                            min_umap_log_expr = -14,
                            genes_per_anchor = 30,
+                           layout = NULL,
+                           default_graph = NULL,
                            ...) {
     verbose <- !is.null(getOption("MCView.verbose")) && getOption("MCView.verbose")
     verify_project_dir(project, create = TRUE, atlas = !is.null(atlas_project), ...)
@@ -193,38 +197,11 @@ import_dataset <- function(project,
     }
 
     cli_alert_info("Processing 2d projection")
-    mc2d_list <- NULL
-    if (!is.null(umap_anchors)) {
-        mc2d_list <- compute_umap(mc_egc, umap_anchors, min_log_expr = min_umap_log_expr, config = umap_config, genes_per_anchor = genes_per_anchor)
-        if (!is.null(mc2d_list)) {
-            serialize_shiny_data(umap_anchors, "umap_anchors", dataset = dataset, cache_dir = cache_dir)
-        }
+    if (!is.null(layout) && !is.null(default_graph)) {
+        update_2d_projection(project, dataset, layout, default_graph)
+    } else {
+        load_default_2d_projection(project, dataset, adata, mc_egc, umap_anchors, min_umap_log_expr, umap_config, genes_per_anchor)
     }
-
-    if (is.null(mc2d_list)) {
-        if (is.null(adata$obsp$obs_outgoing_weights)) {
-            cli_abort_compute_for_mcview("$obsp$obs_outgoing_weights")
-        }
-        graph <- Matrix::summary(adata$obsp$obs_outgoing_weights) %>%
-            as.data.frame()
-
-        graph <- graph %>% mutate(i = rownames(adata$obs)[i], j = rownames(adata$obs)[j])
-
-        purrr::walk(c("x", "y"), ~ {
-            if (is.null(adata$obs[[.x]])) {
-                cli_abort_compute_for_mcview(glue("$obs${.x}"))
-            }
-        })
-
-        mc2d_list <- list(
-            graph = tibble(mc1 = graph[, 1], mc2 = graph[, 2], weight = graph[, 3]),
-            mc_id = rownames(adata$obs),
-            mc_x = adata$obs %>% select(umap_x = x) %>% tibble::rownames_to_column("mc") %>% tibble::deframe(),
-            mc_y = adata$obs %>% select(umap_y = y) %>% tibble::rownames_to_column("mc") %>% tibble::deframe()
-        )
-    }
-    serialize_shiny_data(mc2d_list, "mc2d", dataset = dataset, cache_dir = cache_dir)
-
 
     if (!is.null(metacell_graphs)) {
         cli_alert_info("Processing metacell graphs")

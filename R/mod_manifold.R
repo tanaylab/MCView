@@ -64,8 +64,8 @@ mod_manifold_sidebar_ui <- function(id) {
             numericInput(ns("min_dist"), "Minimum distance", value = 0.96, min = 0, max = 1, step = 0.01),
             numericInput(ns("n_epoch"), "Number of epochs", value = 500, min = 1, max = 10000, step = 1),
             numericInput(ns("min_log_expr"), "Minimum log expression", value = -14, min = -50, max = 0, step = 0.1),
-            downloadButton(ns("download_projection"), "Download 2D positions", align = "center", style = "margin: 5px 5px 5px 15px; "),
-            downloadButton(ns("download_graph"), "Download edges", align = "center", style = "margin: 5px 5px 5px 15px; ")
+            downloadButton(ns("download_projection"), "Download 2D layout", align = "center", style = "margin: 5px 5px 5px 15px; "),
+            downloadButton(ns("download_graph"), "Download graph", align = "center", style = "margin: 5px 5px 5px 15px; ")
         )
     )
 }
@@ -144,7 +144,7 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
 
             output$download_projection <- downloadHandler(
                 filename = function() {
-                    paste0("projection_", dataset(), "_", Sys.Date(), ".csv")
+                    paste0("2d_layout_", dataset(), "_", Sys.Date(), ".csv")
                 },
                 content = function(file) {
                     mc2d <- globals$mc2d
@@ -160,7 +160,7 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 content = function(file) {
                     mc2d <- globals$mc2d
                     req(mc2d)
-                    fwrite(mc2d$graph, file, row.names = FALSE)
+                    fwrite(mc2d$graph %>% rename(from = mc1, to = mc2), file, row.names = FALSE)
                 }
             )
 
