@@ -34,6 +34,7 @@ mod_manifold_sidebar_ui <- function(id) {
             uiOutput(ns("top_correlated_select_color_proj")),
             shinyWidgets::actionGroupButtons(ns("recompute"), labels = "Recompute 2D projection", size = "sm"),
             shinyWidgets::actionGroupButtons(ns("reset"), labels = "Restore default", size = "sm"),
+            tags$hr(),
             uiOutput(ns("add_genes_ui")),
             selectInput(
                 ns("selected_anchor_genes"),
@@ -59,11 +60,13 @@ mod_manifold_sidebar_ui <- function(id) {
                         ".tsv"
                     )
             ),
+            tags$hr(),
             numericInput(ns("genes_per_anchor"), "Genes per anchor", value = 30, min = 1, max = 100, step = 1),
             numericInput(ns("n_neighbors"), "Number of neighbors", value = 10, min = 1, max = 100, step = 1),
             numericInput(ns("min_dist"), "Minimum distance", value = 0.96, min = 0, max = 1, step = 0.01),
             numericInput(ns("n_epoch"), "Number of epochs", value = 500, min = 1, max = 10000, step = 1),
             numericInput(ns("min_log_expr"), "Minimum log expression", value = -14, min = -50, max = 0, step = 0.1),
+            tags$hr(),
             downloadButton(ns("download_projection"), "Download 2D layout", align = "center", style = "margin: 5px 5px 5px 15px; "),
             fileInput(ns("load_projection"),
                 label = NULL,
@@ -78,6 +81,7 @@ mod_manifold_sidebar_ui <- function(id) {
                         ".tsv"
                     )
             ),
+            tags$hr(),
             downloadButton(ns("download_graph"), "Download graph", align = "center", style = "margin: 5px 5px 5px 15px; "),
             fileInput(ns("load_graph"),
                 label = NULL,
