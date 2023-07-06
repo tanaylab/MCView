@@ -33,6 +33,7 @@ mod_manifold_sidebar_ui <- function(id) {
         list(
             uiOutput(ns("top_correlated_select_color_proj")),
             shinyWidgets::actionGroupButtons(ns("recompute"), labels = "Recompute 2D projection", size = "sm"),
+            shinyWidgets::actionGroupButtons(ns("reset"), labels = "Restore default", size = "sm"),
             uiOutput(ns("add_genes_ui")),
             selectInput(
                 ns("selected_anchor_genes"),
@@ -96,6 +97,10 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 }
                 req(mc2d)
                 globals$mc2d <- mc2d
+            })
+
+            observeEvent(input$reset, {
+                globals$mc2d <- get_mc_data(dataset(), "mc2d")
             })
 
             observe({
