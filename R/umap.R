@@ -127,28 +127,60 @@ update_2d_projection <- function(project, dataset, layout, graph) {
 
     metacells <- get_metacell_ids(project, dataset)
 
+    mc2d_list <- layout_and_graph_to_mc2d(layout, graph, metacells)
+
+    serialize_shiny_data(mc2d_list, "mc2d", dataset = dataset, cache_dir = cache_dir)
+}
+
+layout_and_graph_to_mc2d <- function(layout, graph, metacells, warn_function = cli_warn, error_function = cli_abort) {
     if (is.character(layout)) {
         cli_alert_info("Loading layout from {.val {layout}}")
         layout <- fread(layout)
     }
 
-    purrr::walk(c("metacell", "x", "y"), ~ {
-        if (!.x %in% colnames(layout)) {
-            cli_abort("Column {.val {.x}} not found in {.field layout}")
+    columns_ok <- purrr::map_lgl(c("metacell", "x", "y"), ~ {
+        if (!(.x %in% colnames(layout))) {
+            error_function(glue("Column {.x} not found in layout"))
+            return(FALSE)
         }
+        return(TRUE)
     })
+    if (any(!columns_ok)) {
+        return(NULL)
+    }
+
+    unknown_metacells <- setdiff(metacells, layout$metacell)
+    if (length(unknown_metacells) > 0) {
+        unknown_metacells <- paste(unknown_metacells, collapse = ", ")
+        warn_function(glue("Metacells {unknown_metacells} were not found in layout"))
+    }
+
+    layout <- layout %>% filter(metacell %in% metacells)
 
     if (is.character(graph)) {
         cli_alert_info("Loading graph from {.val {graph}}")
         graph <- fread(graph)
     }
 
-    purrr::walk(c("from", "to", "weight"), ~ {
-        if (!.x %in% colnames(graph)) {
-            cli_abort("Column {.val {.x}} not found in {.field graph}")
+    columns_ok <- purrr::map_lgl(c("from", "to", "weight"), ~ {
+        if (!(.x %in% colnames(graph))) {
+            error_function(glue("Column {.x} not found in graph"))
+            return(FALSE)
         }
+        return(TRUE)
     })
 
+    if (any(!columns_ok)) {
+        return(NULL)
+    }
+
+    unknown_metacells <- c(setdiff(metacells, graph$from), setdiff(metacells, graph$to))
+    if (length(unknown_metacells) > 0) {
+        unknown_metacells <- paste(unknown_metacells, collapse = ", ")
+        warn_function(glue("Metacells {unknown_metacells} were not found in layout"))
+    }
+
+    graph <- graph %>% filter(from %in% metacells, to %in% metacells)
 
     mc2d_list <- list(
         graph = graph %>% rename(mc1 = from, mc2 = to),
@@ -157,5 +189,5 @@ update_2d_projection <- function(project, dataset, layout, graph) {
         mc_y = tibble::deframe(layout[, c("metacell", "y")])
     )
 
-    serialize_shiny_data(mc2d_list, "mc2d", dataset = dataset, cache_dir = cache_dir)
+    return(mc2d_list)
 }
