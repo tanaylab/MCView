@@ -72,3 +72,122 @@ compute_umap <- function(mc_egc, anchors, min_dist = 0.96, n_neighbors = 10, n_e
 
     return(mc2d_list)
 }
+
+load_default_2d_projection <- function(project, dataset, adata, mc_egc, umap_anchors, min_umap_log_expr, umap_config, genes_per_anchor) {
+    cache_dir <- project_cache_dir(project)
+
+    mc2d_list <- NULL
+    if (!is.null(umap_anchors)) {
+        cli_alert_info("Computing umap 2D projection based on gene anchors")
+        mc2d_list <- compute_umap(mc_egc, umap_anchors, min_log_expr = min_umap_log_expr, config = umap_config, genes_per_anchor = genes_per_anchor)
+        if (!is.null(mc2d_list)) {
+            serialize_shiny_data(umap_anchors, "umap_anchors", dataset = dataset, cache_dir = cache_dir)
+        }
+    }
+
+    if (is.null(mc2d_list)) {
+        if (is.null(adata$obsp$obs_outgoing_weights)) {
+            cli_abort_compute_for_mcview("$obsp$obs_outgoing_weights")
+        }
+        cli_alert_info("Using 2D projection from anndata object")
+        graph <- Matrix::summary(adata$obsp$obs_outgoing_weights) %>%
+            as.data.frame()
+
+        graph <- graph %>% mutate(i = rownames(adata$obs)[i], j = rownames(adata$obs)[j])
+
+        purrr::walk(c("x", "y"), ~ {
+            if (is.null(adata$obs[[.x]])) {
+                cli_abort_compute_for_mcview(glue("$obs${.x}"))
+            }
+        })
+
+        mc2d_list <- list(
+            graph = tibble(mc1 = graph[, 1], mc2 = graph[, 2], weight = graph[, 3]),
+            mc_id = rownames(adata$obs),
+            mc_x = adata$obs %>% select(umap_x = x) %>% tibble::rownames_to_column("mc") %>% tibble::deframe(),
+            mc_y = adata$obs %>% select(umap_y = y) %>% tibble::rownames_to_column("mc") %>% tibble::deframe()
+        )
+    }
+    serialize_shiny_data(mc2d_list, "mc2d", dataset = dataset, cache_dir = cache_dir)
+}
+
+
+#' Update default 2D projection for a dataset
+#'
+#' @param layout a data frame with a column named "metacell" with the metacell id and other columns with the x and y coordinates of the metacell.
+#' @param graph a data frame with a column named "from", "to" and "weight" with the ids of the metacells and the weight of the edge. If NULL, the graph would be taken from the anndata object.
+#'
+#' @inheritParams import_dataset
+#'
+#' @export
+update_2d_projection <- function(project, dataset, layout, graph) {
+    cache_dir <- project_cache_dir(project)
+
+    cli_alert_info("Loading 2D projection for dataset {.val {dataset}}")
+
+    metacells <- get_metacell_ids(project, dataset)
+
+    mc2d_list <- layout_and_graph_to_mc2d(layout, graph, metacells)
+
+    serialize_shiny_data(mc2d_list, "mc2d", dataset = dataset, cache_dir = cache_dir)
+}
+
+layout_and_graph_to_mc2d <- function(layout, graph, metacells, warn_function = cli_warn, error_function = cli_abort) {
+    if (is.character(layout)) {
+        cli_alert_info("Loading layout from {.val {layout}}")
+        layout <- fread(layout)
+    }
+
+    columns_ok <- purrr::map_lgl(c("metacell", "x", "y"), ~ {
+        if (!(.x %in% colnames(layout))) {
+            error_function(glue("Column {.x} not found in layout"))
+            return(FALSE)
+        }
+        return(TRUE)
+    })
+    if (any(!columns_ok)) {
+        return(NULL)
+    }
+
+    unknown_metacells <- setdiff(metacells, layout$metacell)
+    if (length(unknown_metacells) > 0) {
+        unknown_metacells <- paste(unknown_metacells, collapse = ", ")
+        warn_function(glue("Metacells {unknown_metacells} were not found in layout"))
+    }
+
+    layout <- layout %>% filter(metacell %in% metacells)
+
+    if (is.character(graph)) {
+        cli_alert_info("Loading graph from {.val {graph}}")
+        graph <- fread(graph)
+    }
+
+    columns_ok <- purrr::map_lgl(c("from", "to", "weight"), ~ {
+        if (!(.x %in% colnames(graph))) {
+            error_function(glue("Column {.x} not found in graph"))
+            return(FALSE)
+        }
+        return(TRUE)
+    })
+
+    if (any(!columns_ok)) {
+        return(NULL)
+    }
+
+    unknown_metacells <- c(setdiff(metacells, graph$from), setdiff(metacells, graph$to))
+    if (length(unknown_metacells) > 0) {
+        unknown_metacells <- paste(unknown_metacells, collapse = ", ")
+        warn_function(glue("Metacells {unknown_metacells} were not found in layout"))
+    }
+
+    graph <- graph %>% filter(from %in% metacells, to %in% metacells)
+
+    mc2d_list <- list(
+        graph = graph %>% rename(mc1 = from, mc2 = to),
+        mc_id = layout$metacell,
+        mc_x = tibble::deframe(layout[, c("metacell", "x")]),
+        mc_y = tibble::deframe(layout[, c("metacell", "y")])
+    )
+
+    return(mc2d_list)
+}

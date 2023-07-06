@@ -33,6 +33,8 @@ mod_manifold_sidebar_ui <- function(id) {
         list(
             uiOutput(ns("top_correlated_select_color_proj")),
             shinyWidgets::actionGroupButtons(ns("recompute"), labels = "Recompute 2D projection", size = "sm"),
+            shinyWidgets::actionGroupButtons(ns("reset"), labels = "Restore default", size = "sm"),
+            tags$hr(),
             uiOutput(ns("add_genes_ui")),
             selectInput(
                 ns("selected_anchor_genes"),
@@ -58,13 +60,42 @@ mod_manifold_sidebar_ui <- function(id) {
                         ".tsv"
                     )
             ),
+            tags$hr(),
             numericInput(ns("genes_per_anchor"), "Genes per anchor", value = 30, min = 1, max = 100, step = 1),
             numericInput(ns("n_neighbors"), "Number of neighbors", value = 10, min = 1, max = 100, step = 1),
             numericInput(ns("min_dist"), "Minimum distance", value = 0.96, min = 0, max = 1, step = 0.01),
             numericInput(ns("n_epoch"), "Number of epochs", value = 500, min = 1, max = 10000, step = 1),
             numericInput(ns("min_log_expr"), "Minimum log expression", value = -14, min = -50, max = 0, step = 0.1),
-            downloadButton(ns("download_projection"), "Download 2D positions", align = "center", style = "margin: 5px 5px 5px 15px; "),
-            downloadButton(ns("download_graph"), "Download edges", align = "center", style = "margin: 5px 5px 5px 15px; ")
+            tags$hr(),
+            downloadButton(ns("download_projection"), "Download 2D layout", align = "center", style = "margin: 5px 5px 5px 15px; "),
+            fileInput(ns("load_projection"),
+                label = NULL,
+                buttonLabel = "Load 2D layout",
+                multiple = FALSE,
+                accept =
+                    c(
+                        "text/csv",
+                        "text/comma-separated-values,text/plain",
+                        "text/tab-separated-values",
+                        ".csv",
+                        ".tsv"
+                    )
+            ),
+            tags$hr(),
+            downloadButton(ns("download_graph"), "Download graph", align = "center", style = "margin: 5px 5px 5px 15px; "),
+            fileInput(ns("load_graph"),
+                label = NULL,
+                buttonLabel = "Load graph",
+                multiple = FALSE,
+                accept =
+                    c(
+                        "text/csv",
+                        "text/comma-separated-values,text/plain",
+                        "text/tab-separated-values",
+                        ".csv",
+                        ".tsv"
+                    )
+            )
         )
     )
 }
@@ -96,6 +127,10 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 }
                 req(mc2d)
                 globals$mc2d <- mc2d
+            })
+
+            observeEvent(input$reset, {
+                globals$mc2d <- get_mc_data(dataset(), "mc2d")
             })
 
             observe({
@@ -137,28 +172,6 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 }
             )
 
-            output$download_projection <- downloadHandler(
-                filename = function() {
-                    paste0("projection_", dataset(), "_", Sys.Date(), ".csv")
-                },
-                content = function(file) {
-                    mc2d <- globals$mc2d
-                    req(mc2d)
-                    fwrite(mc2d_to_df(mc2d), file, row.names = FALSE)
-                }
-            )
-
-            output$download_graph <- downloadHandler(
-                filename = function() {
-                    paste0("graph_", dataset(), "_", Sys.Date(), ".csv")
-                },
-                content = function(file) {
-                    mc2d <- globals$mc2d
-                    req(mc2d)
-                    fwrite(mc2d$graph, file, row.names = FALSE)
-                }
-            )
-
             observeEvent(input$load_genes, {
                 req(input$load_genes)
                 req(input$load_genes$datapath)
@@ -174,6 +187,53 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
 
                 req(length(new_anchors) > 0)
                 globals$anchor_genes <- new_anchors
+            })
+
+            output$download_projection <- downloadHandler(
+                filename = function() {
+                    paste0("2d_layout_", dataset(), "_", Sys.Date(), ".csv")
+                },
+                content = function(file) {
+                    mc2d <- globals$mc2d
+                    req(mc2d)
+                    fwrite(mc2d_to_df(mc2d), file, row.names = FALSE)
+                }
+            )
+
+            observeEvent(input$load_projection, {
+                req(input$load_projection)
+                req(input$load_projection$datapath)
+                mc2d <- layout_and_graph_to_mc2d(input$load_projection$datapath, globals$mc2d$graph %>% rename(from = mc1, to = mc2), metacells = get_metacell_ids(project, dataset()), warn_function = function(msg) {
+                    showNotification(msg, type = "error")
+                }, error_function = function(msg) {
+                    showNotification(msg, type = "error")
+                })
+                req(mc2d)
+                globals$mc2d <- mc2d
+            })
+
+
+            output$download_graph <- downloadHandler(
+                filename = function() {
+                    paste0("graph_", dataset(), "_", Sys.Date(), ".csv")
+                },
+                content = function(file) {
+                    mc2d <- globals$mc2d
+                    req(mc2d)
+                    fwrite(mc2d$graph %>% rename(from = mc1, to = mc2), file, row.names = FALSE)
+                }
+            )
+
+            observeEvent(input$load_graph, {
+                req(input$load_graph)
+                req(input$load_graph$datapath)
+                mc2d <- layout_and_graph_to_mc2d(mc2d_to_df(globals$mc2d), input$load_graph$datapath, metacells = get_metacell_ids(project, dataset()), warn_function = function(msg) {
+                    showNotification(msg, type = "error")
+                }, error_function = function(msg) {
+                    showNotification(msg, type = "error")
+                })
+                req(mc2d)
+                globals$mc2d <- mc2d
             })
 
             # Projection plots
