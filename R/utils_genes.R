@@ -26,3 +26,12 @@ gene_label <- function(genes, dataset, gene_modules = NULL) {
 
     return(new_names)
 }
+
+add_gene_modules <- function(genes, dataset, gene_modules) {
+    modules <- tibble(gene = genes) %>%
+        left_join(gene_modules, by = join_by(gene)) %>%
+        pull(module) %>%
+        as.character()
+
+    return(ifelse(!is.na(modules), glue("{genes} ({modules})"), genes))
+}

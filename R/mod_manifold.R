@@ -129,14 +129,17 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 }
                 req(mc2d)
                 globals$mc2d <- mc2d
+                shinyjs::show("reset")
             })
 
             observeEvent(input$reset, {
                 globals$mc2d <- get_mc_data(dataset(), "mc2d")
+                shinyjs::hide("reset")
             })
 
             observe({
-                updateSelectInput(session, "selected_anchor_genes", choices = globals$anchor_genes)
+                shinyjs::hide("reset")
+                updateSelectInput(session, "selected_anchor_genes", choices = globals$anchor_genes, label = glue("Anchor Genes ({length(globals$anchor_genes)})"))
             })
 
             output$add_genes_ui <- renderUI({
@@ -156,6 +159,7 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
 
             observeEvent(input$add_genes, {
                 new_anchors <- sort(unique(c(globals$anchor_genes, input$genes_to_add)))
+                names(new_anchors) <- add_gene_modules(new_anchors, dataset(), gene_modules())
                 globals$anchor_genes <- new_anchors
                 shinyWidgets::updateVirtualSelect(session = session, inputId = "genes_to_add", selected = character(0))
             })
@@ -169,20 +173,21 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 modules <- unique(gene_modules()$module)
                 tagList(
                     shinyWidgets::virtualSelectInput(ns("gene_modules_to_add"),
-                        label = "Add gene modules",
+                        label = "Add gene modules genes",
                         choices = modules,
                         selected = c(),
                         multiple = TRUE,
                         showSelectedOptionsFirst = TRUE,
                         search = TRUE
                     ),
-                    shinyWidgets::actionGroupButtons(c(ns("add_gene_modules"), ns("remove_gene_modules")), labels = c("Add gene modules", "Remove gene modules"), size = "sm")
+                    shinyWidgets::actionGroupButtons(c(ns("add_gene_modules"), ns("remove_gene_modules")), labels = c("Add modules genes", "Remove modules genes"), size = "sm")
                 )
             })
 
             observeEvent(input$add_gene_modules, {
                 req(input$gene_modules_to_add)
                 new_anchors <- sort(unique(c(globals$anchor_genes, gene_modules()$gene[gene_modules()$module %in% input$gene_modules_to_add])))
+                names(new_anchors) <- add_gene_modules(new_anchors, dataset(), gene_modules())
                 globals$anchor_genes <- new_anchors
                 shinyWidgets::updateVirtualSelect(session = session, inputId = "gene_modules_to_add", selected = character(0))
             })
