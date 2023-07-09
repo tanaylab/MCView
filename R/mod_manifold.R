@@ -12,7 +12,7 @@ mod_manifold_ui <- function(id) {
     tagList(
         generic_column(
             width = 12,
-            projection_box(ns, "gene_projection", title = "2D Projection", collapsed_accordion = FALSE, show_legend = TRUE, color_choices = c("Cell type", "Gene", "Gene module", "Metadata"), plotly_height = "80vh", height = "80vh")
+            projection_box(ns, "gene_projection", title = "2D Projection", collapsed_accordion = FALSE, show_legend = TRUE, color_choices = c("Cell type", "Gene", "Gene module", "Metadata"), plotly_height = "70vh", height = "70vh")
         )
     )
 }

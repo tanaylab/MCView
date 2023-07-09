@@ -12,7 +12,7 @@ compute_umap <- function(mc_egc, anchors, min_dist = 0.96, n_neighbors = 10, n_e
     legc <- legc[f_gcov, ]
 
     if (!all(anchors %in% rownames(legc))) {
-        cli::cli_warn("Umap genes: {.val {anchors[!(anchors %in% rownames(legc))]}} do not have a minimum expression of {.val {min_log_expr}} in the metacell gene expression data. Please consider using a lower value for {.val {min_log_expr}}")
+        cli::cli_warn("Umap genes: {.val {anchors[!(anchors %in% rownames(legc))]}} do not have a minimum expression of {.val {min_log_expr}} in the metacell gene expression data. Please consider using a lower value for {.field min_log_expr}")
     }
     anchors <- anchors[anchors %in% rownames(legc)]
 
