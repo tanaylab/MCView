@@ -986,10 +986,10 @@ plot_obs_proj_scatter <- function(dataset,
     xylims <- expr_breaks
 
     if (axis_type %in% c("Gene", "Gene module")) {
-        xmax <- min(c(1:length(xylims))[xylims >= max(egc_obs)])
-        xmin <- max(c(1:length(xylims))[xylims <= min(egc_obs)])
-        ymax <- min(c(1:length(xylims))[xylims >= max(egc_proj)])
-        ymin <- max(c(1:length(xylims))[xylims <= min(egc_proj)])
+        xmax <- min(c(1:length(xylims))[xylims >= max(egc_obs) - 1e-10])
+        xmin <- max(c(1:length(xylims))[xylims <= min(egc_obs) + 1e-10])
+        ymax <- min(c(1:length(xylims))[xylims >= max(egc_proj) - 1e-10])
+        ymin <- max(c(1:length(xylims))[xylims <= min(egc_proj) + 1e-10])
         p <- p +
             scale_x_continuous(limits = c(xylims[xmin], xylims[xmax]), trans = "log2", breaks = xylims[xmin:xmax], labels = scales::scientific(xylims[xmin:xmax])) +
             xlab(glue("{x_var} Expression")) +
