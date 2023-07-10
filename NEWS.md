@@ -1,3 +1,7 @@
+# MCView 0.2.14
+
+* Query tab improvements: added a correction factor line and an option to show only fitted genes.
+
 # MCView 0.2.13 
 
 * Added UMAP computation given anchor genes to the 'Manifold' tab.
