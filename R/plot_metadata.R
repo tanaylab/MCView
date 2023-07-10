@@ -844,6 +844,7 @@ plot_obs_proj_scatter <- function(dataset,
         mutate(`Cell type` = cell_type)
 
     # set axis variables
+    correction_factor <- NULL
     axis_name <- axis_var
     if (axis_type == "Metadata") {
         req(atlas_metadata)
@@ -866,6 +867,12 @@ plot_obs_proj_scatter <- function(dataset,
             mutate(!!x_var := egc_obs[metacell], !!y_var := egc_proj[metacell]) %>%
             mutate(x_str = glue("{axis_name} obs: {expr_text}", expr_text = scales::scientific(!!sym(x_var)))) %>%
             mutate(y_str = glue("{axis_name} proj: {expr_text}", expr_text = scales::scientific(!!sym(y_var))))
+
+        # get correction factor if exists
+        gene_qc <- get_gene_qc(dataset)
+        if (!is.null(gene_qc) && has_name(gene_qc, "correction_factor") && axis_var %in% gene_qc$gene) {
+            correction_factor <- gene_qc$correction_factor[gene_qc$gene == axis_var]
+        }
     }
 
     categorical_md <- FALSE
@@ -936,12 +943,13 @@ plot_obs_proj_scatter <- function(dataset,
     # set tooltip
     df <- df %>%
         mutate(
-            Metacell = paste0(
-                glue("{metacell}\n{x_str}\n{y_str}\n{color_str}\nTop genes: {`Top genes`}\n"),
-                ifelse(has_name(df, "Age"), glue("Metacell age (E[t]): {round(Age, digits=2)}"), "")
+            Metacell = paste(
+                glue("{metacell}\n{x_str}\n{y_str}\n{color_str}\nTop genes: {`Top genes`}"),
+                ifelse(has_name(df, "Age"), glue("Metacell age (E[t]): {round(Age, digits=2)}"), ""),
+                ifelse(!is.null(correction_factor), glue("Correction factor: {round(correction_factor, 3)}"), ""),
+                sep = "\n"
             )
         )
-
 
     p <- ggplot(
         data = df,
@@ -958,6 +966,11 @@ plot_obs_proj_scatter <- function(dataset,
         xlab(x_var) +
         ylab(y_var) +
         geom_abline(linetype = "dashed")
+
+    if (!is.null(correction_factor)) {
+        p <- p +
+            geom_abline(intercept = -correction_factor, slope = 1, linetype = "dotted", color = "red")
+    }
 
     # set color plotting
     if (is.null(color_var)) {
