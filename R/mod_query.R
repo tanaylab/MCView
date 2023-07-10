@@ -31,6 +31,14 @@ mod_query_ui <- function(id) {
                     collapsible = TRUE,
                     closable = FALSE,
                     width = 12,
+                    sidebar = shinydashboardPlus::boxSidebar(
+                        startOpen = FALSE,
+                        width = 80,
+                        id = ns("mc_mc_sidebar"),
+                        checkboxInput(ns("hide_lateral"), "Hide lateral genes", value = FALSE),
+                        checkboxInput(ns("hide_noisy"), "Hide noisy genes", value = FALSE),
+                        checkboxInput(ns("show_only_fitted"), "Show only fitted genes", value = FALSE)
+                    ),
                     shinycssloaders::withSpinner(
                         plotly::plotlyOutput(ns("plot_mc_mc_gene_scatter"))
                     ),
@@ -252,7 +260,7 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
             # connect_gene_plots(input, output, session, ns, source = "proj_mc_plot_proj_tab")
 
             # Differential expression
-            output$plot_mc_mc_gene_scatter <- render_mc_mc_gene_plotly(input, output, session, ns, dataset, gene_modules, mc_mc_gene_scatter_df, metacell_names(), atlas_colors())
+            output$plot_mc_mc_gene_scatter <- render_mc_mc_gene_plotly(input, output, session, ns, dataset, gene_modules, mc_mc_gene_scatter_df, metacell_names(), atlas_colors(), metacell_types = metacell_types)
 
             # Select a gene when clicking on it
             plotly_click_observer("projection_diff_expr_plot", session, "axis_var", notification_prefix = "Selected ", update_function = shinyWidgets::updatePickerInput)

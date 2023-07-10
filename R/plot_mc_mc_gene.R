@@ -8,10 +8,10 @@
 plot_mc_mc_gene <- function(df, metacell1, metacell2, highlight = NULL, label_prefix = "MC #") {
     xylims <- expr_breaks
 
-    xmax <- min(c(1:length(xylims))[xylims >= max(df[, metacell1])])
-    xmin <- max(c(1:length(xylims))[xylims <= min(df[, metacell1])])
-    ymax <- min(c(1:length(xylims))[xylims >= max(df[, metacell2])])
-    ymin <- max(c(1:length(xylims))[xylims <= min(df[, metacell2])])
+    xmax <- min(c(1:length(xylims))[xylims >= max(df[, metacell1])] - 1e-10)
+    xmin <- max(c(1:length(xylims))[xylims <= min(df[, metacell1]) + 1e-10])
+    ymax <- min(c(1:length(xylims))[xylims >= max(df[, metacell2])] - 1e-10)
+    ymin <- max(c(1:length(xylims))[xylims <= min(df[, metacell2]) + 1e-10])
 
     if (!is.null(highlight)) {
         prev_levels <- levels(df$col)
@@ -49,7 +49,7 @@ plot_mc_mc_gene <- function(df, metacell1, metacell2, highlight = NULL, label_pr
     return(p)
 }
 
-render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, gene_modules, mc_mc_gene_scatter_df = NULL, metacell_names = NULL, cell_type_colors = NULL, mode = NULL, source_suffix = "", dragmode = NULL, plotly_buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines")) {
+render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, gene_modules, mc_mc_gene_scatter_df = NULL, metacell_names = NULL, cell_type_colors = NULL, mode = NULL, source_suffix = "", dragmode = NULL, plotly_buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), metacell_types = NULL) {
     plotly::renderPlotly({
         req(mc_mc_gene_scatter_df)
 
@@ -127,6 +127,29 @@ render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, gene_m
                 filter(!(gene %in% get_mc_data(dataset(), "noisy_genes")))
         }
 
+        if (!is.null(input$show_only_fitted) && input$show_only_fitted) {
+            req(metacell_types)
+            if (mode == "MC" || mode == "Group") {
+                types <- metacells_to_types(input$metacell1, metacell_types())
+            } else if (mode == "Type") {
+                types <- input$metacell1
+            } else {
+                req(FALSE)
+            }
+            req(types)
+
+            gene_metadata <- get_mc_data(dataset(), "gene_metadata")
+            req(!is.null(gene_metadata))
+            req(has_name(gene_metadata, "fitted_gene"))
+
+            fitted_genes <- gene_metadata %>%
+                filter(cell_type %in% types, fitted_gene) %>%
+                pull(gene)
+
+            df <- df %>%
+                filter(gene %in% fitted_genes)
+        }
+
         df <- df %>%
             mutate(gene_name = gene_label(gene, dataset(), gene_modules()))
 
@@ -162,6 +185,8 @@ render_mc_mc_gene_diff_table <- function(input, output, session, ns, dataset, mc
             if (!is.null(input$mode) && input$mode == "MCs") {
                 req(input$metacell1)
                 req(input$metacell2)
+                req(input$metacell1 %in% colnames(get_mc_data(dataset(), "mc_mat")))
+                req(input$metacell2 %in% colnames(get_mc_data(dataset(), "mc_mat")))
             }
 
             df <- mc_mc_gene_scatter_df()

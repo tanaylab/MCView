@@ -501,8 +501,8 @@ plot_mc_scatter <- function(dataset,
 
     if (x_type %in% c("Gene", "Gene module")) {
         x_limits <- x_limits %||% c(min(egc_x), max(egc_x))
-        xmax <- min(c(1:length(xylims))[xylims >= x_limits[2]])
-        xmin <- max(c(1:length(xylims))[xylims <= x_limits[1]])
+        xmax <- min(c(1:length(xylims))[xylims >= x_limits[2] - 1e-10])
+        xmin <- max(c(1:length(xylims))[xylims <= x_limits[1] + 1e-10])
         p <- p +
             scale_x_continuous(limits = c(xylims[xmin], xylims[xmax]), trans = "log2", breaks = xylims[xmin:xmax], labels = scales::scientific(xylims[xmin:xmax])) +
             xlab(glue("{x_var} Expression")) +
@@ -511,8 +511,8 @@ plot_mc_scatter <- function(dataset,
 
     if (y_type %in% c("Gene", "Gene module")) {
         y_limits <- y_limits %||% c(min(egc_y), max(egc_y))
-        ymax <- min(c(1:length(xylims))[xylims >= y_limits[2]])
-        ymin <- max(c(1:length(xylims))[xylims <= y_limits[1]])
+        ymax <- min(c(1:length(xylims))[xylims >= y_limits[2] - 1e-10])
+        ymin <- max(c(1:length(xylims))[xylims <= y_limits[1] + 1e-10])
         p <- p +
             scale_y_continuous(limits = c(xylims[ymin], xylims[ymax]), trans = "log2", breaks = xylims[ymin:ymax], labels = scales::scientific(xylims[ymin:ymax])) +
             ylab(glue("{y_var} Expression"))
@@ -844,6 +844,7 @@ plot_obs_proj_scatter <- function(dataset,
         mutate(`Cell type` = cell_type)
 
     # set axis variables
+    correction_factor <- NULL
     axis_name <- axis_var
     if (axis_type == "Metadata") {
         req(atlas_metadata)
@@ -866,6 +867,12 @@ plot_obs_proj_scatter <- function(dataset,
             mutate(!!x_var := egc_obs[metacell], !!y_var := egc_proj[metacell]) %>%
             mutate(x_str = glue("{axis_name} obs: {expr_text}", expr_text = scales::scientific(!!sym(x_var)))) %>%
             mutate(y_str = glue("{axis_name} proj: {expr_text}", expr_text = scales::scientific(!!sym(y_var))))
+
+        # get correction factor if exists
+        gene_qc <- get_gene_qc(dataset)
+        if (!is.null(gene_qc) && has_name(gene_qc, "correction_factor") && axis_var %in% gene_qc$gene) {
+            correction_factor <- gene_qc$correction_factor[gene_qc$gene == axis_var]
+        }
     }
 
     categorical_md <- FALSE
@@ -936,12 +943,13 @@ plot_obs_proj_scatter <- function(dataset,
     # set tooltip
     df <- df %>%
         mutate(
-            Metacell = paste0(
-                glue("{metacell}\n{x_str}\n{y_str}\n{color_str}\nTop genes: {`Top genes`}\n"),
-                ifelse(has_name(df, "Age"), glue("Metacell age (E[t]): {round(Age, digits=2)}"), "")
+            Metacell = paste(
+                glue("{metacell}\n{x_str}\n{y_str}\n{color_str}\nTop genes: {`Top genes`}"),
+                ifelse(has_name(df, "Age"), glue("Metacell age (E[t]): {round(Age, digits=2)}"), ""),
+                ifelse(!is.null(correction_factor), glue("Correction factor: {round(correction_factor, 3)}"), ""),
+                sep = "\n"
             )
         )
-
 
     p <- ggplot(
         data = df,
@@ -958,6 +966,11 @@ plot_obs_proj_scatter <- function(dataset,
         xlab(x_var) +
         ylab(y_var) +
         geom_abline(linetype = "dashed")
+
+    if (!is.null(correction_factor)) {
+        p <- p +
+            geom_abline(intercept = -correction_factor, slope = 1, linetype = "dotted", color = "red")
+    }
 
     # set color plotting
     if (is.null(color_var)) {

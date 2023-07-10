@@ -14,3 +14,10 @@ metacell_colors_reactive <- function(dataset, metacell_names, metacell_types) {
             pull(mc_col)
     })
 }
+
+metacells_to_types <- function(mcs, metacell_types) {
+    metacell_types %>%
+        filter(metacell %in% mcs) %>%
+        pull(cell_type) %>%
+        unique()
+}
