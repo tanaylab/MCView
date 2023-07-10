@@ -501,8 +501,8 @@ plot_mc_scatter <- function(dataset,
 
     if (x_type %in% c("Gene", "Gene module")) {
         x_limits <- x_limits %||% c(min(egc_x), max(egc_x))
-        xmax <- min(c(1:length(xylims))[xylims >= x_limits[2]])
-        xmin <- max(c(1:length(xylims))[xylims <= x_limits[1]])
+        xmax <- min(c(1:length(xylims))[xylims >= x_limits[2] - 1e-10])
+        xmin <- max(c(1:length(xylims))[xylims <= x_limits[1] + 1e-10])
         p <- p +
             scale_x_continuous(limits = c(xylims[xmin], xylims[xmax]), trans = "log2", breaks = xylims[xmin:xmax], labels = scales::scientific(xylims[xmin:xmax])) +
             xlab(glue("{x_var} Expression")) +
@@ -511,8 +511,8 @@ plot_mc_scatter <- function(dataset,
 
     if (y_type %in% c("Gene", "Gene module")) {
         y_limits <- y_limits %||% c(min(egc_y), max(egc_y))
-        ymax <- min(c(1:length(xylims))[xylims >= y_limits[2]])
-        ymin <- max(c(1:length(xylims))[xylims <= y_limits[1]])
+        ymax <- min(c(1:length(xylims))[xylims >= y_limits[2] - 1e-10])
+        ymin <- max(c(1:length(xylims))[xylims <= y_limits[1] + 1e-10])
         p <- p +
             scale_y_continuous(limits = c(xylims[ymin], xylims[ymax]), trans = "log2", breaks = xylims[ymin:ymax], labels = scales::scientific(xylims[ymin:ymax])) +
             ylab(glue("{y_var} Expression"))

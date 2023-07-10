@@ -8,10 +8,10 @@
 plot_mc_mc_gene <- function(df, metacell1, metacell2, highlight = NULL, label_prefix = "MC #") {
     xylims <- expr_breaks
 
-    xmax <- min(c(1:length(xylims))[xylims >= max(df[, metacell1])])
-    xmin <- max(c(1:length(xylims))[xylims <= min(df[, metacell1])])
-    ymax <- min(c(1:length(xylims))[xylims >= max(df[, metacell2])])
-    ymin <- max(c(1:length(xylims))[xylims <= min(df[, metacell2])])
+    xmax <- min(c(1:length(xylims))[xylims >= max(df[, metacell1])] - 1e-10)
+    xmin <- max(c(1:length(xylims))[xylims <= min(df[, metacell1]) + 1e-10])
+    ymax <- min(c(1:length(xylims))[xylims >= max(df[, metacell2])] - 1e-10)
+    ymin <- max(c(1:length(xylims))[xylims <= min(df[, metacell2]) + 1e-10])
 
     if (!is.null(highlight)) {
         prev_levels <- levels(df$col)
@@ -162,6 +162,8 @@ render_mc_mc_gene_diff_table <- function(input, output, session, ns, dataset, mc
             if (!is.null(input$mode) && input$mode == "MCs") {
                 req(input$metacell1)
                 req(input$metacell2)
+                req(input$metacell1 %in% colnames(get_mc_data(dataset(), "mc_mat")))
+                req(input$metacell2 %in% colnames(get_mc_data(dataset(), "mc_mat")))
             }
 
             df <- mc_mc_gene_scatter_df()

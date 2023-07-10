@@ -33,10 +33,10 @@ plot_gg_over_mc <- function(dataset, g1, g2, metacell_types = get_mc_data(datase
 
     xylims <- expr_breaks
 
-    xmax <- min(c(1:length(xylims))[xylims >= max(egc_g1)])
-    xmin <- max(c(1:length(xylims))[xylims <= min(egc_g1)])
-    ymax <- min(c(1:length(xylims))[xylims >= max(egc_g2)])
-    ymin <- max(c(1:length(xylims))[xylims <= min(egc_g2)])
+    xmax <- min(c(1:length(xylims))[xylims >= max(egc_g1) - 1e-10])
+    xmin <- max(c(1:length(xylims))[xylims <= min(egc_g1) + 1e-10])
+    ymax <- min(c(1:length(xylims))[xylims >= max(egc_g2) - 1e-10])
+    ymin <- max(c(1:length(xylims))[xylims <= min(egc_g2) + 1e-10])
 
     col_to_ct <- get_cell_type_colors(dataset, cell_type_colors)
 
