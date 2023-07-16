@@ -183,11 +183,19 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
         rownames_to_column("gene") %>%
         as_tibble()
 
+    gene_md$fitted_gene_any <- gene_md %>%
+        select(starts_with("fitted")) %>%
+        as.matrix() %>%
+        matrixStats::rowAnys()
+
     cell_type_gene_md <- gene_md %>%
         select(
             gene,
             contains("_of_"),
             any_of("lateral_gene"),
+            any_of("marker_gene"),
+            any_of("fitted_gene"),
+            any_of("fitted_gene_any"),
             any_of("atlas_lateral_gene"),
             any_of("atlas_marker_gene"),
             any_of("correction_factor"),
@@ -202,6 +210,7 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
         select(
             gene, cell_type, everything()
         )
+
 
     if (!is.null(gene_names)) {
         cell_type_gene_md$gene <- modify_gene_names(cell_type_gene_md$gene, gene_names)

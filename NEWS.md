@@ -1,3 +1,8 @@
+# MCView 0.2.15
+
+* Added 'any' cell type to gene metadata table at Query tab.
+* Added a value box with % of fitted genes out of atlas markers.
+
 # MCView 0.2.14
 
 * Query tab improvements: added a correction factor line and an option to show only fitted genes.

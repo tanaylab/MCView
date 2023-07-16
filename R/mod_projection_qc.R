@@ -17,7 +17,8 @@ mod_projection_qc_ui <- function(id) {
                 shinydashboard::valueBoxOutput(ns("num_metacells_query"), width = 2),
                 shinydashboard::valueBoxOutput(ns("num_metacells_similar"), width = 2),
                 shinydashboard::valueBoxOutput(ns("avg_projection_cor"), width = 2),
-                shinydashboard::valueBoxOutput(ns("common_genes"), width = 2)
+                shinydashboard::valueBoxOutput(ns("common_genes"), width = 2),
+                shinydashboard::valueBoxOutput(ns("fitted_genes"), width = 2)
             )
         ),
         generic_column(
@@ -125,6 +126,36 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
                     scales::comma(length(common_genes)),
                     glue("Common genes ({p_atlas} of atlas, {p_query} of query)"),
                     color = "blue"
+                )
+            })
+
+            output$fitted_genes <- shinydashboard::renderValueBox({
+                gene_md <- get_mc_data(dataset(), "gene_metadata")
+                req(gene_md)
+                req(has_name(gene_md, "fitted_gene_any"))
+
+                gene_md <- gene_md %>%
+                    filter(atlas_marker_gene) %>%
+                    distinct(gene, atlas_marker_gene, fitted_gene_any)
+
+                num_fitted_genes <- sum(gene_md$fitted_gene_any, na.rm = TRUE)
+                num_atlas_markers <- sum(gene_md$atlas_marker_gene, na.rm = TRUE)
+                p_fitted <- scales::percent(num_fitted_genes / num_atlas_markers, accuracy = 0.1)
+
+                if (p_fitted <= 0.25) {
+                    color <- "red"
+                } else if (p_fitted <= 0.5) {
+                    color <- "orange"
+                } else if (p_fitted <= 0.75) {
+                    color <- "yellow"
+                } else {
+                    color <- "green"
+                }
+
+                shinydashboard::valueBox(
+                    p_fitted,
+                    "% of 'fitted' genes out of atlas markers",
+                    color = color
                 )
             })
 

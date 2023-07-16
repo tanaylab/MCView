@@ -109,7 +109,9 @@ mod_query_ui <- function(id) {
                     collapsible = TRUE,
                     closable = FALSE,
                     width = 12,
+                    height = "50vh",
                     uiOutput(ns("gene_metadata_cell_type_selector")),
+                    checkboxInput(ns("gene_metadata_any_cell_type"), "Any cell type", value = FALSE),
                     shinycssloaders::withSpinner(
                         DT::dataTableOutput(ns("gene_metadata_table"))
                     )
@@ -356,11 +358,38 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
             current_gene_table <- reactiveVal()
 
             observe({
-                req(input$gene_metadata_cell_type)
+                req(!is.null(input$gene_metadata_any_cell_type))
                 gene_metadata <- get_mc_data(dataset(), "gene_metadata")
-                req(gene_metadata)
-                current_gene_table(gene_metadata %>%
-                    filter(cell_type %in% input$gene_metadata_cell_type))
+                if (input$gene_metadata_any_cell_type) {
+                    req(has_name(gene_metadata, "fitted_gene_any"))
+                    req(has_name(gene_metadata, "marker_gene"))
+                    gene_metadata <- gene_metadata %>%
+                        select(-cell_type, -fitted_gene) %>%
+                        rename(fitted_gene = fitted_gene_any) %>%
+                        distinct() %>%
+                        arrange(desc(marker_gene), fitted_gene) %>%
+                        select(everything(), fitted_gene)
+                    current_gene_table(gene_metadata)
+                } else {
+                    req(input$gene_metadata_cell_type)
+                    req(gene_metadata)
+                    gene_metadata <- gene_metadata %>%
+                        select(-any_of("fitted_gene_any")) %>%
+                        filter(cell_type %in% input$gene_metadata_cell_type)
+
+
+                    if (has_name(gene_metadata, "marker_gene") && has_name(gene_metadata, "fitted_gene")) {
+                        gene_metadata <- gene_metadata %>%
+                            arrange(cell_type, desc(marker_gene), fitted_gene)
+                    }
+
+                    current_gene_table(gene_metadata)
+                }
+            })
+
+            observe({
+                req(!is.null(input$gene_metadata_any_cell_type))
+                shinyjs::toggle(id = "gene_metadata_cell_type", condition = !input$gene_metadata_any_cell_type)
             })
 
             observe({
