@@ -97,6 +97,7 @@ app_ui <- function(request) {
     if (is.null(app_title) || app_title == "MCView") {
         if (length(dataset_ls(project)) == 1) {
             app_title <- dataset_ls(project)[1]
+            config$title <- app_title
         } else {
             app_title <- glue("MCView {version}", version = packageVersion("MCView"))
         }
