@@ -147,7 +147,7 @@ app_ui <- function(request) {
         sidebar = sidebar,
         body = body,
         controlbar = right_sidebar,
-        preloader = list(html = tagList(waiter::spin_1(), h4("Loading MCView...")), color = "#333e48"),
+        preloader = list(html = tagList(waiter::spin_1(), h4("Loading MCView..."), h5(config$title)), color = "#333e48"),
         footer = shinydashboardPlus::dashboardFooter(
             left = app_footer,
             right = glue("(C) Weizmann Institute of Science, 2020-{year}", year = format(Sys.time(), "%Y"))
