@@ -142,11 +142,9 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
                 num_atlas_markers <- sum(gene_md$atlas_marker_gene, na.rm = TRUE)
                 p_fitted <- scales::percent(num_fitted_genes / num_atlas_markers, accuracy = 0.1)
 
-                if (p_fitted <= 0.25) {
+                if (p_fitted <= 0.33) {
                     color <- "red"
                 } else if (p_fitted <= 0.5) {
-                    color <- "orange"
-                } else if (p_fitted <= 0.75) {
                     color <- "yellow"
                 } else {
                     color <- "green"
