@@ -1,3 +1,7 @@
+# MCView 0.2.16
+
+* Added gene colors legend to the 'Markers' tab.
+
 # MCView 0.2.15
 
 * Added 'any' cell type to gene metadata table at Query tab.

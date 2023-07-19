@@ -32,6 +32,8 @@ heatmap_box <- function(id,
                 colourpicker::colourInput(ns("high_color"), "High color", high_color),
                 colourpicker::colourInput(ns("mid_color"), "Mid color", mid_color),
                 checkboxInput(ns("plot_legend"), "Plot legend", value = TRUE),
+                checkboxInput(ns("plot_cell_type_legend"), "Show cell type legend", value = TRUE),
+                checkboxInput(ns("plot_genes_legend"), "Show genes legend", value = TRUE),
                 numericInput(ns("legend_width"), "Legend width", min = 1, max = 11, step = 1, value = legend_width),
                 shinyWidgets::prettyRadioButtons(
                     inputId = ns("gene_select"),
@@ -342,16 +344,30 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     req(cell_type_colors())
                     req(input$plot_legend)
                     legend_point_size <- max(1, min(2, 250 / nrow(cell_type_colors())))
-                    legend <- cowplot::get_legend(cell_type_colors() %>%
-                        ggplot(aes(x = cell_type, color = cell_type, y = 1)) +
-                        geom_point() +
-                        scale_color_manual("", values = deframe(cell_type_colors() %>% select(cell_type, color))) +
-                        guides(color = guide_legend(override.aes = list(size = legend_point_size), ncol = 1)) +
-                        theme(legend.position = c(0.5, 0.5)))
+                    p <- cell_type_colors() %>%
+                        ggplot(aes(x = cell_type, fill = cell_type, y = 1))
+
+                    if (input$plot_cell_type_legend) {
+                        p <- p + geom_point(shape = 21) +
+                            scale_fill_manual("Cell types", values = deframe(cell_type_colors() %>% select(cell_type, color))) +
+                            guides(fill = guide_legend(override.aes = list(size = legend_point_size), ncol = 1))
+                    }
+
+                    if (input$plot_genes_legend) {
+                        gene_colors <- data.frame(type = c("lateral+noisy", "lateral", "noisy", "disjoined"), color = c("purple", "blue", "red", "darkgray"))
+                        p <- p +
+                            geom_text(data = gene_colors, inherit.aes = FALSE, x = 1, y = 1, aes(label = type, color = type)) +
+                            scale_color_manual("Genes", values = deframe(gene_colors))
+                    }
+
+                    p <- p + theme(legend.position = c(0.5, 0.5))
+                    legend <- cowplot::get_legend(p)
+
+
                     cowplot::ggdraw(legend)
                 },
                 res = 96
-            ) %>% bindCache(id, dataset(), cell_type_colors(), input$plot_legend)
+            ) %>% bindCache(id, dataset(), cell_type_colors(), input$plot_legend, input$plot_cell_type_legend, input$plot_genes_legend)
 
             # We use this reactive in order to invalidate the cache only when input$filter_by_clipboard is TRUE
             clipboard_changed <- reactive({
@@ -438,7 +454,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     return(structure(list(p = res$p, gtable = res$gtable), class = "gt_custom"))
                 },
                 res = 96
-            ) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), gene_modules(), lfp_range(), metacell_filter(), input$plot_legend, input$selected_md, markers(), input$selected_cell_types, input$force_cell_type, clipboard_changed(), input$high_color, input$low_color, input$mid_color, input$midpoint, genes(), input$show_genes, highlighted_genes(), highlight_color, input$max_gene_num)
+            ) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), gene_modules(), lfp_range(), metacell_filter(), input$plot_legend, input$plot_cell_type_legend, input$plot_genes_legend, input$selected_md, markers(), input$selected_cell_types, input$force_cell_type, clipboard_changed(), input$high_color, input$low_color, input$mid_color, input$midpoint, genes(), input$show_genes, highlighted_genes(), highlight_color, input$max_gene_num)
 
             observeEvent(input$heatmap_brush, {
                 req(input$brush_action)
