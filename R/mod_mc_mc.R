@@ -233,8 +233,16 @@ metacell_selectors <- function(input, output, session, dataset, ns, metacell_nam
             req(metacell_colors())
             req(metacell_names())
             cell_types_hex <- col2hex(metacell_colors())
+            # add 'similar' annotation
+            md <- get_mc_data(dataset(), "metadata")
+            if (!is.null(md) && has_name(md, "similar")) {
+                choices <- metacell_names()
+                names(choices) <- ifelse(md$similar == "dissimilar", paste0(metacell_names(), " (dissimilar)"), metacell_names())
+            } else {
+                choices <- metacell_names()
+            }
             shinyWidgets::pickerInput(ns("metacell1"), "Metacell A",
-                choices = metacell_names(),
+                choices = choices,
                 selected = config$selected_mc1 %||% metacell_names()[1],
                 multiple = FALSE,
                 options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "contains", dropupAuto = FALSE),

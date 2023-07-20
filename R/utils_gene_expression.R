@@ -89,10 +89,17 @@ get_gene_fp <- function(gene, dataset, atlas = FALSE) {
     return(mc_fp)
 }
 
-get_metacells_egc <- function(metacells, dataset, projected = FALSE, atlas = FALSE) {
+get_metacells_egc <- function(metacells, dataset, projected = FALSE, atlas = FALSE, corrected = FALSE) {
     if (projected) {
         mc_mat <- get_mc_data(dataset, "projected_mat")
         mc_sum <- get_mc_data(dataset, "projected_mat_sum")
+        names(mc_sum) <- colnames(mc_mat)
+    } else if (corrected) {
+        mc_mat <- get_mc_data(dataset, "mc_mat_corrected", atlas = atlas)
+        if (is.null(mc_mat)) { # for older versions of MCView
+            mc_mat <- get_mc_data(dataset, "mc_mat", atlas = atlas)
+        }
+        mc_sum <- get_mc_sum(dataset, atlas = atlas)
         names(mc_sum) <- colnames(mc_mat)
     } else {
         mc_mat <- get_mc_data(dataset, "mc_mat", atlas = atlas)

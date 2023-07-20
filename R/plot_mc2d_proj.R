@@ -164,7 +164,11 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
         req(input$stroke)
         req(input$min_edge_size)
 
-        mc2d <- globals$mc2d %||% get_mc_data(dataset, "mc2d")
+        if (atlas) {
+            mc2d <- NULL
+        } else {
+            mc2d <- globals$mc2d %||% get_mc_data(dataset, "mc2d")
+        }
 
         plot_2d_gene <- function(gene, gene_name = NULL) {
             req(proj_stat)
@@ -282,7 +286,6 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
         if (color_proj == "Cell type") {
             req(metacell_types())
             req(cell_type_colors())
-
             fig <- mc2d_plot_metadata_ggp(
                 dataset(),
                 "Cell type",

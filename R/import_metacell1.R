@@ -1,4 +1,3 @@
-
 #' Import a dataset to an MCView project from metacell R package
 #'
 #' Read objects from \code{metacell} R package and import a

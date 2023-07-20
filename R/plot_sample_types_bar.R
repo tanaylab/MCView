@@ -1,4 +1,3 @@
-
 plot_sample_stacked_types <- function(dataset, metacell_types, cell_type_colors, input) {
     plotly::renderPlotly({
         samp_mc_count <- get_samp_mc_count(dataset())

@@ -5,7 +5,7 @@
 #' @param metacell2 id of the second metacell
 #'
 #' @noRd
-plot_mc_mc_gene <- function(df, metacell1, metacell2, highlight = NULL, label_prefix = "MC #") {
+plot_mc_mc_gene <- function(df, metacell1, metacell2, highlight = NULL, label_prefix = "MC #", x_label_suffix = "") {
     xylims <- expr_breaks
 
     xmax <- min(c(1:length(xylims))[xylims >= max(df[, metacell1])] - 1e-10)
@@ -41,7 +41,7 @@ plot_mc_mc_gene <- function(df, metacell1, metacell2, highlight = NULL, label_pr
         geom_point(size = 1, alpha = 1) +
         scale_x_continuous(limits = c(xylims[xmin], xylims[xmax]), trans = "log2", breaks = xylims[xmin:xmax], labels = scales::scientific(xylims[xmin:xmax])) +
         scale_y_continuous(limits = c(xylims[ymin], xylims[ymax]), trans = "log2", breaks = xylims[ymin:ymax], labels = scales::scientific(xylims[ymin:ymax])) +
-        xlab(glue("Expression in {label_prefix}{metacell1}")) +
+        xlab(glue("Expression in {label_prefix}{metacell1}{x_label_suffix}")) +
         ylab(glue("Expression in {label_prefix}{metacell2}")) +
         scale_color_identity() +
         theme(axis.text.x = element_text(angle = 30, vjust = 0.5, hjust = 1))
@@ -66,6 +66,7 @@ render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, gene_m
 
         mode <- input$mode %||% mode
 
+        x_label_suffix <- ""
         if (is.null(mode) || mode == "MCs") {
             req(metacell_names)
             req(input$metacell1)
@@ -101,17 +102,20 @@ render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, gene_m
             xlab <- "Observed"
             ylab <- "Projected"
             label_prefix <- glue::glue("MC #{input$metacell1}: ")
+            x_label_suffix <- " (corrected)"
             source <- glue("projection_diff_expr_plot{source_suffix}")
         } else if (mode == "Type") {
             req(input$metacell1)
             xlab <- "Observed"
             ylab <- "Projected"
             label_prefix <- glue::glue("{input$metacell1}: ")
+            x_label_suffix <- " (corrected)"
             source <- glue("projection_diff_expr_plot{source_suffix}")
         } else if (mode == "Group") {
             label_prefix <- ""
             xlab <- "Observed"
             ylab <- "Projected"
+            x_label_suffix <- " (corrected)"
             source <- glue("projection_diff_expr_plot{source_suffix}")
         }
 
@@ -159,7 +163,8 @@ render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, gene_m
                 xlab,
                 ylab,
                 highlight = gene,
-                label_prefix = label_prefix
+                label_prefix = label_prefix,
+                x_label_suffix = x_label_suffix
             ) +
                 theme(axis.title.y = element_text(colour = "darkblue"), axis.title.x = element_text(colour = "darkred")),
             tooltip = "tooltip_text",

@@ -1,4 +1,3 @@
-
 cluster_egc <- function(egc, k = NULL, filter_genes = FALSE, min_max_thresh = 3, min_gene_expr = -12, verbose = FALSE) {
     legc <- log2(egc + 1e-5)
     if (filter_genes) {

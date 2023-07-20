@@ -89,13 +89,13 @@ calc_samp_samp_gene_df <- function(dataset, samp1, samp2, metacell_types, cell_t
     return(df)
 }
 
-calc_obs_exp_mc_df <- function(dataset, metacell, diff_thresh = 1.5, pval_thresh = 0.01) {
+calc_obs_exp_mc_df <- function(dataset, metacell, diff_thresh = 1.5, pval_thresh = 0.01, corrected = TRUE) {
     obs_mat <- get_mc_data(dataset, "mc_mat_corrected")
     if (is.null(obs_mat)) {
         obs_mat <- get_mc_data(dataset, "mc_mat")
     }
     exp_mat <- get_mc_data(dataset, "projected_mat")
-    obs_egc <- get_metacells_egc(metacell, dataset) + egc_epsilon
+    obs_egc <- get_metacells_egc(metacell, dataset, corrected = TRUE) + egc_epsilon
     exp_egc <- get_metacells_egc(metacell, dataset, projected = TRUE) + egc_epsilon
 
     genes <- intersect(rownames(obs_mat), rownames(exp_mat))

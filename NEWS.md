@@ -1,3 +1,9 @@
+# MCView 0.2.17
+
+* Fix: atlas tab was not working after the new UMAP feature.
+* Use corrected expression in the differential expression in the Query tab. 
+* Mark dissimilar metacells in metacell selectors.
+
 # MCView 0.2.16
 
 * Added gene colors legend to the 'Markers' tab.

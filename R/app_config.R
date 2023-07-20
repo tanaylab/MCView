@@ -1,4 +1,3 @@
-
 verify_config_file <- function(config) {
     required_fields <- c(
         "title",

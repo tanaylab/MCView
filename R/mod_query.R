@@ -67,7 +67,7 @@ mod_query_ui <- function(id) {
                 width = 5,
                 generic_box(
                     id = ns("scatter_box"),
-                    title = "Gene/Gene",
+                    title = "Gene Observed / Projected",
                     status = "primary",
                     solidHeader = TRUE,
                     collapsible = TRUE,
@@ -258,8 +258,6 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
 
             # Projection plots
             output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, projected_metacell_types, atlas_colors, gene_modules, globals, group = group, source = "proj_mc_plot_proj_tab")
-
-            # connect_gene_plots(input, output, session, ns, source = "proj_mc_plot_proj_tab")
 
             # Differential expression
             output$plot_mc_mc_gene_scatter <- render_mc_mc_gene_plotly(input, output, session, ns, dataset, gene_modules, mc_mc_gene_scatter_df, metacell_names(), atlas_colors(), metacell_types = metacell_types)
@@ -464,9 +462,18 @@ metacell_selectors_mod_query <- function(input, output, session, dataset, ns, me
         if (input$mode == "MC") {
             req(metacell_colors())
             req(metacell_names())
+            # add 'similar' annotation
+            md <- get_mc_data(dataset(), "metadata")
+            if (!is.null(md) && has_name(md, "similar")) {
+                choices <- metacell_names()
+                names(choices) <- ifelse(md$similar == "dissimilar", paste0(metacell_names(), " (dissimilar)"), metacell_names())
+            } else {
+                choices <- metacell_names()
+            }
+
             cell_types_hex <- col2hex(metacell_colors())
             shinyWidgets::pickerInput(ns("metacell1"), "Metacell",
-                choices = metacell_names(),
+                choices = choices,
                 selected = config$selected_mc1 %||% metacell_names()[1], multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "contains"),
                 choicesOpt = list(
                     style = paste0("color: ", cell_types_hex, ";")

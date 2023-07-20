@@ -1,5 +1,3 @@
-
-
 mct_propagate_flow_through_metacell <- function(mct, m) {
     time_points <- which(mct@mc_t[m, ] > 0)
 

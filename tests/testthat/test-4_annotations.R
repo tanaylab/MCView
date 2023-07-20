@@ -1,4 +1,3 @@
-
 test_that("update_metacell_types works", {
     metacell_types <- fread(fs::path(raw_dir, "metacell-types.csv"))
     metacell_types$cell_type[1:50] <- 1
