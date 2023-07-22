@@ -206,6 +206,7 @@ create_project <- function(project,
 #' @param permissions change the file permissions of the bundle after creation, e.g. "777". When NULL -
 #' permissions would not be changed.
 #' @param light_version create a light version of the bundle, which would not include features that require heavy computation (e.g. changing Marker genes, Gene modules etc.)
+#' @param excluded_tabs a character vector of tabs to exclude from the light version of the bundle.
 #'
 #' @inheritDotParams gert::git_clone
 #' @examples
@@ -223,7 +224,7 @@ create_project <- function(project,
 #' }
 #'
 #' @export
-create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overwrite = FALSE, self_contained = FALSE, branch = "latest_release", restart = overwrite, permissions = NULL, light_version = FALSE, ...) {
+create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overwrite = FALSE, self_contained = FALSE, branch = "latest_release", restart = overwrite, permissions = NULL, light_version = FALSE, excluded_tabs = c("Gene modules", "Annotate", "Inner-fold", "Stdev-fold"), ...) {
     bundle_dir <- fs::path(path, name)
     if (!(fs::dir_exists(project))) {
         cli::cli_abort("{.path {project}} does not exists.")
@@ -266,7 +267,7 @@ create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overw
         bundle_config_file <- project_config_file(fs::path(bundle_dir, "project"))
         bundle_config <- yaml::read_yaml(bundle_config_file)
         bundle_config$light_version <- TRUE
-        bundle_config$excluded_tabs <- c("Gene modules", "Annotate", "Inner-fold", "Stdev-fold")
+        bundle_config$excluded_tabs <- excluded_tabs
         yaml::write_yaml(bundle_config, bundle_config_file)
         cli::cli_alert("Creating a light version of the bundle. Excluded tabs: {.field Gene modules, Annotate, Inner-fold, Stdev-fold}. To change this, edit the {.file project/config.yaml} file.")
     }

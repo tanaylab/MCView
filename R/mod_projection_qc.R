@@ -144,7 +144,7 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
 
                 if (p_fitted <= 0.33) {
                     color <- "red"
-                } else if (p_fitted <= 0.5) {
+                } else if (p_fitted <= 0.66) {
                     color <- "yellow"
                 } else {
                     color <- "green"
