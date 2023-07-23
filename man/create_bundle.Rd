@@ -14,6 +14,7 @@ create_bundle(
   restart = overwrite,
   permissions = NULL,
   light_version = FALSE,
+  excluded_tabs = c("Gene modules", "Annotate", "Inner-fold", "Stdev-fold"),
   ...
 )
 }
@@ -44,6 +45,8 @@ repository.}
 permissions would not be changed.}
 
 \item{light_version}{create a light version of the bundle, which would not include features that require heavy computation (e.g. changing Marker genes, Gene modules etc.)}
+
+\item{excluded_tabs}{a character vector of tabs to exclude from the light version of the bundle.}
 
 \item{...}{
   Arguments passed on to \code{\link[gert:git_fetch]{gert::git_clone}}

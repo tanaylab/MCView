@@ -140,8 +140,8 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
 
                 num_fitted_genes <- sum(gene_md$fitted_gene_any, na.rm = TRUE)
                 num_markers <- sum(gene_md$marker_gene, na.rm = TRUE)
-                p_fitted <- scales::percent(num_fitted_genes / num_markers, accuracy = 0.1)
-
+                p_fitted <- num_fitted_genes / num_markers
+            
                 if (p_fitted <= 0.33) {
                     color <- "red"
                 } else if (p_fitted <= 0.66) {
@@ -151,7 +151,7 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
                 }
 
                 shinydashboard::valueBox(
-                    p_fitted,
+                    scales::percent(p_fitted, accuracy = 0.1),
                     "% of 'fitted' genes out of markers",
                     color = color
                 )
