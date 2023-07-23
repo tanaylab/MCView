@@ -135,12 +135,12 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
                 req(has_name(gene_md, "fitted_gene_any"))
 
                 gene_md <- gene_md %>%
-                    filter(atlas_marker_gene) %>%
-                    distinct(gene, atlas_marker_gene, fitted_gene_any)
+                    filter(marker_gene) %>%
+                    distinct(gene, marker_gene, fitted_gene_any)
 
                 num_fitted_genes <- sum(gene_md$fitted_gene_any, na.rm = TRUE)
-                num_atlas_markers <- sum(gene_md$atlas_marker_gene, na.rm = TRUE)
-                p_fitted <- scales::percent(num_fitted_genes / num_atlas_markers, accuracy = 0.1)
+                num_markers <- sum(gene_md$marker_gene, na.rm = TRUE)
+                p_fitted <- scales::percent(num_fitted_genes / num_markers, accuracy = 0.1)
 
                 if (p_fitted <= 0.33) {
                     color <- "red"
@@ -152,7 +152,7 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
 
                 shinydashboard::valueBox(
                     p_fitted,
-                    "% of 'fitted' genes out of atlas markers",
+                    "% of 'fitted' genes out of markers",
                     color = color
                 )
             })
