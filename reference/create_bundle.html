@@ -71,6 +71,7 @@
 <span>  restart <span class="op">=</span> <span class="va">overwrite</span>,</span>
 <span>  permissions <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  light_version <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  excluded_tabs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Gene modules"</span>, <span class="st">"Annotate"</span>, <span class="st">"Inner-fold"</span>, <span class="st">"Stdev-fold"</span><span class="op">)</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -120,6 +121,10 @@ permissions would not be changed.</p></dd>
 
 <dt>light_version</dt>
 <dd><p>create a light version of the bundle, which would not include features that require heavy computation (e.g. changing Marker genes, Gene modules etc.)</p></dd>
+
+
+<dt>excluded_tabs</dt>
+<dd><p>a character vector of tabs to exclude from the light version of the bundle.</p></dd>
 
 
 <dt>...</dt>
