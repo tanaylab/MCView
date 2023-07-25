@@ -222,11 +222,15 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
             )
         }
 
+        # sample a random small number for each cell type and left_join it to ord_df
+        ord_df <- ord_df %>% left_join(ord_df %>%
+            distinct(cell_type) %>%
+            mutate(rand = runif(n(), 0, 1e-5)), by = "cell_type")
         if (order_each_cell_type) {
             ord <- ord_df %>%
                 group_by(cell_type) %>%
                 do(ord_inside_cell_type(.)) %>%
-                mutate(glob_ord = mean(glob_ord)) %>%
+                mutate(glob_ord = mean(glob_ord) + rand) %>%
                 ungroup() %>%
                 arrange(glob_ord, ct_ord) %>%
                 pull(orig_ord)
@@ -234,7 +238,7 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
             ord <- ord_df %>%
                 mutate(orig_ord = 1:n()) %>%
                 group_by(cell_type) %>%
-                mutate(ct_ord = mean(glob_ord)) %>%
+                mutate(ct_ord = mean(glob_ord) + rand) %>%
                 ungroup() %>%
                 arrange(ct_ord, glob_ord) %>%
                 pull(orig_ord)

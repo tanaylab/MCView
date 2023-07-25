@@ -1,8 +1,7 @@
-# MCView 0.2.17
-
 # MCView 0.2.18
 
 * Added 'overwrite' parameter to `import_dataset`.
+* Fixed an edge case in which a cell type was not continuous in the markers heatmap order.
 
 # MCView 0.2.17
 
