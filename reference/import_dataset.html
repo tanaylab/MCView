@@ -14,7 +14,7 @@ which can be in the app using the right sidebar."><!-- mathjax --><script src="h
     
     <a class="navbar-brand me-2" href="../index.html">MCView</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.17</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.18</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -99,6 +99,7 @@ which can be in the app using the right sidebar.</p>
 <span>  genes_per_anchor <span class="op">=</span> <span class="fl">30</span>,</span>
 <span>  layout <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  default_graph <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  overwrite <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -261,6 +262,10 @@ log fraction (mc_fp) above this this value</p></dd>
 
 <dt>default_graph</dt>
 <dd><p>a data frame with a column named "from", "to" and "weight" with the ids of the metacells and the weight of the edge. If NULL, the graph would be taken from the anndata object.</p></dd>
+
+
+<dt>overwrite</dt>
+<dd><p>if a dataset with the same name already exists, overwrite it. Otherwise, an error would be thrown.</p></dd>
 
 
 <dt>...</dt>
