@@ -36,6 +36,7 @@ import_dataset(
   genes_per_anchor = 30,
   layout = NULL,
   default_graph = NULL,
+  overwrite = TRUE,
   ...
 )
 }
@@ -135,6 +136,8 @@ log fraction (mc_fp) above this this value}
 \item{layout}{a data frame with a column named "metacell" with the metacell id and other columns with the x and y coordinates of the metacell. If NULL, the layout would be taken from the anndata object.}
 
 \item{default_graph}{a data frame with a column named "from", "to" and "weight" with the ids of the metacells and the weight of the edge. If NULL, the graph would be taken from the anndata object.}
+
+\item{overwrite}{if a dataset with the same name already exists, overwrite it. Otherwise, an error would be thrown.}
 
 \item{...}{
   Arguments passed on to \code{\link[=create_project]{create_project}}
