@@ -1,5 +1,11 @@
 # MCView 0.2.17
 
+# MCView 0.2.18
+
+* Added 'overwrite' parameter to `import_dataset`.
+
+# MCView 0.2.17
+
 * Fix: atlas tab was not working after the new UMAP feature.
 * Use corrected expression in the differential expression in the Query tab. 
 * Mark dissimilar metacells in metacell selectors.

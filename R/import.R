@@ -68,6 +68,7 @@
 #' @param genes_per_anchor number of genes to use for each umap anchor.
 #' @param layout a data frame with a column named "metacell" with the metacell id and other columns with the x and y coordinates of the metacell. If NULL, the layout would be taken from the anndata object.
 #' @param default_graph a data frame with a column named "from", "to" and "weight" with the ids of the metacells and the weight of the edge. If NULL, the graph would be taken from the anndata object.
+#' @param overwrite if a dataset with the same name already exists, overwrite it. Otherwise, an error would be thrown.
 #'
 #' @return invisibly returns an \code{AnnDataR6} object of the read \code{anndata_file}
 #'
@@ -118,6 +119,7 @@ import_dataset <- function(project,
                            genes_per_anchor = 30,
                            layout = NULL,
                            default_graph = NULL,
+                           overwrite = TRUE,
                            ...) {
     verbose <- !is.null(getOption("MCView.verbose")) && getOption("MCView.verbose")
     verify_project_dir(project, create = TRUE, atlas = !is.null(atlas_project), ...)
@@ -127,6 +129,15 @@ import_dataset <- function(project,
     }
 
     cli_alert_info("Importing {.field {dataset}}")
+
+    # if dataset directory already exists and overwrite is FALSE - throw an error
+    if (fs::dir_exists(fs::path(project_cache_dir(project), dataset))) {
+        if (!overwrite) {
+            cli_abort("Dataset {.field {dataset}} already exists in project {.field {project}}. If you want to overwrite it, set {.field overwrite=TRUE}.")
+        }
+        # delete the dataset directory
+        fs::dir_delete(fs::path(project_cache_dir(project), dataset))
+    }
 
     cache_dir <- project_cache_dir(project)
 
