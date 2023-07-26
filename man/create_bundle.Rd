@@ -15,6 +15,8 @@ create_bundle(
   permissions = NULL,
   light_version = FALSE,
   excluded_tabs = c("Gene modules", "Annotate", "Inner-fold", "Stdev-fold"),
+  shiny_cache_dir = NULL,
+  shiny_cache_max_size = NULL,
   ...
 )
 }
@@ -47,6 +49,10 @@ permissions would not be changed.}
 \item{light_version}{create a light version of the bundle, which would not include features that require heavy computation (e.g. changing Marker genes, Gene modules etc.)}
 
 \item{excluded_tabs}{a character vector of tabs to exclude from the light version of the bundle.}
+
+\item{shiny_cache_dir}{a path to a directory in which to store shiny cache, can be relative to the bundle, e.g. "./shiny_cache". If set to TRUE, a temporary directory would be set. If NULL - shiny would cache objects in memory.}
+
+\item{shiny_cache_max_size}{maximum size of the shiny cache in bytes. Default is 200e6.}
 
 \item{...}{
   Arguments passed on to \code{\link[gert:git_fetch]{gert::git_clone}}

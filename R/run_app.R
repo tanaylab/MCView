@@ -29,6 +29,8 @@ run_app <- function(project,
     load_all_data(cache_dir = project_cache_dir(project))
     init_defs()
 
+    config_shiny_cache()
+
     future::plan(future::multicore)
 
     with_golem_options(
@@ -39,4 +41,24 @@ run_app <- function(project,
         ),
         golem_opts = list(...)
     )
+}
+
+config_shiny_cache <- function() {
+    if (!is.null(config$shiny_cache_max_size)) {
+        max_size <- config$shiny_cache_max_size
+    } else {
+        max_size <- 200e6
+    }
+
+    if (!is.null(config$shiny_cache_dir)) {
+        if (is.logical(config$shiny_cache_dir) && config$shiny_cache_dir) {
+            shiny_cache_dir <- tempfile(paste0("shiny_cache_", basename(project)), tmpdir = tempdir())
+        } else {
+            shiny_cache_dir <- tempfile(paste0("shiny_cache_", basename(project)), tmpdir = config$shiny_cache_dir)
+        }
+
+        shinyOptions(cache = cachem::cache_disk(shiny_cache_dir, max_size = max_size))
+    } else {
+        shinyOptions(cache = cachem::cache_mem(max_size = max_size))
+    }
 }
