@@ -207,6 +207,8 @@ create_project <- function(project,
 #' permissions would not be changed.
 #' @param light_version create a light version of the bundle, which would not include features that require heavy computation (e.g. changing Marker genes, Gene modules etc.)
 #' @param excluded_tabs a character vector of tabs to exclude from the light version of the bundle.
+#' @param shiny_cache_dir a path to a directory in which to store shiny cache, can be relative to the bundle, e.g. "./shiny_cache". If set to TRUE, a temporary directory would be set. If NULL - shiny would cache objects in memory.
+#' @param shiny_cache_max_size maximum size of the shiny cache in bytes. Default is 200e6.
 #'
 #' @inheritDotParams gert::git_clone
 #' @examples
@@ -224,7 +226,7 @@ create_project <- function(project,
 #' }
 #'
 #' @export
-create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overwrite = FALSE, self_contained = FALSE, branch = "latest_release", restart = overwrite, permissions = NULL, light_version = FALSE, excluded_tabs = c("Gene modules", "Annotate", "Inner-fold", "Stdev-fold"), ...) {
+create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overwrite = FALSE, self_contained = FALSE, branch = "latest_release", restart = overwrite, permissions = NULL, light_version = FALSE, excluded_tabs = c("Gene modules", "Annotate", "Inner-fold", "Stdev-fold"), shiny_cache_dir = NULL, shiny_cache_max_size = NULL, ...) {
     bundle_dir <- fs::path(path, name)
     if (!(fs::dir_exists(project))) {
         cli::cli_abort("{.path {project}} does not exists.")
@@ -264,12 +266,18 @@ create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overw
     fs::dir_copy(project, fs::path(bundle_dir, "project"))
 
     if (light_version) {
-        bundle_config_file <- project_config_file(fs::path(bundle_dir, "project"))
-        bundle_config <- yaml::read_yaml(bundle_config_file)
-        bundle_config$light_version <- TRUE
-        bundle_config$excluded_tabs <- excluded_tabs
-        yaml::write_yaml(bundle_config, bundle_config_file)
+        add_to_config(project_config_file(fs::path(bundle_dir, "project")), light_version = TRUE, excluded_tabs = excluded_tabs)
         cli::cli_alert("Creating a light version of the bundle. Excluded tabs: {.field Gene modules, Annotate, Inner-fold, Stdev-fold}. To change this, edit the {.file project/config.yaml} file.")
+    }
+
+    if (!is.null(shiny_cache_dir)) {
+        add_to_config(project_config_file(fs::path(bundle_dir, "project")), shiny_cache_dir = shiny_cache_dir)
+        cli::cli_alert("Using shiny cache directory {shiny_cache_dir}. To change this, edit the {.file project/config.yaml} file.")
+    }
+
+    if (!is.null(shiny_cache_max_size)) {
+        add_to_config(project_config_file(fs::path(bundle_dir, "project")), shiny_cache_max_size = shiny_cache_max_size)
+        cli::cli_alert("Using shiny cache max size {.val {shiny_cache_max_size}}. To change this, edit the {.file project/config.yaml} file.")
     }
 
     if (restart) {
@@ -291,4 +299,10 @@ create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overw
     cli::cli_alert_success("created a bundle at {bundle_dir}")
     cli::cli_li("To deploy to shinyapps.io, run: {.field rsconnect::deployApp(appDir = \"{as.character(bundle_dir)}\")}")
     cli::cli_li("To deploy to another shiny-server service, upload {.path {bundle_dir}} to the service.")
+}
+
+add_to_config <- function(file, ...) {
+    config <- yaml::read_yaml(file)
+    config <- c(config, list(...))
+    yaml::write_yaml(config, file)
 }

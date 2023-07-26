@@ -184,32 +184,35 @@ init_tab_defs <- function() {
     )
 
     default_tabs <- c("About", "Genes", "Diff. Expression")
+    cur_config <- config
 
-    if (!is.null(config$tabs)) {
-        config$original_tabs <<- config$tabs
-        config$tabs[config$tabs == "Metacells"] <- "Diff. Expression" # here for backward compatibility
-        config$tabs <<- config$tabs[config$tabs != "Metadata"] # ignore "Metadata" for backward compatibility
-        purrr::walk(config$tabs, ~ {
+    if (!is.null(cur_config$tabs)) {
+        cur_config$original_tabs <- cur_config$tabs
+        cur_config$tabs[cur_config$tabs == "Metacells"] <- "Diff. Expression" # here for backward compatibility
+        cur_config$tabs <- cur_config$tabs[config$tabs != "Metadata"] # ignore "Metadata" for backward compatibility
+        purrr::walk(cur_config$tabs, ~ {
             if (!(.x %in% names(tab_defs))) {
                 cli_warn("{.x} is not a valid tab name. Update `tabs` in your configuration file.")
-                config$tabs <<- config$tabs[config$tabs != .x]
+                cur_config$tabs <- cur_config$tabs[cur_config$tabs != .x]
             }
         })
     } else {
-        config$tabs <<- default_tabs
+        cur_config$tabs <- default_tabs
     }
 
-    if (!is.null(config$excluded_tabs)) {
-        tab_defs <<- tab_defs[!(names(tab_defs) %in% config$excluded_tabs)]
-        config$tabs <<- config$tabs[!(config$tabs %in% config$excluded_tabs)]
+    if (!is.null(cur_config$excluded_tabs)) {
+        tab_defs <<- tab_defs[!(names(tab_defs) %in% cur_config$excluded_tabs)]
+        cur_config$tabs <- cur_config$tabs[!(cur_config$tabs %in% cur_config$excluded_tabs)]
     }
 
-    if (!rmarkdown::pandoc_available() && "About" %in% config$tabs) {
+    if (!rmarkdown::pandoc_available() && "About" %in% cur_config$tabs) {
         warning("pandoc is not available, removing 'About' tab'")
-        config$tabs <<- config$tabs[config$tabs != "About"]
+        cur_config$tabs <- cur_config$tabs[cur_config$tabs != "About"]
     }
 
-    config$tabs <<- order_tabs(config$tabs)
+    cur_config$tabs <- order_tabs(cur_config$tabs)
+
+    config <<- cur_config
 }
 
 order_tabs <- function(tabs) {
