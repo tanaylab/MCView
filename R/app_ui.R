@@ -52,7 +52,7 @@ app_ui <- function(request) {
                     "selected_tabs",
                     label = "Tabs",
                     choices = names(tab_defs),
-                    selected = config$tabs
+                    selected = intersect(config$tabs, names(tab_defs)),
                 ),
                 actionButton("update_tabs", "Update Tabs")
             ),
