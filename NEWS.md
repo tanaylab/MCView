@@ -1,3 +1,7 @@
+# MCView 0.2.20 
+
+* Fixed metadata colors at 2D projections (previously the breaks were simply ignored)
+
 # MCView 0.2.19
 
 * Added an option to use disk for shiny caching (`see shiny_cache_dir` and `shiny_cache_max_size` parameters in `create_bundle`)

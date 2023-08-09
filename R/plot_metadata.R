@@ -225,14 +225,13 @@ mc2d_plot_metadata_ggp_numeric <- function(mc2d_df,
         )
 
     md_colors <- get_metadata_colors(dataset, md, colors = colors, color_breaks = color_breaks, metadata = metadata)
-    # palette <- circlize::colorRamp2(colors = md_colors$colors, breaks = md_colors$breaks)
+    palette <- circlize::colorRamp2(colors = md_colors$colors, breaks = md_colors$breaks)
+    colors <- palette(seq(min(md_colors$breaks), max(md_colors$breaks), length.out = 100))
 
     mc2d_df <- mc2d_df %>%
-        # mutate(col_x = palette(.[[md]])) %>%
         arrange(desc(!!sym(md))) %>%
         mutate(value = !!sym(md))
 
-    # shades <- palette(nrow(mc2d_df))
     legend_title <- md
 
     add_scatter_layer <- function(x, showlegend = FALSE) {
@@ -246,7 +245,7 @@ mc2d_plot_metadata_ggp_numeric <- function(mc2d_df,
             hoverinfo = "text",
             type = "scatter",
             mode = "markers",
-            colors = md_colors$colors,
+            colors = colors,
             marker = list(
                 size = point_size * 4,
                 line = list(
