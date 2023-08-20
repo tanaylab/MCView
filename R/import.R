@@ -382,7 +382,7 @@ import_dataset <- function(project,
         }
     } else if (is.null(cell_type_colors)) {
         if (!is.null(atlas_dataset) && !is.null(atlas_project)) { # use atlas colors
-            atlas_colors <- fread(fs::path(project_cache_dir(atlas_project), atlas_dataset, "cell_type_colors.tsv")) %>% as_tibble()
+            atlas_colors <- fread(fs::path(project_cache_dir(atlas_project), atlas_dataset, "cell_type_colors.tsv"), colClasses = c("cell_type" = "character", "color" = "character")) %>% as_tibble()
             atlas_colors <- atlas_colors %>%
                 bind_rows(
                     tibble(cell_type = c("Dissimilar", "Mixture", "Doublet"), color = c("gray", "darkgray", "black"), order = max(atlas_colors$order) + 1:3)
