@@ -1,3 +1,7 @@
+# MCView (development version)
+
+* Added some missing package imports.
+
 # MCView 0.2.20 
 
 * Fixed metadata colors at 2D projections (previously the breaks were simply ignored)
