@@ -24,7 +24,6 @@ update_metadata <- function(project,
             }
 
             cli_alert_info("Reading {.file {anndata_file}}")
-            library(anndata)
             adata <- anndata::read_h5ad(anndata_file)
         }
     } else {
@@ -107,6 +106,8 @@ update_metadata_colors <- function(project,
 #' Import cell metadata to an MCView dataset
 #'
 #'
+#' @param project path to the project
+#' @param dataset name for the dataset, e.g. "PBMC". The name of the dataset can only contain alphanumeric characters, dots, dashes and underscores.
 #' @param cell_metadata data frame with a column named "cell_id" with
 #' the cell id and other metadata columns, or a name of a delimited file which
 #' contains such data frame. For activating the "Samples" tab, the data frame should have an additional
@@ -261,7 +262,7 @@ add_tab <- function(tab, project) {
 #' @examples
 #' set.seed(60427)
 #' n_cells <- 5e6
-#' cell_metadata <- tibble(
+#' cell_metadata <- tibble::tibble(
 #'     cell_id = 1:n_cells,
 #'     md1 = sample(1:5, size = n_cells, replace = TRUE),
 #'     md2 = rnorm(n = n_cells),
@@ -269,7 +270,7 @@ add_tab <- function(tab, project) {
 #'     md_categorical2 = sample(1:5, size = n_cells, replace = TRUE)
 #' )
 #'
-#' cell_to_metacell <- tibble(
+#' cell_to_metacell <- tibble::tibble(
 #'     cell_id = 1:n_cells,
 #'     metacell = sample(0:1535, size = n_cells, replace = TRUE)
 #' )
@@ -416,7 +417,6 @@ cell_metadata_to_metacell_from_h5ad <- function(anndata_file, metadata_fields, f
     }
 
     cli_alert_info("Reading {.file {anndata_file}}")
-    library(anndata)
     adata <- anndata::read_h5ad(anndata_file)
 
     if (!("metacell_name" %in% colnames(adata$obs))) {

@@ -82,7 +82,7 @@ then runs \code{cell_metadata_to_metacell}.
 \examples{
 set.seed(60427)
 n_cells <- 5e6
-cell_metadata <- tibble(
+cell_metadata <- tibble::tibble(
     cell_id = 1:n_cells,
     md1 = sample(1:5, size = n_cells, replace = TRUE),
     md2 = rnorm(n = n_cells),
@@ -90,7 +90,7 @@ cell_metadata <- tibble(
     md_categorical2 = sample(1:5, size = n_cells, replace = TRUE)
 )
 
-cell_to_metacell <- tibble(
+cell_to_metacell <- tibble::tibble(
     cell_id = 1:n_cells,
     metacell = sample(0:1535, size = n_cells, replace = TRUE)
 )

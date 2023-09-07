@@ -607,7 +607,7 @@ import_dataset <- function(project,
 
     # write the version of the package
     writeLines(
-        as.character(packageVersion("MCView")),
+        as.character(utils::packageVersion("MCView")),
         project_version_file(project)
     )
 

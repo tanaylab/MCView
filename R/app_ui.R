@@ -99,11 +99,11 @@ app_ui <- function(request) {
             app_title <- dataset_ls(project)[1]
             config$title <- app_title
         } else {
-            app_title <- glue("MCView {version}", version = packageVersion("MCView"))
+            app_title <- glue("MCView {version}", version = utils::packageVersion("MCView"))
         }
     }
 
-    app_footer <- glue("MCView {version}", version = packageVersion("MCView"))
+    app_footer <- glue("MCView {version}", version = utils::packageVersion("MCView"))
     if (!is.null(config$metacells_version)) {
         app_footer <- glue("{app_footer} | {config$metacells_version}")
     }

@@ -6,14 +6,14 @@ read_metacell_graphs <- function(graph_list, metacells) {
     if ("metacell" %in% graph_names) {
         cli_abort("The graph name 'metacell' is reserved.")
     }
-    cli_alret_info("graph names: {.val {graph_names}}")
-    cl <- map_chr(graph_list, class)
+    cli_alert_info("graph names: {.val {graph_names}}")
+    cl <- purrr::map_chr(graph_list, class)
     if (all(cl == "character")) {
         cli_alert_info("Reading graph files: {.val {paste0(graph_list, collapse = ', ')}}")
-        graph_list <- map(graph_list, fread)
+        graph_list <- purrr::map(graph_list, fread)
     }
 
-    graphs <- map(graph_list, function(g) {
+    graphs <- purrr::map(graph_list, function(g) {
         if (!all(c("from", "to") %in% names(g))) {
             cli_abort("Graphs must have columns 'from' and 'to'")
         }
