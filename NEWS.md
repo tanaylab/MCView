@@ -1,3 +1,7 @@
+# MCView 0.2.22
+
+* In 'Projection QC' tab, changed percentage of 'similar' to percentage of 'dissimilar' metacells.
+
 # MCView 0.2.21
 
 * Fixed gene name colors in the 'Gene modules' tab. 

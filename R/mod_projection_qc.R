@@ -95,20 +95,20 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
                 req(md)
                 req(md$similar)
                 num_similar <- sum(md$similar == "similar", na.rm = TRUE)
-
-                p_similar <- num_similar / num_metacells
-                if (p_similar <= 0.8) {
-                    color <- "red"
-                } else {
+                num_dissimilar <- num_metacells - num_similar
+                p_dissimilar <- num_dissimilar / num_metacells
+                if (p_dissimilar <= 0.2) {
                     color <- "green"
+                } else {
+                    color <- "red"
                 }
-                p_similar <- scales::percent(p_similar)
+                p_dissimilar <- scales::percent(p_dissimilar)
 
                 shinydashboard::valueBox(
-                    p_similar,
-                    "Percentage of 'similar' metacells",
+                    p_dissimilar,
+                    glue("Percentage of 'dissimilar' metacells ({num_dissimilar} metacells)"),
                     color = color
-                )
+                )              
             })
 
             output$common_genes <- shinydashboard::renderValueBox({
