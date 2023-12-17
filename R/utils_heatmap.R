@@ -354,7 +354,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     }
 
                     if (input$plot_genes_legend) {
-                        gene_colors <- data.frame(type = c("lateral+noisy", "lateral", "noisy", "disjoined"), color = c("purple", "blue", "red", "darkgray"))
+                        gene_colors <- data.frame(type = c("lateral+noisy", "lateral", "noisy", "disjoined", "module"), color = c("purple", "blue", "red", "darkgray", "#012901"))
                         p <- p +
                             geom_text(data = gene_colors, inherit.aes = FALSE, x = 1, y = 1, aes(label = type, color = type)) +
                             scale_color_manual("Genes", values = deframe(gene_colors))
@@ -410,19 +410,15 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
 
                     req(nrow(m) > 0)
                     req(ncol(m) > 0)
+                    gene_colors <- get_gene_colors(
+                        rownames(m),
+                        lateral_genes = get_mc_data(dataset(), "lateral_genes"),
+                        disjoined_genes = get_mc_data(dataset(), "disjoined_genes_no_atlas"),
+                        noisy_genes = get_mc_data(dataset(), "noisy_genes")
+                    )
 
                     if (!is.null(genes) && length(genes()) > 0 && !is.null(input$show_genes) && input$show_genes) {
-                        # m <- add_genes_to_marker_matrix(m, genes(), dataset())
-                        other_genes <- genes()
-
-                        gene_colors <- tibble(gene = rownames(m), color = ifelse(gene %in% genes(), "blue", "black")) %>% deframe()
-                    } else {
-                        gene_colors <- get_gene_colors(
-                            rownames(m),
-                            lateral_genes = get_mc_data(dataset(), "lateral_genes"),
-                            disjoined_genes = get_mc_data(dataset(), "disjoined_genes_no_atlas"),
-                            noisy_genes = get_mc_data(dataset(), "noisy_genes")
-                        )
+                        gene_colors <- ifelse(names(gene_colors) %in% genes(), gene_colors, "#012901")
                     }
 
                     if (!is.null(highlighted_genes) && length(highlighted_genes()) > 0 && highlighted_genes() %in% names(gene_colors)) {

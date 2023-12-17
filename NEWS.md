@@ -1,3 +1,7 @@
+# MCView 0.2.21
+
+* Fixed gene name colors in the 'Gene modules' tab. 
+
 # MCView 0.2.20 
 
 * Fixed metadata colors at 2D projections (previously the breaks were simply ignored)
