@@ -25,6 +25,7 @@ heatmap_box <- function(id,
                 width = 25,
                 id = ns("heatmap_sidebar"),
                 checkboxInput(ns("force_cell_type"), "Force cell type", value = TRUE),
+                shinyWidgets::virtualSelectInput(ns("metadata_order_var"), "Order by", choices = NULL, selected = NULL, multiple = FALSE, search = TRUE, dropboxWrapper = "body"),
                 checkboxInput(ns("filter_by_clipboard"), "Filter by clipboard", value = FALSE),
                 shinyWidgets::numericRangeInput(ns("lfp_range"), "Fold change range", fold_change_range, width = "80%", separator = " to "),
                 numericInput(ns("midpoint"), "Midpoint", midpoint),
@@ -109,6 +110,8 @@ heatmap_sidebar <- function(id, ...) {
 heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metacell_types, cell_type_colors, globals, markers, lfp_range, mode) {
     observe({
         updateSelectInput(session, "selected_marker_genes", choices = markers())
+        shinyWidgets::updateVirtualSelect(session = session, inputId = "metadata_order_var", choices = c("Hierarchical-Clustering", dataset_metadata_fields_numeric(dataset())), selected = "Hierarchical-Clustering")
+        shinyjs::toggle(id = "metadata_order_var", condition = !is.null(input$force_cell_type) && input$force_cell_type)
     })
 
     observe({
@@ -236,7 +239,8 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     gene_modules(),
                     force_cell_type = input$force_cell_type,
                     mode = mode,
-                    notify_var_genes = TRUE
+                    notify_var_genes = TRUE,
+                    metadata_order = input$metadata_order_var
                 )
 
 
@@ -252,7 +256,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                 }
 
                 return(m)
-            }) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), markers(), gene_modules(), input$selected_cell_types, input$force_cell_type, genes(), input$show_genes, clipboard_changed(), mode)
+            }) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), markers(), gene_modules(), input$selected_cell_types, input$force_cell_type, genes(), input$show_genes, clipboard_changed(), mode, input$metadata_order_var)
 
             output$download_matrix <- downloadHandler(
                 filename = function() {
@@ -371,7 +375,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
 
             # We use this reactive in order to invalidate the cache only when input$filter_by_clipboard is TRUE
             clipboard_changed <- reactive({
-                if ((!is.null(input$filter_by_clipboard) && input$filter_by_clipboard) || (!is.null(input$selected_md) && input$selected_md == "Clipboard")) {
+                if ((!is.null(input$filter_by_clipboard) && input$filter_by_clipboard) || (!is.null(input$selected_md) && "Clipboard" %in% input$selected_md)) {
                     return(c(input$filter_by_clipboard, globals$clipboard))
                 } else {
                     return(FALSE)
@@ -450,7 +454,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     return(structure(list(p = res$p, gtable = res$gtable), class = "gt_custom"))
                 },
                 res = 96
-            ) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), gene_modules(), lfp_range(), metacell_filter(), input$plot_legend, input$plot_cell_type_legend, input$plot_genes_legend, input$selected_md, markers(), input$selected_cell_types, input$force_cell_type, clipboard_changed(), input$high_color, input$low_color, input$mid_color, input$midpoint, genes(), input$show_genes, highlighted_genes(), highlight_color, input$max_gene_num)
+            ) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), gene_modules(), lfp_range(), metacell_filter(), input$plot_legend, input$plot_cell_type_legend, input$plot_genes_legend, input$selected_md, markers(), input$selected_cell_types, input$force_cell_type, clipboard_changed(), input$high_color, input$low_color, input$mid_color, input$midpoint, genes(), input$show_genes, highlighted_genes(), highlight_color, input$max_gene_num, input$metadata_order_var)
 
             observeEvent(input$heatmap_brush, {
                 req(input$brush_action)

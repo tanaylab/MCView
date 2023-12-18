@@ -108,7 +108,7 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
                     p_dissimilar,
                     glue("Percentage of 'dissimilar' metacells ({num_dissimilar} metacells)"),
                     color = color
-                )              
+                )
             })
 
             output$common_genes <- shinydashboard::renderValueBox({
