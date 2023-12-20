@@ -15,6 +15,10 @@ import_cell_metadata(
 )
 }
 \arguments{
+\item{project}{path to the project}
+
+\item{dataset}{name for the dataset, e.g. "PBMC". The name of the dataset can only contain alphanumeric characters, dots, dashes and underscores.}
+
 \item{cell_metadata}{data frame with a column named "cell_id" with
 the cell id and other metadata columns, or a name of a delimited file which
 contains such data frame. For activating the "Samples" tab, the data frame should have an additional

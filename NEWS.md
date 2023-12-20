@@ -1,3 +1,7 @@
+# MCView (development version)
+
+* Added some missing package imports.
+
 # MCView 0.2.23
 
 * Fix: plot limits were sometimes too low in differential expression plots.

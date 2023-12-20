@@ -61,5 +61,5 @@ plotly_text_plot <- function(text) {
             label = text
         ) +
         theme_void()
-    return(plotly:::ggplotly(p))
+    return(plotly::ggplotly(p))
 }

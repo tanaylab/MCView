@@ -47,7 +47,10 @@ If \code{edit_config == TRUE}, a text editor would be opened in order to edit th
 \examples{
 \dontrun{
 dir.create("raw")
-download.file("http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz", "raw/#' PBMC_processed.tar.gz")
+download.file(
+    "http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz",
+    "raw/PBMC_processed.tar.gz"
+)
 untar("raw/PBMC_processed.tar.gz", exdir = "raw")
 create_project("PBMC")
 }

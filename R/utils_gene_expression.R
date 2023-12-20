@@ -192,7 +192,7 @@ get_samples_gene_egc <- function(gene, dataset, metacells = NULL) {
     }
 
     samp_egc <- samp_mc_frac %*% g
-    samp_egc <- setNames(samp_egc[, 1], rownames(samp_egc))
+    samp_egc <- stats::setNames(samp_egc[, 1], rownames(samp_egc))
 
     return(samp_egc)
 }

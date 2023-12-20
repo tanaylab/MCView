@@ -92,10 +92,22 @@ MCView::create_bundle(project = "PBMC", path = getwd(), name = "PBMC")
 MCView::create_bundle(project = "PBMC", path = getwd(), name = "PBMC", self_contained = TRUE)
 
 # development version
-MCView::create_bundle(project = "PBMC", path = getwd(), name = "PBMC", self_contained = TRUE, branch = NULL)
+MCView::create_bundle(
+    project = "PBMC",
+    path = getwd(),
+    name = "PBMC",
+    self_contained = TRUE,
+    branch = NULL
+)
 
 # specific branch
-MCView::create_bundle(project = "PBMC", path = getwd(), name = "PBMC", self_contained = TRUE, branch = "feat@atlas-projection")
+MCView::create_bundle(
+    project = "PBMC",
+    path = getwd(),
+    name = "PBMC",
+    self_contained = TRUE,
+    branch = "feat@atlas-projection"
+)
 }
 
 }
