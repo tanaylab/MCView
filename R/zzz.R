@@ -288,5 +288,6 @@ globalVariables(unique(c(
     # zero_fold_gene_plot:
     "avg", "Expected", "Expression", "FC", "gene", "Gene", "metacell", "Metacell", "obs", "Observed", "type", "Type", "zero_fold",
     # zero_fold_table:
-    "avg", "Expected", "Expression", "FC", "gene", "metacell", "obs", "type", "zero_fold"
+    "avg", "Expected", "Expression", "FC", "gene", "metacell", "obs", "type", "zero_fold",
+    ":=", "sec_ord", "metacell_names", "scdb_mctnetwork", "scdb_mc", "mctnetwork_get_flow_mat"
 )))

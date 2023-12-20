@@ -281,7 +281,7 @@ add_tab <- function(tab, project) {
 #' head(metadata)
 #'
 #' metadata1 <- cell_metadata_to_metacell(
-#'     cell_metadata[, 11:3], cell_to_metacell,
+#'     cell_metadata[, 1:3], cell_to_metacell,
 #'     func = function(x) x * 2
 #' )
 #' head(metadata1)
