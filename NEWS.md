@@ -1,3 +1,7 @@
+# MCView 0.2.23
+
+* Fix: plot limits were sometimes too low in differential expression plots.
+
 # MCView 0.2.22
 
 * Added an option to sort gene heatmaps by metadata within each cell type. 
