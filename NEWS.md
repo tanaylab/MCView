@@ -2,6 +2,19 @@
 
 * Added some missing package imports.
 
+# MCView 0.2.23
+
+* Fix: plot limits were sometimes too low in differential expression plots.
+
+# MCView 0.2.22
+
+* Added an option to sort gene heatmaps by metadata within each cell type. 
+* In 'Projection QC' tab, changed percentage of 'similar' to percentage of 'dissimilar' metacells.
+
+# MCView 0.2.21
+
+* Fixed gene name colors in the 'Gene modules' tab. 
+
 # MCView 0.2.20 
 
 * Fixed metadata colors at 2D projections (previously the breaks were simply ignored)
