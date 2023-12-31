@@ -18,10 +18,10 @@ mctnetwork_g_t_types <- function(net, min_time, max_time, g, mc_egc, mc_colors) 
 
 
         src_flow <- as.data.frame(summarize(group_by(net_t, mc_t1, mc_t2),
-            g_src = weighted.mean(src_g, flow)
+            g_src = stats::weighted.mean(src_g, flow)
         ))
         targ_flow <- as.data.frame(summarize(group_by(net_t, mc_t1, mc_t2),
-            g_targ = weighted.mean(targ_g, flow)
+            g_targ = stats::weighted.mean(targ_g, flow)
         ))
 
 
@@ -58,7 +58,7 @@ mctnetwork_g_t_types <- function(net, min_time, max_time, g, mc_egc, mc_colors) 
 
 
 add_alpha <- function(col, alpha) {
-    return(rgb(t(col2rgb(col)) / 256, alpha = alpha))
+    return(grDevices::rgb(t(grDevices::col2rgb(col)) / 256, alpha = alpha))
 }
 
 
@@ -72,18 +72,18 @@ get_sig_edge <- function(x1, x2, x2t, y1, y2, y2t, flow, col1, col2, col_alpha =
     dxt <- x2 - x1
     dyt <- y2 - y1t
 
-    col1 <- col2rgb(col1)[, 1]
+    col1 <- grDevices::col2rgb(col1)[, 1]
     names(col1) <- c("red", "green", "blue")
-    col2 <- col2rgb(col2)[, 1]
+    col2 <- grDevices::col2rgb(col2)[, 1]
     names(col2) <- c("red", "green", "blue")
     res <- 0.05
 
-    beta0 <- plogis(0, loc = 0.5, scale = 0.2)
-    beta_f <- plogis(1, loc = 0.5, scale = 0.2) - plogis(0, loc = 0.5, scale = 0.2)
+    beta0 <- stats::plogis(0, loc = 0.5, scale = 0.2)
+    beta_f <- stats::plogis(1, loc = 0.5, scale = 0.2) - stats::plogis(0, loc = 0.5, scale = 0.2)
     polygons <- list()
     for (r in seq(0, 0.98, res)) {
-        beta <- (plogis(r, loc = 0.5, scale = 0.2) - beta0) / beta_f
-        beta5 <- (plogis(r + res, loc = 0.5, scale = 0.2) - beta0) / beta_f
+        beta <- (stats::plogis(r, loc = 0.5, scale = 0.2) - beta0) / beta_f
+        beta5 <- (stats::plogis(r + res, loc = 0.5, scale = 0.2) - beta0) / beta_f
 
         sx1 <- x1 + r * dx
         sy1 <- y1 + beta * dy
@@ -99,7 +99,7 @@ get_sig_edge <- function(x1, x2, x2t, y1, y2, y2t, flow, col1, col2, col_alpha =
         rgb_r <- col2["red"] * r_col + col1["red"] * (1 - r_col)
         rgb_g <- col2["green"] * r_col + col1["green"] * (1 - r_col)
         rgb_b <- col2["blue"] * r_col + col1["blue"] * (1 - r_col)
-        col <- rgb(rgb_r / 256, rgb_g / 256, rgb_b / 256, col_alpha)
+        col <- grDevices::rgb(rgb_r / 256, rgb_g / 256, rgb_b / 256, col_alpha)
         poly_list <- list(
             mat = matrix(c(sx1, sx2, sx2t, sx1t, sy1, sy2, sy2t, sy1t), nrow = 2, byrow = TRUE),
             col = col,
@@ -226,15 +226,15 @@ plot_vein <- function(dataset,
                         col1 <- egc_to_col((targ_g_tt[[t - 1]][c, c] + src_g_tt[[t]][c, c]) / 2)
                     }
                     col2 <- egc_to_col((targ_g_tt[[t]][c, c] + src_g_tt[[t + 1]][c, c]) / 2)
-                    col1 <- col2rgb(col1)[, 1]
+                    col1 <- grDevices::col2rgb(col1)[, 1]
                     names(col1) <- c("red", "green", "blue")
-                    col2 <- col2rgb(col2)[, 1]
+                    col2 <- grDevices::col2rgb(col2)[, 1]
                     names(col2) <- c("red", "green", "blue")
                     for (lamda in seq(0, 0.99, l = 100)) {
                         rgb_r <- col2["red"] * lamda + col1["red"] * (1 - lamda)
                         rgb_g <- col2["green"] * lamda + col1["green"] * (1 - lamda)
                         rgb_b <- col2["blue"] * lamda + col1["blue"] * (1 - lamda)
-                        col <- rgb(rgb_r / 256, rgb_g / 256, rgb_b / 256, col_alpha)
+                        col <- grDevices::rgb(rgb_r / 256, rgb_g / 256, rgb_b / 256, col_alpha)
 
                         poly_list <- list(
                             mat = matrix(c(ys$x[i], ys$x[i + 1], ys$x[i + 1], ys$x[i], base + lo[i], base + lo[i + 1], base - lo[i + 1], base - lo[i]), nrow = 2, byrow = TRUE),
@@ -382,7 +382,7 @@ plot_vein <- function(dataset,
         cols <- purrr::map_chr(polygons, ~ .x$col)
         lwds <- purrr::map_dbl(polygons, ~ .x$lwd)
         borders <- purrr::map_chr(polygons, ~ .x$border)
-        polygon(xs, ys, col = cols, border = borders, lwd = lwds)
+        graphics::polygon(xs, ys, col = cols, border = borders, lwd = lwds)
     }
 
     future_promise({

@@ -14,7 +14,7 @@ calc_diff_expr <- function(mat, egc, columns, diff_thresh = 1.5, pval_thresh = 0
     if (nrow(m) > 0) {
         tots <- colSums(m)
 
-        pvals <- apply(m, 1, function(x) suppressWarnings(chisq.test(matrix(c(x, tots), nrow = 2))$p.value))
+        pvals <- apply(m, 1, function(x) suppressWarnings(stats::chisq.test(matrix(c(x, tots), nrow = 2))$p.value))
 
         df[f, ]$pval <- pvals
     }

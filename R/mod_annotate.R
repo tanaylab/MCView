@@ -570,7 +570,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
 
             observe({
                 req(input$cell_type_table_rows_selected)
-                row <- tail(input$cell_type_table_rows_selected, n = 1)
+                row <- utils::tail(input$cell_type_table_rows_selected, n = 1)
                 colourpicker::updateColourInput(session, "selected_new_color", value = cell_type_colors()$color[row])
             })
 

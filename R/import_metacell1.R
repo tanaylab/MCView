@@ -82,6 +82,10 @@ import_dataset_metacell1 <- function(project,
                                      metadata_fields = NULL,
                                      categorical = c(),
                                      ...) {
+    if (!requireNamespace("metacell", quietly = TRUE)) {
+        stop("Please install metacell R package in order to use this function")
+    }
+
     verbose <- !is.null(getOption("MCView.verbose")) && getOption("MCView.verbose")
     verify_project_dir(project, create = TRUE, ...)
 

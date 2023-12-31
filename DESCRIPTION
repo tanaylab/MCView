@@ -1,6 +1,6 @@
 Package: MCView
 Title: A Shiny App for Metacell Analysis
-Version: 0.2.24
+Version: 0.2.23.9000
 Authors@R: 
     person(given = "Aviezer",
            family = "Lifshitz",
@@ -20,11 +20,11 @@ BugReports: https://github.com/tanaylab/MCView/issues
 Depends: 
     R (>= 3.5)
 Imports: 
-    anndata,    
+    anndata,
     chameleon,
     cli,
     colourpicker,
-    circlize,    
+    circlize,
     cowplot,
     cachem,
     dplyr,
@@ -43,8 +43,9 @@ Imports:
     htmltools,
     markdown (>= 1.3.0),
     matrixStats,
+    methods,
     pkgload,
-    plotly (>= 4.9.3),    
+    plotly (>= 4.9.3),
     promises,
     purrr,
     qs,
@@ -58,7 +59,7 @@ Imports:
     shinyjqui,
     shinycssloaders,
     shinydashboard,
-    shinydashboardPlus (>= 2.0.0),    
+    shinydashboardPlus (>= 2.0.0),
     shinyWidgets (>= 0.7.0),
     shinybusy,
     tglkmeans,
@@ -71,17 +72,23 @@ Imports:
     zip,
     Matrix,
     ggtext (>= 0.1.0),
-    waiter
+    waiter,
+    stats,
+    utils,
+    umap,
+    graphics
 Suggests: 
     knitr,
     R.utils,
     processx,
     testthat,
-    withr
+    withr,
+    metacell
 VignetteBuilder: 
     knitr
 Remotes: 
-    tanaylab/tgutil
+    tanaylab/tgutil,
+    tanaylab/metacell
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.2.3

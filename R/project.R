@@ -36,8 +36,8 @@ verify_version <- function(path) {
         cli_alert_warning("No version file found. This is probably an old project. Please re-import the project with the latest version of MCView.")
     } else {
         version <- readLines(version_file)
-        if (utils::compareVersion(version, as.character(packageVersion("MCView"))) < 0) {
-            cli_alert_warning("Project was created with MCView version {.field {version}} while the current version is {.field {packageVersion('MCView')}}. Please re-import the project with the latest version of MCView.")
+        if (utils::compareVersion(version, as.character(utils::packageVersion("MCView"))) < 0) {
+            cli_alert_warning("Project was created with MCView version {.field {version}} while the current version is {.field {utils::packageVersion('MCView')}}. Please re-import the project with the latest version of MCView.")
         }
     }
 }
@@ -134,7 +134,10 @@ create_project_config_file <- function(project_dir,
 #' @examples
 #' \dontrun{
 #' dir.create("raw")
-#' download.file("http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz", "raw/#' PBMC_processed.tar.gz")
+#' download.file(
+#'     "http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz",
+#'     "raw/PBMC_processed.tar.gz"
+#' )
 #' untar("raw/PBMC_processed.tar.gz", exdir = "raw")
 #' create_project("PBMC")
 #' }
@@ -154,7 +157,7 @@ create_project <- function(project,
                            atlas = FALSE) {
     project_dir <- create_project_dirs(project, atlas = atlas)
     config <- create_project_config_file(
-        project = project,
+        project_dir = project,
         title = title,
         tabs = tabs,
         help = help,
@@ -219,10 +222,22 @@ create_project <- function(project,
 #' MCView::create_bundle(project = "PBMC", path = getwd(), name = "PBMC", self_contained = TRUE)
 #'
 #' # development version
-#' MCView::create_bundle(project = "PBMC", path = getwd(), name = "PBMC", self_contained = TRUE, branch = NULL)
+#' MCView::create_bundle(
+#'     project = "PBMC",
+#'     path = getwd(),
+#'     name = "PBMC",
+#'     self_contained = TRUE,
+#'     branch = NULL
+#' )
 #'
 #' # specific branch
-#' MCView::create_bundle(project = "PBMC", path = getwd(), name = "PBMC", self_contained = TRUE, branch = "feat@atlas-projection")
+#' MCView::create_bundle(
+#'     project = "PBMC",
+#'     path = getwd(),
+#'     name = "PBMC",
+#'     self_contained = TRUE,
+#'     branch = "feat@atlas-projection"
+#' )
 #' }
 #'
 #' @export
@@ -249,7 +264,7 @@ create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overw
         if (!is.null(branch) && branch == "latest_release") {
             gert::git_clone("git@github.com:tanaylab/MCView", path = code_dir, ...)
             tag_list <- gert::git_tag_list(repo = code_dir)
-            latest_tag <- tail(tag_list, n = 1)
+            latest_tag <- utils::tail(tag_list, n = 1)
             gert::git_branch_create(
                 branch = latest_tag$name,
                 ref = latest_tag$commit,

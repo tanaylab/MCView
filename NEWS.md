@@ -1,5 +1,6 @@
-# MCView 0.2.24
+# MCView (development version)
 
+* Added some missing package imports.
 * Added 'Load genes' and 'Save genes' buttons to the 'Markers' tab.
 
 # MCView 0.2.23

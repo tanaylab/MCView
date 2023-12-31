@@ -21,7 +21,7 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
         )
     } else {
         if (fs::file_exists(atlas_new_path)) {
-            fs::file_remove(atlas_new_path)
+            fs::file_delete(atlas_new_path)
         }
 
         fs::link_create(
