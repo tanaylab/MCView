@@ -67,11 +67,19 @@ heatmap_sidebar <- function(id, ...) {
         remove_genes_ui <- NULL
         add_genes_ui <- NULL
         update_genes_ui <- NULL
+        load_genes_ui <- NULL
     } else {
         max_gene_num_ui <- numericInput(ns("max_gene_num"), "Maximal number of genes", value = 100)
         remove_genes_ui <- shinyWidgets::actionGroupButtons(ns("remove_genes"), labels = "Remove selected genes", size = "sm")
         add_genes_ui <- uiOutput(ns("add_genes_ui"))
         update_genes_ui <- shinyWidgets::actionGroupButtons(ns("update_genes"), labels = "Update genes", size = "sm")
+        load_genes_ui <- fileInput(ns("load_genes"), label = NULL, buttonLabel = "Load genes", multiple = FALSE, accept = c(
+            "text/csv",
+            "text/comma-separated-values,text/plain",
+            "text/tab-separated-values",
+            ".csv",
+            ".tsv"
+        ))
     }
 
     list(
@@ -103,6 +111,9 @@ heatmap_sidebar <- function(id, ...) {
         ),
         remove_genes_ui,
         tags$hr(),
+        load_genes_ui,
+        downloadButton(ns("download_genes"), "Save genes", align = "center", style = "margin: 5px 5px 5px 15px; "),
+        tags$hr(),
         downloadButton(ns("download_matrix"), "Download matrix", align = "center", style = "margin: 5px 5px 5px 15px; ")
     )
 }
@@ -128,6 +139,20 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
         }
 
         lfp_range(input$lfp_range)
+    })
+
+    observeEvent(input$load_genes, {
+        req(input$load_genes)
+        req(input$load_genes$datapath)
+        req(input$load_genes$datapath != "")
+        new_markers <- read.csv(input$load_genes$datapath, header = FALSE, stringsAsFactors = FALSE)[, 1]
+        new_markers <- new_markers[new_markers %in% gene_names(dataset())]
+        if (length(new_markers) == 0) {
+            showNotification("No valid genes were loaded", type = "warning")
+        } else {
+            markers(new_markers)
+            showNotification(glue("Loaded {length(new_markers)} genes"), type = "message")
+        }
     })
 
     observeEvent(input$update_genes, {
@@ -167,6 +192,8 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
 
         markers(new_markers)
     })
+
+
 
     observeEvent(input$remove_genes, {
         req(markers())
@@ -273,6 +300,20 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                             rownames_to_column("gene"),
                         file,
                         row.names = FALSE
+                    )
+                }
+            )
+
+            output$download_genes <- downloadHandler(
+                filename = function() {
+                    paste("markers-", Sys.Date(), ".csv", sep = "")
+                },
+                content = function(file) {
+                    fwrite(
+                        data.frame(gene = markers()),
+                        file,
+                        row.names = FALSE,
+                        col.names = FALSE
                     )
                 }
             )

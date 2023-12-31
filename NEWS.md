@@ -1,3 +1,7 @@
+# MCView 0.2.24
+
+* Added 'Load genes' and 'Save genes' buttons to the 'Markers' tab.
+
 # MCView 0.2.23
 
 * Fix: plot limits were sometimes too low in differential expression plots.
