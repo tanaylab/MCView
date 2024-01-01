@@ -123,12 +123,14 @@ top_correlated_selector <- function(gene_id, id, type_id, input, output, session
 
         gene <- input[[gene_id]]
         data_vec <- NULL
+        exclude <- NULL
         if (input[[type_id]] == "Gene") {
             req(gene %in% gene_names(dataset()))
         } else if (input[[type_id]] == "Gene module") {
-            req(!is.null(gene_modules))            
+            req(!is.null(gene_modules))
             req(gene %in% gene_modules()$module)
             data_vec <- get_gene_module_egc(gene, dataset(), gene_modules()) + egc_epsilon
+            exclude <- gene_modules()$gene[gene_modules()$module == gene]
         } else {
             metadata <- get_mc_data(dataset(), "metadata")
             req(gene %in% colnames(metadata))
@@ -144,24 +146,34 @@ top_correlated_selector <- function(gene_id, id, type_id, input, output, session
             }
         )
 
-        tagList(
-            selectInput(
-                ns(glue("selected_top_{id}")),
-                glue("Top correlated to {gene}:"),
-                choices = get_top_cor_gene(dataset(), gene, type = "both", data_vec = data_vec),
-                selected = NULL,
-                size = 10,
-                selectize = FALSE
-            ),
-            shinyWidgets::actionGroupButtons(
-                input_ids[1:length(button_labels)],
-                labels = button_labels, size = "sm", fullwidth = FALSE
-            ),
-            shiny::actionButton(
-                inputId = ns(glue("genecards_{id}")), label = glue("GeneCards: {gene}"),
-                size = "sm", onclick = glue("window.open('https://www.genecards.org/cgi-bin/carddisp.pl?gene={gene}')")
-            )
+        si <- selectInput(
+            ns(glue("selected_top_{id}")),
+            glue("Top correlated to {gene}:"),
+            choices = get_top_cor_gene(dataset(), gene, type = "both", data_vec = data_vec, exclude = exclude),
+            selected = NULL,
+            size = 10,
+            selectize = FALSE
         )
+        btn <- shinyWidgets::actionGroupButtons(
+            input_ids[1:length(button_labels)],
+            labels = button_labels, size = "sm", fullwidth = FALSE
+        )
+
+        if (input[[type_id]] == "Gene") {
+            tagList(
+                si,
+                btn,
+                shiny::actionButton(
+                    inputId = ns(glue("genecards_{id}")), label = glue("GeneCards: {gene}"),
+                    size = "sm", onclick = glue("window.open('https://www.genecards.org/cgi-bin/carddisp.pl?gene={gene}')")
+                )
+            )
+        } else {
+            tagList(
+                si,
+                btn
+            )
+        }
     })
 
     observeEvent(input[[glue("select_top_cor_{id}_axis")]], {
