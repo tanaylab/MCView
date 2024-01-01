@@ -115,7 +115,7 @@ top_correlated_selector_multiple_genes <- function(input, output, session, datas
     )
 }
 
-top_correlated_selector <- function(gene_id, id, type_id, input, output, session, dataset, ns, button_labels = c("X", "Y", "Color", "2D"), ids = c("x", "y", "color", "proj2d")) {
+top_correlated_selector <- function(gene_id, id, type_id, input, output, session, dataset, ns, button_labels = c("X", "Y", "Color", "2D"), ids = c("x", "y", "color", "proj2d"), gene_modules = NULL) {
     output[[glue("top_correlated_select_{id}")]] <- renderUI({
         req(has_gg_mc_top_cor(project, dataset()))
         req(input[[type_id]] == "Gene" || input[[type_id]] == "Gene module" || input[[type_id]] == "Metadata")
@@ -126,7 +126,9 @@ top_correlated_selector <- function(gene_id, id, type_id, input, output, session
         if (input[[type_id]] == "Gene") {
             req(gene %in% gene_names(dataset()))
         } else if (input[[type_id]] == "Gene module") {
-            req(gene %in% levels(get_gene_modules(dataset())$module))
+            req(!is.null(gene_modules))            
+            req(gene %in% gene_modules()$module)
+            data_vec <- get_gene_module_egc(gene, dataset(), gene_modules()) + egc_epsilon
         } else {
             metadata <- get_mc_data(dataset(), "metadata")
             req(gene %in% colnames(metadata))
@@ -188,9 +190,9 @@ top_correlated_selector <- function(gene_id, id, type_id, input, output, session
     })
 }
 
-top_correlated_selectors <- function(input, output, session, dataset, ns, button_labels = c("X", "Y", "Color", "2D")) {
-    top_correlated_selector("x_axis_var", "x_axis", "x_axis_type", input, output, session, dataset, ns, button_labels = button_labels)
-    top_correlated_selector("y_axis_var", "y_axis", "y_axis_type", input, output, session, dataset, ns, button_labels = button_labels)
-    top_correlated_selector("color_by_var", "color_by", "color_by_type", input, output, session, dataset, ns, button_labels = button_labels)
-    top_correlated_selector("color_proj_gene", "color_proj", "color_proj", input, output, session, dataset, ns, button_labels = button_labels)
+top_correlated_selectors <- function(input, output, session, dataset, ns, button_labels = c("X", "Y", "Color", "2D"), gene_modules = NULL) {
+    top_correlated_selector("x_axis_var", "x_axis", "x_axis_type", input, output, session, dataset, ns, button_labels = button_labels, gene_modules = gene_modules)
+    top_correlated_selector("y_axis_var", "y_axis", "y_axis_type", input, output, session, dataset, ns, button_labels = button_labels, gene_modules = gene_modules)
+    top_correlated_selector("color_by_var", "color_by", "color_by_type", input, output, session, dataset, ns, button_labels = button_labels, gene_modules = gene_modules)
+    top_correlated_selector("color_proj_gene", "color_proj", "color_proj", input, output, session, dataset, ns, button_labels = button_labels, gene_modules = gene_modules)
 }
