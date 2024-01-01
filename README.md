@@ -9,10 +9,9 @@
 
 MCView creates a shiny-app facilitating interactive exploration and
 annotation of metacell models. Metacell itself is described
-[here](https://pypi.org/project/metacells/). You can also explore
-examples of MCV output for
-[PBMC](https://tanaylab.weizmann.ac.il/MCV/PBMC) and [Mouse
-organogenesis](https://tanaylab.weizmann.ac.il/MCV/MOCA) on the Tanay
+[here](https://pypi.org/project/metacells/). You can also explore an
+example of MCV output for [Mouse
+organogenesis](https://apps.tanaylab.com/MCV/mm_gastru/) on the Tanay
 group server.
 
 ## Installation
