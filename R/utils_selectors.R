@@ -118,21 +118,35 @@ top_correlated_selector_multiple_genes <- function(input, output, session, datas
 top_correlated_selector <- function(gene_id, id, type_id, input, output, session, dataset, ns, button_labels = c("X", "Y", "Color", "2D"), ids = c("x", "y", "color", "proj2d")) {
     output[[glue("top_correlated_select_{id}")]] <- renderUI({
         req(has_gg_mc_top_cor(project, dataset()))
-        req(input[[type_id]] == "Gene")
+        req(input[[type_id]] == "Gene" || input[[type_id]] == "Gene module" || input[[type_id]] == "Metadata")
         req(input[[gene_id]])
+
         gene <- input[[gene_id]]
-        req(gene %in% gene_names(dataset()))
+        data_vec <- NULL
+        if (input[[type_id]] == "Gene") {
+            req(gene %in% gene_names(dataset()))
+        } else if (input[[type_id]] == "Gene module") {
+            req(gene %in% levels(get_gene_modules(dataset())$module))
+        } else {
+            metadata <- get_mc_data(dataset(), "metadata")
+            req(gene %in% colnames(metadata))
+            req(is_numeric_field(metadata, gene))
+            data_vec <- metadata[[gene]]
+            names(data_vec) <- metadata$metacell
+        }
+
         input_ids <- purrr::map_chr(
             ids,
             ~ {
                 ns(glue("select_top_cor_{id}_{.x}"))
             }
         )
+
         tagList(
             selectInput(
                 ns(glue("selected_top_{id}")),
                 glue("Top correlated to {gene}:"),
-                choices = c(get_top_cor_gene(dataset(), gene, type = "pos"), get_top_cor_gene(dataset(), gene, type = "neg")),
+                choices = get_top_cor_gene(dataset(), gene, type = "both", data_vec = data_vec),
                 selected = NULL,
                 size = 10,
                 selectize = FALSE
@@ -147,6 +161,7 @@ top_correlated_selector <- function(gene_id, id, type_id, input, output, session
             )
         )
     })
+
     observeEvent(input[[glue("select_top_cor_{id}_axis")]], {
         req(input[["axis_type"]] == "Gene")
         shinyWidgets::updateVirtualSelect(session = session, inputId = "axis_var", selected = input[[glue("selected_top_{id}")]])

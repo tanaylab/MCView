@@ -21,25 +21,48 @@ get_cell_type_colors <- function(dataset, cell_type_colors = NULL, na_color = "g
     return(res)
 }
 
-get_top_cor_gene <- function(dataset, gene, type = "pos", atlas = FALSE) {
+get_top_cor_gene <- function(dataset, gene, type = "pos", atlas = FALSE, data_vec = NULL) {
     gg_mc_top_cor <- get_mc_data(dataset, "gg_mc_top_cor", atlas = atlas)
 
-    if (gene %in% gg_mc_top_cor$gene1) {
-        df <- gg_mc_top_cor %>%
-            filter(gene1 == gene) %>%
-            filter(type == !!type) %>%
-            filter(gene1 != gene2)
-    } else {
-        mc_egc <- get_mc_egc(dataset, atlas = atlas)
-        req(gene %in% rownames(mc_egc))
+    if (!is.null(data_vec)) {
+        req(!atlas)
+        mc_egc <- get_mc_egc(dataset, atlas = FALSE)
         lfp <- log2(mc_egc + egc_epsilon)
-        cors <- tgs_cor(t(as.matrix(lfp[gene, , drop = FALSE])), t(lfp), pairwise.complete.obs = TRUE, spearman = FALSE)[1, ]
+        cors <- tgs_cor(as.matrix(data_vec[colnames(lfp)]), t(lfp), pairwise.complete.obs = TRUE, spearman = FALSE)[1, ]
         if (type == "pos") {
-            cors <- head(sort(cors, decreasing = TRUE), n = 31)[-1]
-        } else {
+            cors <- head(sort(cors, decreasing = TRUE), n = 30)
+        } else if (type == "neg") {
             cors <- head(sort(cors), n = 30)
+        } else {
+            cors <- c(head(sort(cors, decreasing = TRUE), n = 30), head(sort(cors), n = 30))
         }
         df <- enframe(cors, "gene2", "cor")
+    } else {
+        if (gene %in% gg_mc_top_cor$gene1) {
+            df <- gg_mc_top_cor %>%
+                filter(gene1 == gene)
+
+            if (type %in% c("pos", "neg")) {
+                df <- df %>%
+                    filter(type == !!type)
+            }
+
+            df <- df %>%
+                filter(gene1 != gene2)
+        } else {
+            mc_egc <- get_mc_egc(dataset, atlas = atlas)
+            req(gene %in% rownames(mc_egc))
+            lfp <- log2(mc_egc + egc_epsilon)
+            cors <- tgs_cor(t(as.matrix(lfp[gene, , drop = FALSE])), t(lfp), pairwise.complete.obs = TRUE, spearman = FALSE)[1, ]
+            if (type == "pos") {
+                cors <- head(sort(cors, decreasing = TRUE), n = 31)[-1]
+            } else if (type == "neg") {
+                cors <- head(sort(cors), n = 30)
+            } else {
+                cors <- c(head(sort(cors, decreasing = TRUE), n = 31)[-1], head(sort(cors), n = 30))
+            }
+            df <- enframe(cors, "gene2", "cor")
+        }
     }
 
     res <- df %>%
