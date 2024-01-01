@@ -67,7 +67,7 @@ mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, 
         function(input, output, session) {
             ns <- session$ns
 
-            top_correlated_selector("boxplot_axis_var", "boxplot_axis", "boxplot_axis_type", input, output, session, dataset, ns, button_labels = c("Select"), ids = c("boxplot"))
+            top_correlated_selector("boxplot_axis_var", "boxplot_axis", "boxplot_axis_type", input, output, session, dataset, ns, button_labels = c("Select"), ids = c("boxplot"), gene_modules = gene_modules)
 
             render_axis_select_ui("boxplot_axis", "Data", "boxplot_axis_select", md_choices = dataset_metadata_fields(dataset()), md_selected = dataset_metadata_fields(dataset())[1], selected_gene = default_gene1, input = input, output = output, ns = ns, dataset = dataset, gene_modules = gene_modules, session = session)
 

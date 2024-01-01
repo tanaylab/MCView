@@ -115,38 +115,67 @@ top_correlated_selector_multiple_genes <- function(input, output, session, datas
     )
 }
 
-top_correlated_selector <- function(gene_id, id, type_id, input, output, session, dataset, ns, button_labels = c("X", "Y", "Color", "2D"), ids = c("x", "y", "color", "proj2d")) {
+top_correlated_selector <- function(gene_id, id, type_id, input, output, session, dataset, ns, button_labels = c("X", "Y", "Color", "2D"), ids = c("x", "y", "color", "proj2d"), gene_modules = NULL) {
     output[[glue("top_correlated_select_{id}")]] <- renderUI({
         req(has_gg_mc_top_cor(project, dataset()))
-        req(input[[type_id]] == "Gene")
+        req(input[[type_id]] == "Gene" || input[[type_id]] == "Gene module" || input[[type_id]] == "Metadata")
         req(input[[gene_id]])
+
         gene <- input[[gene_id]]
-        req(gene %in% gene_names(dataset()))
+        data_vec <- NULL
+        exclude <- NULL
+        if (input[[type_id]] == "Gene") {
+            req(gene %in% gene_names(dataset()))
+        } else if (input[[type_id]] == "Gene module") {
+            req(!is.null(gene_modules))
+            req(gene %in% gene_modules()$module)
+            data_vec <- get_gene_module_egc(gene, dataset(), gene_modules()) + egc_epsilon
+            exclude <- gene_modules()$gene[gene_modules()$module == gene]
+        } else {
+            metadata <- get_mc_data(dataset(), "metadata")
+            req(gene %in% colnames(metadata))
+            req(is_numeric_field(metadata, gene))
+            data_vec <- metadata[[gene]]
+            names(data_vec) <- metadata$metacell
+        }
+
         input_ids <- purrr::map_chr(
             ids,
             ~ {
                 ns(glue("select_top_cor_{id}_{.x}"))
             }
         )
-        tagList(
-            selectInput(
-                ns(glue("selected_top_{id}")),
-                glue("Top correlated to {gene}:"),
-                choices = c(get_top_cor_gene(dataset(), gene, type = "pos"), get_top_cor_gene(dataset(), gene, type = "neg")),
-                selected = NULL,
-                size = 10,
-                selectize = FALSE
-            ),
-            shinyWidgets::actionGroupButtons(
-                input_ids[1:length(button_labels)],
-                labels = button_labels, size = "sm", fullwidth = FALSE
-            ),
-            shiny::actionButton(
-                inputId = ns(glue("genecards_{id}")), label = glue("GeneCards: {gene}"),
-                size = "sm", onclick = glue("window.open('https://www.genecards.org/cgi-bin/carddisp.pl?gene={gene}')")
-            )
+
+        si <- selectInput(
+            ns(glue("selected_top_{id}")),
+            glue("Top correlated to {gene}:"),
+            choices = get_top_cor_gene(dataset(), gene, type = "both", data_vec = data_vec, exclude = exclude),
+            selected = NULL,
+            size = 10,
+            selectize = FALSE
         )
+        btn <- shinyWidgets::actionGroupButtons(
+            input_ids[1:length(button_labels)],
+            labels = button_labels, size = "sm", fullwidth = FALSE
+        )
+
+        if (input[[type_id]] == "Gene") {
+            tagList(
+                si,
+                btn,
+                shiny::actionButton(
+                    inputId = ns(glue("genecards_{id}")), label = glue("GeneCards: {gene}"),
+                    size = "sm", onclick = glue("window.open('https://www.genecards.org/cgi-bin/carddisp.pl?gene={gene}')")
+                )
+            )
+        } else {
+            tagList(
+                si,
+                btn
+            )
+        }
     })
+
     observeEvent(input[[glue("select_top_cor_{id}_axis")]], {
         req(input[["axis_type"]] == "Gene")
         shinyWidgets::updateVirtualSelect(session = session, inputId = "axis_var", selected = input[[glue("selected_top_{id}")]])
@@ -173,9 +202,9 @@ top_correlated_selector <- function(gene_id, id, type_id, input, output, session
     })
 }
 
-top_correlated_selectors <- function(input, output, session, dataset, ns, button_labels = c("X", "Y", "Color", "2D")) {
-    top_correlated_selector("x_axis_var", "x_axis", "x_axis_type", input, output, session, dataset, ns, button_labels = button_labels)
-    top_correlated_selector("y_axis_var", "y_axis", "y_axis_type", input, output, session, dataset, ns, button_labels = button_labels)
-    top_correlated_selector("color_by_var", "color_by", "color_by_type", input, output, session, dataset, ns, button_labels = button_labels)
-    top_correlated_selector("color_proj_gene", "color_proj", "color_proj", input, output, session, dataset, ns, button_labels = button_labels)
+top_correlated_selectors <- function(input, output, session, dataset, ns, button_labels = c("X", "Y", "Color", "2D"), gene_modules = NULL) {
+    top_correlated_selector("x_axis_var", "x_axis", "x_axis_type", input, output, session, dataset, ns, button_labels = button_labels, gene_modules = gene_modules)
+    top_correlated_selector("y_axis_var", "y_axis", "y_axis_type", input, output, session, dataset, ns, button_labels = button_labels, gene_modules = gene_modules)
+    top_correlated_selector("color_by_var", "color_by", "color_by_type", input, output, session, dataset, ns, button_labels = button_labels, gene_modules = gene_modules)
+    top_correlated_selector("color_proj_gene", "color_proj", "color_proj", input, output, session, dataset, ns, button_labels = button_labels, gene_modules = gene_modules)
 }

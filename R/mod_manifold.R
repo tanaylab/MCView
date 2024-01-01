@@ -112,7 +112,7 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
         function(input, output, session) {
             ns <- session$ns
 
-            top_correlated_selectors(input, output, session, dataset, ns)
+            top_correlated_selectors(input, output, session, dataset, ns, gene_modules = gene_modules)
             projection_selectors(ns, dataset, output, input, gene_modules, globals, session)
 
             clipboard_changed <- clipboard_changed_2d_reactive(input, globals)

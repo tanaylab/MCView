@@ -122,7 +122,7 @@ mod_samples_server <- function(id, dataset, metacell_types, cell_type_colors, ge
         id,
         function(input, output, session) {
             ns <- session$ns
-            top_correlated_selectors(input, output, session, dataset, ns, button_labels = c("X", "Y", "Color"))
+            top_correlated_selectors(input, output, session, dataset, ns, button_labels = c("X", "Y", "Color"), gene_modules = gene_modules)
 
             output$cell_type_list <- cell_type_selector(dataset, ns, id = "selected_cell_types", label = "Cell types", cell_type_colors = cell_type_colors)
 

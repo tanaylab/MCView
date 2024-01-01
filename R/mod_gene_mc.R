@@ -55,7 +55,7 @@ mod_gene_mc_server <- function(id, dataset, metacell_types, cell_type_colors, ge
         function(input, output, session) {
             ns <- session$ns
 
-            top_correlated_selectors(input, output, session, dataset, ns)
+            top_correlated_selectors(input, output, session, dataset, ns, gene_modules = gene_modules)
             mod_gene_mc_plotly_observers(input, session)
             mod_gene_mc_globals_observers(input, session, globals, dataset)
 
