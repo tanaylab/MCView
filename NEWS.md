@@ -1,3 +1,7 @@
+# MCView 0.2.5 
+
+* Added an option to exclude lateral and noisy genes from marker heatmap.
+
 # MCView 0.2.24
 
 * Added 'Load genes' and 'Save genes' buttons to the 'Markers' tab.

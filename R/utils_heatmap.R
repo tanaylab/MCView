@@ -73,6 +73,16 @@ heatmap_sidebar <- function(id, ...) {
         remove_genes_ui <- shinyWidgets::actionGroupButtons(ns("remove_genes"), labels = "Remove selected genes", size = "sm")
         add_genes_ui <- uiOutput(ns("add_genes_ui"))
         update_genes_ui <- shinyWidgets::actionGroupButtons(ns("update_genes"), labels = "Update genes", size = "sm")
+        include_lateral_ui <- shinyWidgets::awesomeCheckbox(
+            inputId = ns("include_lateral"),
+            label = "Include lateral",
+            value = TRUE
+        )
+        include_noisy_ui <- shinyWidgets::awesomeCheckbox(
+            inputId = ns("include_noisy"),
+            label = "Include noisy",
+            value = TRUE
+        )
         load_genes_ui <- fileInput(ns("load_genes"), label = NULL, buttonLabel = "Load genes", multiple = FALSE, accept = c(
             "text/csv",
             "text/comma-separated-values,text/plain",
@@ -98,6 +108,8 @@ heatmap_sidebar <- function(id, ...) {
         uiOutput(ns("metadata_list")),
         ...,
         update_genes_ui,
+        include_lateral_ui,
+        include_noisy_ui,
         max_gene_num_ui,
         add_genes_ui,
         selectInput(
@@ -120,7 +132,11 @@ heatmap_sidebar <- function(id, ...) {
 
 heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metacell_types, cell_type_colors, globals, markers, lfp_range, mode) {
     observe({
-        updateSelectInput(session, "selected_marker_genes", choices = markers())
+        choices <- markers()
+        if (!is.null(choices)) {
+            names(choices) <- gene_label(choices, dataset())
+            updateSelectInput(session, "selected_marker_genes", choices = choices)
+        }
         shinyWidgets::updateVirtualSelect(session = session, inputId = "metadata_order_var", choices = c("Hierarchical-Clustering", dataset_metadata_fields_numeric(dataset())), selected = "Hierarchical-Clustering")
         shinyjs::toggle(id = "metadata_order_var", condition = !is.null(input$force_cell_type) && input$force_cell_type)
     })
@@ -183,6 +199,17 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
         }
 
         req(input$max_gene_num)
+        if (!is.null(input$include_lateral) && !input$include_lateral) {
+            lateral_genes <- get_mc_data(dataset(), "lateral_genes")
+            markers_df <- markers_df %>%
+                filter(!(gene %in% lateral_genes))
+        }
+        if (!is.null(input$include_noisy) && !input$include_noisy) {
+            noisy_genes <- get_mc_data(dataset(), "noisy_genes")
+            markers_df <- markers_df %>%
+                filter(!(gene %in% noisy_genes))
+        }
+
         new_markers <- choose_markers(markers_df, input$max_gene_num, dataset = dataset())
 
         # If we did not choose all the cell types
