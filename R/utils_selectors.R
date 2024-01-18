@@ -85,11 +85,13 @@ metadata_selector <- function(dataset, ns, id = "selected_md", label = "Metadata
         metadata <- get_mc_data(dataset(), metadata_id)
         req(metadata)
         metadata_fields <- c(additional_fields, colnames(metadata)[-1])
-        shinyWidgets::pickerInput(ns(id), label,
+        shinyWidgets::virtualSelectInput(ns(id),
+            label = label,
             choices = metadata_fields,
             selected = selected,
             multiple = multiple,
-            options = list(`actions-box` = TRUE, `dropup-auto` = FALSE)
+            showSelectedOptionsFirst = TRUE,
+            search = TRUE
         )
     })
 }

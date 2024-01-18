@@ -433,6 +433,8 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
 initial_proj_point_size <- function(dataset, screen_width = NULL, screen_height = NULL, weight = 1, atlas = FALSE) {
     if (!is.null(config$datasets[[dataset]]$projection_point_size)) {
         return(config$datasets[[dataset]]$projection_point_size * weight)
+    } else if (!is.null(config$projection_point_size)) {
+        return(config$projection_point_size * weight)
     }
     n_metacells <- length(get_mc_data(dataset, "mc_sum", atlas = atlas))
     screen_width <- screen_width %||% 1920

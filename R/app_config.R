@@ -212,6 +212,13 @@ init_tab_defs <- function() {
 
     cur_config$tabs <- order_tabs(cur_config$tabs)
 
+    if (!is.null(config$light_version) && config$light_version) {
+        # make the About tab first if exists
+        if ("About" %in% cur_config$tabs) {
+            cur_config$tabs <- c("About", cur_config$tabs[cur_config$tabs != "About"])
+        }
+    }
+
     config <<- cur_config
 }
 

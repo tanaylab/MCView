@@ -174,10 +174,10 @@ layout_and_graph_to_mc2d <- function(layout, graph, metacells, warn_function = c
         return(NULL)
     }
 
-    unknown_metacells <- c(setdiff(metacells, graph$from), setdiff(metacells, graph$to))
+    unknown_metacells <- c(setdiff(graph$from, metacells), setdiff(graph$to, metacells))
     if (length(unknown_metacells) > 0) {
         unknown_metacells <- paste(unknown_metacells, collapse = ", ")
-        warn_function(glue("Metacells {unknown_metacells} were not found in layout"))
+        warn_function(glue("Metacells {unknown_metacells} were in the graph but not in the dataset"))
     }
 
     graph <- graph %>% filter(from %in% metacells, to %in% metacells)

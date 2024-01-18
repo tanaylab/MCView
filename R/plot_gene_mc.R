@@ -153,6 +153,8 @@ connect_gene_plots <- function(input, output, session, ns, source) {
 initial_scatters_point_size <- function(dataset, screen_width = NULL, screen_height = NULL, weight = 1, atlas = FALSE) {
     if (!is.null(config$datasets[[dataset]]$scatters_point_size)) {
         return(config$datasets[[dataset]]$scatters_point_size)
+    } else if (!is.null(config$scatters_point_size)) {
+        return(config$scatters_point_size)
     }
     n_metacells <- length(get_mc_data(dataset, "mc_sum", atlas = atlas))
     screen_width <- screen_width %||% 1920
@@ -166,6 +168,8 @@ initial_scatters_point_size <- function(dataset, screen_width = NULL, screen_hei
 initial_scatters_stroke <- function(dataset) {
     if (!is.null(config$datasets[[dataset]]$scatters_stroke)) {
         return(config$datasets[[dataset]]$scatters_stroke)
+    } else if (!is.null(config$scatters_stroke)) {
+        return(config$scatters_stroke)
     }
     return(0.2)
 }

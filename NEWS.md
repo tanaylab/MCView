@@ -1,3 +1,12 @@
+# MCView 0.2.6 
+
+* Multiple fixes:
+- Fix: loading of light_version bundles was broken.
+- Fix: `projection_point_size` and `scatters_point_size` were not detected when added in `other_params`. 
+- Fix: import warned when there were metacells withour an edge when providing `default_graph` parameter.
+
+* `About` tab is now the first in light-version bundles. 
+
 # MCView 0.2.5 
 
 * Added an option to exclude lateral and noisy genes from marker heatmap.
