@@ -82,9 +82,11 @@ app_server <- function(input, output, session) {
         initial_metacell_types <- get_metacell_types_data(dataset())
         initial_gene_modules <- get_mc_data(dataset(), "gene_modules")
 
-        initial_gene_modules <- initial_gene_modules %>%
-            filter(gene %in% gene_names(dataset())) %>%
-            mutate(gene = as.character(gene))
+        if (!is.null(initial_gene_modules)) {
+            initial_gene_modules <- initial_gene_modules %>%
+                filter(gene %in% gene_names(dataset())) %>%
+                mutate(gene = as.character(gene))
+        }
 
         # remove metacell color column if exists
         initial_metacell_types$mc_col <- NULL
