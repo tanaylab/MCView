@@ -140,7 +140,6 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
             updateSelectInput(session, "selected_marker_genes", choices = choices)
         }
         shinyWidgets::updateVirtualSelect(session = session, inputId = "metadata_order_var", choices = c("Hierarchical-Clustering", dataset_metadata_fields_numeric(dataset())), selected = "Hierarchical-Clustering")
-        shinyjs::toggle(id = "metadata_order_var", condition = !is.null(input$force_cell_type) && input$force_cell_type)
     })
 
     observe({
