@@ -1,3 +1,7 @@
+# MCView 0.2.7
+
+* Added an option to order by metadata when 'force cell type' is FALSE.
+
 # MCView 0.2.6 
 
 * Multiple fixes:

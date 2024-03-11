@@ -330,7 +330,13 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
                 arrange(!!sym(metadata_order)) %>%
                 pull(metacell)
         }
-        mc_order <- order_mc_by_most_var_genes(mat, force_cell_type = force_cell_type, metacell_types = metacell_types, epsilon = epsilon, notify_var_genes = notify_var_genes, log_transform = log_transform, cached_dist = cached_dist, secondary_order = secondary_order)
+
+        if (!is.null(secondary_order) && !force_cell_type) {
+            mc_order <- secondary_order
+        } else {
+            mc_order <- order_mc_by_most_var_genes(mat, force_cell_type = force_cell_type, metacell_types = metacell_types, epsilon = epsilon, notify_var_genes = notify_var_genes, log_transform = log_transform, cached_dist = cached_dist, secondary_order = secondary_order)
+        }
+
         mat <- mat[, mc_order, drop = FALSE]
     }
 
