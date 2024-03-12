@@ -100,7 +100,7 @@ projection_selectors <- function(ns, dataset, output, input, gene_modules, globa
         shinyWidgets::updateVirtualSelect(
             session = session,
             inputId = "color_proj_gene",
-            choices = gene_names(dataset(), atlas = atlas),
+            choices = gene_names_label(dataset(), atlas = atlas),
             selected = default_gene1
         )
 

@@ -261,7 +261,7 @@ render_axis_select_ui <- function(axis, title, output_id, md_choices, md_selecte
             shinyWidgets::updateVirtualSelect(
                 session = session,
                 inputId = glue("{axis}_var"),
-                choices = gene_names(dataset(), atlas = atlas),
+                choices = gene_names_label(dataset(), atlas = atlas),
                 selected = selected_gene,
                 label = title
             )
