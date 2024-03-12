@@ -1,6 +1,7 @@
 # MCView 0.2.7
 
 * Added an option to order by metadata when 'force cell type' is FALSE.
+* Added lateral/noisy labels to gene selectors.
 
 # MCView 0.2.6 
 
