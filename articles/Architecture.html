@@ -8,8 +8,8 @@
 <meta name="description" content="MCView">
 <title>Architecture • MCView</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.2.2/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.2.2/bootstrap.bundle.min.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
+<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
 <!-- bootstrap-toc --><script src="https://cdn.jsdelivr.net/gh/afeld/bootstrap-toc@v1.0.1/dist/bootstrap-toc.min.js" integrity="sha256-4veVQbu7//Lk5TSmc7YV48MxtMy98e26cf5MrgZYnwo=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- search --><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/autocomplete.js/0.38.0/autocomplete.jquery.min.js" integrity="sha512-GU9ayf+66Xx2TmpxqJpliWbT5PiGYxpaG8rfnBEk1LL8l1KGkRShhngwdXK1UgqhAzWpZHSiYPc09/NwDQIGyg==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js" integrity="sha512-5CYOlHXGh6QpOFA/TeTylKLWfB3ftPsde7AnmhuitiTX4K5SqCLBeKro6sPS8ilsz1Q4NRx3v8Ko2IBiszzdww==" crossorigin="anonymous"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Architecture">
 <meta property="og:description" content="MCView">
@@ -26,7 +26,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">MCView</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.23.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.27</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -72,8 +72,7 @@
 
 
 
-
-<div class="row">
+<script src="Architecture_files/accessible-code-block-0.0.1/empty-anchor.js"></script><div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="" class="logo" alt=""><h1>Architecture</h1>
             
@@ -84,8 +83,7 @@
 
     
     
-<p>An <strong>MCView</strong> app needs two components in order to
-run:</p>
+<p>An <strong>MCView</strong> app needs two components in order to run:</p>
 <ol style="list-style-type: decimal">
 <li>Configuration file (<code>config.yaml</code>).</li>
 <li>Cached data of one or more datasets.</li>
@@ -97,137 +95,101 @@ run:</p>
 <li>
 <code>about.Rmd</code> - custom “About” page.</li>
 </ol>
-<p>In order to bundle together the configuration and cached data,
-<strong>MCView</strong> supports a concept of a ‘project’.</p>
+<p>In order to bundle together the configuration and cached data, <strong>MCView</strong> supports a concept of a ‘project’.</p>
 <div class="section level2">
 <h2 id="projects">Projects<a class="anchor" aria-label="anchor" href="#projects"></a>
 </h2>
-<p>A project is a standard library structure that binds config and
-cache, e.g.:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode md"><code class="sourceCode markdown"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a>my_project</span>
-<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>├── config</span>
-<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>│   ├── about.Rmd</span>
-<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>│   ├── config.yaml</span>
-<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a>│   └── help.yaml</span>
-<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a>└── cache</span>
-<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a>    ├── ko</span>
-<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a>    └── wt</span></code></pre></div>
-<p>The above example shows the directory structure of a project named
-<code>my_project</code> that contains two metacell datasets - wt and ko.
-Multiple functions in the <strong>MCView</strong> package would accept
-the project path and would expect to find the configuration files and
-cache in the standard relative path.</p>
+<p>A project is a standard library structure that binds config and cache, e.g.:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode md"><code class="sourceCode markdown"><span id="cb1-1"><a href="#cb1-1"></a>my_project</span>
+<span id="cb1-2"><a href="#cb1-2"></a>├── config</span>
+<span id="cb1-3"><a href="#cb1-3"></a>│   ├── about.Rmd</span>
+<span id="cb1-4"><a href="#cb1-4"></a>│   ├── config.yaml</span>
+<span id="cb1-5"><a href="#cb1-5"></a>│   └── help.yaml</span>
+<span id="cb1-6"><a href="#cb1-6"></a>└── cache</span>
+<span id="cb1-7"><a href="#cb1-7"></a><span class="bn">    ├── ko</span></span>
+<span id="cb1-8"><a href="#cb1-8"></a><span class="bn">    └── wt</span></span></code></pre></div>
+<p>The above example shows the directory structure of a project named <code>my_project</code> that contains two metacell datasets - wt and ko. Multiple functions in the <strong>MCView</strong> package would accept the project path and would expect to find the configuration files and cache in the standard relative path.</p>
 <p>Creation of a project can be done by running:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">MCView</span><span class="fu">::</span><span class="fu"><a href="../reference/create_project.html">create_project</a></span><span class="op">(</span><span class="st">"my_project"</span><span class="op">)</span></span></code></pre></div>
-<p>Which would open a text editor in order to edit the configuration
-file.</p>
+<p>Which would open a text editor in order to edit the configuration file.</p>
 </div>
 <div class="section level2">
 <h2 id="configuration-files">Configuration files<a class="anchor" aria-label="anchor" href="#configuration-files"></a>
 </h2>
-<p>An <strong>MCView</strong> project can have 3 configuration
-files:</p>
+<p>An <strong>MCView</strong> project can have 3 configuration files:</p>
 <ol style="list-style-type: decimal">
 <li>config.yaml - main configuration file (required)</li>
 <li>help.yaml - help text messages (optional)</li>
 <li>about.Rmd - text for the about tab (optional)</li>
 </ol>
-<p>The main configuration file (<code>config/config.yaml</code>)
-contains the parameters:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">title</span><span class="kw">:</span><span class="at"> MCView</span></span>
-<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">tabs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">"QC"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Manifold"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Genes"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Markers"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Gene modules"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Diff. Expression"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Cell types"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Annotate"</span><span class="kw">,</span><span class="at"> </span><span class="st">"About"</span><span class="kw">]</span><span class="co"> # which tabs to show</span></span>
-<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="fu">help</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span><span class="co"> # set to true to show introjs help on start</span></span>
-<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="fu">selected_gene1</span><span class="kw">:</span><span class="at"> Foxc1</span><span class="co"> # Default selected gene1 (optional)</span></span>
-<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="fu">selected_gene2</span><span class="kw">:</span><span class="at"> Twist1</span><span class="co"> # Default selected gene2 (optional)</span></span>
-<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a><span class="fu">selected_mc1</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="co"> # Default selected metacell1 </span></span>
-<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="fu">selected_mc2</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span><span class="co"> # Default selected metacell2</span></span>
-<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="fu">datasets</span><span class="kw">:</span><span class="co"> # optional parameters per dataset</span></span>
-<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a><span class="at">  </span><span class="fu">PBMC163k</span><span class="kw">:</span></span>
-<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a><span class="at">    </span><span class="fu">min_d</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.3</span><span class="co"> # default minimal edge distance to show in projection plots</span></span>
-<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a><span class="co">    # projection_point_size: 1 # Default size for projection points</span></span>
-<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a><span class="co">    # projection_stroke: 0.1 # Default line stroke for projection points</span></span>
-<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a><span class="co">    # scatters_point_size: 2 # Default size for scatter plot (such as gene gene plots)</span></span>
-<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a><span class="co">    # scatters_stroke_size: 0.1 # Default line stroke for scatter plot (such as gene gene plots)</span></span></code></pre></div>
+<p>The main configuration file (<code>config/config.yaml</code>) contains the parameters:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1"></a><span class="fu">title</span><span class="kw">:</span><span class="at"> MCView</span></span>
+<span id="cb3-2"><a href="#cb3-2"></a><span class="fu">tabs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">"QC"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Manifold"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Genes"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Markers"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Gene modules"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Diff. Expression"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Cell types"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Annotate"</span><span class="kw">,</span><span class="at"> </span><span class="st">"About"</span><span class="kw">]</span><span class="co"> # which tabs to show</span></span>
+<span id="cb3-3"><a href="#cb3-3"></a><span class="fu">help</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span><span class="co"> # set to true to show introjs help on start</span></span>
+<span id="cb3-4"><a href="#cb3-4"></a><span class="fu">selected_gene1</span><span class="kw">:</span><span class="at"> Foxc1</span><span class="co"> # Default selected gene1 (optional)</span></span>
+<span id="cb3-5"><a href="#cb3-5"></a><span class="fu">selected_gene2</span><span class="kw">:</span><span class="at"> Twist1</span><span class="co"> # Default selected gene2 (optional)</span></span>
+<span id="cb3-6"><a href="#cb3-6"></a><span class="fu">selected_mc1</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="co"> # Default selected metacell1 </span></span>
+<span id="cb3-7"><a href="#cb3-7"></a><span class="fu">selected_mc2</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span><span class="co"> # Default selected metacell2</span></span>
+<span id="cb3-8"><a href="#cb3-8"></a><span class="fu">datasets</span><span class="kw">:</span><span class="co"> # optional parameters per dataset</span></span>
+<span id="cb3-9"><a href="#cb3-9"></a><span class="at">  </span><span class="fu">PBMC163k</span><span class="kw">:</span></span>
+<span id="cb3-10"><a href="#cb3-10"></a><span class="at">    </span><span class="fu">min_d</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.3</span><span class="co"> # default minimal edge distance to show in projection plots</span></span>
+<span id="cb3-11"><a href="#cb3-11"></a><span class="co">    # projection_point_size: 1 # Default size for projection points</span></span>
+<span id="cb3-12"><a href="#cb3-12"></a><span class="co">    # projection_stroke: 0.1 # Default line stroke for projection points</span></span>
+<span id="cb3-13"><a href="#cb3-13"></a><span class="co">    # scatters_point_size: 2 # Default size for scatter plot (such as gene gene plots)</span></span>
+<span id="cb3-14"><a href="#cb3-14"></a><span class="co">    # scatters_stroke_size: 0.1 # Default line stroke for scatter plot (such as gene gene plots)</span></span></code></pre></div>
 <div class="section level3">
 <h3 id="title">title<a class="anchor" aria-label="anchor" href="#title"></a>
 </h3>
-<p>The title of the app. This would be shown on the top left of the
-screen.</p>
+<p>The title of the app. This would be shown on the top left of the screen.</p>
 </div>
 <div class="section level3">
 <h3 id="tabs">tabs<a class="anchor" aria-label="anchor" href="#tabs"></a>
 </h3>
-<p>Controls which tabs to show in the left sidebar and their order.
-Options are:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="kw">[</span><span class="st">"QC"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Manifold"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Genes"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Query"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Atlas"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Markers"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Gene modules"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Projected-fold"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Diff. Expression"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Cell types"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Flow"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Annotate"</span><span class="kw">,</span><span class="at"> </span><span class="st">"About"</span><span class="kw">]</span></span></code></pre></div>
+<p>Controls which tabs to show in the left sidebar and their order. Options are:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1"></a><span class="kw">[</span><span class="st">"QC"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Manifold"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Genes"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Query"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Atlas"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Markers"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Gene modules"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Projected-fold"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Diff. Expression"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Cell types"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Flow"</span><span class="kw">,</span><span class="at"> </span><span class="st">"Annotate"</span><span class="kw">,</span><span class="at"> </span><span class="st">"About"</span><span class="kw">]</span></span></code></pre></div>
 <p>Why would you want to add or remove tabs?</p>
-<p>Many times we would want to separate between a the ‘development’
-version of an <strong>MCView</strong> app which allows users to
-re-annotate the data and a ‘production’ version which only contains data
-analysis tabs. This can be done by removing “Annotate” from the
-<code>tabs</code> field. In addition, you might want to always start the
-app from the “Genes” tab instead of the “Manifold”, which can be done by
-changing the order in the <code>tabs</code> field. And lastly, some tabs
-such as “Query”, “Atlas” and “Flow” are not enabled by default and
-should be added explicitly to the tabs section of the config file.</p>
+<p>Many times we would want to separate between a the ‘development’ version of an <strong>MCView</strong> app which allows users to re-annotate the data and a ‘production’ version which only contains data analysis tabs. This can be done by removing “Annotate” from the <code>tabs</code> field. In addition, you might want to always start the app from the “Genes” tab instead of the “Manifold”, which can be done by changing the order in the <code>tabs</code> field. And lastly, some tabs such as “Query”, “Atlas” and “Flow” are not enabled by default and should be added explicitly to the tabs section of the config file.</p>
 </div>
 <div class="section level3">
 <h3 id="help">help<a class="anchor" aria-label="anchor" href="#help"></a>
 </h3>
-<p>Controls wether to start the app with a help modal (from introjs).
-Help messages can be edited in <code>help.yaml</code> file (see
-below).</p>
+<p>Controls wether to start the app with a help modal (from introjs). Help messages can be edited in <code>help.yaml</code> file (see below).</p>
 </div>
 <div class="section level3">
 <h3 id="selected_gene1selected_gene2-optional">selected_gene1/selected_gene2 (optional)<a class="anchor" aria-label="anchor" href="#selected_gene1selected_gene2-optional"></a>
 </h3>
-<p>The default genes that would be selected (in any screen with gene
-selection). If this parameter is missing, the 2 genes with highest
-max(expr)-min(expr) in the first dataset would be chosen.</p>
+<p>The default genes that would be selected (in any screen with gene selection). If this parameter is missing, the 2 genes with highest max(expr)-min(expr) in the first dataset would be chosen.</p>
 </div>
 <div class="section level3">
 <h3 id="selected_mc1selected_mc2">selected_mc1/selected_mc2<a class="anchor" aria-label="anchor" href="#selected_mc1selected_mc2"></a>
 </h3>
-<p>The default metacells that would be selected in the Diff. Expression
-tab.</p>
+<p>The default metacells that would be selected in the Diff. Expression tab.</p>
 </div>
 <div class="section level3">
 <h3 id="datasets-optional">datasets (optional)<a class="anchor" aria-label="anchor" href="#datasets-optional"></a>
 </h3>
-<p>Additional per-dataset parameters. Current parameters include default
-visualization properties of projection and scatter plots.</p>
+<p>Additional per-dataset parameters. Current parameters include default visualization properties of projection and scatter plots.</p>
 </div>
 <div class="section level3">
 <h3 id="help-yaml">help.yaml<a class="anchor" aria-label="anchor" href="#help-yaml"></a>
 </h3>
-<p>This file contains the help messages used by introjs. It shouldn’t be
-changed in general, except maybe the introduction message. Note that the
-messages refer to shiny elements, so you would have to look at the code
-itself in order to identify the element of each message.</p>
+<p>This file contains the help messages used by introjs. It shouldn’t be changed in general, except maybe the introduction message. Note that the messages refer to shiny elements, so you would have to look at the code itself in order to identify the element of each message.</p>
 </div>
 <div class="section level3">
 <h3 id="about-rmd">about.Rmd<a class="anchor" aria-label="anchor" href="#about-rmd"></a>
 </h3>
-<p>This Rmarkdown file contains the contents of the about page. Edit it
-as you wish, and remember that you can remove the “About” tab altogether
-using the <code>tabs</code> parameter in <code>config.yaml</code>.</p>
+<p>This Rmarkdown file contains the contents of the about page. Edit it as you wish, and remember that you can remove the “About” tab altogether using the <code>tabs</code> parameter in <code>config.yaml</code>.</p>
 </div>
 </div>
 <div class="section level2">
 <h2 id="cached-data">Cached data<a class="anchor" aria-label="anchor" href="#cached-data"></a>
 </h2>
-<p>In order to run, <strong>MCView</strong> needs to pre-process the
-metacell matrix and cluster annotations. This can be done by the
-<code><a href="../reference/import_dataset.html">MCView::import_dataset</a></code> function which accepts a project
-path, dataset name and path to the <code>h5ad</code> file that was
-generated from metacell1.</p>
-<p>The cached files would be saved under the cache section in the
-project folder, in a separate folder for each dataset. In the above
-example:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode md"><code class="sourceCode markdown"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>└── cache</span>
-<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>    ├── ko</span>
-<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>    └── wt</span></code></pre></div>
+<p>In order to run, <strong>MCView</strong> needs to pre-process the metacell matrix and cluster annotations. This can be done by the <code><a href="../reference/import_dataset.html">MCView::import_dataset</a></code> function which accepts a project path, dataset name and path to the <code>h5ad</code> file that was generated from metacell1.</p>
+<p>The cached files would be saved under the cache section in the project folder, in a separate folder for each dataset. In the above example:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode md"><code class="sourceCode markdown"><span id="cb5-1"><a href="#cb5-1"></a>└── cache</span>
+<span id="cb5-2"><a href="#cb5-2"></a><span class="bn">    ├── ko</span></span>
+<span id="cb5-3"><a href="#cb5-3"></a><span class="bn">    └── wt</span></span></code></pre></div>
 <p>You can list the datasets in the project using:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">MCView</span><span class="fu">::</span><span class="fu"><a href="../reference/dataset_ls.html">dataset_ls</a></span><span class="op">(</span><span class="st">"my_project"</span><span class="op">)</span></span></code></pre></div>
@@ -245,27 +207,22 @@ example:</p>
 <div class="section level2">
 <h2 id="deployment">Deployment<a class="anchor" aria-label="anchor" href="#deployment"></a>
 </h2>
-<p><strong>MCView</strong> can generate a ‘deployment ready’ version of
-the app by running:</p>
+<p><strong>MCView</strong> can generate a ‘deployment ready’ version of the app by running:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">MCView</span><span class="fu">::</span><span class="fu"><a href="../reference/create_bundle.html">create_bundle</a></span><span class="op">(</span>project <span class="op">=</span> <span class="st">"/path/to/my/project"</span>, path <span class="op">=</span> <span class="st">"/path/to/the/bundle"</span>, name <span class="op">=</span> <span class="st">"my_project"</span><span class="op">)</span></span></code></pre></div>
-<p>This would create a minimal shiny app in
-“/path/to/the/bundle/my_project” directory which would contain:</p>
+<p>This would create a minimal shiny app in “/path/to/the/bundle/my_project” directory which would contain:</p>
 <ol style="list-style-type: decimal">
 <li>app.R file.</li>
 <li>project config and cache.</li>
 </ol>
 <blockquote>
-<p>Note: The bundle would use use the installed version of MCView in
-server. If you want to create a ‘self-contained’ bundle that would
-include MCView code as well, set <code>self_contained=TRUE</code>.</p>
+<p>Note: The bundle would use use the installed version of MCView in server. If you want to create a ‘self-contained’ bundle that would include MCView code as well, set <code>self_contained=TRUE</code>.</p>
 </blockquote>
 <p>The bundle can then be deployed in shiny-server by running:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">rsconnect</span><span class="fu">::</span><span class="fu">deployApp</span><span class="op">(</span>appDir <span class="op">=</span> <span class="st">"/path/to/the/bundle/my_project"</span><span class="op">)</span></span></code></pre></div>
 <p>or any other environment that supports serving shiny apps.</p>
-<p>Note that when deploying to these services make sure you have the
-<strong>MCView</strong> package installed.</p>
+<p>Note that when deploying to these services make sure you have the <strong>MCView</strong> package installed.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
     </nav></aside>
