@@ -1,9 +1,9 @@
-# MCView 0.2.7
+# MCView 0.2.27
 
 * Added an option to order by metadata when 'force cell type' is FALSE.
 * Added lateral/noisy labels to gene selectors.
 
-# MCView 0.2.6 
+# MCView 0.2.26 
 
 * Multiple fixes:
 - Fix: loading of light_version bundles was broken.
@@ -12,7 +12,7 @@
 
 * `About` tab is now the first in light-version bundles. 
 
-# MCView 0.2.5 
+# MCView 0.2.25 
 
 * Added an option to exclude lateral and noisy genes from marker heatmap.
 
