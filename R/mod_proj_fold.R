@@ -62,5 +62,4 @@ mod_proj_fold_server <- function(id, dataset, metacell_types, cell_type_colors, 
             heatmap_reactives("proj_fold_heatmap", dataset, metacell_types, gene_modules, cell_type_colors, globals, markers, lfp_range, "Proj")
         }
     )
-
 }

@@ -242,6 +242,9 @@ gene_names <- function(dataset, atlas = FALSE) {
 
 gene_names_label <- function(dataset, atlas = FALSE, gene_modules = NULL) {
     gene_names <- gene_names(dataset, atlas)
+    if (is.null(gene_names)) {
+        return(gene_names)
+    }
     names(gene_names) <- gene_label(gene_names, dataset, gene_modules)
     return(gene_names)
 }
