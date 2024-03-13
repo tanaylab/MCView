@@ -2,6 +2,7 @@
 
 * Added an option to show only fitted genes in the projected fold tab.
 * Moved "Order by" and "Force cell type" to left sidebar in the 'Markers' tab.
+* Fix: legend did not appear in the 'Markers' tab when using `ggplot 3.5.0`.
 
 # MCView 0.2.27
 
