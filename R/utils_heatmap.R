@@ -115,6 +115,7 @@ heatmap_sidebar <- function(id, ..., show_fitted_filter = FALSE) {
         uiOutput(ns("cell_type_list")),
         uiOutput(ns("metadata_list")),
         checkboxInput(ns("force_cell_type"), "Force cell type", value = TRUE),
+        shinyWidgets::virtualSelectInput(ns("metadata_order_cell_type_var"), "Order cell types by", choices = NULL, selected = NULL, multiple = FALSE, search = TRUE),
         shinyWidgets::virtualSelectInput(ns("metadata_order_var"), "Order by", choices = NULL, selected = NULL, multiple = FALSE, search = TRUE),
         tags$hr(),
         ...,
@@ -150,6 +151,9 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
             updateSelectInput(session, "selected_marker_genes", choices = choices)
         }
         shinyWidgets::updateVirtualSelect(session = session, inputId = "metadata_order_var", choices = c("Hierarchical-Clustering", dataset_metadata_fields_numeric(dataset())), selected = "Hierarchical-Clustering")
+        shinyWidgets::updateVirtualSelect(session = session, inputId = "metadata_order_cell_type_var", choices = c("Hierarchical-Clustering", "Colors table", dataset_metadata_fields_numeric(dataset())), selected = "Hierarchical-Clustering")
+
+        shinyjs::toggle(id = "metadata_order_cell_type_var", condition = input$force_cell_type)
     })
 
     observe({
@@ -313,11 +317,13 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     markers(),
                     input$selected_cell_types,
                     metacell_types(),
+                    cell_type_colors(),
                     gene_modules(),
                     force_cell_type = input$force_cell_type,
                     mode = mode,
                     notify_var_genes = TRUE,
-                    metadata_order = input$metadata_order_var
+                    metadata_order = input$metadata_order_var,
+                    cell_type_metadata_order = input$metadata_order_cell_type_var
                 )
 
 
@@ -333,7 +339,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                 }
 
                 return(m)
-            }) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), markers(), gene_modules(), input$selected_cell_types, input$force_cell_type, genes(), input$show_genes, clipboard_changed(), mode, input$metadata_order_var)
+            }) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), markers(), gene_modules(), input$selected_cell_types, input$force_cell_type, genes(), input$show_genes, clipboard_changed(), mode, input$metadata_order_var, input$metadata_order_cell_type_var)
 
             output$download_matrix <- downloadHandler(
                 filename = function() {
@@ -546,7 +552,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     return(structure(list(p = res$p, gtable = res$gtable), class = "gt_custom"))
                 },
                 res = 96
-            ) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), gene_modules(), lfp_range(), metacell_filter(), input$plot_legend, input$plot_cell_type_legend, input$plot_genes_legend, input$selected_md, markers(), input$selected_cell_types, input$force_cell_type, clipboard_changed(), input$high_color, input$low_color, input$mid_color, input$midpoint, genes(), input$show_genes, highlighted_genes(), highlight_color, input$max_gene_num, input$metadata_order_var)
+            ) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), gene_modules(), lfp_range(), metacell_filter(), input$plot_legend, input$plot_cell_type_legend, input$plot_genes_legend, input$selected_md, markers(), input$selected_cell_types, input$force_cell_type, clipboard_changed(), input$high_color, input$low_color, input$mid_color, input$midpoint, genes(), input$show_genes, highlighted_genes(), highlight_color, input$max_gene_num, input$metadata_order_var, input$metadata_order_cell_type_var)
 
             observeEvent(input$heatmap_brush, {
                 req(input$brush_action)

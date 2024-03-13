@@ -268,7 +268,7 @@ get_markers <- function(dataset) {
     return(marker_genes)
 }
 
-get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_types = NULL, gene_modules = NULL, force_cell_type = TRUE, mode = "Markers", notify_var_genes = FALSE, metadata_order = NULL) {
+get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_types = NULL, cell_type_colors = NULL, gene_modules = NULL, force_cell_type = TRUE, mode = "Markers", notify_var_genes = FALSE, metadata_order = NULL, cell_type_metadata_order = NULL) {
     cached_dist <- NULL
     if (mode == "Inner") {
         mc_fp <- get_mc_data(dataset, "inner_fold_mat")
@@ -324,6 +324,24 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
     }
 
     if (ncol(mat) > 1) {
+        # order cell types
+        cell_type_order <- NULL
+        if (force_cell_type && !is.null(cell_type_metadata_order) && cell_type_metadata_order != "" && cell_type_metadata_order != "Hierarchical-Clustering" && cell_type_metadata_order %in% c(dataset_metadata_fields_numeric(dataset), "Colors table")) {
+            req(!is.null(metacell_types))
+            req(!is.null(cell_type_colors))
+            if (cell_type_metadata_order == "Colors table") {
+                cell_type_order <- cell_type_colors$cell_type
+            } else {
+                cell_type_order <- get_mc_data(dataset, "metadata") %>%
+                    left_join(metacell_types, by = "metacell") %>%
+                    group_by(cell_type) %>%
+                    summarise(ord_mean = mean(!!sym(cell_type_metadata_order))) %>%
+                    arrange(ord_mean) %>%
+                    pull(cell_type)
+            }
+        }
+
+        # order within cell types (if force_cell_type) / global (if !force_cell_type)
         secondary_order <- NULL
         if (!is.null(metadata_order) && metadata_order != "" && metadata_order != "Hierarchical-Clustering" && metadata_order %in% dataset_metadata_fields_numeric(dataset)) {
             secondary_order <- get_mc_data(dataset, "metadata") %>%
@@ -335,6 +353,14 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
             mc_order <- secondary_order
         } else {
             mc_order <- order_mc_by_most_var_genes(mat, force_cell_type = force_cell_type, metacell_types = metacell_types, epsilon = epsilon, notify_var_genes = notify_var_genes, log_transform = log_transform, cached_dist = cached_dist, secondary_order = secondary_order)
+            if (!is.null(cell_type_order)) {
+                mc_order_names <- tibble(metacell = colnames(mat)[mc_order]) %>%
+                    left_join(metacell_types, by = "metacell") %>%
+                    mutate(cell_type = factor(cell_type, levels = cell_type_order)) %>%
+                    arrange(cell_type) %>%
+                    pull(metacell)
+                mc_order <- match(mc_order_names, colnames(mat))
+            }
         }
 
         mat <- mat[, mc_order, drop = FALSE]
