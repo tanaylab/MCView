@@ -26,7 +26,7 @@ then runs cell_metadata_to_metacell."><!-- mathjax --><script src="https://cdnjs
     
     <a class="navbar-brand me-2" href="../index.html">MCView</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.27</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.28</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -185,20 +185,37 @@ in<code>cell_metadata</code>, where the values are the fraction of cells with th
 <span class="r-in"><span>    <span class="va">cell_metadata</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span>,</span></span>
 <span class="r-in"><span>    <span class="va">cell_to_metacell</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>internal error -3 in R_decompress1</span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in eval(expr, envir, enclos):</span> lazy-load database '/home/aviezerl/R/x86_64-pc-linux-gnu-library/4.3/MCView/R/MCView.rdb' is corrupt</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Numerical variables: md1, md2</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">metadata</span><span class="op">)</span></span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in eval(expr, envir, enclos):</span> object 'metadata' not found</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> # A tibble: 6 x 3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   metacell      md1          md2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1        0 2.979448 -0.021942785</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2        1 2.958991  0.015177899</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3        2 2.990102  0.005634195</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4        3 3.012686 -0.026841161</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5        4 3.005740  0.011632598</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6        5 2.960923  0.008044519</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">metadata1</span> <span class="op">&lt;-</span> <span class="fu">cell_metadata_to_metacell</span><span class="op">(</span></span></span>
 <span class="r-in"><span>    <span class="va">cell_metadata</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span>, <span class="va">cell_to_metacell</span>,</span></span>
 <span class="r-in"><span>    func <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="va">x</span> <span class="op">*</span> <span class="fl">2</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>restarting interrupted promise evaluation</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>internal error -3 in R_decompress1</span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in eval(expr, envir, enclos):</span> lazy-load database '/home/aviezerl/R/x86_64-pc-linux-gnu-library/4.3/MCView/R/MCView.rdb' is corrupt</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Numerical variables: md1, md2</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Returning more (or less) than 1 row per `summarise()` group was deprecated in dplyr 1.1.0.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Please use `reframe()` instead.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> When switching from `summarise()` to `reframe()`, remember that `reframe()` always returns an</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   ungrouped data frame and adjust accordingly.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> The deprecated feature was likely used in the <span style="color: #0000BB;">dplyr</span> package.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   Please report the issue at <span style="color: #0000BB; font-style: italic;">&lt;https://github.com/tidyverse/dplyr/issues&gt;</span>.</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">metadata1</span><span class="op">)</span></span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in eval(expr, envir, enclos):</span> object 'metadata1' not found</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> # A tibble: 6 x 3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   metacell md1        md2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1        0   6 -0.8932316</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2        0   2 -2.1180205</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3        0  10  2.2575215</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4        0   4 -0.7134182</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5        0   2  1.6701686</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6        0   6  1.4134616</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">metadata3</span> <span class="op">&lt;-</span> <span class="fu">cell_metadata_to_metacell</span><span class="op">(</span></span></span>
@@ -206,12 +223,39 @@ in<code>cell_metadata</code>, where the values are the fraction of cells with th
 <span class="r-in"><span>    <span class="va">cell_to_metacell</span>,</span></span>
 <span class="r-in"><span>    categorical <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"md_categorical1"</span>, <span class="st">"md_categorical2"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>restarting interrupted promise evaluation</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>internal error -3 in R_decompress1</span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in eval(expr, envir, enclos):</span> lazy-load database '/home/aviezerl/R/x86_64-pc-linux-gnu-library/4.3/MCView/R/MCView.rdb' is corrupt</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Categorical variables: md_categorical1, md_categorical2</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Numerical variables: md1, md2</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">metadata3</span><span class="op">)</span></span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in eval(expr, envir, enclos):</span> object 'metadata3' not found</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> # A tibble: 6 x 13</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   metacell md_categorical1: batch1 md_categorical1: batch2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1        0               0.1953988               0.2039877</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2        1               0.1876972               0.2015773</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3        2               0.2206258               0.1985951</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4        3               0.1921979               0.2029813</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5        4               0.1878189               0.2053571</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6        5               0.2058462               0.1932308</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   md_categorical1: batch3 md_categorical1: batch4 md_categorical1: batch5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1               0.2046012               0.2058282               0.1901840</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2               0.2100946               0.2037855               0.1968454</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3               0.1928480               0.1973180               0.1906130</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4               0.2131304               0.1925151               0.1991754</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5               0.2050383               0.2005740               0.2012117</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6               0.2033846               0.1996923               0.1978462</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   md_categorical2: 1 md_categorical2: 2 md_categorical2: 3 md_categorical2: 4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1          0.1935583          0.2141104          0.1966258          0.1889571</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2          0.2056782          0.2012618          0.1914826          0.2028391</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3          0.2043423          0.1979566          0.1985951          0.2097701</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4          0.2017127          0.2026641          0.1928322          0.2102759</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5          0.2117347          0.2037628          0.1903699          0.1951531</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6          0.2030769          0.1920000          0.2046154          0.2033846</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   md_categorical2: 5      md1          md2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1          0.2067485 2.979448 -0.021942785</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2          0.1987382 2.958991  0.015177899</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3          0.1893359 2.990102  0.005634195</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4          0.1925151 3.012686 -0.026841161</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5          0.1989796 3.005740  0.011632598</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6          0.1969231 2.960923  0.008044519</span>
 <span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span></span></span>
 <span class="r-in"><span><span class="fu">cell_metadata_to_metacell_from_h5ad</span><span class="op">(</span><span class="st">"cells.h5ad"</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"pile"</span>, <span class="st">"age"</span>, <span class="st">"batch"</span><span class="op">)</span>, categorical <span class="op">=</span> <span class="st">"batch"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
