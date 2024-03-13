@@ -32,7 +32,7 @@ mod_proj_fold_ui <- function(id) {
 mod_proj_fold_sidebar_ui <- function(id) {
     ns <- NS(id)
     tagList(
-        heatmap_sidebar(ns("proj_fold_heatmap"))
+        heatmap_sidebar(ns("proj_fold_heatmap"), show_fitted_filter = TRUE)
     )
 }
 

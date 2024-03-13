@@ -1,3 +1,7 @@
+# MCView 0.2.28
+
+* Added an option to show only fitted genes in the projected fold tab.
+
 # MCView 0.2.27
 
 * Added an option to order by metadata when 'force cell type' is FALSE.
