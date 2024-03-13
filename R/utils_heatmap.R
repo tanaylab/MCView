@@ -60,8 +60,9 @@ heatmap_box <- function(id,
     )
 }
 
-heatmap_sidebar <- function(id, ...) {
+heatmap_sidebar <- function(id, ..., show_fitted_filter = FALSE) {
     ns <- NS(id)
+    show_only_fitted_ui <- NULL
     if (config$light_version) {
         max_gene_num_ui <- NULL
         remove_genes_ui <- NULL
@@ -85,6 +86,13 @@ heatmap_sidebar <- function(id, ...) {
             label = "Include noisy",
             value = TRUE
         )
+        if (show_fitted_filter) {
+            show_only_fitted_ui <- shinyWidgets::awesomeCheckbox(
+                inputId = ns("show_only_fitted"),
+                label = "Show only fitted",
+                value = FALSE
+            )
+        }
         load_genes_ui <- fileInput(ns("load_genes"), label = NULL, buttonLabel = "Load genes", multiple = FALSE, accept = c(
             "text/csv",
             "text/comma-separated-values,text/plain",
@@ -110,6 +118,7 @@ heatmap_sidebar <- function(id, ...) {
         uiOutput(ns("metadata_list")),
         ...,
         update_genes_ui,
+        show_only_fitted_ui,
         include_lateral_ui,
         include_noisy_ui,
         max_gene_num_ui,
@@ -209,6 +218,18 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
             noisy_genes <- get_mc_data(dataset(), "noisy_genes")
             markers_df <- markers_df %>%
                 filter(!(gene %in% noisy_genes))
+        }
+        if (!is.null(input$show_only_fitted) && input$show_only_fitted) {
+            gene_metadata <- get_mc_data(dataset(), "gene_metadata")
+
+            if (!is.null(gene_metadata)) {
+                fitted_genes <- gene_metadata %>%
+                    filter(fitted_gene) %>%
+                    pull(gene) %>%
+                    unique()
+                markers_df <- markers_df %>%
+                    filter(gene %in% fitted_genes)
+            }
         }
 
         new_markers <- choose_markers(markers_df, input$max_gene_num, dataset = dataset())
