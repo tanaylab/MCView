@@ -456,9 +456,10 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     }
 
                     p <- p + theme(legend.position = c(0.5, 0.5))
-                    legend <- cowplot::get_legend(p)
 
-
+                    # The syntax below is due to https://github.com/wilkelab/cowplot/issues/202
+                    legend <- cowplot::get_plot_component(p, "guide-box", return_all = TRUE)
+                    legend <- purrr::discard(legend, ~ inherits(.x, "zeroGrob"))[[1]]
                     cowplot::ggdraw(legend)
                 },
                 res = 96
