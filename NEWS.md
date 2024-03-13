@@ -1,6 +1,7 @@
 # MCView 0.2.28
 
 * Added an option to show only fitted genes in the projected fold tab.
+* Moved "Order by" and "Force cell type" to left sidebar in the 'Markers' tab.
 
 # MCView 0.2.27
 
