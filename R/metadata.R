@@ -569,13 +569,14 @@ parse_metadata_colors <- function(metadata_colors, metadata) {
                 ))
             }
         } else {
-            if (is.list(.x) && all(names(.x) == c("colors", "categories"))) {
+            if (is.list(.x) && length(names(.x)) == 2 && all(names(.x) == c("colors", "categories"))) {
                 res <- .x$colors
                 names(res) <- .x$categories
             } else {
                 if (is.null(names(.x))) {
                     cli_abort("In metadata colors field {.field {.y}}, color vector doesn't have any names.")
                 }
+                
                 res <- .x
             }
             return(res)
