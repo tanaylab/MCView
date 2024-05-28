@@ -144,7 +144,7 @@ heatmap_sidebar <- function(id, ..., show_fitted_filter = FALSE) {
     )
 }
 
-heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metacell_types, cell_type_colors, globals, markers, lfp_range, mode) {
+heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metacell_types, cell_type_colors, globals, markers, lfp_range, mode, metacell_filter, mat) {
     observe({
         choices <- markers()
         if (!is.null(choices)) {
@@ -192,26 +192,30 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
         req(cell_type_colors())
         req(is.null(input$selected_cell_types) || all(input$selected_cell_types %in% c(cell_type_colors()$cell_type, "(Missing)")))
 
-        if (!is.null(input$selected_cell_types)) {
-            markers_df <- metacell_types() %>%
-                filter(cell_type %in% input$selected_cell_types)
+        if (input$mat_value == "Local") {
+            mc_egc <- get_mc_egc(dataset(), metacells = colnames(mat()))
+            markers_df <- calc_marker_genes(mc_egc, genes_per_metacell = 20)
         } else {
-            markers_df <- metacell_types()
-        }
+            if (!is.null(input$selected_cell_types)) {
+                markers_df <- metacell_types() %>%
+                    filter(cell_type %in% input$selected_cell_types)
+            } else {
+                markers_df <- metacell_types()
+            }
 
-        if (!is.null(input$use_markers) && input$use_markers) {
-            new_markers_df <- get_marker_genes(dataset(), mode = "Markers")
-        } else {
-            new_markers_df <- get_marker_genes(dataset(), mode = mode)
-        }
+            if (!is.null(input$use_markers) && input$use_markers) {
+                new_markers_df <- get_marker_genes(dataset(), mode = "Markers")
+            } else {
+                new_markers_df <- get_marker_genes(dataset(), mode = mode)
+            }
 
-
-        if (has_name(new_markers_df, "metacell") && mode != "Outliers") {
-            markers_df <- markers_df %>%
-                select(metacell) %>%
-                inner_join(new_markers_df, by = "metacell")
-        } else {
-            markers_df <- new_markers_df
+            if (has_name(new_markers_df, "metacell") && mode != "Outliers") {
+                markers_df <- markers_df %>%
+                    select(metacell) %>%
+                    inner_join(new_markers_df, by = "metacell")
+            } else {
+                markers_df <- new_markers_df
+            }
         }
 
         req(input$max_gene_num)
@@ -378,7 +382,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
             )
 
 
-            heatmap_matrix_reactives(ns, input, output, session, dataset, metacell_types, cell_type_colors, globals, markers, lfp_range, mode)
+            heatmap_matrix_reactives(ns, input, output, session, dataset, metacell_types, cell_type_colors, globals, markers, lfp_range, mode, metacell_filter, mat)
 
             output$cell_type_list <- cell_type_selector(dataset, ns, id = "selected_cell_types", label = "Cell types", selected = "all", cell_type_colors = cell_type_colors)
 
