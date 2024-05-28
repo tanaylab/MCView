@@ -554,7 +554,7 @@ import_dataset <- function(project,
     )
     serialize_shiny_data(qc_stats, "qc_stats", dataset = dataset, cache_dir = cache_dir)
 
-    if (has_name(adata$var, "gene")){
+    if (has_name(adata$var, "gene")) {
         cli::cli_abort("A column named {.field 'gene'} already exists in the var slot of the anndata object. Please rename it to avoid conflicts.")
     }
 

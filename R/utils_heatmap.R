@@ -110,6 +110,7 @@ heatmap_sidebar <- function(id, ..., show_fitted_filter = FALSE) {
             size = "sm",
             justified = TRUE
         ),
+        uiOutput(ns("mat_value_ui")),
         uiOutput(ns("copy_metacells_ui")),
         tags$hr(),
         uiOutput(ns("cell_type_list")),
@@ -323,7 +324,9 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     mode = mode,
                     notify_var_genes = TRUE,
                     metadata_order = input$metadata_order_var,
-                    cell_type_metadata_order = input$metadata_order_cell_type_var
+                    cell_type_metadata_order = input$metadata_order_cell_type_var,
+                    recalc = input$mat_value == "Local",
+                    metacells = metacell_filter()
                 )
 
 
@@ -339,7 +342,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                 }
 
                 return(m)
-            }) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), markers(), gene_modules(), input$selected_cell_types, input$force_cell_type, genes(), input$show_genes, clipboard_changed(), mode, input$metadata_order_var, input$metadata_order_cell_type_var)
+            }) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), markers(), gene_modules(), input$selected_cell_types, input$force_cell_type, genes(), input$show_genes, clipboard_changed(), mode, input$metadata_order_var, input$metadata_order_cell_type_var, metacell_filter(), input$mat_value)
 
             output$download_matrix <- downloadHandler(
                 filename = function() {
@@ -390,8 +393,20 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                 shinyWidgets::actionGroupButtons(ns("copy_metacells"), labels = "Copy metacells", size = "sm")
             })
 
+            output$mat_value_ui <- renderUI({
+                shinyWidgets::radioGroupButtons(
+                    inputId = ns("mat_value"),
+                    label = "Enrichment type:",
+                    choices = c("Global", "Local"),
+                    selected = "Global",
+                    size = "sm",
+                    justified = TRUE
+                )
+            })
+
             observe({
                 shinyjs::toggle(id = "reset_zoom_ui", condition = !is.null(metacell_filter()) && length(metacell_filter()) > 0)
+                shinyjs::toggle(id = "mat_value_ui", condition = (!is.null(metacell_filter()) && length(metacell_filter()) > 0) || (!is.null(input$selected_cell_types) && length(input$selected_cell_types) < nrow(cell_type_colors())))
                 shinyjs::toggle(id = "copy_metacells_ui", condition = !is.null(selected_metacells()) && length(selected_metacells()) > 0 && !is.null(input$brush_action) && input$brush_action == "Select")
             })
 
@@ -552,7 +567,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     return(structure(list(p = res$p, gtable = res$gtable), class = "gt_custom"))
                 },
                 res = 96
-            ) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), gene_modules(), lfp_range(), metacell_filter(), input$plot_legend, input$plot_cell_type_legend, input$plot_genes_legend, input$selected_md, markers(), input$selected_cell_types, input$force_cell_type, clipboard_changed(), input$high_color, input$low_color, input$mid_color, input$midpoint, genes(), input$show_genes, highlighted_genes(), highlight_color, input$max_gene_num, input$metadata_order_var, input$metadata_order_cell_type_var)
+            ) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), gene_modules(), lfp_range(), metacell_filter(), input$plot_legend, input$plot_cell_type_legend, input$plot_genes_legend, input$selected_md, markers(), input$selected_cell_types, input$force_cell_type, clipboard_changed(), input$high_color, input$low_color, input$mid_color, input$midpoint, genes(), input$show_genes, highlighted_genes(), highlight_color, input$max_gene_num, input$metadata_order_var, input$metadata_order_cell_type_var, input$mat_value)
 
             observeEvent(input$heatmap_brush, {
                 req(input$brush_action)

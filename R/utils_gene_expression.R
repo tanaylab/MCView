@@ -1,4 +1,4 @@
-get_mc_egc <- function(dataset, genes = NULL, atlas = FALSE) {
+get_mc_egc <- function(dataset, genes = NULL, atlas = FALSE, metacells = NULL) {
     mc_mat <- get_mc_data(dataset, "mc_mat", atlas = atlas)
     mc_sum <- get_mc_sum(dataset, atlas = atlas)
 
@@ -6,11 +6,16 @@ get_mc_egc <- function(dataset, genes = NULL, atlas = FALSE) {
         mc_mat <- mc_mat[intersect(genes, rownames(mc_mat)), , drop = FALSE]
     }
 
+    if (!is.null(metacells)) {
+        mc_mat <- mc_mat[, intersect(metacells, colnames(mc_mat)), drop = FALSE]
+        mc_sum <- mc_sum[intersect(metacells, names(mc_sum))]
+    }
+
     return(t(t(mc_mat) / mc_sum))
 }
 
-get_mc_fp <- function(dataset, genes = NULL, atlas = FALSE) {
-    mc_egc <- get_mc_egc(dataset, genes = genes, atlas = atlas)
+get_mc_fp <- function(dataset, genes = NULL, atlas = FALSE, metacells = NULL) {
+    mc_egc <- get_mc_egc(dataset, genes = genes, atlas = atlas, metacells = metacells)
 
     mc_egc_norm <- mc_egc + 1e-5
     mc_fp <- mc_egc_norm / apply(mc_egc_norm, 1, median, na.rm = TRUE)
@@ -55,7 +60,7 @@ filter_mat_by_cell_types <- function(mat, cell_types, metacell_types) {
         filter(cell_type %in% cell_types) %>%
         pull(metacell)
 
-    mat <- mat[, metacells, drop = FALSE]
+    mat <- mat[, intersect(colnames(mat), metacells), drop = FALSE]
 
     return(mat)
 }

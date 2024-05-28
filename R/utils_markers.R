@@ -268,7 +268,7 @@ get_markers <- function(dataset) {
     return(marker_genes)
 }
 
-get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_types = NULL, cell_type_colors = NULL, gene_modules = NULL, force_cell_type = TRUE, mode = "Markers", notify_var_genes = FALSE, metadata_order = NULL, cell_type_metadata_order = NULL) {
+get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_types = NULL, cell_type_colors = NULL, gene_modules = NULL, force_cell_type = TRUE, mode = "Markers", notify_var_genes = FALSE, metadata_order = NULL, cell_type_metadata_order = NULL, recalc = FALSE, metacells = NULL) {
     cached_dist <- NULL
     if (mode == "Inner") {
         mc_fp <- get_mc_data(dataset, "inner_fold_mat")
@@ -292,11 +292,26 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
         epsilon <- 1e-5
         log_transform <- FALSE
     } else if (mode == "Markers") {
-        mc_fp <- get_mc_fp(dataset, markers)
+        if (recalc) {
+            if (!is.null(cell_types)) {
+                ct_metacells <- metacell_types %>%
+                    filter(cell_type %in% cell_types) %>%
+                    pull(metacell)
+                if (!is.null(metacells)) {
+                    metacells <- intersect(metacells, ct_metacells)
+                } else {
+                    metacells <- ct_metacells
+                }
+            }
+            mc_fp <- get_mc_fp(dataset, markers, metacells = metacells)
+        } else {
+            mc_fp <- get_mc_fp(dataset, markers)
+        }
+
         epsilon <- 0
         log_transform <- TRUE
         default_markers <- get_mc_data(dataset, "default_markers")
-        if (!is.null(default_markers) && all(markers %in% default_markers)) {
+        if (!is.null(default_markers) && all(markers %in% default_markers) && is.null(metacells)) {
             cached_dist <- get_mc_data(dataset, "default_markers_dist")
         }
     } else if (mode == "Gene modules") {
