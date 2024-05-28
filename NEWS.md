@@ -1,3 +1,7 @@
+# MCView 0.2.29 
+
+* Added "Enrichment type" toggle to the 'Markers' tab.
+
 # MCView 0.2.28
 
 * Added an option to show only fitted genes in the projected fold tab.
