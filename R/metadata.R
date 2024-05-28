@@ -576,7 +576,7 @@ parse_metadata_colors <- function(metadata_colors, metadata) {
                 if (is.null(names(.x))) {
                     cli_abort("In metadata colors field {.field {.y}}, color vector doesn't have any names.")
                 }
-                
+
                 res <- .x
             }
             return(res)
