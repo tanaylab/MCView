@@ -1,3 +1,7 @@
+# MCView 0.2.30
+
+* Added an option to include metadata when downloading marker heatmap.
+
 # MCView 0.2.29 
 
 * Added "Enrichment type" toggle to the 'Markers' tab.

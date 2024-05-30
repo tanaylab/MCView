@@ -98,6 +98,11 @@ heatmap_sidebar <- function(id, ..., show_fitted_filter = FALSE) {
             ".csv",
             ".tsv"
         ))
+        include_metadata_ui <- shinyWidgets::awesomeCheckbox(
+            inputId = ns("include_metadata"),
+            label = "Include metadata",
+            value = FALSE
+        )
     }
 
     list(
@@ -140,6 +145,7 @@ heatmap_sidebar <- function(id, ..., show_fitted_filter = FALSE) {
         load_genes_ui,
         downloadButton(ns("download_genes"), "Save genes", align = "center", style = "margin: 5px 5px 5px 15px; "),
         tags$hr(),
+        include_metadata_ui,
         downloadButton(ns("download_matrix"), "Download matrix", align = "center", style = "margin: 5px 5px 5px 15px; ")
     )
 }
@@ -357,6 +363,21 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     if (length(metacell_filter()) > 0) {
                         m <- m[, intersect(colnames(m), metacell_filter()), drop = FALSE]
                     }
+                    if (input$include_metadata) {
+                        metadata <- get_markers_metadata(dataset, input, metacell_types, globals)
+                        metadata_m <- metadata %>%
+                            as.data.frame() %>%
+                            column_to_rownames("metacell") %>%
+                            t() %>%
+                            as.matrix()
+                        ct_m <- metacell_types() %>%
+                            select(metacell, cell_type) %>%
+                            deframe()
+                        ct_m <- ct_m[colnames(m)]
+                        metadata_m <- rbind(t(as.matrix(ct_m)), metadata_m)
+                        rownames(metadata_m)[1] <- "Cell type"
+                        m <- rbind(m, metadata_m)
+                    }
                     fwrite(
                         m %>%
                             as.data.frame() %>%
@@ -516,18 +537,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     req(m)
 
                     m <- filter_heatmap_by_metacell(m, metacell_filter())
-
-                    if (!is.null(input$selected_md)) {
-                        metadata <- get_mc_data(dataset(), "metadata")
-                        if (is.null(metadata)) {
-                            metadata <- metacell_types() %>% select(metacell)
-                        }
-                        metadata <- metadata %>%
-                            mutate(Clipboard = ifelse(metacell %in% globals$clipboard, "selected", "not selected")) %>%
-                            select(metacell, one_of(input$selected_md))
-                    } else {
-                        metadata <- NULL
-                    }
+                    metadata <- get_markers_metadata(dataset, input, metacell_types, globals)
 
                     req(nrow(m) > 0)
                     req(ncol(m) > 0)
@@ -721,4 +731,19 @@ get_metacell_by_heatmap_coord <- function(m, coord) {
     x_coord <- round(coord)
     req(x_coord > 0 & x_coord <= ncol(m))
     return(colnames(m)[x_coord])
+}
+
+get_markers_metadata <- function(dataset, input, metacell_types, globals) {
+    if (!is.null(input$selected_md)) {
+        metadata <- get_mc_data(dataset(), "metadata")
+        if (is.null(metadata)) {
+            metadata <- metacell_types() %>% select(metacell)
+        }
+        metadata <- metadata %>%
+            mutate(Clipboard = ifelse(metacell %in% globals$clipboard, "selected", "not selected")) %>%
+            select(metacell, one_of(input$selected_md))
+    } else {
+        metadata <- NULL
+    }
+    return(metadata)
 }
