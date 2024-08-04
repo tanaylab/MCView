@@ -31,7 +31,6 @@ init_config <- function(project) {
 
     config <<- yaml::read_yaml(config_file)
     verify_config_file(config)
-
     if (is.null(config$light_version)) {
         config$light_version <<- FALSE
     }
@@ -184,18 +183,19 @@ init_tab_defs <- function() {
     )
 
     default_tabs <- c("About", "Genes", "Diff. Expression")
+
     cur_config <- config
 
     if (!is.null(cur_config$tabs)) {
         cur_config$original_tabs <- cur_config$tabs
         cur_config$tabs[cur_config$tabs == "Metacells"] <- "Diff. Expression" # here for backward compatibility
         cur_config$tabs <- cur_config$tabs[config$tabs != "Metadata"] # ignore "Metadata" for backward compatibility
-        purrr::walk(cur_config$tabs, ~ {
+        for (.x in cur_config$tabs) {
             if (!(.x %in% names(tab_defs))) {
                 cli_warn("{.x} is not a valid tab name. Update `tabs` in your configuration file.")
                 cur_config$tabs <- cur_config$tabs[cur_config$tabs != .x]
             }
-        })
+        }
     } else {
         cur_config$tabs <- default_tabs
     }
@@ -209,8 +209,6 @@ init_tab_defs <- function() {
         warning("pandoc is not available, removing 'About' tab'")
         cur_config$tabs <- cur_config$tabs[cur_config$tabs != "About"]
     }
-
-    cur_config$tabs <- order_tabs(cur_config$tabs)
 
     if (!is.null(config$light_version) && config$light_version) {
         # make the About tab first if exists

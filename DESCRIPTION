@@ -1,6 +1,6 @@
 Package: MCView
 Title: A Shiny App for Metacell Analysis
-Version: 0.2.30
+Version: 0.2.31
 Authors@R: 
     person(given = "Aviezer",
            family = "Lifshitz",
@@ -91,4 +91,4 @@ Remotes:
     tanaylab/metacell
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.2

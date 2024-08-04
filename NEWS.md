@@ -1,3 +1,7 @@
+# MCView 0.2.31 
+
+* Do not reorder tabs when they are set in the config file.
+
 # MCView 0.2.30
 
 * Added an option to include metadata when downloading marker heatmap.
