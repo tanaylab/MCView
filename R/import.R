@@ -578,11 +578,17 @@ import_dataset <- function(project,
     }
 
     if (has_name(adata$var, "correction_factor")) {
+        if (has_name(adata$var, "gene")){
+            cli::cli_abort("A column named {.field gene} already exists in the var slot of the anndata object. Please rename it to avoid conflicts.")
+        }
         gene_qc <- gene_qc %>%
             left_join(adata$var %>% rownames_to_column("gene") %>% select(gene, correction_factor), by = "gene")
     }
 
     if (any(grepl("^fitted_gene", colnames(adata$var)))) {
+        if (has_name(adata$var, "gene")) {
+            cli::cli_abort("A column named {.field gene} already exists in the var slot of the anndata object. Please rename it to avoid conflicts.")
+        }
         gene_qc <- gene_qc %>%
             left_join(adata$var %>% rownames_to_column("gene") %>% select(gene, starts_with("fitted_gene")), by = "gene")
     }
