@@ -164,7 +164,9 @@ mod_gene_modules_server <- function(id, dataset, metacell_types, cell_type_color
                         choices = genes(),
                         selected = c(),
                         multiple = FALSE,
-                        search = TRUE
+                        search = TRUE,
+                        markSearchResults = TRUE,
+                        searchByStartsWith = TRUE
                     )
                 )
             })
@@ -427,7 +429,9 @@ mod_gene_module_controllers <- function(ns, dataset, input, output, session, gen
                 selected = c(),
                 multiple = TRUE,
                 showSelectedOptionsFirst = TRUE,
-                search = TRUE
+                search = TRUE,
+                markSearchResults = TRUE,
+                searchByStartsWith = TRUE
             ),
             shinyWidgets::actionGroupButtons(ns("add_genes"), labels = "Add selected genes", size = "sm")
         )

@@ -578,7 +578,7 @@ import_dataset <- function(project,
     }
 
     if (has_name(adata$var, "correction_factor")) {
-        if (has_name(adata$var, "gene")){
+        if (has_name(adata$var, "gene")) {
             cli::cli_abort("A column named {.field gene} already exists in the var slot of the anndata object. Please rename it to avoid conflicts.")
         }
         gene_qc <- gene_qc %>%

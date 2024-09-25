@@ -167,7 +167,9 @@ axis_selector <- function(axis, selected, ns, choices = c("Metadata", "Gene", "G
             choices = c(),
             multiple = FALSE,
             search = TRUE,
-            dropboxWrapper = "body"
+            dropboxWrapper = "body",
+            markSearchResults = TRUE,
+            searchByStartsWith = TRUE
         )
     } else {
         select_input <- shinyWidgets::virtualSelectInput(
@@ -176,6 +178,8 @@ axis_selector <- function(axis, selected, ns, choices = c("Metadata", "Gene", "G
             choices = c(),
             multiple = FALSE,
             search = TRUE,
+            markSearchResults = TRUE,
+            searchByStartsWith = TRUE
         )
     }
     if (orientation == "horizontal") {
