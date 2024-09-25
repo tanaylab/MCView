@@ -63,7 +63,9 @@ projection_box <- function(ns,
                     choices = c(),
                     multiple = FALSE,
                     search = TRUE,
-                    dropboxWrapper = "body"
+                    dropboxWrapper = "body",
+                    markSearchResults = TRUE,
+                    searchByStartsWith = TRUE
                 ),
                 shinyWidgets::virtualSelectInput(
                     ns("color_proj_metadata"),

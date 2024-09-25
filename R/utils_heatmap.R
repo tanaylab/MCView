@@ -293,7 +293,9 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
                 selected = c(),
                 multiple = TRUE,
                 showSelectedOptionsFirst = TRUE,
-                search = TRUE
+                search = TRUE,
+                markSearchResults = TRUE,
+                searchByStartsWith = TRUE
             )
         )
     })

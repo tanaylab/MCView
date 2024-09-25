@@ -151,7 +151,9 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
                         selected = c(),
                         multiple = TRUE,
                         showSelectedOptionsFirst = TRUE,
-                        search = TRUE
+                        search = TRUE,
+                        markSearchResults = TRUE,
+                        searchByStartsWith = TRUE
                     ),
                     shinyWidgets::actionGroupButtons(ns("add_genes"), labels = "Add genes", size = "sm")
                 )
@@ -178,7 +180,8 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
                         selected = c(),
                         multiple = TRUE,
                         showSelectedOptionsFirst = TRUE,
-                        search = TRUE
+                        search = TRUE,
+                        markSearchResults = TRUE
                     ),
                     shinyWidgets::actionGroupButtons(c(ns("add_gene_modules"), ns("remove_gene_modules")), labels = c("Add modules genes", "Remove modules genes"), size = "sm")
                 )

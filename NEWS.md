@@ -1,3 +1,8 @@
+# MCView 0.2.32
+
+* Search genes by `startsWith` instead of `contains`.
+* Slightly larger default point size in gene/gene plots.
+
 # MCView 0.2.31 
 
 * Do not reorder tabs when they are set in the config file.

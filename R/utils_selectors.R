@@ -91,7 +91,8 @@ metadata_selector <- function(dataset, ns, id = "selected_md", label = "Metadata
             selected = selected,
             multiple = multiple,
             showSelectedOptionsFirst = TRUE,
-            search = TRUE
+            search = TRUE,
+            markSearchResults = TRUE
         )
     })
 }
