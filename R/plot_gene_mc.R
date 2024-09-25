@@ -150,7 +150,7 @@ connect_gene_plots <- function(input, output, session, ns, source) {
     })
 }
 
-initial_scatters_point_size <- function(dataset, screen_width = NULL, screen_height = NULL, weight = 1, atlas = FALSE) {
+initial_scatters_point_size <- function(dataset, screen_width = NULL, screen_height = NULL, weight = 2, atlas = FALSE) {
     if (!is.null(config$datasets[[dataset]]$scatters_point_size)) {
         return(config$datasets[[dataset]]$scatters_point_size)
     } else if (!is.null(config$scatters_point_size)) {
