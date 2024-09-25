@@ -2,6 +2,7 @@
 
 * Search genes by `startsWith` instead of `contains`.
 * Slightly larger default point size in gene/gene plots.
+* Do not show cell types with no metacells in the 'Markers' tab (issue #161).
 
 # MCView 0.2.31 
 

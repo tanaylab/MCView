@@ -71,7 +71,7 @@ mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, 
 
             render_axis_select_ui("boxplot_axis", "Data", "boxplot_axis_select", md_choices = dataset_metadata_fields(dataset()), md_selected = dataset_metadata_fields(dataset())[1], selected_gene = default_gene1, input = input, output = output, ns = ns, dataset = dataset, gene_modules = gene_modules, session = session)
 
-            output$cell_type_list <- cell_type_selector(dataset, ns, id = "boxplot_cell_types", label = "Cell types", selected = "all", cell_type_colors = cell_type_colors)
+            output$cell_type_list <- cell_type_selector(dataset, ns, id = "boxplot_cell_types", label = "Cell types", selected = "all", cell_type_colors = cell_type_colors, metacell_types = metacell_types)
 
             output$confusion_color_by_selector <- renderUI({
                 shinyWidgets::prettyRadioButtons(

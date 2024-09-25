@@ -407,7 +407,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
 
             heatmap_matrix_reactives(ns, input, output, session, dataset, metacell_types, cell_type_colors, globals, markers, lfp_range, mode, metacell_filter, mat)
 
-            output$cell_type_list <- cell_type_selector(dataset, ns, id = "selected_cell_types", label = "Cell types", selected = "all", cell_type_colors = cell_type_colors)
+            output$cell_type_list <- cell_type_selector(dataset, ns, id = "selected_cell_types", label = "Cell types", selected = "all", cell_type_colors = cell_type_colors, metacell_types = metacell_types)
 
             output$metadata_list <- metadata_selector(dataset, ns, id = "selected_md", label = "Metadata", metadata_id = "metadata", additional_fields = "Clipboard")
 
@@ -486,13 +486,15 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                 {
                     req(cell_type_colors())
                     req(input$plot_legend)
-                    legend_point_size <- max(1, min(2, 250 / nrow(cell_type_colors())))
-                    p <- cell_type_colors() %>%
+                    colors <- cell_type_colors()
+                    colors <- colors %>% filter(cell_type %in% metacell_types()$cell_type)
+                    legend_point_size <- max(1, min(2, 250 / nrow(colors)))
+                    p <- colors %>%
                         ggplot(aes(x = cell_type, fill = cell_type, y = 1))
 
                     if (input$plot_cell_type_legend) {
                         p <- p + geom_point(shape = 21) +
-                            scale_fill_manual("Cell types", values = deframe(cell_type_colors() %>% select(cell_type, color))) +
+                            scale_fill_manual("Cell types", values = deframe(colors %>% select(cell_type, color))) +
                             guides(fill = guide_legend(override.aes = list(size = legend_point_size), ncol = 1))
                     }
 
