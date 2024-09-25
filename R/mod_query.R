@@ -351,7 +351,7 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
 
             output$plot_mc_stacked_type <- plot_type_predictions_bar(dataset, metacell_types, cell_type_colors)
 
-            output$gene_metadata_cell_type_selector <- cell_type_selector(dataset, ns, id = "gene_metadata_cell_type", label = "Cell types", selected = "all", cell_type_colors = cell_type_colors)
+            output$gene_metadata_cell_type_selector <- cell_type_selector(dataset, ns, id = "gene_metadata_cell_type", label = "Cell types", selected = "all", cell_type_colors = cell_type_colors, metacell_types = metacell_types)
 
             current_gene_table <- reactiveVal()
 
