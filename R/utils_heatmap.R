@@ -332,7 +332,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     metacell_types(),
                     cell_type_colors(),
                     gene_modules(),
-                    force_cell_type = input$force_cell_type,
+                    force_cell_type = input$force_cell_type %||% TRUE,
                     mode = mode,
                     notify_var_genes = TRUE,
                     metadata_order = input$metadata_order_var,
