@@ -23,7 +23,7 @@ then runs cell_metadata_to_metacell."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">MCView</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.32</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.33</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -51,7 +51,7 @@ then runs cell_metadata_to_metacell."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Convert cell metadata to metacell metadata</h1>
-      <small class="dont-index">Source: <a href="https://github.com/tanaylab/MCView/blob/master/R/metadata.R" class="external-link"><code>R/metadata.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/tanaylab/MCView/blob/HEAD/R/metadata.R" class="external-link"><code>R/metadata.R</code></a></small>
       <div class="d-none name"><code>cell_metadata_to_metacell.Rd</code></div>
     </div>
 
@@ -171,38 +171,35 @@ in<code>cell_metadata</code>, where the values are the fraction of cells with th
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Numerical variables: md1, md2</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">metadata</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 6 × 3</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   metacell   md1      md2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>        0  2.98 -<span style="color: #BB0000;">0.021</span><span style="color: #BB0000; text-decoration: underline;">9</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span>        1  2.96  0.015<span style="text-decoration: underline;">2</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span>        2  2.99  0.005<span style="text-decoration: underline;">63</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">4</span>        3  3.01 -<span style="color: #BB0000;">0.026</span><span style="color: #BB0000; text-decoration: underline;">8</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">5</span>        4  3.01  0.011<span style="text-decoration: underline;">6</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">6</span>        5  2.96  0.008<span style="text-decoration: underline;">04</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> # A tibble: 6 x 3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   metacell      md1          md2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1        0 2.979448 -0.021942785</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2        1 2.958991  0.015177899</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3        2 2.990102  0.005634195</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4        3 3.012686 -0.026841161</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5        4 3.005740  0.011632598</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6        5 2.960923  0.008044519</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">metadata1</span> <span class="op">&lt;-</span> <span class="fu">cell_metadata_to_metacell</span><span class="op">(</span></span></span>
 <span class="r-in"><span>    <span class="va">cell_metadata</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span>, <span class="va">cell_to_metacell</span>,</span></span>
 <span class="r-in"><span>    func <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="va">x</span> <span class="op">*</span> <span class="fl">2</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Numerical variables: md1, md2</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Returning more (or less) than 1 row per `summarise()` group was deprecated in</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> dplyr 1.1.0.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Returning more (or less) than 1 row per `summarise()` group was deprecated in dplyr 1.1.0.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Please use `reframe()` instead.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> When switching from `summarise()` to `reframe()`, remember that `reframe()`</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span>   always returns an ungrouped data frame and adjust accordingly.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> When switching from `summarise()` to `reframe()`, remember that `reframe()` always returns</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span>   an ungrouped data frame and adjust accordingly.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> The deprecated feature was likely used in the <span style="color: #0000BB;">dplyr</span> package.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span>   Please report the issue at <span style="color: #0000BB; font-style: italic;">&lt;https://github.com/tidyverse/dplyr/issues&gt;</span>.</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">metadata1</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 6 × 3</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   metacell   md1    md2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>        0     6 -<span style="color: #BB0000;">0.893</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span>        0     2 -<span style="color: #BB0000;">2.12</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span>        0    10  2.26 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">4</span>        0     4 -<span style="color: #BB0000;">0.713</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">5</span>        0     2  1.67 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">6</span>        0     6  1.41 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> # A tibble: 6 x 3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   metacell md1        md2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1        0   6 -0.8932316</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2        0   2 -2.1180205</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3        0  10  2.2575215</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4        0   4 -0.7134182</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5        0   2  1.6701686</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6        0   6  1.4134616</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">metadata3</span> <span class="op">&lt;-</span> <span class="fu">cell_metadata_to_metacell</span><span class="op">(</span></span></span>
@@ -214,22 +211,35 @@ in<code>cell_metadata</code>, where the values are the fraction of cells with th
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Numerical variables: md1, md2</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">metadata3</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 6 × 13</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   metacell md_categorical1: batc…¹ md_categorical1: bat…² md_categorical1: bat…³</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>                   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>                  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>                  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>        0                   0.195                  0.204                  0.205</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span>        1                   0.188                  0.202                  0.210</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span>        2                   0.221                  0.199                  0.193</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">4</span>        3                   0.192                  0.203                  0.213</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">5</span>        4                   0.188                  0.205                  0.205</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">6</span>        5                   0.206                  0.193                  0.203</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ abbreviated names: ¹​`md_categorical1: batch1`, ²​`md_categorical1: batch2`,</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   ³​`md_categorical1: batch3`</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 9 more variables: `md_categorical1: batch4` &lt;dbl&gt;,</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   `md_categorical1: batch5` &lt;dbl&gt;, `md_categorical2: 1` &lt;dbl&gt;,</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   `md_categorical2: 2` &lt;dbl&gt;, `md_categorical2: 3` &lt;dbl&gt;,</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   `md_categorical2: 4` &lt;dbl&gt;, `md_categorical2: 5` &lt;dbl&gt;, md1 &lt;dbl&gt;,</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   md2 &lt;dbl&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> # A tibble: 6 x 13</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   metacell md_categorical1: batch1 md_categorical1: batch2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1        0               0.1953988               0.2039877</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2        1               0.1876972               0.2015773</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3        2               0.2206258               0.1985951</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4        3               0.1921979               0.2029813</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5        4               0.1878189               0.2053571</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6        5               0.2058462               0.1932308</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   md_categorical1: batch3 md_categorical1: batch4 md_categorical1: batch5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1               0.2046012               0.2058282               0.1901840</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2               0.2100946               0.2037855               0.1968454</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3               0.1928480               0.1973180               0.1906130</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4               0.2131304               0.1925151               0.1991754</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5               0.2050383               0.2005740               0.2012117</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6               0.2033846               0.1996923               0.1978462</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   md_categorical2: 1 md_categorical2: 2 md_categorical2: 3 md_categorical2: 4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1          0.1935583          0.2141104          0.1966258          0.1889571</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2          0.2056782          0.2012618          0.1914826          0.2028391</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3          0.2043423          0.1979566          0.1985951          0.2097701</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4          0.2017127          0.2026641          0.1928322          0.2102759</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5          0.2117347          0.2037628          0.1903699          0.1951531</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6          0.2030769          0.1920000          0.2046154          0.2033846</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   md_categorical2: 5      md1          md2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1          0.2067485 2.979448 -0.021942785</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2          0.1987382 2.958991  0.015177899</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3          0.1893359 2.990102  0.005634195</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4          0.1925151 3.012686 -0.026841161</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5          0.1989796 3.005740  0.011632598</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6          0.1969231 2.960923  0.008044519</span>
 <span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
 <span class="r-in"><span><span class="fu">cell_metadata_to_metacell_from_h5ad</span><span class="op">(</span><span class="st">"cells.h5ad"</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"pile"</span>, <span class="st">"age"</span>, <span class="st">"batch"</span><span class="op">)</span>, categorical <span class="op">=</span> <span class="st">"batch"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
