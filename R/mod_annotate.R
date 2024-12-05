@@ -613,7 +613,8 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 selected_metacell_types = selected_metacell_types
             )
 
-            scatter_box_outputs(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, ns, plotly_source = "gene_gene_plot_annot", plotly_buttons = c("hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = "select")
+            selected_cell_types <- reactiveVal(NULL)
+            scatter_box_outputs(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, ns, selected_cell_types = selected_cell_types, plotly_source = "gene_gene_plot_annot", plotly_buttons = c("hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = "select")
 
             connect_gene_plots(input, output, session, ns, source = "proj_annot_plot")
 

@@ -2,6 +2,7 @@
 
 * Added cell type selector to the 'Genes' tab.
 * Fix: rescale metadata colors on zoom in 'Markers' tab.
+* Disabled 'select all' in 'Markers' gene selector.
 
 # MCView 0.2.32
 
