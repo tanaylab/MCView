@@ -153,7 +153,8 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
                         showSelectedOptionsFirst = TRUE,
                         search = TRUE,
                         markSearchResults = TRUE,
-                        searchByStartsWith = TRUE
+                        searchByStartsWith = TRUE,
+                        disableSelectAll = TRUE
                     ),
                     shinyWidgets::actionGroupButtons(ns("add_genes"), labels = "Add genes", size = "sm")
                 )

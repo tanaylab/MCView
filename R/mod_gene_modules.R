@@ -181,7 +181,8 @@ mod_gene_modules_server <- function(id, dataset, metacell_types, cell_type_color
             mod_gene_module_controllers(ns, dataset, input, output, session, gene_modules, genes, selected_module, selected_genes, globals)
 
             # Scatter plot
-            scatter_box_outputs(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, ns, plotly_source = "gene_modules_md_md_plot")
+            selected_cell_types <- reactiveVal(NULL)
+            scatter_box_outputs(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, ns, selected_cell_types = selected_cell_types, plotly_source = "gene_modules_md_md_plot")
 
             # Diff. expression
             diff_expr_outputs(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, ns, source_suffix = "_gene_modules", dragmode = "select", plotly_buttons = c("hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"))
@@ -431,7 +432,8 @@ mod_gene_module_controllers <- function(ns, dataset, input, output, session, gen
                 showSelectedOptionsFirst = TRUE,
                 search = TRUE,
                 markSearchResults = TRUE,
-                searchByStartsWith = TRUE
+                searchByStartsWith = TRUE,
+                disableSelectAll = TRUE
             ),
             shinyWidgets::actionGroupButtons(ns("add_genes"), labels = "Add selected genes", size = "sm")
         )
