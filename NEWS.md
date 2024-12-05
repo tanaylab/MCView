@@ -1,5 +1,6 @@
 # MCView 0.2.33
 
+* Added cell type selector to the 'Genes' tab.
 * Fix: rescale metadata colors on zoom in 'Markers' tab.
 
 # MCView 0.2.32

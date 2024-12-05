@@ -162,7 +162,7 @@ initial_scatters_point_size <- function(dataset, screen_width = NULL, screen_hei
     desired_area <- screen_width * screen_height / (n_metacells * 2000) * weight
     size_pixels <- sqrt(desired_area / pi)
 
-    return(max(1, min(3, size_pixels)))
+    return(max(1, min(3, size_pixels)) * 2)
 }
 
 initial_scatters_stroke <- function(dataset) {
