@@ -16,6 +16,14 @@ scatter_box <- function(ns, id, title = "Gene/Gene", x_selected = "Gene", y_sele
             uiOutput(ns("use_atlas_limits_ui")),
             uiOutput(ns("gene_gene_point_size_ui")),
             uiOutput(ns("gene_gene_stroke_ui")),
+            checkboxInput(ns("show_correlation"), "Show correlation", value = TRUE),
+            shinyWidgets::radioGroupButtons(
+                inputId = ns("correlation_type"),
+                label = "Correlation type:",
+                choices = c("Pearson" = "pearson", "Spearman" = "spearman"),
+                selected = "pearson",
+                justified = TRUE
+            ),
             checkboxInput(ns("filter_by_clipboard_scatter"), "Filter by clipboard", value = FALSE)
         ),
         shinycssloaders::withSpinner(
@@ -140,7 +148,9 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
             y_limits = y_limits,
             fixed_limits = input$gene_gene_fixed_limits,
             xyline = input$gene_gene_xyline %||% FALSE,
-            metacell_filter = metacell_filter
+            metacell_filter = metacell_filter,
+            show_correlation = input$show_correlation,
+            correlation_type = input$correlation_type
         ) %>%
             plotly::ggplotly(tooltip = "tooltip_text", source = plotly_source) %>%
             sanitize_for_WebGL() %>%
@@ -166,7 +176,7 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
         }
 
         return(fig)
-    }) %>% bindCache(dataset(), input$x_axis_var, input$x_axis_type, input$y_axis_var, input$y_axis_type, input$color_by_type, input$color_by_var, metacell_types(), cell_type_colors(), gene_modules(), input$gene_gene_point_size, input$gene_gene_stroke, input$use_atlas_limits, input$gene_gene_fixed_limits, input$gene_gene_xyline, dragmode, plotly_buttons, clipboard_changed(), input$show_legend_scatter, selected_cell_types())
+    }) %>% bindCache(dataset(), input$x_axis_var, input$x_axis_type, input$y_axis_var, input$y_axis_type, input$color_by_type, input$color_by_var, metacell_types(), cell_type_colors(), gene_modules(), input$gene_gene_point_size, input$gene_gene_stroke, input$use_atlas_limits, input$gene_gene_fixed_limits, input$gene_gene_xyline, dragmode, plotly_buttons, clipboard_changed(), input$show_legend_scatter, selected_cell_types(), input$show_correlation, input$correlation_type)
 }
 
 axis_selector <- function(axis, selected, ns, choices = c("Metadata", "Gene", "Gene module"), orientation = "horizontal", wrap_in_box = TRUE) {

@@ -1,6 +1,7 @@
 # MCView 0.2.33
 
 * Added cell type selector to the 'Genes' tab.
+* Added correlation between the genes/metadata shown in the 'Genes' tab.
 * Fix: rescale metadata colors on zoom in 'Markers' tab.
 * Fix: Afding new cell type prevented the use of diff. expression tab.
 * Disabled 'select all' in 'Markers' gene selector.
