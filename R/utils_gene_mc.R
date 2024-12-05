@@ -21,7 +21,7 @@ get_cell_type_colors <- function(dataset, cell_type_colors = NULL, na_color = "g
     return(res)
 }
 
-get_top_cor_gene <- function(dataset, gene, type = "pos", atlas = FALSE, data_vec = NULL, exclude = NULL) {
+get_top_cor_gene <- function(dataset, gene, type = "pos", atlas = FALSE, data_vec = NULL, exclude = NULL, metacell_filter = NULL) {
     gg_mc_top_cor <- get_mc_data(dataset, "gg_mc_top_cor", atlas = atlas)
 
     if (!is.null(data_vec)) {
@@ -41,7 +41,7 @@ get_top_cor_gene <- function(dataset, gene, type = "pos", atlas = FALSE, data_ve
         }
         df <- enframe(cors, "gene2", "cor")
     } else {
-        if (gene %in% gg_mc_top_cor$gene1) {
+        if (gene %in% gg_mc_top_cor$gene1 && is.null(metacell_filter)) {
             df <- gg_mc_top_cor %>%
                 filter(gene1 == gene)
 
@@ -61,6 +61,10 @@ get_top_cor_gene <- function(dataset, gene, type = "pos", atlas = FALSE, data_ve
             mc_egc <- get_mc_egc(dataset, atlas = atlas)
             req(gene %in% rownames(mc_egc))
             lfp <- log2(mc_egc + egc_epsilon)
+            if (!is.null(metacell_filter)) {
+                req(metacell_filter %in% colnames(lfp))
+                lfp <- lfp[, metacell_filter, drop = FALSE]
+            }
             if (!is.null(exclude)) {
                 lfp <- lfp[-which(rownames(lfp) %in% exclude), , drop = FALSE]
             }

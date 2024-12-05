@@ -1,4 +1,4 @@
-cell_type_selector <- function(dataset, ns, id = "selected_cell_types", label = "Cell types", selected = NULL, cell_type_colors = NULL, metacell_types = NULL) {
+cell_type_selector <- function(dataset, ns, id = "selected_cell_types", label = "Cell types", selected = NULL, cell_type_colors = NULL, metacell_types = NULL, apply_button = FALSE) {
     renderUI({
         if (is.null(cell_type_colors)) {
             colors <- NULL
@@ -16,7 +16,12 @@ cell_type_selector <- function(dataset, ns, id = "selected_cell_types", label = 
         if (!is.null(selected) && selected == "all") {
             selected <- cell_types
         }
-        shinyWidgets::pickerInput(ns(id), label,
+
+        if ("(Missing)" %in% cell_types) {
+            cell_types <- c(cell_types[cell_types != "(Missing)"], "(Missing)")
+        }
+
+        picker <- shinyWidgets::pickerInput(ns(id), label,
             choices = cell_types,
             selected = selected,
             multiple = TRUE,
@@ -25,6 +30,15 @@ cell_type_selector <- function(dataset, ns, id = "selected_cell_types", label = 
                 style = paste0("color: ", cell_types_hex, ";")
             )
         )
+
+        if (apply_button) {
+            tagList(
+                picker,
+                shiny::actionButton(ns("apply_cell_types"), "Change cell types", size = "sm")
+            )
+        } else {
+            picker
+        }
     })
 }
 
@@ -123,17 +137,27 @@ top_correlated_selector_multiple_genes <- function(input, output, session, datas
     )
 }
 
-top_correlated_selector <- function(gene_id, id, type_id, input, output, session, dataset, ns, button_labels = c("X", "Y", "Color", "2D"), ids = c("x", "y", "color", "proj2d"), gene_modules = NULL) {
+top_correlated_selector <- function(gene_id, id, type_id, input, output, session, dataset, ns, button_labels = c("X", "Y", "Color", "2D"), ids = c("x", "y", "color", "proj2d"), gene_modules = NULL, metacell_types = NULL, selected_cell_types = NULL) {
     output[[glue("top_correlated_select_{id}")]] <- renderUI({
+        if (!is.null(input$show_correlations)) {
+            req(input$show_correlations)
+        }
         req(has_gg_mc_top_cor(project, dataset()))
         req(input[[type_id]] == "Gene" || input[[type_id]] == "Gene module" || input[[type_id]] == "Metadata")
         req(input[[gene_id]])
 
+        metacell_filter <- NULL
         gene <- input[[gene_id]]
         data_vec <- NULL
         exclude <- NULL
         if (input[[type_id]] == "Gene") {
             req(gene %in% gene_names(dataset()))
+            if (!is.null(selected_cell_types) &&
+                length(selected_cell_types()) > 0 &&
+                !is.null(metacell_types) &&
+                length(setdiff(metacell_types()$cell_type, selected_cell_types())) > 0) {
+                metacell_filter <- metacell_types()$metacell[metacell_types()$cell_type %in% selected_cell_types()]
+            }
         } else if (input[[type_id]] == "Gene module") {
             req(!is.null(gene_modules))
             req(gene %in% gene_modules()$module)
@@ -157,7 +181,7 @@ top_correlated_selector <- function(gene_id, id, type_id, input, output, session
         si <- selectInput(
             ns(glue("selected_top_{id}")),
             glue("Top correlated to {gene}:"),
-            choices = get_top_cor_gene(dataset(), gene, type = "both", data_vec = data_vec, exclude = exclude),
+            choices = get_top_cor_gene(dataset(), gene, type = "both", data_vec = data_vec, exclude = exclude, metacell_filter = metacell_filter),
             selected = NULL,
             size = 10,
             selectize = FALSE
@@ -210,9 +234,9 @@ top_correlated_selector <- function(gene_id, id, type_id, input, output, session
     })
 }
 
-top_correlated_selectors <- function(input, output, session, dataset, ns, button_labels = c("X", "Y", "Color", "2D"), gene_modules = NULL) {
-    top_correlated_selector("x_axis_var", "x_axis", "x_axis_type", input, output, session, dataset, ns, button_labels = button_labels, gene_modules = gene_modules)
-    top_correlated_selector("y_axis_var", "y_axis", "y_axis_type", input, output, session, dataset, ns, button_labels = button_labels, gene_modules = gene_modules)
-    top_correlated_selector("color_by_var", "color_by", "color_by_type", input, output, session, dataset, ns, button_labels = button_labels, gene_modules = gene_modules)
-    top_correlated_selector("color_proj_gene", "color_proj", "color_proj", input, output, session, dataset, ns, button_labels = button_labels, gene_modules = gene_modules)
+top_correlated_selectors <- function(input, output, session, dataset, metacell_types, ns, button_labels = c("X", "Y", "Color", "2D"), gene_modules = NULL, selected_cell_types = NULL) {
+    top_correlated_selector("x_axis_var", "x_axis", "x_axis_type", input, output, session, dataset, ns, button_labels = button_labels, gene_modules = gene_modules, metacell_types = metacell_types, selected_cell_types = selected_cell_types)
+    top_correlated_selector("y_axis_var", "y_axis", "y_axis_type", input, output, session, dataset, ns, button_labels = button_labels, gene_modules = gene_modules, metacell_types = metacell_types, selected_cell_types = selected_cell_types)
+    top_correlated_selector("color_by_var", "color_by", "color_by_type", input, output, session, dataset, ns, button_labels = button_labels, gene_modules = gene_modules, metacell_types = metacell_types, selected_cell_types = selected_cell_types)
+    top_correlated_selector("color_proj_gene", "color_proj", "color_proj", input, output, session, dataset, ns, button_labels = button_labels, gene_modules = gene_modules, metacell_types = metacell_types, selected_cell_types = selected_cell_types)
 }

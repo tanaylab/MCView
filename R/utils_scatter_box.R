@@ -35,7 +35,22 @@ scatter_box <- function(ns, id, title = "Gene/Gene", x_selected = "Gene", y_sele
     )
 }
 
-scatter_box_outputs <- function(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, ns, plotly_source, plotly_buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL, atlas = FALSE) {
+scatter_box_outputs <- function(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, ns, plotly_source, plotly_buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL, atlas = FALSE, selected_cell_types = NULL) {
+    if (!is.null(selected_cell_types)) {
+        observe({
+            if (is.null(selected_cell_types())) {
+                selected_cell_types(unique(cell_type_colors()$cell_type))
+            }
+        })
+
+        observeEvent(input$apply_cell_types, {
+            selected_cell_types(input$selected_cell_types)
+            showNotification("Cell type selection updated", type = "message")
+        })
+    }
+
+    output$cell_type_list <- cell_type_selector(dataset, ns, id = "selected_cell_types", label = "Cell types", selected = "all", cell_type_colors = cell_type_colors, metacell_types = metacell_types, apply_button = TRUE)
+
     render_axis_select_ui("x_axis", "X axis", "x_axis_select", md_choices = dataset_metadata_fields_numeric(dataset()), md_selected = dataset_metadata_fields_numeric(dataset())[1], selected_gene = default_gene1, input = input, output = output, ns = ns, dataset = dataset, gene_modules = gene_modules, session = session, atlas = atlas)
 
     render_axis_select_ui("y_axis", "Y axis", "y_axis_select", md_choices = dataset_metadata_fields_numeric(dataset()), md_selected = dataset_metadata_fields_numeric(dataset())[2], selected_gene = default_gene2, input = input, output = output, ns = ns, dataset = dataset, gene_modules = gene_modules, session = session, atlas = atlas)
@@ -98,6 +113,10 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
 
         if (!is.null(input$filter_by_clipboard_scatter) && input$filter_by_clipboard_scatter && length(globals$clipboard) > 0) {
             metacell_filter <- globals$clipboard
+        } else if (!is.null(selected_cell_types) && length(selected_cell_types()) > 0) {
+            metacell_filter <- metacell_types() %>%
+                filter(cell_type %in% selected_cell_types()) %>%
+                pull(metacell)
         } else {
             metacell_filter <- NULL
         }
@@ -147,7 +166,7 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
         }
 
         return(fig)
-    }) %>% bindCache(dataset(), input$x_axis_var, input$x_axis_type, input$y_axis_var, input$y_axis_type, input$color_by_type, input$color_by_var, metacell_types(), cell_type_colors(), gene_modules(), input$gene_gene_point_size, input$gene_gene_stroke, input$use_atlas_limits, input$gene_gene_fixed_limits, input$gene_gene_xyline, dragmode, plotly_buttons, clipboard_changed(), input$show_legend_scatter)
+    }) %>% bindCache(dataset(), input$x_axis_var, input$x_axis_type, input$y_axis_var, input$y_axis_type, input$color_by_type, input$color_by_var, metacell_types(), cell_type_colors(), gene_modules(), input$gene_gene_point_size, input$gene_gene_stroke, input$use_atlas_limits, input$gene_gene_fixed_limits, input$gene_gene_xyline, dragmode, plotly_buttons, clipboard_changed(), input$show_legend_scatter, selected_cell_types())
 }
 
 axis_selector <- function(axis, selected, ns, choices = c("Metadata", "Gene", "Gene module"), orientation = "horizontal", wrap_in_box = TRUE) {

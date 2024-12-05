@@ -38,10 +38,13 @@ mod_gene_mc_sidebar_ui <- function(id) {
     ns <- NS(id)
     tagList(
         list(
+            uiOutput(ns("cell_type_list")),
+            tags$hr(),
             uiOutput(ns("top_correlated_select_x_axis")),
             uiOutput(ns("top_correlated_select_y_axis")),
             uiOutput(ns("top_correlated_select_color_by")),
-            uiOutput(ns("top_correlated_select_color_proj"))
+            uiOutput(ns("top_correlated_select_color_proj")),
+            shinyWidgets::switchInput(ns("show_correlations"), "Show correlations", value = TRUE, onLabel = "Yes", offLabel = "No", onStatus = "success", offStatus = "danger", size = "mini")
         )
     )
 }
@@ -54,8 +57,9 @@ mod_gene_mc_server <- function(id, dataset, metacell_types, cell_type_colors, ge
         id,
         function(input, output, session) {
             ns <- session$ns
+            selected_cell_types <- reactiveVal(NULL)
 
-            top_correlated_selectors(input, output, session, dataset, ns, gene_modules = gene_modules)
+            top_correlated_selectors(input, output, session, dataset, metacell_types, ns, gene_modules = gene_modules, selected_cell_types = selected_cell_types)
             mod_gene_mc_plotly_observers(input, session)
             mod_gene_mc_globals_observers(input, session, globals, dataset)
 
@@ -63,7 +67,6 @@ mod_gene_mc_server <- function(id, dataset, metacell_types, cell_type_colors, ge
             projection_selectors(ns, dataset, output, input, gene_modules, globals, session, weight = 0.6)
 
             clipboard_changed <- clipboard_changed_2d_reactive(input, globals)
-
 
             # Projection plots
             output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, source = "proj_mc_plot_gene_tab") %>%
@@ -103,7 +106,7 @@ mod_gene_mc_server <- function(id, dataset, metacell_types, cell_type_colors, ge
 
             connect_gene_plots(input, output, session, ns, source = "proj_mc_plot_gene_tab")
 
-            scatter_box_outputs(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, ns, plotly_source = "md_md_plot")
+            scatter_box_outputs(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, ns, plotly_source = "md_md_plot", selected_cell_types = selected_cell_types)
 
             atlas_gene_gene(input, output, session, dataset, metacell_types, cell_type_colors, globals, ns)
         }

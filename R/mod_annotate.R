@@ -135,7 +135,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
             ns <- session$ns
             # gene selectors
             values <- reactiveValues(file_status = NULL)
-            top_correlated_selectors(input, output, session, dataset, ns, gene_modules = gene_modules)
+            top_correlated_selectors(input, output, session, dataset, metacell_types, ns, gene_modules = gene_modules)
             scatter_selectors(ns, dataset, output, globals)
 
             observeEvent(input$metacell_types_fn, {
