@@ -50,7 +50,7 @@ diff_expr_outputs <- function(input, output, session, dataset, metacell_types, c
 
     diff_expr_switch_metacells(dataset, input, output, session)
 
-    output$plot_mc_mc_gene_scatter <- render_mc_mc_gene_plotly(input, output, session, ns, dataset, gene_modules, mc_mc_gene_scatter_df, metacell_names(), cell_type_colors(), source_suffix = source_suffix, dragmode = dragmode, plotly_buttons = plotly_buttons)
+    output$plot_mc_mc_gene_scatter <- render_mc_mc_gene_plotly(input, output, session, ns, dataset, gene_modules, mc_mc_gene_scatter_df, metacell_names, cell_type_colors, source_suffix = source_suffix, dragmode = dragmode, plotly_buttons = plotly_buttons)
 
     output$diff_expr_table <- render_mc_mc_gene_diff_table(input, output, session, ns, dataset, mc_mc_gene_scatter_df)
 }

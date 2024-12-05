@@ -65,22 +65,21 @@ render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, gene_m
         }
 
         mode <- input$mode %||% mode
-
         x_label_suffix <- ""
         if (is.null(mode) || mode == "MCs") {
-            req(metacell_names)
+            req(!is.null(metacell_names))
             req(input$metacell1)
             req(input$metacell2)
-            req(input$metacell1 %in% metacell_names)
-            req(input$metacell2 %in% metacell_names)
+            req(input$metacell1 %in% metacell_names())
+            req(input$metacell2 %in% metacell_names())
             xlab <- input$metacell1
             ylab <- input$metacell2
             label_prefix <- "MC #"
             source <- glue("mc_mc_plot{source_suffix}")
         } else if (mode == "Types") {
-            req(cell_type_colors)
-            req(input$metacell1 %in% cell_type_colors$cell_type)
-            req(input$metacell2 %in% cell_type_colors$cell_type)
+            req(!is.null(cell_type_colors) && !is.null(cell_type_colors()))
+            req(input$metacell1 %in% cell_type_colors()$cell_type)
+            req(input$metacell2 %in% cell_type_colors()$cell_type)
             xlab <- input$metacell1
             ylab <- input$metacell2
             label_prefix <- ""
