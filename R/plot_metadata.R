@@ -327,7 +327,9 @@ plot_mc_scatter <- function(dataset,
                             y_limits = NULL,
                             fixed_limits = FALSE,
                             xyline = FALSE,
-                            metacell_filter = NULL) {
+                            metacell_filter = NULL,
+                            show_correlation = TRUE,
+                            correlation_type = "pearson") {
     if (!is.null(metadata)) {
         metadata <- metadata %>% mutate(metacell = as.character(metacell))
     }
@@ -447,6 +449,12 @@ plot_mc_scatter <- function(dataset,
             filter(metacell %in% metacell_filter)
     }
 
+    if (show_correlation) {
+        correlation <- cor(df[[x_var]], df[[y_var]], method = correlation_type, use = "pairwise.complete.obs")
+        correlation_text <- glue("Correlation: {round(correlation, 3)} ({correlation_type})")
+    }
+
+
     p <- ggplot(
         data = df,
         aes(
@@ -464,6 +472,10 @@ plot_mc_scatter <- function(dataset,
 
     if (xyline) {
         p <- p + geom_abline(linetype = "dashed")
+    }
+
+    if (show_correlation) {
+        p <- p + labs(title = correlation_text)
     }
 
     # set color plotting
