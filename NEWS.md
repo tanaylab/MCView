@@ -1,3 +1,7 @@
+# MCView 0.2.33
+
+* Fix: rescale metadata colors on zoom in 'Markers' tab.
+
 # MCView 0.2.32
 
 * Search genes by `startsWith` instead of `contains`.
