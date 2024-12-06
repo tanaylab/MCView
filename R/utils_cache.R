@@ -239,6 +239,10 @@ has_projection <- function(dataset) {
     !is.null(get_mc_data(dataset, "query_md"))
 }
 
+has_corrected <- function(dataset) {
+    !is.null(get_mc_data(dataset, "mc_mat_corrected"))
+}
+
 has_atlas <- function(dataset) {
     !is.null(mc_data[[dataset]]$atlas)
 }

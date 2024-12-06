@@ -1,9 +1,13 @@
+# MCView 0.2.34
+
+* Added an option to view corrected gene expression in the 'Genes' tab (discussion #170).
+
 # MCView 0.2.33
 
 * Added cell type selector to the 'Genes' tab.
 * Added correlation between the genes/metadata shown in the 'Genes' tab.
 * Fix: rescale metadata colors on zoom in 'Markers' tab.
-* Fix: Afding new cell type prevented the use of diff. expression tab.
+* Fix: Adding new cell type prevented the use of diff. expression tab.
 * Disabled 'select all' in 'Markers' gene selector.
 
 # MCView 0.2.32
