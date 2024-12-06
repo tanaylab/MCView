@@ -37,6 +37,7 @@ scatter_box <- function(ns, id, title = "Gene/Gene", x_selected = "Gene", y_sele
                 axis_selector("x_axis", x_selected, ns),
                 axis_selector("y_axis", y_selected, ns),
                 axis_selector("color_by", color_selected, ns),
+                uiOutput(ns("use_corrected_ui")),
                 checkboxInput(ns("show_legend_scatter"), "Show legend", value = show_legend)
             )
         )
@@ -68,6 +69,11 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
     output$use_atlas_limits_ui <- renderUI({
         req(has_atlas(dataset()))
         checkboxInput(ns("use_atlas_limits"), label = "Use atlas limits", value = FALSE)
+    })
+
+    output$use_corrected_ui <- renderUI({
+        req(has_corrected(dataset()))
+        checkboxInput(ns("use_corrected"), label = "Use corrected", value = FALSE)
     })
 
     observe({
@@ -150,7 +156,8 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
             xyline = input$gene_gene_xyline %||% FALSE,
             metacell_filter = metacell_filter,
             show_correlation = input$show_correlation,
-            correlation_type = input$correlation_type
+            correlation_type = input$correlation_type,
+            corrected = input$use_corrected %||% FALSE
         ) %>%
             plotly::ggplotly(tooltip = "tooltip_text", source = plotly_source) %>%
             sanitize_for_WebGL() %>%
@@ -176,7 +183,7 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
         }
 
         return(fig)
-    }) %>% bindCache(dataset(), input$x_axis_var, input$x_axis_type, input$y_axis_var, input$y_axis_type, input$color_by_type, input$color_by_var, metacell_types(), cell_type_colors(), gene_modules(), input$gene_gene_point_size, input$gene_gene_stroke, input$use_atlas_limits, input$gene_gene_fixed_limits, input$gene_gene_xyline, dragmode, plotly_buttons, clipboard_changed(), input$show_legend_scatter, selected_cell_types(), input$show_correlation, input$correlation_type)
+    }) %>% bindCache(dataset(), input$x_axis_var, input$x_axis_type, input$y_axis_var, input$y_axis_type, input$color_by_type, input$color_by_var, metacell_types(), cell_type_colors(), gene_modules(), input$gene_gene_point_size, input$gene_gene_stroke, input$use_atlas_limits, input$gene_gene_fixed_limits, input$gene_gene_xyline, dragmode, plotly_buttons, clipboard_changed(), input$show_legend_scatter, selected_cell_types(), input$show_correlation, input$correlation_type, input$use_corrected)
 }
 
 axis_selector <- function(axis, selected, ns, choices = c("Metadata", "Gene", "Gene module"), orientation = "horizontal", wrap_in_box = TRUE) {

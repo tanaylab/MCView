@@ -329,7 +329,8 @@ plot_mc_scatter <- function(dataset,
                             xyline = FALSE,
                             metacell_filter = NULL,
                             show_correlation = TRUE,
-                            correlation_type = "pearson") {
+                            correlation_type = "pearson",
+                            corrected = FALSE) {
     if (!is.null(metadata)) {
         metadata <- metadata %>% mutate(metacell = as.character(metacell))
     }
@@ -355,7 +356,7 @@ plot_mc_scatter <- function(dataset,
         if (x_type == "Gene module") {
             egc_x <- get_gene_module_egc(x_var, dataset, gene_modules, atlas = atlas) + egc_epsilon
         } else {
-            egc_x <- get_gene_egc(x_var, dataset, atlas = atlas) + egc_epsilon
+            egc_x <- get_gene_egc(x_var, dataset, atlas = atlas, corrected = corrected) + egc_epsilon
         }
         df <- df %>%
             mutate(!!x_var := egc_x[metacell]) %>%
@@ -374,7 +375,7 @@ plot_mc_scatter <- function(dataset,
         if (y_type == "Gene module") {
             egc_y <- get_gene_module_egc(y_var, dataset, gene_modules, atlas = atlas) + egc_epsilon
         } else {
-            egc_y <- get_gene_egc(y_var, dataset, atlas = atlas) + egc_epsilon
+            egc_y <- get_gene_egc(y_var, dataset, atlas = atlas, corrected = corrected) + egc_epsilon
         }
 
         df <- df %>%
@@ -418,7 +419,7 @@ plot_mc_scatter <- function(dataset,
         if (color_type == "Gene module") {
             egc_color <- get_gene_module_egc(color_var, dataset, gene_modules, atlas = atlas) + egc_epsilon
         } else {
-            egc_color <- get_gene_egc(color_var, dataset, atlas = atlas) + egc_epsilon
+            egc_color <- get_gene_egc(color_var, dataset, atlas = atlas, corrected = corrected) + egc_epsilon
         }
         df <- df %>%
             mutate(expression = log2(egc_color[df$metacell]))
@@ -514,9 +515,13 @@ plot_mc_scatter <- function(dataset,
         x_limits <- x_limits %||% c(min(egc_x), max(egc_x))
         xmax <- min(c(1:length(xylims))[xylims >= x_limits[2] - 1e-10])
         xmin <- max(c(1:length(xylims))[xylims <= x_limits[1] + 1e-10])
+        lab <- glue("{x_var} Expression")
+        if (corrected) {
+            lab <- glue("{lab} (corrected)")
+        }
         p <- p +
             scale_x_continuous(limits = c(xylims[xmin], xylims[xmax]), trans = "log2", breaks = xylims[xmin:xmax], labels = scales::scientific(xylims[xmin:xmax])) +
-            xlab(glue("{x_var} Expression")) +
+            xlab(lab) +
             theme(axis.text.x = element_text(angle = 30, vjust = 0.5, hjust = 1))
     }
 
@@ -524,9 +529,13 @@ plot_mc_scatter <- function(dataset,
         y_limits <- y_limits %||% c(min(egc_y), max(egc_y))
         ymax <- min(c(1:length(xylims))[xylims >= y_limits[2] - 1e-10])
         ymin <- max(c(1:length(xylims))[xylims <= y_limits[1] + 1e-10])
+        lab <- glue("{y_var} Expression")
+        if (corrected) {
+            lab <- glue("{lab} (corrected)")
+        }
         p <- p +
             scale_y_continuous(limits = c(xylims[ymin], xylims[ymax]), trans = "log2", breaks = xylims[ymin:ymax], labels = scales::scientific(xylims[ymin:ymax])) +
-            ylab(glue("{y_var} Expression"))
+            ylab(lab)
     }
 
 

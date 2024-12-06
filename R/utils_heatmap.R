@@ -125,10 +125,6 @@ heatmap_sidebar <- function(id, ..., show_fitted_filter = FALSE) {
         shinyWidgets::virtualSelectInput(ns("metadata_order_var"), "Order by", choices = NULL, selected = NULL, multiple = FALSE, search = TRUE),
         tags$hr(),
         ...,
-        update_genes_ui,
-        show_only_fitted_ui,
-        include_lateral_ui,
-        include_noisy_ui,
         max_gene_num_ui,
         add_genes_ui,
         selectInput(
@@ -141,6 +137,10 @@ heatmap_sidebar <- function(id, ..., show_fitted_filter = FALSE) {
             selectize = FALSE
         ),
         remove_genes_ui,
+        update_genes_ui,
+        show_only_fitted_ui,
+        include_lateral_ui,
+        include_noisy_ui,
         tags$hr(),
         load_genes_ui,
         downloadButton(ns("download_genes"), "Save genes", align = "center", style = "margin: 5px 5px 5px 15px; "),
