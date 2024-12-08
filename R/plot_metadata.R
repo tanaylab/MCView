@@ -19,7 +19,8 @@ mc2d_plot_metadata_ggp <- function(dataset,
                                    atlas = FALSE,
                                    metadata = NULL,
                                    graph_name = NULL,
-                                   mc2d = NULL) {
+                                   mc2d = NULL,
+                                   selected_cell_types = NULL) {
     mc2d <- mc2d %||% get_mc_data(dataset, "mc2d", atlas = atlas)
     metadata <- metadata %||% get_mc_data(dataset, "metadata", atlas = atlas)
 
@@ -63,6 +64,11 @@ mc2d_plot_metadata_ggp <- function(dataset,
         mc2d_df <- mc2d_df %>% mutate(id = metacell)
     } else {
         mc2d_df <- mc2d_df %>% mutate(id = paste(id, metacell, sep = "\t"))
+    }
+
+    if (!is.null(selected_cell_types)) {
+        mc2d_df <- mc2d_df %>%
+            filter(`Cell type` %in% selected_cell_types())
     }
 
     if (is_numeric_field(mc2d_df, md)) {
@@ -163,26 +169,17 @@ mc2d_plot_metadata_ggp_categorical <- function(mc2d_df,
     fig <- fig %>%
         add_scatter_layer(showlegend = TRUE)
 
-    margin <- 0.05
-    xlim <- range(mc2d_df$x, na.rm = TRUE)
-    ylim <- range(mc2d_df$y, na.rm = TRUE)
-
-    xlim <- xlim + c(-diff(xlim) * margin, diff(xlim) * margin)
-    ylim <- ylim + c(-diff(ylim) * margin, diff(ylim) * margin)
-
     fig <- fig %>%
         plotly::layout(
             xaxis = list(
                 showgrid = FALSE,
                 zeroline = FALSE,
-                visible = FALSE,
-                range = xlim
+                visible = FALSE
             ),
             yaxis = list(
                 showgrid = FALSE,
                 zeroline = FALSE,
-                visible = FALSE,
-                range = ylim
+                visible = FALSE
             ),
             margin = list(
                 l = 0,

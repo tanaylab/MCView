@@ -18,6 +18,7 @@ cell_type_selector <- function(dataset, ns, id = "selected_cell_types", label = 
         }
 
         if ("(Missing)" %in% cell_types) {
+            cell_types_hex <- c(cell_types_hex[cell_types != "(Missing)"], cell_types_hex[cell_types == "(Missing)"])
             cell_types <- c(cell_types[cell_types != "(Missing)"], "(Missing)")
         }
 

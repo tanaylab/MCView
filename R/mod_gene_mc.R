@@ -40,11 +40,11 @@ mod_gene_mc_sidebar_ui <- function(id) {
         list(
             uiOutput(ns("cell_type_list")),
             tags$hr(),
+            shinyWidgets::switchInput(ns("show_correlations"), "Show correlations", value = TRUE, onLabel = "Yes", offLabel = "No", onStatus = "success", offStatus = "danger", size = "mini"),
             uiOutput(ns("top_correlated_select_x_axis")),
             uiOutput(ns("top_correlated_select_y_axis")),
             uiOutput(ns("top_correlated_select_color_by")),
-            uiOutput(ns("top_correlated_select_color_proj")),
-            shinyWidgets::switchInput(ns("show_correlations"), "Show correlations", value = TRUE, onLabel = "Yes", offLabel = "No", onStatus = "success", offStatus = "danger", size = "mini")
+            uiOutput(ns("top_correlated_select_color_proj"))
         )
     )
 }
@@ -69,7 +69,7 @@ mod_gene_mc_server <- function(id, dataset, metacell_types, cell_type_colors, ge
             clipboard_changed <- clipboard_changed_2d_reactive(input, globals)
 
             # Projection plots
-            output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, source = "proj_mc_plot_gene_tab") %>%
+            output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, selected_cell_types = selected_cell_types, source = "proj_mc_plot_gene_tab") %>%
                 bindCache(
                     dataset(),
                     input$color_proj,
@@ -92,6 +92,7 @@ mod_gene_mc_server <- function(id, dataset, metacell_types, cell_type_colors, ge
                     input$legend_orientation,
                     input$show_legend_projection,
                     input$scatter_axis_proj,
+                    selected_cell_types(),
                     {
                         if (input$color_proj == "Scatter Axis") {
                             if (input$scatter_axis_proj == "x") {

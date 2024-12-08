@@ -3,7 +3,7 @@
 #' @param dataset name of metacell object
 #'
 #' @noRd
-mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_size(dataset), min_d = min_edge_length(dataset), stroke = initial_proj_stroke(dataset), graph_color = "black", graph_width = 0.1, id = NULL, max_lfp = NULL, min_lfp = NULL, max_expr = NULL, min_expr = NULL, stat = "expression", atlas = FALSE, gene_name = NULL, graph_name = NULL, mc2d = NULL) {
+mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_size(dataset), min_d = min_edge_length(dataset), stroke = initial_proj_stroke(dataset), graph_color = "black", graph_width = 0.1, id = NULL, max_lfp = NULL, min_lfp = NULL, max_expr = NULL, min_expr = NULL, stat = "expression", atlas = FALSE, gene_name = NULL, graph_name = NULL, mc2d = NULL, selected_cell_types = NULL, metacell_types = NULL) {
     mc2d <- mc2d %||% get_mc_data(dataset, "mc2d", atlas = atlas)
     metacell_types <- get_mc_data(dataset, "metacell_types", atlas = atlas)
     min_lfp <- min_lfp %||% -3
@@ -86,6 +86,11 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
         legend_title <- glue("{gene}\nExpression.\n(log2)")
     }
 
+    if (!is.null(selected_cell_types)) {
+        df <- df %>%
+            filter(`Cell type` %in% selected_cell_types())
+    }
+
     add_scatter_layer <- function(x, showlegend = FALSE) {
         plotly::add_trace(x,
             data = df,
@@ -157,7 +162,7 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
     return(fig)
 }
 
-render_2d_plotly <- function(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, source, buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL, refresh_on_gene_change = FALSE, atlas = FALSE, query_types = NULL, group = NULL, groupA = NULL, groupB = NULL, selected_metacell_types = NULL) {
+render_2d_plotly <- function(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, source, buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL, refresh_on_gene_change = FALSE, atlas = FALSE, query_types = NULL, group = NULL, groupA = NULL, groupB = NULL, selected_metacell_types = NULL, selected_cell_types = NULL) {
     plotly::renderPlotly({
         req(input$color_proj)
         req(input$point_size)
@@ -196,7 +201,9 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
                 atlas = atlas,
                 gene_name = gene_name,
                 graph_name = input$graph_name,
-                mc2d = mc2d
+                mc2d = mc2d,
+                metacell_types = metacell_types(),
+                selected_cell_types = selected_cell_types
             )
 
             fig <- fig %>% rm_plotly_grid()
@@ -216,7 +223,8 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
                 colors = colors,
                 color_breaks = color_breaks,
                 graph_name = input$graph_name,
-                mc2d = mc2d
+                mc2d = mc2d,
+                selected_cell_types = selected_cell_types
             )
 
             return(fig)
@@ -296,7 +304,8 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
                 metadata = metacell_types() %>% rename(`Cell type` = cell_type),
                 colors = get_cell_type_colors(dataset, cell_type_colors = cell_type_colors(), atlas = atlas),
                 graph_name = input$graph_name,
-                mc2d = mc2d
+                mc2d = mc2d,
+                selected_cell_types = selected_cell_types
             )
         } else if (color_proj == "Gene A") {
             req(input$gene1)

@@ -53,6 +53,7 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
         })
 
         observeEvent(input$apply_cell_types, {
+            shinyWidgets::updateSwitchInput(session, "show_correlations", value = FALSE)
             selected_cell_types(input$selected_cell_types)
             showNotification("Cell type selection updated", type = "message")
         })
