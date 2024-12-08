@@ -117,6 +117,9 @@ mod_annotate_ui <- function(id) {
 mod_annotate_sidebar_ui <- function(id) {
     ns <- NS(id)
     tagList(
+        uiOutput(ns("cell_type_list")),
+        tags$hr(),
+        shinyWidgets::switchInput(ns("show_correlations"), "Show correlations", value = TRUE, onLabel = "Yes", offLabel = "No", onStatus = "success", offStatus = "danger", size = "mini"),
         uiOutput(ns("top_correlated_select_x_axis")),
         uiOutput(ns("top_correlated_select_y_axis")),
         uiOutput(ns("top_correlated_select_color_by")),
@@ -133,9 +136,11 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
         id,
         function(input, output, session) {
             ns <- session$ns
+            selected_cell_types <- reactiveVal(NULL)
+
             # gene selectors
             values <- reactiveValues(file_status = NULL)
-            top_correlated_selectors(input, output, session, dataset, metacell_types, ns, gene_modules = gene_modules)
+            top_correlated_selectors(input, output, session, dataset, metacell_types, ns, gene_modules = gene_modules, selected_cell_types = selected_cell_types)
             scatter_selectors(ns, dataset, output, globals)
 
             observeEvent(input$metacell_types_fn, {
@@ -427,6 +432,8 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                     mutate(cell_type = ifelse(cell_type %in% cell_types, input$new_merged_cell_type_name, cell_type))
                 metacell_types(new_metacell_types)
 
+                selected_cell_types(unique(c(selected_cell_types(), input$new_merged_cell_type_name)))
+
                 removeModal()
             })
 
@@ -499,6 +506,8 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                     mutate(cell_type = ifelse(cell_type == !!cell_type, input$new_cell_type_name, cell_type))
                 metacell_types(new_metacell_types)
 
+                selected_cell_types(unique(c(selected_cell_types(), input$new_cell_type_name)))
+
                 removeModal()
             })
 
@@ -547,6 +556,8 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                     distinct(cell_type, .keep_all = TRUE) %>%
                     mutate(order = 1:n())
                 cell_type_colors(new_data)
+
+                selected_cell_types(unique(c(selected_cell_types(), input$new_cell_type_name)))
                 removeModal()
             })
 
@@ -610,7 +621,8 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 source = "proj_annot_plot",
                 buttons = c("hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"),
                 dragmode = "select",
-                selected_metacell_types = selected_metacell_types
+                selected_metacell_types = selected_metacell_types,
+                selected_cell_types = selected_cell_types
             )
 
             selected_cell_types <- reactiveVal(NULL)

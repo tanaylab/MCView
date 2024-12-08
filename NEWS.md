@@ -1,6 +1,8 @@
 # MCView 0.2.34
 
 * Added an option to view corrected gene expression in the 'Genes' tab (discussion #170).
+* Added cell type selectors to the 'Annotate' tab.
+* Turn off the correlations on the 'Genes' tab by default when selecting a subset of the cell types. 
 
 # MCView 0.2.33
 
