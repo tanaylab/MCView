@@ -46,7 +46,7 @@ jobs:
         run: |
           install.packages(c("remotes", "pkgdown"))
           remotes::install_deps(dependencies = TRUE)
-          BiocManager::install(c("Rgraphviz", "graph"))
+          BiocManager::install(c("Rgraphviz", "graph"), ask = FALSE)
         shell: Rscript {0}
 
       - name: Install package
