@@ -1,3 +1,7 @@
+# MCView 0.2.35
+
+* Changed default of 'Show correlations' to FALSE.
+
 # MCView 0.2.34
 
 * Added an option to view corrected gene expression in the 'Genes' tab (discussion #170).

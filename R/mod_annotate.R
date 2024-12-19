@@ -119,7 +119,7 @@ mod_annotate_sidebar_ui <- function(id) {
     tagList(
         uiOutput(ns("cell_type_list")),
         tags$hr(),
-        shinyWidgets::switchInput(ns("show_correlations"), "Show correlations", value = TRUE, onLabel = "Yes", offLabel = "No", onStatus = "success", offStatus = "danger", size = "mini"),
+        shinyWidgets::switchInput(ns("show_correlations"), "Show correlations", value = FALSE, onLabel = "Yes", offLabel = "No", onStatus = "success", offStatus = "danger", size = "mini"),
         uiOutput(ns("top_correlated_select_x_axis")),
         uiOutput(ns("top_correlated_select_y_axis")),
         uiOutput(ns("top_correlated_select_color_by")),
