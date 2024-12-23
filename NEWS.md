@@ -1,3 +1,7 @@
+# MCView 0.2.36
+
+* Fix: Metadata/Gene correlations were not shown.
+
 # MCView 0.2.35
 
 * Changed default of 'Show correlations' to FALSE.

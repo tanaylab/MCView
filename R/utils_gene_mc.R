@@ -42,7 +42,7 @@ get_cached_cor <- function(gg_mc_top_cor, gene, type, exclude = NULL) {
 
 calc_top_cors <- function(dataset, gene, type, data_vec, metacell_filter, exclude, atlas = FALSE) {
     mc_egc <- get_mc_egc(dataset, atlas = atlas)
-    req(gene %in% rownames(mc_egc))
+
     lfp <- log2(mc_egc + egc_epsilon)
     if (!is.null(exclude)) {
         lfp <- lfp[-which(rownames(lfp) %in% exclude), , drop = FALSE]
