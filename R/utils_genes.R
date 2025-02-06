@@ -13,10 +13,12 @@ annotate_genes <- function(genes, dataset) {
 gene_label <- function(genes, dataset, gene_modules = NULL) {
     type <- annotate_genes(genes, dataset)
     if (!is.null(gene_modules)) {
-        modules <- tibble(gene = genes) %>%
-            left_join(gene_modules, by = join_by(gene)) %>%
-            pull(module) %>%
-            as.character()
+        gm_names <- gene_modules %>%
+            group_by(gene) %>%
+            summarize(module = paste(module, collapse = ", ")) %>%
+            select(gene, module) %>%
+            deframe()
+        modules <- gm_names[genes]
     }
     new_names <- ifelse(type == "other", genes, glue("{genes} ({type})"))
 

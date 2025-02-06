@@ -114,7 +114,7 @@ mod_gene_modules_sidebar_ui <- function(id) {
                 label = "Show genes",
                 size = "small",
                 labelWidth = "100px",
-                value = TRUE
+                value = FALSE
             ),
             uiOutput(ns("shown_gene_modules_ui")),
             uiOutput(ns_heatmap("cell_type_list")),
@@ -360,16 +360,6 @@ mod_gene_module_controllers <- function(ns, dataset, input, output, session, gen
                 showNotification(glue("File should have a column named '{field}'"), type = "error")
                 req(FALSE)
             }
-        }
-
-        bad_genes <- new_gene_modules %>%
-            count(gene) %>%
-            filter(n > 1) %>%
-            pull(gene)
-
-        if (length(bad_genes) > 0) {
-            showNotification(glue("The following genes appear in more than one module: {genes}", genes = paste(bad_genes, collapse = ", ")), type = "error")
-            req(FALSE)
         }
 
         gene_modules(new_gene_modules)

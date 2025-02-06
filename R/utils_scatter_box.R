@@ -52,7 +52,7 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
             }
         })
 
-        observeEvent(input$apply_cell_types, {            
+        observeEvent(input$apply_cell_types, {
             selected_cell_types(input$selected_cell_types)
             showNotification("Cell type selection updated", type = "message")
         })

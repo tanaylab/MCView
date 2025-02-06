@@ -1,3 +1,7 @@
+# MCView 0.2.37 
+
+* Allow same gene in multiple gene modules.
+
 # MCView 0.2.36
 
 * Fix: Metadata/Gene correlations were not shown.

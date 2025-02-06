@@ -40,7 +40,7 @@ parse_gene_modules_file <- function(file) {
         }
     }
 
-    verify_gene_modules(gene_modules)
+    # verify_gene_modules(gene_modules)
 
     return(gene_modules)
 }
