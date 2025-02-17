@@ -1,3 +1,7 @@
+# MCView 0.2.38
+
+* Show GeneCards buttons also when Show-Correlations is off.
+
 # MCView 0.2.37 
 
 * Allow same gene in multiple gene modules.
