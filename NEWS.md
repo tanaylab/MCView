@@ -1,3 +1,7 @@
+# MCView 0.2.38
+
+* Show GeneCards buttons also when Show-Correlations is off.
+
 # MCView 0.2.36
 
 * Fix: Metadata/Gene correlations were not shown.
