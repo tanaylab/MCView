@@ -42,10 +42,10 @@ verify_version <- function(path) {
     }
 }
 
-verify_project_dir <- function(path, create = FALSE, atlas = FALSE, ...) {
+verify_project_dir <- function(path, create = FALSE, atlas = FALSE, spatial = FALSE, ...) {
     if (!dir.exists(path)) {
         if (create) {
-            create_project(project = path, edit_config = FALSE, atlas = atlas, ...)
+            create_project(project = path, edit_config = FALSE, atlas = atlas, spatial = spatial, ...)
         } else {
             cli_abort("{.path path} does not exist. Maybe there is a typo? You can start a new project by running {.code MCView::create_project}.")
         }
@@ -91,13 +91,16 @@ create_project_config_file <- function(project_dir,
                                        selected_mc2 = NULL,
                                        datasets = NULL,
                                        other_params = NULL,
-                                       atlas = FALSE) {
+                                       atlas = FALSE,
+                                       spatial = FALSE) {
     config <- list()
     config$title <- title
     if (is.null(tabs)) {
         if (atlas) {
             tabs <- c("QC", "Projection QC", "Manifold", "Genes", "Query", "Atlas", "Markers", "Gene modules", "Projected-fold", "Diff. Expression", "Cell types", "Annotate", "About")
-        } else {
+        } else if(spatial){
+            tabs <- c("QC", "Manifold", "Spatial", "Genes", "Markers", "Gene modules", "Diff. Expression", "Cell types", "Annotate", "About")
+        }else{
             tabs <- c("QC", "Manifold", "Genes", "Markers", "Gene modules", "Diff. Expression", "Cell types", "Annotate", "About")
         }
     }
@@ -154,7 +157,8 @@ create_project <- function(project,
                            datasets = NULL,
                            other_params = NULL,
                            edit_config = TRUE,
-                           atlas = FALSE) {
+                           atlas = FALSE,
+                           spatial = FALSE) {
     project_dir <- create_project_dirs(project, atlas = atlas)
     config <- create_project_config_file(
         project_dir = project,
@@ -167,7 +171,8 @@ create_project <- function(project,
         selected_mc2 = selected_mc2,
         datasets = datasets,
         other_params = other_params,
-        atlas = atlas
+        atlas = atlas,
+        spatial = spatial
     )
     project_dir <- fs::path(project_dir, "config")
 

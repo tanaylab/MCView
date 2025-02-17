@@ -70,6 +70,7 @@
 #' @param layout a data frame with a column named "metacell" with the metacell id and other columns with the x and y coordinates of the metacell. If NULL, the layout would be taken from the anndata object.
 #' @param default_graph a data frame with a column named "from", "to" and "weight" with the ids of the metacells and the weight of the edge. If NULL, the graph would be taken from the anndata object.
 #' @param overwrite if a dataset with the same name already exists, overwrite it. Otherwise, an error would be thrown.
+#' @param generic_tal_file TODO TODO TODO
 #'
 #' @return invisibly returns an \code{AnnDataR6} object of the read \code{anndata_file}
 #'
@@ -121,9 +122,10 @@ import_dataset <- function(project,
                            layout = NULL,
                            default_graph = NULL,
                            overwrite = TRUE,
+                           spatial = NULL,                       
                            ...) {
     verbose <- !is.null(getOption("MCView.verbose")) && getOption("MCView.verbose")
-    verify_project_dir(project, create = TRUE, atlas = !is.null(atlas_project), ...)
+    verify_project_dir(project, create = TRUE, atlas = !is.null(atlas_project), spatial = !is.null(spatial), ...)
 
     if (!grepl("^[A-Za-z0-9_.-]+$", dataset)) {
         cli_abort("Dataset name can only contain letters, numbers, '.', '-' and '_'")
@@ -206,6 +208,11 @@ import_dataset <- function(project,
         }
         metadata_colors <- parse_metadata_colors(metadata_colors, metadata)
         serialize_shiny_data(metadata_colors, "metadata_colors", dataset = dataset, cache_dir = cache_dir)
+    }
+
+    if (!is.null(spatial)){
+        data <- readRDS(spatial)
+        serialize_shiny_data(data, "spatial_flow_data", dataset = dataset, cache_dir = cache_dir)
     }
 
     cli_alert_info("Processing 2d projection")

@@ -179,6 +179,11 @@ init_tab_defs <- function() {
             title = "Atlas",
             module_name = "atlas",
             icon = "atlas"
+        ),
+        "Spatial" = list(
+            title = "Spatial",
+            module_name = "spatial",
+            icon = "cat"#"" #"puzzle-piece"
         )
     )
 
