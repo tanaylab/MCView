@@ -37,7 +37,7 @@ verify_version <- function(path) {
     } else {
         version <- readLines(version_file)
         if (utils::compareVersion(version, as.character(utils::packageVersion("MCView"))) < 0) {
-            cli_alert_warning("Project was created with MCView version {.field {version}} while the current version is {.field {utils::packageVersion('MCView')}}. Please re-import the project with the latest version of MCView.")
+            cli_alert_warning("Project was created with MCView version {.field {version}} while the current version is {.field {utils::packageVersion('MCView')}}. Please re-import the project with the latest version of MCView in order to avoid compatibility issues.")
         }
     }
 }

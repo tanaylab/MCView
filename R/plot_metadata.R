@@ -140,7 +140,7 @@ mc2d_plot_metadata_ggp_categorical <- function(mc2d_df,
                 size = point_size * 4,
                 line = list(
                     color = "black",
-                    width = 0.2
+                    width = stroke %||% 0.2
                 )
             ),
             showlegend = showlegend
@@ -247,7 +247,7 @@ mc2d_plot_metadata_ggp_numeric <- function(mc2d_df,
                 size = point_size * 4,
                 line = list(
                     color = "black",
-                    width = 0.2
+                    width = stroke %||% 0.2
                 )
             ),
             showlegend = showlegend
