@@ -1,5 +1,6 @@
 # MCView 0.2.39
 
+* Added `log2` option to the scatter plots.
 * Fix: 'Stroke' was not working in the 2D projection plots.
 
 # MCView 0.2.38
