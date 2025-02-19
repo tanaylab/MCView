@@ -107,7 +107,7 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
                 size = point_size * 4,
                 line = list(
                     color = "black",
-                    width = 0.2
+                    width = stroke %||% 0.2
                 )
             ),
             showlegend = showlegend
@@ -199,6 +199,7 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
                 min_d = input$min_edge_size,
                 stat = proj_stat,
                 atlas = atlas,
+                stroke = input$stroke,
                 gene_name = gene_name,
                 graph_name = input$graph_name,
                 mc2d = mc2d,
@@ -221,6 +222,7 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
                 atlas = atlas,
                 metadata = metadata,
                 colors = colors,
+                stroke = input$stroke,
                 color_breaks = color_breaks,
                 graph_name = input$graph_name,
                 mc2d = mc2d,
@@ -260,15 +262,15 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
             if (input$color_by_scale == "Discrete") {
                 metadata <- metadata %>%
                     mutate(query = ifelse(Weight <= input$query_threshold, "other", query))
-                fig <- plot_2d_metadata("query", metadata = metadata, colors = c("query" = "darkred", "other" = "white"))
+                fig <- plot_2d_metadata("query", stroke = input$stroke, metadata = metadata, colors = c("query" = "darkred", "other" = "white"))
             } else if (input$color_by_scale == "Continuous") {
-                fig <- plot_2d_metadata("Weight", metadata = metadata, colors = c("white", viridis::viridis_pal()(6)), color_breaks = c(0, seq(input$query_threshold, 1, length.out = 6)))
+                fig <- plot_2d_metadata("Weight", metadata = metadata, stroke = input$stroke, colors = c("white", viridis::viridis_pal()(6)), color_breaks = c(0, seq(input$query_threshold, 1, length.out = 6)))
             } else {
                 metadata <- metadata %>%
                     mutate(query = ifelse(Weight <= input$query_threshold, "other", query)) %>%
                     left_join(metacell_types() %>% select(metacell, cell_type), by = "metacell") %>%
                     mutate(query = ifelse(query != "other", cell_type, query))
-                fig <- plot_2d_metadata("query", metadata = metadata, colors = c("other" = "white", get_cell_type_colors(dataset(), cell_type_colors())))
+                fig <- plot_2d_metadata("query", metadata = metadata, stroke = input$stroke, colors = c("other" = "white", get_cell_type_colors(dataset(), cell_type_colors())))
             }
 
             return(fig)
@@ -303,6 +305,7 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
                 atlas = atlas,
                 metadata = metacell_types() %>% rename(`Cell type` = cell_type),
                 colors = get_cell_type_colors(dataset, cell_type_colors = cell_type_colors(), atlas = atlas),
+                stroke = input$stroke,
                 graph_name = input$graph_name,
                 mc2d = mc2d,
                 selected_cell_types = selected_cell_types
@@ -458,7 +461,7 @@ initial_proj_stroke <- function(dataset) {
     if (!is.null(config$datasets[[dataset]]$projection_stroke)) {
         return(config$datasets[[dataset]]$projection_stroke)
     }
-    return(0.1)
+    return(0.2)
 }
 
 min_edge_length <- function(dataset) {

@@ -1,3 +1,7 @@
+# MCView 0.2.39
+
+* Fix: 'Stroke' was not working in the 2D projection plots.
+
 # MCView 0.2.38
 
 * Show GeneCards buttons also when Show-Correlations is off.
