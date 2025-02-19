@@ -39,7 +39,7 @@ mod_spatial_sidebar_ui <- function(id) {
     tagList(
         list(
             div(
-                id = ns("sidebar_select"),
+                # id = ns("sidebar_select"),
                 shinyWidgets::radioGroupButtons(
                     inputId = ns("mode"),
                     label = "Select display:",
