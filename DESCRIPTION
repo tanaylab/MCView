@@ -1,6 +1,6 @@
 Package: MCView
 Title: A Shiny App for Metacell Analysis
-Version: 0.2.38
+Version: 0.2.39
 Authors@R: 
     person(given = "Aviezer",
            family = "Lifshitz",
