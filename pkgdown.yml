@@ -1,8 +1,8 @@
-pandoc: '3.2'
+pandoc: 3.1.11
 pkgdown: 2.1.1
 pkgdown_sha: ~
 articles:
   Architecture: Architecture.html
   Docker: Docker.html
   MCView: MCView.html
-last_built: 2024-12-08T13:30Z
+last_built: 2025-02-19T20:47Z

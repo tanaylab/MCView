@@ -8,8 +8,8 @@
 <title>Getting started with MCView • MCView</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.4.2/css/all.min.css" rel="stylesheet">
-<link href="../deps/font-awesome-6.4.2/css/v4-shims.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Getting started with MCView">
 </head>
 <body>
@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">MCView</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.34</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.38</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -61,7 +61,7 @@
       <h1>Getting started with MCView</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/tanaylab/MCView/blob/HEAD/vignettes/MCView.Rmd" class="external-link"><code>vignettes/MCView.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/tanaylab/MCView/blob/master/vignettes/MCView.Rmd" class="external-link"><code>vignettes/MCView.Rmd</code></a></small>
       <div class="d-none name"><code>MCView.Rmd</code></div>
     </div>
 
@@ -85,6 +85,10 @@ import to <strong>MCView</strong> in the next steps.</p>
 <div class="section level2">
 <h2 id="create-a-project">Create a project<a class="anchor" aria-label="anchor" href="#create-a-project"></a>
 </h2>
+<blockquote>
+<p>You can either start by creating a new project, or skip this step and
+import the dataset (a project would be created automatically).</p>
+</blockquote>
 <p>The first step in running <strong>MCView</strong> is generating a
 project directory structure:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
@@ -214,7 +218,7 @@ you can use the <code>update_metadata</code> and
 <p>You can then upload the bundle to <a href="https://docs.rstudio.com/shinyapps.io/getting-started.html#deploying-applications" class="external-link">shinyapps.io</a>
 by running:</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">rsconnect</span><span class="fu">::</span><span class="fu"><a href="https://rstudio.github.io/rsconnect/reference/deployApp.html" class="external-link">deployApp</a></span><span class="op">(</span>appDir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/getwd.html" class="external-link">getwd</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"PBMC_bundle"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">rsconnect</span><span class="fu">::</span><span class="fu">deployApp</span><span class="op">(</span>appDir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/getwd.html" class="external-link">getwd</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"PBMC_bundle"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>Or to any shiny-server hosting service by uploading the “PBMC_bundle”
 directory to the service.</p>
 <blockquote>
