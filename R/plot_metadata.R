@@ -327,7 +327,9 @@ plot_mc_scatter <- function(dataset,
                             metacell_filter = NULL,
                             show_correlation = TRUE,
                             correlation_type = "pearson",
-                            corrected = FALSE) {
+                            corrected = FALSE,
+                            log_labels = default_scatters_log_labels(dataset),
+                            xylims = NULL) {
     if (!is.null(metadata)) {
         metadata <- metadata %>% mutate(metacell = as.character(metacell))
     }
@@ -357,7 +359,7 @@ plot_mc_scatter <- function(dataset,
         }
         df <- df %>%
             mutate(!!x_var := egc_x[metacell]) %>%
-            mutate(x_str = glue("{x_name} expression: {expr_text}", expr_text = scales::scientific(!!sym(x_var))))
+            mutate(x_str = glue("{x_name} expression: {expr_text} ({expr_text_log2})", expr_text = scales::scientific(!!sym(x_var)), expr_text_log2 = round(log2(!!sym(x_var)), digits = 2)))
     }
 
     # set y variable
@@ -377,7 +379,7 @@ plot_mc_scatter <- function(dataset,
 
         df <- df %>%
             mutate(!!y_var := egc_y[metacell]) %>%
-            mutate(y_str = glue("{y_name} expression: {expr_text}", expr_text = scales::scientific(!!sym(y_var))))
+            mutate(y_str = glue("{y_name} expression: {expr_text}, ({expr_text_log2})", expr_text = scales::scientific(!!sym(y_var)), expr_text_log2 = round(log2(!!sym(y_var)), digits = 2)))
     }
 
     # set color variable
@@ -498,9 +500,6 @@ plot_mc_scatter <- function(dataset,
             scale_fill_identity()
     }
 
-    # arrange axis for gene expression
-    xylims <- expr_breaks
-
     if (fixed_limits && x_type %in% c("Gene", "Gene module") && y_type %in% c("Gene", "Gene module")) {
         x_limits <- x_limits %||% c(min(egc_x), max(egc_x))
         y_limits <- y_limits %||% c(min(egc_y), max(egc_y))
@@ -508,16 +507,32 @@ plot_mc_scatter <- function(dataset,
         y_limits <- x_limits
     }
 
+    if (is.null(xylims)) {
+        if (log_labels) {
+            xylims <- 2^seq(-17, 0, by = 1)
+        } else {
+            xylims <- expr_breaks
+        }
+    }
+
     if (x_type %in% c("Gene", "Gene module")) {
         x_limits <- x_limits %||% c(min(egc_x), max(egc_x))
         xmax <- min(c(1:length(xylims))[xylims >= x_limits[2] - 1e-10])
         xmin <- max(c(1:length(xylims))[xylims <= x_limits[1] + 1e-10])
         lab <- glue("{x_var} Expression")
+
+        if (log_labels) {
+            labels <- log2(xylims[xmin:xmax])
+            lab <- glue("{lab} (log2)")
+        } else {
+            labels <- scales::scientific(xylims[xmin:xmax])
+        }
+
         if (corrected) {
             lab <- glue("{lab} (corrected)")
         }
         p <- p +
-            scale_x_continuous(limits = c(xylims[xmin], xylims[xmax]), trans = "log2", breaks = xylims[xmin:xmax], labels = scales::scientific(xylims[xmin:xmax])) +
+            scale_x_continuous(limits = c(xylims[xmin], xylims[xmax]), trans = "log2", breaks = xylims[xmin:xmax], labels = labels) +
             xlab(lab) +
             theme(axis.text.x = element_text(angle = 30, vjust = 0.5, hjust = 1))
     }
@@ -527,11 +542,19 @@ plot_mc_scatter <- function(dataset,
         ymax <- min(c(1:length(xylims))[xylims >= y_limits[2] - 1e-10])
         ymin <- max(c(1:length(xylims))[xylims <= y_limits[1] + 1e-10])
         lab <- glue("{y_var} Expression")
+        if (log_labels) {
+            labels <- log2(xylims[ymin:ymax])
+            lab <- glue("{lab} (log2)")
+        } else {
+            labels <- scales::scientific(xylims[ymin:ymax])
+        }
+
         if (corrected) {
             lab <- glue("{lab} (corrected)")
         }
+
         p <- p +
-            scale_y_continuous(limits = c(xylims[ymin], xylims[ymax]), trans = "log2", breaks = xylims[ymin:ymax], labels = scales::scientific(xylims[ymin:ymax])) +
+            scale_y_continuous(limits = c(xylims[ymin], xylims[ymax]), trans = "log2", breaks = xylims[ymin:ymax], labels = labels) +
             ylab(lab)
     }
 

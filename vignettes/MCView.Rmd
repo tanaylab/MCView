@@ -32,6 +32,8 @@ The above commands end result are two files named "raw/pbmc_metacells.h5ad" and 
 
 ## Create a project
 
+> You can either start by creating a new project, or skip this step and import the dataset (a project would be created automatically).
+
 The first step in running __MCView__ is generating a project directory structure: 
 
 ```{r, eval=FALSE}

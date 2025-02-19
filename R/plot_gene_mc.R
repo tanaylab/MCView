@@ -173,3 +173,12 @@ initial_scatters_stroke <- function(dataset) {
     }
     return(0.2)
 }
+
+default_scatters_log_labels <- function(dataset) {
+    if (!is.null(config$datasets[[dataset]]$scatters_log_labels)) {
+        return(config$datasets[[dataset]]$scatters_log_labels)
+    } else if (!is.null(config$scatters_log_labels)) {
+        return(config$scatters_log_labels)
+    }
+    return(FALSE)
+}
