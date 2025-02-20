@@ -685,6 +685,17 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                         ifelse(has_name(mcell_stats, "mc_age"), glue("Metacell age (E[t]): {round(mcell_stats$mc_age, digits=2)}"), ""),
                         sep = "<br/>"
                     )
+
+                    metadata <- get_markers_metadata(dataset, input, metacell_types, globals)
+                    if (!is.null(metadata)) {
+                        mc_md <- metadata %>%
+                            filter(metacell == !!metacell) %>%
+                            select(-metacell)
+                        md_tooltip <- purrr::map_chr(colnames(mc_md), ~
+                            glue("{.x}: {mc_md[[.x]][1]}")) %>%
+                            paste(collapse = "<br/>")
+                        mcell_tooltip <- paste(mcell_tooltip, md_tooltip)
+                    }
                 }
 
                 wellPanel(
