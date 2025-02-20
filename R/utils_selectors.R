@@ -26,7 +26,11 @@ cell_type_selector <- function(dataset, ns, id = "selected_cell_types", label = 
             choices = cell_types,
             selected = selected,
             multiple = TRUE,
-            options = list(`actions-box` = TRUE, `dropup-auto` = FALSE),
+            options = list(
+                `actions-box` = TRUE,
+                `dropup-auto` = FALSE,
+                `live-search` = TRUE
+            ),
             choicesOpt = list(
                 style = paste0("color: ", cell_types_hex, ";")
             )
@@ -57,7 +61,7 @@ gene_modules_selector <- function(dataset, gene_modules, ns, id, label = "Gene m
             choices = modules,
             selected = selected,
             multiple = TRUE,
-            options = list(`actions-box` = TRUE, `dropup-auto` = FALSE)
+            options = list(`actions-box` = TRUE, `dropup-auto` = FALSE, `live-search` = TRUE)
         )
     })
 }
