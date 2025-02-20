@@ -10,12 +10,49 @@
 mod_st_flow_ui <- function(id) {
     ns <- NS(id)
     tagList(
-        generic_column(
-            width = 3,
-            # projection_box_id(ns, "gene_projection1", title = "2D Projection", collapsed_accordion = FALSE, show_legend = FALSE, 
-            #                color_choices = c("Cell type", "Flow in", "Flow out"), plotly_height = "30vh", height = "30vh")
-            projection_box(ns, "flow_proj", title = "2D Projection", collapsed_accordion = FALSE, show_legend = FALSE, 
-                           color_choices = c("Cell type", "Flow in", "Flow out"), plotly_height = "30vh", height = "30vh")
+        fluidRow(
+            generic_column(
+                width = 3,
+                projection_box_id(ns, id="flow_proj8", title = "tb8", collapsed_accordion = FALSE, show_legend = FALSE, 
+                            color_choices = c("Cell type", "Flow in", "Flow out"), plotly_height = "30vh", height = "30vh")
+            ),
+            generic_column(
+                width = 3,
+                projection_box_id(ns, id="flow_proj9", title = "tb9", collapsed_accordion = FALSE, show_legend = FALSE, 
+                            color_choices = c("Cell type", "Flow in", "Flow out"), plotly_height = "30vh", height = "30vh")
+            ),
+            generic_column(
+                width = 3,
+                projection_box_id(ns, id="flow_proj10", title = "tb10", collapsed_accordion = FALSE, show_legend = FALSE, 
+                            color_choices = c("Cell type", "Flow in", "Flow out"), plotly_height = "30vh", height = "30vh")
+            ),
+            generic_column(
+                width = 3,
+                projection_box_id(ns, id="flow_proj11", title = "tb11", collapsed_accordion = FALSE, show_legend = FALSE, 
+                            color_choices = c("Cell type", "Flow in", "Flow out"), plotly_height = "30vh", height = "30vh")
+            )
+        ),
+        fluidRow(
+            generic_column(
+                width = 3,
+                projection_box_id(ns, id="flow_proj12", title = "tb12", collapsed_accordion = FALSE, show_legend = FALSE, 
+                            color_choices = c("Cell type", "Flow in", "Flow out"), plotly_height = "30vh", height = "30vh")
+            ),
+            generic_column(
+                width = 3,
+                projection_box_id(ns, id="flow_proj13", title = "tb13", collapsed_accordion = FALSE, show_legend = FALSE, 
+                            color_choices = c("Cell type", "Flow in", "Flow out"), plotly_height = "30vh", height = "30vh")
+            ),
+            generic_column(
+                width = 3,
+                projection_box_id(ns, id="flow_proj14", title = "tb14", collapsed_accordion = FALSE, show_legend = FALSE, 
+                            color_choices = c("Cell type", "Flow in", "Flow out"), plotly_height = "30vh", height = "30vh")
+            ),
+            generic_column(
+                width = 3,
+                projection_box_id(ns, id="flow_proj15", title = "tb15", collapsed_accordion = FALSE, show_legend = FALSE, 
+                            color_choices = c("Cell type", "Flow in", "Flow out"), plotly_height = "30vh", height = "30vh")
+            )
         )
     )
 }
@@ -78,8 +115,14 @@ mod_st_flow_server <- function(id, dataset, metacell_types, cell_type_colors, ge
             metacell_colors <- metacell_colors_reactive(dataset, metacell_names, metacell_types)
             display_selectors(input, output, session, dataset, ns, metacell_names, metacell_colors, metacell_types, cell_type_colors)
 
-            # projection_selectors_id(ns, 'gene_projection1', dataset, output, input, gene_modules, globals, session)
-            projection_selectors(ns, dataset, output, input, gene_modules, globals, session)
+            projection_selectors_id(ns, id="flow_proj8", dataset, output, input, gene_modules, globals, session)
+            projection_selectors_id(ns, id="flow_proj9", dataset, output, input, gene_modules, globals, session)
+            projection_selectors_id(ns, id="flow_proj10", dataset, output, input, gene_modules, globals, session)
+            projection_selectors_id(ns, id="flow_proj11", dataset, output, input, gene_modules, globals, session)
+            projection_selectors_id(ns, id="flow_proj12", dataset, output, input, gene_modules, globals, session)
+            projection_selectors_id(ns, id="flow_proj13", dataset, output, input, gene_modules, globals, session)
+            projection_selectors_id(ns, id="flow_proj14", dataset, output, input, gene_modules, globals, session)
+            projection_selectors_id(ns, id="flow_proj15", dataset, output, input, gene_modules, globals, session)
 
             data <- get_mc_data(dataset(), "spatial_flow_data")
 
@@ -94,47 +137,43 @@ mod_st_flow_server <- function(id, dataset, metacell_types, cell_type_colors, ge
                 req(mc2d)
                 globals$mc2d <- mc2d
             })
-
             # Projection plots
-            output$plot_gene_proj_2d <- render_2d_plotly_temporal(input, output, session, dataset, data, time_bin = '9', metacell_types, metacell_names, cell_type_colors, gene_modules, globals, source = "proj_manifold_plot")
-
+            output$flow_proj8_plot_gene_proj_2d <- render_2d_plotly_temporal_id('flow_proj8', input, output, session, dataset, data, time_bin = '8', metacell_types, metacell_names, cell_type_colors, gene_modules, globals, source = "proj_manifold_plot")
+            output$flow_proj9_plot_gene_proj_2d <- render_2d_plotly_temporal_id('flow_proj9', input, output, session, dataset, data, time_bin = '9', metacell_types, metacell_names, cell_type_colors, gene_modules, globals, source = "proj_manifold_plot")
+            output$flow_proj10_plot_gene_proj_2d <- render_2d_plotly_temporal_id('flow_proj10', input, output, session, dataset, data, time_bin = '10', metacell_types, metacell_names, cell_type_colors, gene_modules, globals, source = "proj_manifold_plot")
+            output$flow_proj11_plot_gene_proj_2d <- render_2d_plotly_temporal_id('flow_proj11', input, output, session, dataset, data, time_bin = '11', metacell_types, metacell_names, cell_type_colors, gene_modules, globals, source = "proj_manifold_plot")
+            output$flow_proj12_plot_gene_proj_2d <- render_2d_plotly_temporal_id('flow_proj12', input, output, session, dataset, data, time_bin = '12', metacell_types, metacell_names, cell_type_colors, gene_modules, globals, source = "proj_manifold_plot")
+            output$flow_proj13_plot_gene_proj_2d <- render_2d_plotly_temporal_id('flow_proj13', input, output, session, dataset, data, time_bin = '13', metacell_types, metacell_names, cell_type_colors, gene_modules, globals, source = "proj_manifold_plot")
+            output$flow_proj14_plot_gene_proj_2d <- render_2d_plotly_temporal_id('flow_proj14', input, output, session, dataset, data, time_bin = '14', metacell_types, metacell_names, cell_type_colors, gene_modules, globals, source = "proj_manifold_plot")
+            output$flow_proj15_plot_gene_proj_2d <- render_2d_plotly_temporal_id('flow_proj15', input, output, session, dataset, data, time_bin = '15', metacell_types, metacell_names, cell_type_colors, gene_modules, globals, source = "proj_manifold_plot")
         }
     )
 }
 
-
-render_2d_plotly_temporal <- function(input, output, session, dataset, data, time_bin, metacell_types, metacell_names, cell_type_colors, gene_modules, globals, source, buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL, refresh_on_gene_change = FALSE, atlas = FALSE, query_types = NULL, group = NULL, groupA = NULL, groupB = NULL, selected_metacell_types = NULL, selected_cell_types = NULL) {
+render_2d_plotly_temporal_id <- function(id="flow_proj", input, output, session, dataset, data, time_bin, metacell_types, metacell_names, cell_type_colors, gene_modules, globals, source,  buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL, selected_metacell_types = NULL, selected_cell_types = NULL) {
     plotly::renderPlotly({
 
-        req(input$point_size)
-        req(input$min_edge_size)
-        req(input$color_proj)
+        req(input[[glue("{id}_point_size")]])
+        req(input[[glue("{id}_min_edge_size")]])
+        req(input[[glue("{id}_color_proj")]])
         req(metacell_types())
         req(cell_type_colors())
 
-        if (atlas) {
-            mc2d <- NULL
-        } else {
-            mc2d <- globals$mc2d %||% get_mc_data(dataset, "mc2d")
-        }
-
-        proj_opt <- input$color_proj
+        proj_opt <- input[[glue("{id}_color_proj")]]
 
         if(proj_opt == 'Cell type'){
             fig <- mc2d_plot_metadata_ggp(
                 dataset(),
                 "Cell type",
-                point_size = input$point_size,
-                min_d = input$min_edge_size,
+                point_size = input[[glue("{id}_point_size")]],
+                min_d = input[[glue("{id}_min_edge_size")]],
                 metacell_types = metacell_types(),
-                atlas = atlas,
                 metadata = metacell_types() %>% rename(`Cell type` = cell_type),
-                colors = get_cell_type_colors(dataset, cell_type_colors = cell_type_colors(), atlas = atlas),
-                graph_name = input$graph_name,
-                mc2d = mc2d,
+                colors = get_cell_type_colors(dataset, cell_type_colors = cell_type_colors()),
+                graph_name = input[[glue("{id}_graph_name")]],
                 selected_cell_types = selected_cell_types)
 
-        }else if(proj_opt == 'Flow in' | proj_opt == 'Flow out'){
+        } else if(proj_opt == 'Flow in' | proj_opt == 'Flow out') {
 
             req(metacell_names())
             smcs = metacell_names()
@@ -151,16 +190,12 @@ render_2d_plotly_temporal <- function(input, output, session, dataset, data, tim
             flow_color[smc] = '#000000'
 
             if(proj_opt == 'Flow in'){
-
                 colgrad <- colorRampPalette(c("white", "Red"))
-
                 flow_to = data$flow_to
                 source_smcs = flow_to[flow_to$smc2 == smc & flow_to$time_bin == time_bin,]
                 flow_color[source_smcs$smc1] = colgrad(100)[(round(source_smcs$f_norm,2)*100) + 1]
-            }else{
-
+            } else {
                 colgrad <- colorRampPalette(c("white", "Blue"))
-
                 flow_from = data$flow_from
                 target_smcs = flow_from[flow_from$smc1 == smc & flow_from$time_bin == time_bin,]
                 flow_color[target_smcs$smc2] = colgrad(100)[(round(target_smcs$f_norm,2)*100) + 1]
@@ -169,21 +204,17 @@ render_2d_plotly_temporal <- function(input, output, session, dataset, data, tim
             fig <- mc2d_plot_metadata_ggp(
                 dataset(),
                 "metacell",
-                point_size = input$point_size,
-                min_d = input$min_edge_size,
+                point_size = input[[glue("{id}_point_size")]],
+                min_d = input[[glue("{id}_min_edge_size")]],
                 metacell_types = metacell_types(),
-                atlas = atlas,
-                # metadata = metacell_types() %>% rename(`Cell type` = cell_type),
                 colors = flow_color,
                 stroke = flow_stroke,
-                graph_name = input$graph_name,
-                mc2d = mc2d,
+                graph_name = input[[glue("{id}_graph_name")]],
                 selected_cell_types = selected_cell_types
             )
         }
         
         fig <- fig %>% plotly::event_register("plotly_restyle")
-
         fig$x$source <- source
 
         if (!is.null(dragmode)) {
@@ -195,16 +226,16 @@ render_2d_plotly_temporal <- function(input, output, session, dataset, data, tim
 
         fig <- fig %>% sanitize_plotly_buttons(buttons = buttons)
 
-        if (!is.null(input$legend_orientation)) {
-            if (input$legend_orientation == "Horizontal") {
+        if (!is.null(input[[glue("{id}_legend_orientation")]])) {
+            if (input[[glue("{id}_legend_orientation")]] == "Horizontal") {
                 orientation <- "h"
-            } else if (input$legend_orientation == "Vertical") {
+            } else if (input[[glue("{id}_legend_orientation")]] == "Vertical") {
                 orientation <- "v"
             }
             fig <- fig %>% plotly::layout(legend = list(orientation = orientation))
         }
 
-        if (!is.null(input$show_legend_projection) && !input$show_legend_projection) {
+        if (!is.null(input[[glue("{id}_show_legend_projection")]]) && !input[[glue("{id}_show_legend_projection")]]) {
             fig <- plotly::hide_legend(fig)
         }
 
