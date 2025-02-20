@@ -1,3 +1,7 @@
+# MCView 0.2.40 
+
+* Added search to cell type selectors.
+
 # MCView 0.2.39
 
 * Added `log2` option to the scatter plots.
