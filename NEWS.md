@@ -1,5 +1,6 @@
 # MCView 0.2.40 
 
+* Show metadata in markers heatmap tooltip.
 * Added search to cell type selectors.
 
 # MCView 0.2.39
