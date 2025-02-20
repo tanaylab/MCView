@@ -54,6 +54,9 @@ verify_project_dir <- function(path, create = FALSE, atlas = FALSE, ...) {
         if (!file.exists(config_file)) {
             if (file.exists(project_config_file(file.path(path, "project")))) {
                 path <- file.path(path, "project")
+                if (length(list(...)) > 0) {
+                    cli_alert_warning("Project config file already exists. Options such as title, tabs, help, selected_gene1, selected_gene2, selected_mc1, selected_mc2, scatters_point_size and other_params would not be applied. Please delete {.file {config_file}} if you want to apply these options.")
+                }
             } else {
                 cli_abort("No config file found at {.file {config_file}}. Are you sure this is an MCView project dir? You can start a new project by running {.code MCView::create_project}.")
             }
