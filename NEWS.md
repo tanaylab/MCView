@@ -2,6 +2,7 @@
 
 * Show metadata in markers heatmap tooltip.
 * Added search to cell type selectors.
+* Reset on apply by default in `Annotate` tab.
 
 # MCView 0.2.39
 
