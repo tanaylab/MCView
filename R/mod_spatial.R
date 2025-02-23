@@ -72,7 +72,7 @@ mod_spatial_server <- function(id, dataset, metacell_types, cell_type_colors, ge
 
             metacell_names <- metacell_names_reactive(dataset)
             metacell_colors <- metacell_colors_reactive(dataset, metacell_names, metacell_types)
-            display_selectors(input, output, session, dataset, ns, metacell_names, metacell_colors, metacell_types, cell_type_colors)
+            display_selectors_spat(input, output, session, dataset, ns, metacell_names, metacell_colors, metacell_types, cell_type_colors)
             mod_spatial_globals_observers(input, session, globals)
 
             data <- get_mc_data(dataset(), "spatial_flow_data")
@@ -122,7 +122,7 @@ get_top_egc_types <- function(input, dataset, metacell_types) {
     return(show_types)
 }
 
-display_selectors <- function(input, output, session, dataset, ns, metacell_names, metacell_colors, metacell_types, cell_type_colors) {
+display_selectors_spat <- function(input, output, session, dataset, ns, metacell_names, metacell_colors, metacell_types, cell_type_colors) {
     output$display_select <- renderUI({
         req(dataset())
         req(input$mode)
@@ -371,7 +371,7 @@ plot_map <- function(input, data, dataset, metacell_names, metacell_types) {
     if(input$mode == 'Types' | input$mode == 'SMCs'){
 
         f_ct_sb_tb = summarise_flow(input, data, mode = input$mode, tbin_time)
-        
+
         for(tb in tbs){
 
             if(input$mode == 'Types'){
