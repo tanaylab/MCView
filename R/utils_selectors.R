@@ -26,7 +26,11 @@ cell_type_selector <- function(dataset, ns, id = "selected_cell_types", label = 
             choices = cell_types,
             selected = selected,
             multiple = TRUE,
-            options = list(`actions-box` = TRUE, `dropup-auto` = FALSE),
+            options = list(
+                `actions-box` = TRUE,
+                `dropup-auto` = FALSE,
+                `live-search` = TRUE
+            ),
             choicesOpt = list(
                 style = paste0("color: ", cell_types_hex, ";")
             )
@@ -57,7 +61,7 @@ gene_modules_selector <- function(dataset, gene_modules, ns, id, label = "Gene m
             choices = modules,
             selected = selected,
             multiple = TRUE,
-            options = list(`actions-box` = TRUE, `dropup-auto` = FALSE)
+            options = list(`actions-box` = TRUE, `dropup-auto` = FALSE, `live-search` = TRUE)
         )
     })
 }
@@ -140,7 +144,17 @@ top_correlated_selector_multiple_genes <- function(input, output, session, datas
 
 top_correlated_selector <- function(gene_id, id, type_id, input, output, session, dataset, ns, button_labels = c("X", "Y", "Color", "2D"), ids = c("x", "y", "color", "proj2d"), gene_modules = NULL, metacell_types = NULL, selected_cell_types = NULL) {
     output[[glue("top_correlated_select_{id}")]] <- renderUI({
-        if (!is.null(input$show_correlations)) {
+        if (!is.null(input$show_correlations) && !input$show_correlations) {
+            if (input[[type_id]] == "Gene") {
+                gene <- input[[gene_id]]
+                req(gene %in% gene_names(dataset()))
+                return(
+                    shiny::actionButton(
+                        inputId = ns(glue("genecards_{id}")), label = glue("GeneCards: {gene}"),
+                        size = "sm", onclick = glue("window.open('https://www.genecards.org/cgi-bin/carddisp.pl?gene={gene}')")
+                    )
+                )
+            }
             req(input$show_correlations)
         }
         req(has_gg_mc_top_cor(project, dataset()))

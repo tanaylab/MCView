@@ -37,7 +37,7 @@ verify_version <- function(path) {
     } else {
         version <- readLines(version_file)
         if (utils::compareVersion(version, as.character(utils::packageVersion("MCView"))) < 0) {
-            cli_alert_warning("Project was created with MCView version {.field {version}} while the current version is {.field {utils::packageVersion('MCView')}}. Please re-import the project with the latest version of MCView.")
+            cli_alert_warning("Project was created with MCView version {.field {version}} while the current version is {.field {utils::packageVersion('MCView')}}. Please re-import the project with the latest version of MCView in order to avoid compatibility issues.")
         }
     }
 }
@@ -54,6 +54,9 @@ verify_project_dir <- function(path, create = FALSE, atlas = FALSE, spatial = FA
         if (!file.exists(config_file)) {
             if (file.exists(project_config_file(file.path(path, "project")))) {
                 path <- file.path(path, "project")
+                if (length(list(...)) > 0) {
+                    cli_alert_warning("Project config file already exists. Options such as title, tabs, help, selected_gene1, selected_gene2, selected_mc1, selected_mc2, scatters_point_size and other_params would not be applied. Please delete {.file {config_file}} if you want to apply these options.")
+                }
             } else {
                 cli_abort("No config file found at {.file {config_file}}. Are you sure this is an MCView project dir? You can start a new project by running {.code MCView::create_project}.")
             }
@@ -114,7 +117,39 @@ create_project_config_file <- function(project_dir,
         config <- c(config, other_params)
     }
     config$datasets <- datasets
+
+    # Write the main config first
     yaml::write_yaml(config, fs::path(project_dir, "config", "config.yaml"))
+
+    # Append default commented parameters if they're not in other_params
+    default_params <- c(
+        "min_d: 0.3 # default minimal edge distance to show in projection plots",
+        "projection_point_size: 1 # Default size for projection points",
+        "projection_stroke: 0.1 # Default line stroke for projection points",
+        "scatters_point_size: 2 # Default size for scatter plot (such as gene gene plots)",
+        "scatters_stroke_size: 0.1 # Default line stroke for scatter plot (such as gene gene plots)",
+        "scatters_log_labels: false # Logarithmic scale for scatter plot labels"
+    )
+
+    # Get names of parameters that were provided in other_params
+    provided_params <- if (!is.null(other_params)) names(other_params) else character(0)
+
+    # Open the file in append mode
+    con <- file(fs::path(project_dir, "config", "config.yaml"), "a")
+    on.exit(close(con))
+
+    # Write a newline before comments
+    writeLines("\n", con)
+
+    # For each default parameter
+    for (param in default_params) {
+        # Extract parameter name (everything before the colon)
+        param_name <- sub(":.*", "", param)
+        # If this parameter wasn't provided in other_params, write it as a comment
+        if (!param_name %in% provided_params) {
+            writeLines(paste0("#", param), con)
+        }
+    }
 }
 
 

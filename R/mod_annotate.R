@@ -47,7 +47,7 @@ mod_annotate_ui <- function(id) {
                         width = 50,
                         id = ns("metacell_types_box_sidebar"),
                         checkboxInput(ns("add_to_selection"), label = "Add to\ncurrent selection", value = TRUE),
-                        checkboxInput(ns("reset_on_apply"), label = "Reset selection\non apply", value = FALSE)
+                        checkboxInput(ns("reset_on_apply"), label = "Reset selection\non apply", value = TRUE)
                     ),
                     splitLayout(
                         cellWidths = c("30%", rep("auto", 4)),

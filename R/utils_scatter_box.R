@@ -11,6 +11,7 @@ scatter_box <- function(ns, id, title = "Gene/Gene", x_selected = "Gene", y_sele
             startOpen = FALSE,
             width = 100,
             id = ns("gene_gene_sidebar"),
+            uiOutput(ns("gene_gene_log_labels_ui")),
             uiOutput(ns("gene_gene_xyline_ui")),
             uiOutput(ns("gene_gene_fixed_limits_ui")),
             uiOutput(ns("use_atlas_limits_ui")),
@@ -52,7 +53,7 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
             }
         })
 
-        observeEvent(input$apply_cell_types, {            
+        observeEvent(input$apply_cell_types, {
             selected_cell_types(input$selected_cell_types)
             showNotification("Cell type selection updated", type = "message")
         })
@@ -157,7 +158,8 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
             metacell_filter = metacell_filter,
             show_correlation = input$show_correlation,
             correlation_type = input$correlation_type,
-            corrected = input$use_corrected %||% FALSE
+            corrected = input$use_corrected %||% FALSE,
+            log_labels = input$log_labels %||% FALSE
         ) %>%
             plotly::ggplotly(tooltip = "tooltip_text", source = plotly_source) %>%
             sanitize_for_WebGL() %>%
@@ -183,7 +185,7 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
         }
 
         return(fig)
-    }) %>% bindCache(dataset(), input$x_axis_var, input$x_axis_type, input$y_axis_var, input$y_axis_type, input$color_by_type, input$color_by_var, metacell_types(), cell_type_colors(), gene_modules(), input$gene_gene_point_size, input$gene_gene_stroke, input$use_atlas_limits, input$gene_gene_fixed_limits, input$gene_gene_xyline, dragmode, plotly_buttons, clipboard_changed(), input$show_legend_scatter, selected_cell_types(), input$show_correlation, input$correlation_type, input$use_corrected)
+    }) %>% bindCache(dataset(), input$x_axis_var, input$x_axis_type, input$y_axis_var, input$y_axis_type, input$color_by_type, input$color_by_var, metacell_types(), cell_type_colors(), gene_modules(), input$gene_gene_point_size, input$gene_gene_stroke, input$use_atlas_limits, input$gene_gene_fixed_limits, input$gene_gene_xyline, dragmode, plotly_buttons, clipboard_changed(), input$show_legend_scatter, selected_cell_types(), input$show_correlation, input$log_labels, input$correlation_type, input$use_corrected)
 }
 
 axis_selector <- function(axis, selected, ns, choices = c("Metadata", "Gene", "Gene module"), orientation = "horizontal", wrap_in_box = TRUE) {
@@ -267,6 +269,10 @@ axis_vars_ok <- function(dataset, input, md_id, gene_modules, axes = c("x_axis",
 }
 
 scatter_selectors <- function(ns, dataset, output, globals, prefix = "gene_gene") {
+    output[[glue("{prefix}_log_labels_ui")]] <- renderUI({
+        checkboxInput(ns("log_labels"), "Log2", value = default_scatters_log_labels(dataset()))
+    })
+
     output[[glue("{prefix}_point_size_ui")]] <- renderUI({
         req(globals$screen_width)
         req(globals$screen_height)
