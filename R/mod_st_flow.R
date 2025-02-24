@@ -152,13 +152,13 @@ mod_st_flow_server <- function(id, dataset, metacell_types, cell_type_colors, ge
 
 render_2d_plotly_temporal_id <- function(id="flow_proj", input, output, session, dataset, data, time_bin, metacell_types, metacell_names, cell_type_colors, gene_modules, globals, source,  buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL, selected_metacell_types = NULL, selected_cell_types = NULL) {
     plotly::renderPlotly({
-
         req(input[[glue("{id}_point_size")]])
         req(input[[glue("{id}_min_edge_size")]])
         req(input[[glue("{id}_color_proj")]])
         req(metacell_types())
         req(cell_type_colors())
 
+        metacell_types_table = metacell_types()
         proj_opt <- input[[glue("{id}_color_proj")]]
 
         if(proj_opt == 'Cell type'){
@@ -166,9 +166,10 @@ render_2d_plotly_temporal_id <- function(id="flow_proj", input, output, session,
                 dataset(),
                 "Cell type",
                 point_size = input[[glue("{id}_point_size")]],
+                stroke = input[[glue("{id}_stroke")]],
                 min_d = input[[glue("{id}_min_edge_size")]],
-                metacell_types = metacell_types(),
-                metadata = metacell_types() %>% rename(`Cell type` = cell_type),
+                metacell_types = metacell_types_table,
+                metadata = metacell_types_table %>% rename(`Cell type` = cell_type),
                 colors = get_cell_type_colors(dataset, cell_type_colors = cell_type_colors()),
                 graph_name = input[[glue("{id}_graph_name")]],
                 selected_cell_types = selected_cell_types)
@@ -178,35 +179,64 @@ render_2d_plotly_temporal_id <- function(id="flow_proj", input, output, session,
             req(metacell_names())
             smcs = metacell_names()
 
-            req(input$display_select %in% metacell_names())
-            smc = input$display_select
+            if(input$mode == 'SMCs'){
+                req(input$display_select %in% metacell_names())
+                if(input$Expand_Type){
+                    type_select = metacell_types_table[metacell_types_table$metacell == input$display_select,]$cell_type
+                    smc_select = metacell_types_table[metacell_types_table$cell_type == type_select,]$metacell
+                }else{
+                    smc_select = c(input$display_select)
+                }
+            }else if(input$mode == 'Types'){
+                req(input$display_select %in% metacell_types_table$cell_type)
+                type_select = input$display_select
+                smc_select = metacell_types_table[metacell_types_table$cell_type == type_select,]$metacell
+            }
 
-            flow_stroke = rep(initial_scatters_stroke(dataset), length(smcs))
+            init_stroke = input[[glue("{id}_stroke")]]
+            flow_stroke = rep(init_stroke, length(smcs))
             names(flow_stroke) = smcs
-            flow_stroke[smc] = initial_scatters_stroke(dataset)*3
+            flow_stroke[smc_select] = init_stroke*20
 
             flow_color = rep('#ffffff', length(smcs))
             names(flow_color) = smcs 
-            flow_color[smc] = '#000000'
+            flow_color[smc_select] = '#ffffff'
+
+            init_point_size = input[[glue("{id}_point_size")]]
+            size_grad = seq(init_point_size*0.5, init_point_size*3, length.out = 100)
+            
+            flow_point_size = rep(init_point_size*0.5, length(smcs))
+            names(flow_point_size) = smcs        
 
             if(proj_opt == 'Flow in'){
                 colgrad <- colorRampPalette(c("white", "Red"))
                 flow_to = data$flow_to
-                source_smcs = flow_to[flow_to$smc2 == smc & flow_to$time_bin == time_bin,]
-                flow_color[source_smcs$smc1] = colgrad(100)[(round(source_smcs$f_norm,2)*100) + 1]
-            } else {
+                source_smcs = flow_to[flow_to$smc2 %in% smc_select & flow_to$time_bin == time_bin,]
+                
+                highlight_smcs = source_smcs$smc1
+                highlight_smcs = highlight_smcs[!is.na(highlight_smcs)]
+                
+                flow_color[highlight_smcs] = colgrad(100)[(round(source_smcs$f_norm,2)*100) + 1]
+                flow_point_size[highlight_smcs] = size_grad[(round(source_smcs$f_norm,2)*100) + 1]
+
+            } else if(proj_opt == 'Flow out'){
                 colgrad <- colorRampPalette(c("white", "Blue"))
                 flow_from = data$flow_from
-                target_smcs = flow_from[flow_from$smc1 == smc & flow_from$time_bin == time_bin,]
-                flow_color[target_smcs$smc2] = colgrad(100)[(round(target_smcs$f_norm,2)*100) + 1]
+                target_smcs = flow_from[flow_from$smc1 %in% smc_select & flow_from$time_bin == time_bin,]
+
+                highlight_smcs = target_smcs$smc2
+                highlight_smcs = highlight_smcs[!is.na(highlight_smcs)]
+
+                flow_color[highlight_smcs] = colgrad(100)[(round(target_smcs$f_norm,2)*100) + 1]
+                flow_point_size[highlight_smcs] = size_grad[(round(target_smcs$f_norm,2)*100) + 1]
             }
-            
+
             fig <- mc2d_plot_metadata_ggp(
                 dataset(),
                 "metacell",
-                point_size = input[[glue("{id}_point_size")]],
+                point_size = flow_point_size,
                 min_d = input[[glue("{id}_min_edge_size")]],
-                metacell_types = metacell_types(),
+                metacell_types = metacell_types_table,
                 colors = flow_color,
                 stroke = flow_stroke,
                 graph_name = input[[glue("{id}_graph_name")]],
@@ -266,6 +296,7 @@ display_selectors <- function(input, output, session, dataset, ns, metacell_name
             } else {
                 choices <- metacell_names()
             }
+            tagList(
             shinyWidgets::pickerInput(ns("display_select"), "Smc",
                 choices = choices,
                 selected = 'M267.82',
@@ -274,6 +305,13 @@ display_selectors <- function(input, output, session, dataset, ns, metacell_name
                 choicesOpt = list(
                     style = paste0("color: ", cell_types_hex, ";")
                 )
+            ),
+            shinyWidgets::switchInput(
+                inputId = ns("Expand_Type"),
+                label = "Show Type",
+                size = "sm",
+                value = FALSE
+            )
             )
         }else if(input$mode == "Types"){
             req(cell_type_colors())
@@ -290,12 +328,6 @@ display_selectors <- function(input, output, session, dataset, ns, metacell_name
                     choicesOpt = list(
                         style = paste0("color: ", cell_types_hex, ";")
                     )
-                ),
-                shinyWidgets::switchInput(
-                inputId = ns("Expand_Smcs"),
-                label = "Show SMCs",
-                size = "sm",
-                value = FALSE
                 )
             )
         }
