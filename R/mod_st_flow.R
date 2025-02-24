@@ -10,48 +10,14 @@
 mod_st_flow_ui <- function(id) {
     ns <- NS(id)
     tagList(
-        fluidRow(
-            generic_column(
-                width = 3,
-                projection_box_id(ns, id="flow_proj8", title = "tb8", collapsed_accordion = FALSE, show_legend = FALSE, 
-                            color_choices = c("Cell type", "Flow in", "Flow out"), plotly_height = "30vh", height = "30vh")
-            ),
-            generic_column(
-                width = 3,
-                projection_box_id(ns, id="flow_proj9", title = "tb9", collapsed_accordion = FALSE, show_legend = FALSE, 
-                            color_choices = c("Cell type", "Flow in", "Flow out"), plotly_height = "30vh", height = "30vh")
-            ),
-            generic_column(
-                width = 3,
-                projection_box_id(ns, id="flow_proj10", title = "tb10", collapsed_accordion = FALSE, show_legend = FALSE, 
-                            color_choices = c("Cell type", "Flow in", "Flow out"), plotly_height = "30vh", height = "30vh")
-            ),
-            generic_column(
-                width = 3,
-                projection_box_id(ns, id="flow_proj11", title = "tb11", collapsed_accordion = FALSE, show_legend = FALSE, 
-                            color_choices = c("Cell type", "Flow in", "Flow out"), plotly_height = "30vh", height = "30vh")
-            )
-        ),
-        fluidRow(
-            generic_column(
-                width = 3,
-                projection_box_id(ns, id="flow_proj12", title = "tb12", collapsed_accordion = FALSE, show_legend = FALSE, 
-                            color_choices = c("Cell type", "Flow in", "Flow out"), plotly_height = "30vh", height = "30vh")
-            ),
-            generic_column(
-                width = 3,
-                projection_box_id(ns, id="flow_proj13", title = "tb13", collapsed_accordion = FALSE, show_legend = FALSE, 
-                            color_choices = c("Cell type", "Flow in", "Flow out"), plotly_height = "30vh", height = "30vh")
-            ),
-            generic_column(
-                width = 3,
-                projection_box_id(ns, id="flow_proj14", title = "tb14", collapsed_accordion = FALSE, show_legend = FALSE, 
-                            color_choices = c("Cell type", "Flow in", "Flow out"), plotly_height = "30vh", height = "30vh")
-            ),
-            generic_column(
-                width = 3,
-                projection_box_id(ns, id="flow_proj15", title = "tb15", collapsed_accordion = FALSE, show_legend = FALSE, 
-                            color_choices = c("Cell type", "Flow in", "Flow out"), plotly_height = "30vh", height = "30vh")
+        generic_column(
+            width = 12,
+            generic_box(
+                title = "Temporal Flow",
+                width = 12,
+                plotOutput(ns("Temporal_Flow"), height = "500px"),
+                status = "primary",
+                solidHeader = TRUE
             )
         )
     )
@@ -75,15 +41,15 @@ mod_st_flow_sidebar_ui <- function(id) {
                     inputId = ns("mode"),
                     label = "Select display:",
                     choices = c(
-                        "SMCs",
-                        "Types"
+                        "Types",
+                        "SMCs"
                     ),
-                    selected = "SMCs",
+                    selected = "Types",
                     justified = TRUE
                 ),
 
             uiOutput(ns("display_select")),
-
+            # uiOutput(ns("norm_flow")),
             fileInput(ns("load_projection"),
                 label = NULL,
                 buttonLabel = "Load 2D layout",
@@ -115,169 +81,107 @@ mod_st_flow_server <- function(id, dataset, metacell_types, cell_type_colors, ge
             metacell_colors <- metacell_colors_reactive(dataset, metacell_names, metacell_types)
             display_selectors(input, output, session, dataset, ns, metacell_names, metacell_colors, metacell_types, cell_type_colors)
 
-            projection_selectors_id(ns, id="flow_proj8", dataset, output, input, gene_modules, globals, session)
-            projection_selectors_id(ns, id="flow_proj9", dataset, output, input, gene_modules, globals, session)
-            projection_selectors_id(ns, id="flow_proj10", dataset, output, input, gene_modules, globals, session)
-            projection_selectors_id(ns, id="flow_proj11", dataset, output, input, gene_modules, globals, session)
-            projection_selectors_id(ns, id="flow_proj12", dataset, output, input, gene_modules, globals, session)
-            projection_selectors_id(ns, id="flow_proj13", dataset, output, input, gene_modules, globals, session)
-            projection_selectors_id(ns, id="flow_proj14", dataset, output, input, gene_modules, globals, session)
-            projection_selectors_id(ns, id="flow_proj15", dataset, output, input, gene_modules, globals, session)
-
             data <- get_mc_data(dataset(), "spatial_flow_data")
 
-            observeEvent(input$load_graph, {
-                req(input$load_graph)
-                req(input$load_graph$datapath)
-                mc2d <- layout_and_graph_to_mc2d(mc2d_to_df(globals$mc2d), input$load_graph$datapath, metacells = get_metacell_ids(project, dataset()), warn_function = function(msg) {
-                    showNotification(msg, type = "error")
-                }, error_function = function(msg) {
-                    showNotification(msg, type = "error")
-                })
-                req(mc2d)
-                globals$mc2d <- mc2d
-            })
-            # Projection plots
-            output$flow_proj8_plot_gene_proj_2d <- render_2d_plotly_temporal_id('flow_proj8', input, output, session, dataset, data, time_bin = '8', metacell_types, metacell_names, cell_type_colors, gene_modules, globals, source = "proj_manifold_plot")
-            output$flow_proj9_plot_gene_proj_2d <- render_2d_plotly_temporal_id('flow_proj9', input, output, session, dataset, data, time_bin = '9', metacell_types, metacell_names, cell_type_colors, gene_modules, globals, source = "proj_manifold_plot")
-            output$flow_proj10_plot_gene_proj_2d <- render_2d_plotly_temporal_id('flow_proj10', input, output, session, dataset, data, time_bin = '10', metacell_types, metacell_names, cell_type_colors, gene_modules, globals, source = "proj_manifold_plot")
-            output$flow_proj11_plot_gene_proj_2d <- render_2d_plotly_temporal_id('flow_proj11', input, output, session, dataset, data, time_bin = '11', metacell_types, metacell_names, cell_type_colors, gene_modules, globals, source = "proj_manifold_plot")
-            output$flow_proj12_plot_gene_proj_2d <- render_2d_plotly_temporal_id('flow_proj12', input, output, session, dataset, data, time_bin = '12', metacell_types, metacell_names, cell_type_colors, gene_modules, globals, source = "proj_manifold_plot")
-            output$flow_proj13_plot_gene_proj_2d <- render_2d_plotly_temporal_id('flow_proj13', input, output, session, dataset, data, time_bin = '13', metacell_types, metacell_names, cell_type_colors, gene_modules, globals, source = "proj_manifold_plot")
-            output$flow_proj14_plot_gene_proj_2d <- render_2d_plotly_temporal_id('flow_proj14', input, output, session, dataset, data, time_bin = '14', metacell_types, metacell_names, cell_type_colors, gene_modules, globals, source = "proj_manifold_plot")
-            output$flow_proj15_plot_gene_proj_2d <- render_2d_plotly_temporal_id('flow_proj15', input, output, session, dataset, data, time_bin = '15', metacell_types, metacell_names, cell_type_colors, gene_modules, globals, source = "proj_manifold_plot")
+            output$Temporal_Flow = renderPlot({plot_temporal_flow_bars(input, output, session, dataset, data, metacell_types, metacell_names, cell_type_colors)})
         }
     )
 }
 
-render_2d_plotly_temporal_id <- function(id="flow_proj", input, output, session, dataset, data, time_bin, metacell_types, metacell_names, cell_type_colors, gene_modules, globals, source,  buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL, selected_metacell_types = NULL, selected_cell_types = NULL) {
-    plotly::renderPlotly({
-        req(input[[glue("{id}_point_size")]])
-        req(input[[glue("{id}_min_edge_size")]])
-        req(input[[glue("{id}_color_proj")]])
-        req(metacell_types())
-        req(cell_type_colors())
+plot_temporal_flow_bars = function(input, output, session, dataset, data, metacell_types, metacell_names, cell_type_colors){
+    
+    req(input$mode)
+    req(input$norm_flow)
 
-        metacell_types_table = metacell_types()
-        proj_opt <- input[[glue("{id}_color_proj")]]
+    flow_to = data$flow_to
+    flow_from = data$flow_from
 
-        if(proj_opt == 'Cell type'){
-            fig <- mc2d_plot_metadata_ggp(
-                dataset(),
-                "Cell type",
-                point_size = input[[glue("{id}_point_size")]],
-                stroke = input[[glue("{id}_stroke")]],
-                min_d = input[[glue("{id}_min_edge_size")]],
-                metacell_types = metacell_types_table,
-                metadata = metacell_types_table %>% rename(`Cell type` = cell_type),
-                colors = get_cell_type_colors(dataset, cell_type_colors = cell_type_colors()),
-                graph_name = input[[glue("{id}_graph_name")]],
-                selected_cell_types = selected_cell_types)
+    metacell_types_df = metacell_types()
+    metacell_types_l = metacell_types_df$cell_type
+    names(metacell_types_l) = metacell_types_df$metacell
 
-        } else if(proj_opt == 'Flow in' | proj_opt == 'Flow out') {
+    expand_type = ifelse(is.null(input$Expand_Type), FALSE, input$Expand_Type)
 
-            req(metacell_names())
-            smcs = metacell_names()
+    if(input$mode == 'Types' | (input$mode == 'SMCs' & expand_type)){
 
-            if(input$mode == 'SMCs'){
-                req(input$display_select %in% metacell_names())
-                if(input$Expand_Type){
-                    type_select = metacell_types_table[metacell_types_table$metacell == input$display_select,]$cell_type
-                    smc_select = metacell_types_table[metacell_types_table$cell_type == type_select,]$metacell
-                }else{
-                    smc_select = c(input$display_select)
-                }
-            }else if(input$mode == 'Types'){
-                req(input$display_select %in% metacell_types_table$cell_type)
-                type_select = input$display_select
-                smc_select = metacell_types_table[metacell_types_table$cell_type == type_select,]$metacell
-            }
+        flow_from$ent1 = metacell_types_l[flow_from$smc1]
+        flow_from$ent2 = metacell_types_l[flow_from$smc2]
 
-            init_stroke = input[[glue("{id}_stroke")]]
-            flow_stroke = rep(init_stroke, length(smcs))
-            names(flow_stroke) = smcs
-            flow_stroke[smc_select] = init_stroke*20
+        flow_to$ent1 = metacell_types_l[flow_to$smc1]
+        flow_to$ent2 = metacell_types_l[flow_to$smc2]
 
-            flow_color = rep('#ffffff', length(smcs))
-            names(flow_color) = smcs 
-            flow_color[smc_select] = '#ffffff'
-
-            init_point_size = input[[glue("{id}_point_size")]]
-            size_grad = seq(init_point_size*0.5, init_point_size*3, length.out = 100)
-            
-            flow_point_size = rep(init_point_size*0.5, length(smcs))
-            names(flow_point_size) = smcs        
-
-            if(proj_opt == 'Flow in'){
-                colgrad <- colorRampPalette(c("white", "Red"))
-                flow_to = data$flow_to
-                source_smcs = flow_to[flow_to$smc2 %in% smc_select & flow_to$time_bin == time_bin,]
-                
-                highlight_smcs = source_smcs$smc1
-                highlight_smcs = highlight_smcs[!is.na(highlight_smcs)]
-                
-                flow_color[highlight_smcs] = colgrad(100)[(round(source_smcs$f_norm,2)*100) + 1]
-                flow_point_size[highlight_smcs] = size_grad[(round(source_smcs$f_norm,2)*100) + 1]
-
-            } else if(proj_opt == 'Flow out'){
-                colgrad <- colorRampPalette(c("white", "Blue"))
-                flow_from = data$flow_from
-                target_smcs = flow_from[flow_from$smc1 %in% smc_select & flow_from$time_bin == time_bin,]
-
-                highlight_smcs = target_smcs$smc2
-                highlight_smcs = highlight_smcs[!is.na(highlight_smcs)]
-
-                flow_color[highlight_smcs] = colgrad(100)[(round(target_smcs$f_norm,2)*100) + 1]
-                flow_point_size[highlight_smcs] = size_grad[(round(target_smcs$f_norm,2)*100) + 1]
-            }
-
-            fig <- mc2d_plot_metadata_ggp(
-                dataset(),
-                "metacell",
-                point_size = flow_point_size,
-                min_d = input[[glue("{id}_min_edge_size")]],
-                metacell_types = metacell_types_table,
-                colors = flow_color,
-                stroke = flow_stroke,
-                graph_name = input[[glue("{id}_graph_name")]],
-                selected_cell_types = selected_cell_types
-            )
-        }
-        
-        fig <- fig %>% plotly::event_register("plotly_restyle")
-        fig$x$source <- source
-
-        if (!is.null(dragmode)) {
-            fig <- fig %>% plotly::layout(dragmode = dragmode)
-        } else if (!is.null(input$mode) && input$mode %in% c("Groups", "Group")) {
-            fig <- fig %>% plotly::layout(dragmode = "select")
-            buttons <- buttons[!(buttons %in% c("select2d", "lasso2d"))]
+        if(input$mode == 'Types'){
+            req(input$display_select %in% metacell_types_df$cell_type)
+            selected = input$display_select
+        }else if(input$mode == 'SMCs' & expand_type){
+            req(input$display_select %in% metacell_names())
+            smc = input$display_select
+            selected = metacell_types_df[metacell_types_df$metacell == smc,]$cell_type
         }
 
-        fig <- fig %>% sanitize_plotly_buttons(buttons = buttons)
+        flow_from = flow_from %>% group_by(time_bin, ent1, ent2) %>% summarise(f = sum(f, na.rm = T))
+        flow_from = flow_from %>% group_by(time_bin, ent2) %>% mutate(f_norm = f/sum(f))
 
-        if (!is.null(input[[glue("{id}_legend_orientation")]])) {
-            if (input[[glue("{id}_legend_orientation")]] == "Horizontal") {
-                orientation <- "h"
-            } else if (input[[glue("{id}_legend_orientation")]] == "Vertical") {
-                orientation <- "v"
-            }
-            fig <- fig %>% plotly::layout(legend = list(orientation = orientation))
-        }
+        flow_to = flow_to %>% group_by(time_bin, ent1, ent2) %>% summarise(f = sum(f, na.rm = T))
+        flow_to = flow_to %>% group_by(time_bin, ent1) %>% mutate(f_norm = f/sum(f))
 
-        if (!is.null(input[[glue("{id}_show_legend_projection")]]) && !input[[glue("{id}_show_legend_projection")]]) {
-            fig <- plotly::hide_legend(fig)
-        }
+        ctype_color = cell_type_colors()$color
+        names(ctype_color) = cell_type_colors()$cell_type
+        ctype_color[c('source', 'sink')] = 'gray'
 
-        fig <- fig %>%
-            sanitize_for_WebGL()
-        fig <- fig %>%
-            plotly::toWebGL()
-        fig <- fig %>%
-            rm_plotly_grid()
+    }else if(input$mode == 'SMCs'){
+        req(input$display_select %in% metacell_names())
+        selected = input$display_select
+        flow_from$ent1 = flow_from$smc1
+        flow_from$ent2 = flow_from$smc2
+        flow_to$ent1 = flow_to$smc1
+        flow_to$ent2 = flow_to$smc2
 
-        return(fig)
-    })
+        ctype_color = metacell_types_df$mc_col
+        names(ctype_color) = metacell_types_df$metacell
+        ctype_color[c('source', 'sink')] = 'gray'
+    }
+
+    flow_from[is.na(flow_from$ent2),]$ent2 = 'sink'
+    flow_from[is.na(flow_from$ent1),]$ent1 = 'source'
+   
+    flow_to[is.na(flow_to$ent2),]$ent2 = 'sink'
+    flow_to[is.na(flow_to$ent1),]$ent1 = 'source'
+
+    subset_flow_from = flow_from[flow_from$ent1 == selected,]
+    subset_flow_from = subset_flow_from[subset_flow_from$f > 0.01 | subset_flow_from$ent2 == selected,]
+
+    subset_flow_to = flow_to[flow_to$ent2 == selected,]
+    subset_flow_to = subset_flow_to[subset_flow_to$f > 0.01 | subset_flow_to$ent1 == selected,]
+
+    subset_flow = data.frame(time_bin = c(subset_flow_from$time_bin, subset_flow_to$time_bin),
+                             smc = c(subset_flow_from$ent2, subset_flow_to$ent1),
+                             f = c(subset_flow_from$f, -subset_flow_to$f),
+                             f_norm = c(subset_flow_from$f_norm, -subset_flow_to$f_norm))
+
+    subset_flow$smc = factor(subset_flow$smc, levels = unique(subset_flow$smc))
+    subset_flow$time_bin = factor(subset_flow$time_bin, levels = as.character(sort(as.numeric(unique(subset_flow$time_bin)))))
+    subset_flow$selected = subset_flow$smc == selected
+    print(input$norm_flow)
+    if(input$norm_flow){
+       subset_flow$flow_plot = subset_flow$f_norm
+       print(subset_flow)
+    }else if(!input$norm_flow){
+       subset_flow$flow_plot = subset_flow$f
+       print(subset_flow)
+    }
+    x_lim = max(abs(min(subset_flow$flow_plot, na.rm = T)), max(subset_flow$flow_plot, na.rm = T))
+    g = ggplot(subset_flow, aes(y=smc, x=flow_plot, fill = smc)) + 
+                geom_bar(stat = "identity", aes(color = selected), linewidth = 1.5) + 
+                facet_wrap(~time_bin, ncol = 4) + 
+                scale_fill_manual(values=ctype_color) + 
+                scale_color_manual(values = c("TRUE" = "black", "FALSE" = "white"))+
+                theme(axis.text.y = element_text(angle = 90, vjust = 0.5, hjust=1),
+                        strip.text = element_text()) +
+                geom_vline(xintercept = 0, color = "black", linewidth = 1) +
+                xlim(-x_lim, x_lim) + guides(color = "none")
+
+    return(g)
 }
 
 display_selectors <- function(input, output, session, dataset, ns, metacell_names, metacell_colors, metacell_types, cell_type_colors) {
@@ -288,7 +192,7 @@ display_selectors <- function(input, output, session, dataset, ns, metacell_name
             req(metacell_colors())
             req(metacell_names())
             cell_types_hex <- col2hex(metacell_colors())
-            # add 'similar' annotation
+
             md <- get_mc_data(dataset(), "metadata")
             if (!is.null(md) && has_name(md, "similar")) {
                 choices <- metacell_names()
@@ -311,6 +215,12 @@ display_selectors <- function(input, output, session, dataset, ns, metacell_name
                 label = "Show Type",
                 size = "sm",
                 value = FALSE
+            ),
+            shinyWidgets::switchInput(
+                inputId = ns("norm_flow"),
+                label = "Normalize flow",
+                size = "sm",
+                value = TRUE
             )
             )
         }else if(input$mode == "Types"){
@@ -333,248 +243,4 @@ display_selectors <- function(input, output, session, dataset, ns, metacell_name
         }
     })}
 
-projection_box_id <- function(ns,
-                           id,
-                           ...,
-                           color_choices = c("Cell type", "Gene", "Gene module", "Metadata"),
-                           title = "2D Projection",
-                           height = NULL,
-                           plotly_height = "400px",
-                           additional_elements = NULL,
-                           collapsed_accordion = TRUE,
-                           legend_orientation = "Vertical",
-                           show_legend = TRUE) {
-    generic_box(
-        id = ns(id),
-        title = title,
-        status = "primary",
-        solidHeader = TRUE,
-        collapsible = TRUE,
-        closable = FALSE,
-        width = 12,
-        height = height,
-        sidebar = shinydashboardPlus::boxSidebar(
-            startOpen = FALSE,
-            width = 80,
-            id = ns(glue("{id}_sidebar")),
-            uiOutput(ns(glue("{id}_graph_select"))),
-            uiOutput(ns(glue("{id}_proj_stat"))),
-            uiOutput(ns(glue("{id}_set_range"))),
-            uiOutput(ns(glue("{id}_expr_range"))),
-            uiOutput(ns(glue("{id}_enrich_range"))),
-            uiOutput(ns(glue("{id}_point_size"))),
-            uiOutput(ns(glue("{id}_stroke"))),
-            uiOutput(ns(glue("{id}_edge_distance"))),
-            shinyWidgets::prettyRadioButtons(
-                ns(glue("{id}_legend_orientation")),
-                label = "Legend orientation:",
-                choices = c("Vertical", "Horizontal"),
-                selected = legend_orientation,
-                inline = TRUE,
-                status = "danger",
-                fill = TRUE
-            )
-        ),
-        shinycssloaders::withSpinner(
-            plotly::plotlyOutput(ns(glue("{id}_plot_gene_proj_2d")), height = plotly_height)
-        ),
-        shinydashboardPlus::accordion(
-            id = ns(glue("{id}_proj_accordion")),
-            shinydashboardPlus::accordionItem(
-                title = "Modify colors",
-                collapsed = collapsed_accordion,
-                shinyWidgets::prettyRadioButtons(
-                    ns(glue("{id}_color_proj")),
-                    label = "Color by:",
-                    choices = color_choices,
-                    inline = TRUE,
-                    status = "danger",
-                    fill = TRUE
-                ),
-                ...,
-                shinyWidgets::virtualSelectInput(
-                    ns(glue("{id}_color_proj_gene")),
-                    "Gene:",
-                    choices = c(),
-                    multiple = FALSE,
-                    search = TRUE,
-                    dropboxWrapper = "body",
-                    markSearchResults = TRUE,
-                    searchByStartsWith = TRUE
-                ),
-                shinyWidgets::virtualSelectInput(
-                    ns(glue("{id}_color_proj_metadata")),
-                    "Metadata:",
-                    choices = c(),
-                    multiple = FALSE,
-                    search = TRUE,
-                    dropboxWrapper = "body"
-                ),
-                shinyWidgets::virtualSelectInput(
-                    ns(glue("{id}_color_proj_gene_module")),
-                    "Gene module:",
-                    choices = c(),
-                    multiple = FALSE,
-                    search = TRUE,
-                    dropboxWrapper = "body"
-                ),
-                shinyWidgets::prettyRadioButtons(
-                    ns(glue("{id}_scatter_axis_proj")),
-                    label = "Axis:",
-                    choices = c("x", "y"),
-                    inline = TRUE,
-                    status = "danger",
-                    fill = TRUE
-                ),
-                checkboxInput(ns(glue("{id}_show_legend_projection")), "Show legend", value = show_legend)
-            )
-        )
-    )
-}
 
-projection_selectors_id <- function(ns, id, dataset, output, input, gene_modules, globals, session, weight = 1, atlas = FALSE) {
-    observe({
-        shinyWidgets::updateVirtualSelect(
-            session = session,
-            inputId = glue("{id}_color_proj_gene"),
-            choices = gene_names_label(dataset(), atlas = atlas),
-            selected = default_gene1
-        )
-
-        shinyWidgets::updateVirtualSelect(
-            session = session,
-            inputId = glue("{id}_color_proj_metadata"),
-            choices = c("Clipboard", dataset_metadata_fields(dataset(), atlas = atlas)),
-            selected = dataset_metadata_fields(dataset(), atlas = atlas)[1]
-        )
-
-        shinyWidgets::updateVirtualSelect(
-            session = session,
-            inputId = glue("{id}_color_proj_gene_module"),
-            choices = levels(gene_modules()$module),
-            selected = NULL
-        )
-    })
-
-    picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "contains", dropupAuto = FALSE)
-
-    observe({
-        req(input[[glue("{id}_color_proj")]])
-        shinyjs::toggle(id = glue("{id}_color_proj_gene"), condition = input[[glue("{id}_color_proj")]] == "Gene")
-        shinyjs::toggle(id = glue("{id}_color_proj_metadata"), condition = input[[glue("{id}_color_proj")]] == "Metadata")
-        shinyjs::toggle(id = glue("{id}_color_proj_gene_module"), condition = input[[glue("{id}_color_proj")]] == "Gene module")
-        shinyjs::toggle(id = glue("{id}_scatter_axis_proj"), condition = input[[glue("{id}_color_proj")]] == "Scatter Axis")
-    })
-
-    output[[glue("{id}_proj_stat")]] <- renderUI({
-        req(input[[glue("{id}_color_proj")]] == "Gene" ||
-            input[[glue("{id}_color_proj")]] == "Gene A" ||
-            input[[glue("{id}_color_proj")]] == "Gene B" ||
-            input[[glue("{id}_color_proj")]] == "Gene module")
-        selectInput(ns(glue("{id}_proj_stat")),
-            label = "Statistic",
-            choices = c("Expression" = "expression", "Enrichment" = "enrichment"),
-            selected = "Expression",
-            multiple = FALSE,
-            selectize = FALSE
-        )
-    })
-
-    output[[glue("{id}_graph_select")]] <- renderUI({
-        choices <- c("metacell")
-        graphs <- get_mc_data(dataset(), "metacell_graphs")
-        if (!is.null(graphs)) {
-            choices <- c(choices, names(graphs))
-        }
-        selectInput(ns(glue("{id}_graph_name")),
-            label = "Graph",
-            choices = choices,
-            selected = "metacell",
-            multiple = FALSE,
-            selectize = FALSE
-        )
-    })
-
-    output[[glue("{id}_set_range")]] <- renderUI({
-        req(input[[glue("{id}_color_proj")]] == "Gene" ||
-            input[[glue("{id}_color_proj")]] == "Gene A" ||
-            input[[glue("{id}_color_proj")]] == "Gene B" ||
-            input[[glue("{id}_color_proj")]] == "Gene module")
-        req(input[[glue("{id}_proj_stat")]] == "expression")
-        checkboxInput(ns(glue("{id}_set_range")), "Manual range", value = FALSE)
-    })
-
-    output[[glue("{id}_expr_range")]] <- renderUI({
-        req(input[[glue("{id}_color_proj")]] == "Gene" ||
-            input[[glue("{id}_color_proj")]] == "Gene A" ||
-            input[[glue("{id}_color_proj")]] == "Gene B" ||
-            input[[glue("{id}_color_proj")]] == "Gene module")
-        req(input[[glue("{id}_proj_stat")]] == "expression")
-        req(input[[glue("{id}_set_range")]])
-        shinyWidgets::numericRangeInput(ns(glue("{id}_expr_range")),
-            "Expression range",
-            c(-18, -5),
-            width = "80%",
-            separator = " to "
-        )
-    })
-
-    output[[glue("{id}_enrich_range")]] <- renderUI({
-        req(input[[glue("{id}_color_proj")]] == "Gene" ||
-            input[[glue("{id}_color_proj")]] == "Gene A" ||
-            input[[glue("{id}_color_proj")]] == "Gene B" ||
-            input[[glue("{id}_color_proj")]] == "Gene module")
-        req(input[[glue("{id}_proj_stat")]] == "enrichment")
-        shinyWidgets::numericRangeInput(ns(glue("{id}_lfp")),
-            "Enrichment range",
-            c(-3, 3),
-            width = "80%",
-            separator = " to "
-        )
-    })
-
-    output[[glue("{id}_point_size")]] <- renderUI({
-        req(globals$screen_height)
-        req(globals$screen_width)
-        req(dataset())
-        numericInput(ns(glue("{id}_point_size")),
-            label = "Point size",
-            value = initial_proj_point_size(dataset(), globals$screen_width, globals$screen_height, weight = weight, atlas = atlas),
-            min = 0.1,
-            max = 3,
-            step = 0.1
-        )
-    })
-
-    output[[glue("{id}_stroke")]] <- renderUI({
-        numericInput(ns(glue("{id}_stroke")),
-            label = "Stroke width",
-            value = initial_proj_stroke(dataset()),
-            min = 0,
-            max = 3,
-            step = 0.01
-        )
-    })
-
-    output[[glue("{id}_edge_distance")]] <- renderUI({
-        graph <- input[[glue("{id}_graph_name")]]
-        if (is.null(graph) || graph == "metacell") {
-            sliderInput(ns(glue("{id}_min_edge_size")),
-                label = "Min edge length",
-                min = 0,
-                max = 0.3,
-                value = min_edge_length(dataset()),
-                step = 0.001
-            )
-        } else {
-            graph <- get_mc_data(dataset(), "metacell_graphs")[[graph]]
-            sliderInput(ns(glue("{id}_min_edge_size")),
-                label = "Min weight",
-                min = min(graph$weight, na.rm = TRUE),
-                max = max(graph$weight, na.rm = TRUE),
-                value = median(graph$weight),
-                step = (max(graph$weight, na.rm = TRUE) - min(graph$weight, na.rm = TRUE)) / 50
-            )
-        }
-    })
-}
