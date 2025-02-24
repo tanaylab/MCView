@@ -117,6 +117,12 @@ mc2d_plot_metadata_ggp_categorical <- function(mc2d_df,
     }
 
     mc2d_df <- mc2d_df %>%
+        mutate(
+            stroke = stroke,
+            point_size = point_size
+        )
+    
+    mc2d_df <- mc2d_df %>%
         arrange(desc(!!sym(md))) %>%
         mutate(value = !!sym(md))
 
@@ -137,10 +143,11 @@ mc2d_plot_metadata_ggp_categorical <- function(mc2d_df,
             mode = "markers",
             colors = colors,
             marker = list(
-                size = point_size * 4,
+                size = rev(mc2d_df$point_size) * 4,
                 line = list(
                     color = "black",
-                    width = stroke %||% 0.2
+                    # marker seems to pass arguments in reverse order, not sure why
+                    width = rev(mc2d_df$stroke) %||% 0.2
                 )
             ),
             showlegend = showlegend
@@ -226,6 +233,12 @@ mc2d_plot_metadata_ggp_numeric <- function(mc2d_df,
     colors <- palette(seq(min(md_colors$breaks), max(md_colors$breaks), length.out = 100))
 
     mc2d_df <- mc2d_df %>%
+        mutate(
+            stroke = stroke,
+            point_size = point_size
+        )
+    
+    mc2d_df <- mc2d_df %>%
         arrange(desc(!!sym(md))) %>%
         mutate(value = !!sym(md))
 
@@ -244,10 +257,11 @@ mc2d_plot_metadata_ggp_numeric <- function(mc2d_df,
             mode = "markers",
             colors = colors,
             marker = list(
-                size = point_size * 4,
+                size = rev(mc2d_df$point_size) * 4,
                 line = list(
                     color = "black",
-                    width = stroke %||% 0.2
+                    # marker seems to pass arguments in reverse order, not sure why
+                    width = rev(mc2d_df$stroke) %||% 0.2
                 )
             ),
             showlegend = showlegend
