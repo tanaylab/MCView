@@ -49,7 +49,7 @@ mod_st_flow_sidebar_ui <- function(id) {
                 ),
 
             uiOutput(ns("display_select")),
-            # uiOutput(ns("norm_flow")),
+            uiOutput(ns("norm_flow")),
             fileInput(ns("load_projection"),
                 label = NULL,
                 buttonLabel = "Load 2D layout",
@@ -80,6 +80,7 @@ mod_st_flow_server <- function(id, dataset, metacell_types, cell_type_colors, ge
             metacell_names <- metacell_names_reactive(dataset)
             metacell_colors <- metacell_colors_reactive(dataset, metacell_names, metacell_types)
             display_selectors(input, output, session, dataset, ns, metacell_names, metacell_colors, metacell_types, cell_type_colors)
+            norm_selector(input, output, session, dataset, ns)
 
             data <- get_mc_data(dataset(), "spatial_flow_data")
 
@@ -91,7 +92,6 @@ mod_st_flow_server <- function(id, dataset, metacell_types, cell_type_colors, ge
 plot_temporal_flow_bars = function(input, output, session, dataset, data, metacell_types, metacell_names, cell_type_colors){
     
     req(input$mode)
-    req(input$norm_flow)
 
     flow_to = data$flow_to
     flow_from = data$flow_from
@@ -162,13 +162,11 @@ plot_temporal_flow_bars = function(input, output, session, dataset, data, metace
     subset_flow$smc = factor(subset_flow$smc, levels = unique(subset_flow$smc))
     subset_flow$time_bin = factor(subset_flow$time_bin, levels = as.character(sort(as.numeric(unique(subset_flow$time_bin)))))
     subset_flow$selected = subset_flow$smc == selected
-    print(input$norm_flow)
+
     if(input$norm_flow){
        subset_flow$flow_plot = subset_flow$f_norm
-       print(subset_flow)
     }else if(!input$norm_flow){
        subset_flow$flow_plot = subset_flow$f
-       print(subset_flow)
     }
     x_lim = max(abs(min(subset_flow$flow_plot, na.rm = T)), max(subset_flow$flow_plot, na.rm = T))
     g = ggplot(subset_flow, aes(y=smc, x=flow_plot, fill = smc)) + 
@@ -215,12 +213,6 @@ display_selectors <- function(input, output, session, dataset, ns, metacell_name
                 label = "Show Type",
                 size = "sm",
                 value = FALSE
-            ),
-            shinyWidgets::switchInput(
-                inputId = ns("norm_flow"),
-                label = "Normalize flow",
-                size = "sm",
-                value = TRUE
             )
             )
         }else if(input$mode == "Types"){
@@ -244,3 +236,13 @@ display_selectors <- function(input, output, session, dataset, ns, metacell_name
     })}
 
 
+norm_selector <- function(input, output, session, dataset, ns) {
+    output$norm_flow <- renderUI({
+         shinyWidgets::switchInput(
+                inputId = ns("norm_flow"),
+                label = "Normalize flow",
+                size = "sm",
+                value = TRUE
+            )
+        }
+)}
