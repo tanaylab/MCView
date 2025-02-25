@@ -19,6 +19,16 @@ mod_st_flow_ui <- function(id) {
                 status = "primary",
                 solidHeader = TRUE
             )
+        ),        
+        generic_column(
+            width = 12,
+            generic_box(
+                title = "Type composition",
+                width = 12,
+                plotOutput(ns("Type_composition"), height = "200px"),
+                status = "primary",
+                solidHeader = TRUE
+            )
         )
     )
 }
@@ -85,17 +95,71 @@ mod_st_flow_server <- function(id, dataset, metacell_types, cell_type_colors, ge
             data <- get_mc_data(dataset(), "spatial_flow_data")
 
             output$Temporal_Flow = renderPlot({plot_temporal_flow_bars(input, output, session, dataset, data, metacell_types, metacell_names, cell_type_colors)})
+            output$Type_composition = renderPlot({plot_type_composition(input, output, session, dataset, data, metacell_types, metacell_names, cell_type_colors)})
         }
     )
+}
+
+plot_type_composition = function(input, output, session, dataset, data, metacell_types, metacell_names, cell_type_colors){
+    
+    req(input$mode)
+
+    metacell_types_df = metacell_types()
+
+    if(input$mode == 'Types'){
+            req(input$display_select %in% metacell_types_df$cell_type)
+            selected = input$display_select
+    }else if(input$mode == 'SMCs'){
+            req(input$display_select %in% metacell_names())
+            smc = input$display_select
+            selected = metacell_types_df[metacell_types_df$metacell == smc,]$cell_type
+    }
+
+    flow = data$f_sm_sb_tb
+    flow = flow[flow$cell_type == selected,] %>% group_by(smc, time_bin) %>% summarise(f = sum(f))
+    flow_total = flow %>% group_by(smc) %>% summarise(f = sum(f))
+    relevant_smcs = flow_total[flow_total$f > 0,]$smc
+    flow = flow[flow$smc %in% relevant_smcs,]
+    flow$time_bin = factor(flow$time_bin, levels = as.character(sort(as.numeric(unique(flow$time_bin)))))
+
+    if(input$mode == 'SMCs'){
+        flow$selected = flow$smc == smc
+    }else{
+        flow$selected = FALSE
+    }
+
+    ctype_color = metacell_types_df$mc_col
+    names(ctype_color) = metacell_types_df$metacell
+
+    g = ggplot(flow, aes(y=f, x=smc, fill = smc)) + 
+            geom_bar(stat = "identity", aes(color = selected), linewidth = 1.5) + 
+            facet_wrap(~time_bin, nrow = 1) + 
+            scale_fill_manual(values=ctype_color) + 
+            scale_color_manual(values = c("TRUE" = "black", "FALSE" = "white")) +
+            guides(color = "none") +
+            theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+                    legend.title = element_blank(),
+                    axis.title = element_blank(),   
+                    axis.text = element_text(size = 16),
+                    legend.text = element_text(size = 18),
+                    plot.title = element_text(size = 20, face = "bold"),
+                    strip.text = element_text(size = 18)) + ggtitle(selected) + guides(fill="none")
+
+    return(g)
+
 }
 
 plot_temporal_flow_bars = function(input, output, session, dataset, data, metacell_types, metacell_names, cell_type_colors){
     
     req(input$mode)
-
     flow_to = data$flow_to
     flow_from = data$flow_from
 
+    time_bins = sort(as.numeric(unique(flow_to$time_bin)))
+    time_bins_sub = time_bins[2:length(time_bins)]
+    flow_to = flow_to[flow_to$time_bin %in% as.character(time_bins_sub),]
+    flow_from = flow_from[flow_from$time_bin %in% as.character(time_bins_sub),]
+    
     metacell_types_df = metacell_types()
     metacell_types_l = metacell_types_df$cell_type
     names(metacell_types_l) = metacell_types_df$metacell
@@ -118,12 +182,12 @@ plot_temporal_flow_bars = function(input, output, session, dataset, data, metace
             smc = input$display_select
             selected = metacell_types_df[metacell_types_df$metacell == smc,]$cell_type
         }
-
+        
         flow_from = flow_from %>% group_by(time_bin, ent1, ent2) %>% summarise(f = sum(f, na.rm = T))
-        flow_from = flow_from %>% group_by(time_bin, ent2) %>% mutate(f_norm = f/sum(f))
+        flow_from = flow_from %>% group_by(time_bin, ent1) %>% mutate(f_norm = f/sum(f, na.rm = T))
 
         flow_to = flow_to %>% group_by(time_bin, ent1, ent2) %>% summarise(f = sum(f, na.rm = T))
-        flow_to = flow_to %>% group_by(time_bin, ent1) %>% mutate(f_norm = f/sum(f))
+        flow_to = flow_to %>% group_by(time_bin, ent2) %>% mutate(f_norm = f/sum(f))
 
         ctype_color = cell_type_colors()$color
         names(ctype_color) = cell_type_colors()$cell_type
@@ -144,15 +208,18 @@ plot_temporal_flow_bars = function(input, output, session, dataset, data, metace
 
     flow_from[is.na(flow_from$ent2),]$ent2 = 'sink'
     flow_from[is.na(flow_from$ent1),]$ent1 = 'source'
-   
+    flow_from[is.na(flow_from$f_norm),]$f_norm = 0
+
     flow_to[is.na(flow_to$ent2),]$ent2 = 'sink'
     flow_to[is.na(flow_to$ent1),]$ent1 = 'source'
-
+    flow_to[is.na(flow_to$f_norm),]$f_norm = 0
+    
     subset_flow_from = flow_from[flow_from$ent1 == selected,]
-    subset_flow_from = subset_flow_from[subset_flow_from$f > 0.01 | subset_flow_from$ent2 == selected,]
+    subset_flow_from = subset_flow_from[subset_flow_from$f_norm > 0.05 | subset_flow_from$ent2 == selected,]
+    subset_flow_from$time_bin = as.character(as.numeric(subset_flow_from$time_bin)-1)
 
     subset_flow_to = flow_to[flow_to$ent2 == selected,]
-    subset_flow_to = subset_flow_to[subset_flow_to$f > 0.01 | subset_flow_to$ent1 == selected,]
+    subset_flow_to = subset_flow_to[subset_flow_to$f_norm > 0.05 | subset_flow_to$ent1 == selected,]
 
     subset_flow = data.frame(time_bin = c(subset_flow_from$time_bin, subset_flow_to$time_bin),
                              smc = c(subset_flow_from$ent2, subset_flow_to$ent1),
@@ -160,24 +227,43 @@ plot_temporal_flow_bars = function(input, output, session, dataset, data, metace
                              f_norm = c(subset_flow_from$f_norm, -subset_flow_to$f_norm))
 
     subset_flow$smc = factor(subset_flow$smc, levels = unique(subset_flow$smc))
-    subset_flow$time_bin = factor(subset_flow$time_bin, levels = as.character(sort(as.numeric(unique(subset_flow$time_bin)))))
-    subset_flow$selected = subset_flow$smc == selected
+
+    subset_flow$time_bin = factor(subset_flow$time_bin, levels = as.character(time_bins))
 
     if(input$norm_flow){
        subset_flow$flow_plot = subset_flow$f_norm
     }else if(!input$norm_flow){
        subset_flow$flow_plot = subset_flow$f
     }
+
+    flow_label = paste0(time_bins, "->", time_bins[-1])[-length(time_bins)]
+    flow_label = c(paste0('source', "->", time_bins[1]), flow_label, paste0(time_bins[length(time_bins)], "->", 'sink'))
+
+    flow_label = paste0(flow_label[seq(1,(length(flow_label)-1))],  '            ', 
+                        flow_label[seq(2,(length(flow_label)))])
+    names(flow_label) = as.character(time_bins)
+
+    if(input$mode == 'SMCs'){
+        subset_flow$mark = subset_flow$smc == selected
+    }else{
+        subset_flow$mark = FALSE
+    }
+
     x_lim = max(abs(min(subset_flow$flow_plot, na.rm = T)), max(subset_flow$flow_plot, na.rm = T))
     g = ggplot(subset_flow, aes(y=smc, x=flow_plot, fill = smc)) + 
-                geom_bar(stat = "identity", aes(color = selected), linewidth = 1.5) + 
-                facet_wrap(~time_bin, ncol = 4) + 
+                geom_bar(stat = "identity", aes(color = mark), linewidth = 1.5) +
+                facet_wrap(~time_bin, ncol = 4, labeller = labeller(time_bin = flow_label)) + 
                 scale_fill_manual(values=ctype_color) + 
-                scale_color_manual(values = c("TRUE" = "black", "FALSE" = "white"))+
-                theme(axis.text.y = element_text(angle = 90, vjust = 0.5, hjust=1),
-                        strip.text = element_text()) +
+                scale_color_manual(values = c("TRUE" = "black", "FALSE" = "white")) +
                 geom_vline(xintercept = 0, color = "black", linewidth = 1) +
-                xlim(-x_lim, x_lim) + guides(color = "none")
+                xlim(-x_lim, x_lim) + guides(color = "none") +
+                theme(axis.text.y = element_text(angle = 0, vjust = 0.5, hjust=1),
+                      legend.title = element_blank(),
+                      axis.title = element_blank(),   
+                      axis.text = element_text(size = 16),
+                      legend.text = element_text(size = 18),
+                      plot.title = element_text(size = 20, face = "bold"),
+                      strip.text = element_text(size = 18)) + ggtitle(selected)
 
     return(g)
 }
@@ -242,7 +328,7 @@ norm_selector <- function(input, output, session, dataset, ns) {
                 inputId = ns("norm_flow"),
                 label = "Normalize flow",
                 size = "sm",
-                value = TRUE
+                value = FALSE
             )
         }
 )}
