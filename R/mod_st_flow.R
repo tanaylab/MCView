@@ -57,7 +57,6 @@ mod_st_flow_sidebar_ui <- function(id) {
                     selected = "Types",
                     justified = TRUE
                 ),
-
             uiOutput(ns("display_select")),
             uiOutput(ns("norm_flow"))
         )
@@ -165,9 +164,10 @@ summarise_flow_to_spatial = function(ed){
 
     flow_to = ed
     flow_to$spat1 = spat_dict[flow_to$sbin1]
+    flow_to$spat2 = spat_dict[flow_to$sbin2]
     flow_to = flow_to[flow_to$spat1 != 'X',]
 
-    flow_to = flow_to %>% group_by(time_bin, smc1, smc2, spat1) %>% summarize(f = sum(flow))
+    flow_to = flow_to %>% group_by(time_bin, smc1, smc2, spat1, spat2) %>% summarize(f = sum(flow))
     flow_to = flow_to %>% group_by(time_bin, smc2) %>% mutate(f_norm = f/sum(f))
 
     return(flow_to)
@@ -186,10 +186,11 @@ summarise_flow_from_spatial = function(ed){
     spat_dict = get_spat_dict()
 
     flow_from = ed
+    flow_from$spat1 = spat_dict[flow_from$sbin1]
     flow_from$spat2 = spat_dict[flow_from$sbin2]
     flow_from = flow_from[flow_from$spat2 != 'X',]
 
-    flow_from = flow_from %>% group_by(time_bin, smc1, smc2, spat2) %>% summarize(f = sum(flow))
+    flow_from = flow_from %>% group_by(time_bin, smc1, smc2, spat1, spat2) %>% summarize(f = sum(flow))
     flow_from = flow_from %>% group_by(time_bin, smc1) %>% mutate(f_norm = f/sum(f))
 
     return(flow_from)
@@ -243,10 +244,10 @@ plot_temporal_flow_bars = function(input, output, session, dataset, data, metace
             flow_to = flow_to %>% group_by(time_bin, ent1, ent2) %>% summarise(f = sum(f, na.rm = T))
             flow_to = flow_to %>% group_by(time_bin, ent2) %>% mutate(f_norm = f/sum(f))
         }else{
-            flow_from = flow_from %>% group_by(time_bin, ent1, ent2, spat2) %>% summarise(f = sum(f, na.rm = T))
+            flow_from = flow_from %>% group_by(time_bin, ent1, ent2, spat1, spat2) %>% summarise(f = sum(f, na.rm = T))
             flow_from = flow_from %>% group_by(time_bin, ent1) %>% mutate(f_norm = f/sum(f, na.rm = T))
 
-            flow_to = flow_to %>% group_by(time_bin, ent1, ent2, spat1) %>% summarise(f = sum(f, na.rm = T))
+            flow_to = flow_to %>% group_by(time_bin, ent1, ent2, spat1, spat2) %>% summarise(f = sum(f, na.rm = T))
             flow_to = flow_to %>% group_by(time_bin, ent2) %>% mutate(f_norm = f/sum(f))
         }
 
@@ -274,12 +275,18 @@ plot_temporal_flow_bars = function(input, output, session, dataset, data, metace
     flow_to[is.na(flow_to$ent2),]$ent2 = 'sink'
     flow_to[is.na(flow_to$ent1),]$ent1 = 'source'
     flow_to[is.na(flow_to$f_norm),]$f_norm = 0
+    
+    if(input$spread_spatial %in% c("Rostral","Distal","Lateral", "Caudal")){
+        subset_flow_from = flow_from[flow_from$ent1 == selected & flow_from$spat1 == input$spread_spatial,]
+        subset_flow_to = flow_to[flow_to$ent2 == selected & flow_from$spat2 == input$spread_spatial,]
+    }else{
+        subset_flow_from = flow_from[flow_from$ent1 == selected,]
+        subset_flow_to = flow_to[flow_to$ent2 == selected,]
+    }
 
-    subset_flow_from = flow_from[flow_from$ent1 == selected,]
     subset_flow_from = subset_flow_from[subset_flow_from$f_norm > 0.05 | subset_flow_from$ent2 == selected,]
     subset_flow_from$time_bin = as.character(as.numeric(subset_flow_from$time_bin)-1)
 
-    subset_flow_to = flow_to[flow_to$ent2 == selected,]
     subset_flow_to = subset_flow_to[subset_flow_to$f_norm > 0.05 | subset_flow_to$ent1 == selected,]
 
     subset_flow = data.frame(time_bin = c(subset_flow_from$time_bin, subset_flow_to$time_bin),
@@ -317,7 +324,8 @@ plot_temporal_flow_bars = function(input, output, session, dataset, data, metace
 
     x_lim = max(abs(min(subset_flow$flow_plot, na.rm = T)), max(subset_flow$flow_plot, na.rm = T))
 
-    if(input$spread_spatial == 'All'){
+    if(input$spread_spatial %in% c("All", "Rostral","Distal","Lateral", "Caudal")){
+        
         g = ggplot(subset_flow, aes(x = flow_plot, y = smc, fill = smc)) + 
                         geom_bar(stat = "identity", position = 'dodge', aes(color = mark, group = spat), linewidth = 1.5) +
                         facet_wrap(~time_bin, ncol = 4, labeller = labeller(time_bin = flow_label)) + 
@@ -334,13 +342,7 @@ plot_temporal_flow_bars = function(input, output, session, dataset, data, metace
                             plot.title = element_text(size = 20, face = "bold"),
                             strip.text = element_text(size = 18)) + ggtitle(selected)
     }else{
-        if(input$spread_spatial != 'None'){
-            subset_flow = subset_flow[subset_flow$spat == input$spread_spatial,]
-
-            title = paste0(selected, ': ', input$spread_spatial)
-        }else{
-            title = selected
-        }
+        
         g = ggplot(subset_flow, aes(x = flow_plot, y = smc, fill = smc)) + 
                         geom_bar(stat = "identity", aes(color = mark), linewidth = 1.5) +
                         facet_wrap(~time_bin, ncol = 4, labeller = labeller(time_bin = flow_label)) + 
@@ -354,9 +356,17 @@ plot_temporal_flow_bars = function(input, output, session, dataset, data, metace
                             axis.text = element_text(size = 16),
                             legend.text = element_text(size = 18),
                             plot.title = element_text(size = 20, face = "bold"),
-                            strip.text = element_text(size = 18)) + ggtitle(title)
+                            strip.text = element_text(size = 18)) + ggtitle(selected)
     }
     
+    # file_name = selected
+    # if(grepl('/', file_name)){
+    #     file_name = gsub(x = file_name, pattern = '/', replacement = '_')
+    # }
+    # if(grepl('\\?', file_name)){
+    #     file_name = gsub(x = file_name, pattern = '\\?', replacement = 'o')
+    # }
+    # ggsave(paste0(file_name, '_', input$spread_spatial, '.png'))
 
     return(g)
 }
