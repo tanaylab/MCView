@@ -59,20 +59,7 @@ mod_st_flow_sidebar_ui <- function(id) {
                 ),
 
             uiOutput(ns("display_select")),
-            uiOutput(ns("norm_flow")),
-            fileInput(ns("load_projection"),
-                label = NULL,
-                buttonLabel = "Load 2D layout",
-                multiple = FALSE,
-                accept =
-                    c(
-                        "text/csv",
-                        "text/comma-separated-values,text/plain",
-                        "text/tab-separated-values",
-                        ".csv",
-                        ".tsv"
-                    )
-            )
+            uiOutput(ns("norm_flow"))
         )
     )
 }
@@ -94,7 +81,13 @@ mod_st_flow_server <- function(id, dataset, metacell_types, cell_type_colors, ge
 
             data <- get_mc_data(dataset(), "spatial_flow_data")
 
-            output$Temporal_Flow = renderPlot({plot_temporal_flow_bars(input, output, session, dataset, data, metacell_types, metacell_names, cell_type_colors)})
+            flow_to = summarise_flow_to(data$ed)
+            flow_from = summarise_flow_from(data$ed)
+            flow_to_spat = summarise_flow_to_spatial(data$ed)
+            flow_from_spat = summarise_flow_from_spatial(data$ed)
+
+            output$Temporal_Flow = renderPlot({plot_temporal_flow_bars(input, output, session, dataset, data, metacell_types, metacell_names, cell_type_colors,
+                                                                       flow_to, flow_from, flow_to_spat, flow_from_spat)})
             output$Type_composition = renderPlot({plot_type_composition(input, output, session, dataset, data, metacell_types, metacell_names, cell_type_colors)})
         }
     )
@@ -149,9 +142,32 @@ plot_type_composition = function(input, output, session, dataset, data, metacell
 
 }
 
+get_spat_dict = function(){
+        spat_dict = c('M1' = 'Rostral', 'M2' = 'Rostral', 'M3' = 'Rostral', 'M4' = 'Rostral', 
+                  'M5' = 'Distal', 'M6' = 'Distal', 'M7' = 'Distal', 'M8' = 'Distal', 
+                  'M9' = 'Caudal', 'M10' = 'Caudal', 'M11' = 'Caudal', 'M12' = 'Caudal',
+                  'L1' = 'Lateral', 'L2' = 'Lateral', 'L3' = 'Lateral', 'L4' = 'Lateral', 
+                  'L5' = 'Lateral', 'L6' = 'Lateral', 'I' = 'Lateral', 
+                  'X1_1' = 'X', 'X1_2' = 'X', 'X1_3' = 'X', 'X1_4' = 'X')
+        return(spat_dict)
+}
+
 summarise_flow_to = function(ed){
 
     flow_to = ed %>% group_by(time_bin, smc1, smc2) %>% summarize(f = sum(flow))
+    flow_to = flow_to %>% group_by(time_bin, smc2) %>% mutate(f_norm = f/sum(f))
+
+    return(flow_to)
+}
+
+summarise_flow_to_spatial = function(ed){
+    spat_dict = get_spat_dict()
+
+    flow_to = ed
+    flow_to$spat1 = spat_dict[flow_to$sbin1]
+    flow_to = flow_to[flow_to$spat1 != 'X',]
+
+    flow_to = flow_to %>% group_by(time_bin, smc1, smc2, spat1) %>% summarize(f = sum(flow))
     flow_to = flow_to %>% group_by(time_bin, smc2) %>% mutate(f_norm = f/sum(f))
 
     return(flow_to)
@@ -165,15 +181,32 @@ summarise_flow_from = function(ed){
     return(flow_from)
 }
 
-plot_temporal_flow_bars = function(input, output, session, dataset, data, metacell_types, metacell_names, cell_type_colors){
+summarise_flow_from_spatial = function(ed){
+
+    spat_dict = get_spat_dict()
+
+    flow_from = ed
+    flow_from$spat2 = spat_dict[flow_from$sbin2]
+    flow_from = flow_from[flow_from$spat2 != 'X',]
+
+    flow_from = flow_from %>% group_by(time_bin, smc1, smc2, spat2) %>% summarize(f = sum(flow))
+    flow_from = flow_from %>% group_by(time_bin, smc1) %>% mutate(f_norm = f/sum(f))
+
+    return(flow_from)
+}
+
+plot_temporal_flow_bars = function(input, output, session, dataset, data, metacell_types, metacell_names, cell_type_colors, flow_to, flow_from, flow_to_spat, flow_from_spat){
     
     req(input$mode)
     req(input$spread_spatial)
     
-    browser()
-
-    flow_to = summarise_flow_to(data$ed)
-    flow_from = summarise_flow_from(data$ed)
+    if(input$spread_spatial == 'None'){
+        flow_to = flow_to
+        flow_from = flow_from
+    }else{
+        flow_to = flow_to_spat
+        flow_from = flow_from_spat
+    }
 
     time_bins = sort(as.numeric(unique(flow_to$time_bin)))
     time_bins_sub = time_bins[2:length(time_bins)]
@@ -203,11 +236,19 @@ plot_temporal_flow_bars = function(input, output, session, dataset, data, metace
             selected = metacell_types_df[metacell_types_df$metacell == smc,]$cell_type
         }
         
-        flow_from = flow_from %>% group_by(time_bin, ent1, ent2) %>% summarise(f = sum(f, na.rm = T))
-        flow_from = flow_from %>% group_by(time_bin, ent1) %>% mutate(f_norm = f/sum(f, na.rm = T))
+        if(input$spread_spatial == 'None'){
+            flow_from = flow_from %>% group_by(time_bin, ent1, ent2) %>% summarise(f = sum(f, na.rm = T))
+            flow_from = flow_from %>% group_by(time_bin, ent1) %>% mutate(f_norm = f/sum(f, na.rm = T))
 
-        flow_to = flow_to %>% group_by(time_bin, ent1, ent2) %>% summarise(f = sum(f, na.rm = T))
-        flow_to = flow_to %>% group_by(time_bin, ent2) %>% mutate(f_norm = f/sum(f))
+            flow_to = flow_to %>% group_by(time_bin, ent1, ent2) %>% summarise(f = sum(f, na.rm = T))
+            flow_to = flow_to %>% group_by(time_bin, ent2) %>% mutate(f_norm = f/sum(f))
+        }else{
+            flow_from = flow_from %>% group_by(time_bin, ent1, ent2, spat2) %>% summarise(f = sum(f, na.rm = T))
+            flow_from = flow_from %>% group_by(time_bin, ent1) %>% mutate(f_norm = f/sum(f, na.rm = T))
+
+            flow_to = flow_to %>% group_by(time_bin, ent1, ent2, spat1) %>% summarise(f = sum(f, na.rm = T))
+            flow_to = flow_to %>% group_by(time_bin, ent2) %>% mutate(f_norm = f/sum(f))
+        }
 
         ctype_color = cell_type_colors()$color
         names(ctype_color) = cell_type_colors()$cell_type
@@ -233,7 +274,7 @@ plot_temporal_flow_bars = function(input, output, session, dataset, data, metace
     flow_to[is.na(flow_to$ent2),]$ent2 = 'sink'
     flow_to[is.na(flow_to$ent1),]$ent1 = 'source'
     flow_to[is.na(flow_to$f_norm),]$f_norm = 0
-    
+
     subset_flow_from = flow_from[flow_from$ent1 == selected,]
     subset_flow_from = subset_flow_from[subset_flow_from$f_norm > 0.05 | subset_flow_from$ent2 == selected,]
     subset_flow_from$time_bin = as.character(as.numeric(subset_flow_from$time_bin)-1)
@@ -245,6 +286,11 @@ plot_temporal_flow_bars = function(input, output, session, dataset, data, metace
                              smc = c(subset_flow_from$ent2, subset_flow_to$ent1),
                              f = c(subset_flow_from$f, -subset_flow_to$f),
                              f_norm = c(subset_flow_from$f_norm, -subset_flow_to$f_norm))
+
+    if(!input$spread_spatial == 'None'){
+        subset_flow$spat = factor(c(subset_flow_from$spat2, subset_flow_to$spat1), levels = c("Rostral","Distal","Lateral", "Caudal"))
+        subset_flow <- subset_flow %>% complete(time_bin, smc, spat = c("Rostral","Distal","Lateral", "Caudal"), fill = list(f = 0, f_norm = 0))
+    }
 
     subset_flow$smc = factor(subset_flow$smc, levels = unique(subset_flow$smc))
 
@@ -270,20 +316,47 @@ plot_temporal_flow_bars = function(input, output, session, dataset, data, metace
     }
 
     x_lim = max(abs(min(subset_flow$flow_plot, na.rm = T)), max(subset_flow$flow_plot, na.rm = T))
-    g = ggplot(subset_flow, aes(y=smc, x=flow_plot, fill = smc)) + 
-                geom_bar(stat = "identity", aes(color = mark), linewidth = 1.5) +
-                facet_wrap(~time_bin, ncol = 4, labeller = labeller(time_bin = flow_label)) + 
-                scale_fill_manual(values=ctype_color) + 
-                scale_color_manual(values = c("TRUE" = "black", "FALSE" = "white")) +
-                geom_vline(xintercept = 0, color = "black", linewidth = 1) +
-                xlim(-x_lim, x_lim) + guides(color = "none") +
-                theme(axis.text.y = element_text(angle = 0, vjust = 0.5, hjust=1),
-                      legend.title = element_blank(),
-                      axis.title = element_blank(),   
-                      axis.text = element_text(size = 16),
-                      legend.text = element_text(size = 18),
-                      plot.title = element_text(size = 20, face = "bold"),
-                      strip.text = element_text(size = 18)) + ggtitle(selected)
+
+    if(input$spread_spatial == 'All'){
+        g = ggplot(subset_flow, aes(x = flow_plot, y = smc, fill = smc)) + 
+                        geom_bar(stat = "identity", position = 'dodge', aes(color = mark, group = spat), linewidth = 1.5) +
+                        facet_wrap(~time_bin, ncol = 4, labeller = labeller(time_bin = flow_label)) + 
+                        scale_fill_manual(values=ctype_color) + 
+                        scale_color_manual(values = c("TRUE" = "black", "FALSE" = "white")) +
+                        geom_vline(xintercept = 0, color = "black", linewidth = 1) +
+                        geom_hline(data = data.frame(smc = unique(subset_flow$smc)), aes(yintercept = as.numeric(smc) - 0.5), linetype = "dotted", color = "gray") +
+                        xlim(-x_lim, x_lim) + guides(color = "none") +
+                        theme(axis.text.y = element_text(angle = 0, vjust = 0.5, hjust=1),
+                            legend.title = element_blank(),
+                            axis.title = element_blank(),   
+                            axis.text = element_text(size = 16),
+                            legend.text = element_text(size = 18),
+                            plot.title = element_text(size = 20, face = "bold"),
+                            strip.text = element_text(size = 18)) + ggtitle(selected)
+    }else{
+        if(input$spread_spatial != 'None'){
+            subset_flow = subset_flow[subset_flow$spat == input$spread_spatial,]
+
+            title = paste0(selected, ': ', input$spread_spatial)
+        }else{
+            title = selected
+        }
+        g = ggplot(subset_flow, aes(x = flow_plot, y = smc, fill = smc)) + 
+                        geom_bar(stat = "identity", aes(color = mark), linewidth = 1.5) +
+                        facet_wrap(~time_bin, ncol = 4, labeller = labeller(time_bin = flow_label)) + 
+                        scale_fill_manual(values=ctype_color) + 
+                        scale_color_manual(values = c("TRUE" = "black", "FALSE" = "white")) +
+                        geom_vline(xintercept = 0, color = "black", linewidth = 1) +
+                        xlim(-x_lim, x_lim) + guides(color = "none") +
+                        theme(axis.text.y = element_text(angle = 0, vjust = 0.5, hjust=1),
+                            legend.title = element_blank(),
+                            axis.title = element_blank(),   
+                            axis.text = element_text(size = 16),
+                            legend.text = element_text(size = 18),
+                            plot.title = element_text(size = 20, face = "bold"),
+                            strip.text = element_text(size = 18)) + ggtitle(title)
+    }
+    
 
     return(g)
 }
@@ -341,18 +414,13 @@ display_selectors <- function(input, output, session, dataset, ns, metacell_name
         }
     })}
 
-# c('ALL' = 'ALL', 
-#                             'Rostral' = c('M1', 'M2', 'M3', 'M4'),
-#                             'Distal' = c('M5', 'M6', 'M7', 'M8'),
-#                             'Caudal' = c('M9', 'M10', 'M11', 'M12'), 
-#                             'Lateral' = c('L1', 'L2', 'L3', 'L4', 'L5'))
 norm_selector <- function(input, output, session, dataset, ns) {
     output$norm_flow <- renderUI({
         tagList(
          shinyWidgets::pickerInput(
                 inputId = ns("spread_spatial"), 
                 label = "Spread Spatial",
-                choices = c('All', 'Rostral', 'Distal', 'Caudal', 'Lateral','None'),
+                choices = c('None','All', 'Rostral', 'Distal', 'Caudal', 'Lateral'),
                 selected = 'None',
                 multiple = FALSE,
                 options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "contains", dropupAuto = FALSE)
