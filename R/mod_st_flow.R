@@ -149,11 +149,31 @@ plot_type_composition = function(input, output, session, dataset, data, metacell
 
 }
 
+summarise_flow_to = function(ed){
+
+    flow_to = ed %>% group_by(time_bin, smc1, smc2) %>% summarize(f = sum(flow))
+    flow_to = flow_to %>% group_by(time_bin, smc2) %>% mutate(f_norm = f/sum(f))
+
+    return(flow_to)
+}
+
+summarise_flow_from = function(ed){
+
+    flow_from = ed %>% group_by(time_bin, smc1, smc2) %>% summarize(f = sum(flow))
+    flow_from = flow_from %>% group_by(time_bin, smc1) %>% mutate(f_norm = f/sum(f))
+
+    return(flow_from)
+}
+
 plot_temporal_flow_bars = function(input, output, session, dataset, data, metacell_types, metacell_names, cell_type_colors){
     
     req(input$mode)
-    flow_to = data$flow_to
-    flow_from = data$flow_from
+    req(input$spread_spatial)
+    
+    browser()
+
+    flow_to = summarise_flow_to(data$ed)
+    flow_from = summarise_flow_from(data$ed)
 
     time_bins = sort(as.numeric(unique(flow_to$time_bin)))
     time_bins_sub = time_bins[2:length(time_bins)]
@@ -321,14 +341,28 @@ display_selectors <- function(input, output, session, dataset, ns, metacell_name
         }
     })}
 
-
+# c('ALL' = 'ALL', 
+#                             'Rostral' = c('M1', 'M2', 'M3', 'M4'),
+#                             'Distal' = c('M5', 'M6', 'M7', 'M8'),
+#                             'Caudal' = c('M9', 'M10', 'M11', 'M12'), 
+#                             'Lateral' = c('L1', 'L2', 'L3', 'L4', 'L5'))
 norm_selector <- function(input, output, session, dataset, ns) {
     output$norm_flow <- renderUI({
-         shinyWidgets::switchInput(
+        tagList(
+         shinyWidgets::pickerInput(
+                inputId = ns("spread_spatial"), 
+                label = "Spread Spatial",
+                choices = c('All', 'Rostral', 'Distal', 'Caudal', 'Lateral','None'),
+                selected = 'None',
+                multiple = FALSE,
+                options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "contains", dropupAuto = FALSE)
+            ),
+        shinyWidgets::switchInput(
                 inputId = ns("norm_flow"),
                 label = "Normalize flow",
                 size = "sm",
                 value = FALSE
             )
+        )
         }
 )}
