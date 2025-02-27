@@ -278,7 +278,7 @@ plot_temporal_flow_bars = function(input, output, session, dataset, data, metace
     
     if(input$spread_spatial %in% c("Rostral","Distal","Lateral", "Caudal")){
         subset_flow_from = flow_from[flow_from$ent1 == selected & flow_from$spat1 == input$spread_spatial,]
-        subset_flow_to = flow_to[flow_to$ent2 == selected & flow_from$spat2 == input$spread_spatial,]
+        subset_flow_to = flow_to[flow_to$ent2 == selected & flow_to$spat2 == input$spread_spatial,]
     }else{
         subset_flow_from = flow_from[flow_from$ent1 == selected,]
         subset_flow_to = flow_to[flow_to$ent2 == selected,]
@@ -312,7 +312,7 @@ plot_temporal_flow_bars = function(input, output, session, dataset, data, metace
     flow_label = paste0(time_bins, "->", time_bins[-1])[-length(time_bins)]
     flow_label = c(paste0('source', "->", time_bins[1]), flow_label, paste0(time_bins[length(time_bins)], "->", 'sink'))
 
-    flow_label = paste0(flow_label[seq(1,(length(flow_label)-1))],  '            ', 
+    flow_label = paste0(flow_label[seq(1,(length(flow_label)-1))],  '    ', 
                         flow_label[seq(2,(length(flow_label)))])
     names(flow_label) = as.character(time_bins)
 
@@ -324,39 +324,45 @@ plot_temporal_flow_bars = function(input, output, session, dataset, data, metace
 
     x_lim = max(abs(min(subset_flow$flow_plot, na.rm = T)), max(subset_flow$flow_plot, na.rm = T))
 
-    if(input$spread_spatial %in% c("All", "Rostral","Distal","Lateral", "Caudal")){
-        
+    if(input$spread_spatial %in% c("Rostral","Distal","Lateral", "Caudal")){ # "All", 
+        # browser()
+        dashes_df = data.frame(smc = as.numeric(unique(subset_flow$smc)))
+        sub_dashes = data.frame(spat = c(dashes_df$smc, dashes_df$smc + 0.25, dashes_df$smc + 0.5, dashes_df$smc + 0.75))
+
         g = ggplot(subset_flow, aes(x = flow_plot, y = smc, fill = smc)) + 
                         geom_bar(stat = "identity", position = 'dodge', aes(color = mark, group = spat), linewidth = 1.5) +
-                        facet_wrap(~time_bin, ncol = 4, labeller = labeller(time_bin = flow_label)) + 
+                        facet_wrap(~time_bin, nrow = 1, labeller = labeller(time_bin = flow_label)) + 
                         scale_fill_manual(values=ctype_color) + 
                         scale_color_manual(values = c("TRUE" = "black", "FALSE" = "white")) +
                         geom_vline(xintercept = 0, color = "black", linewidth = 1) +
-                        geom_hline(data = data.frame(smc = unique(subset_flow$smc)), aes(yintercept = as.numeric(smc) - 0.5), linetype = "dotted", color = "gray") +
+                        geom_hline(data = dashes_df, aes(yintercept = smc - 0.5, linetype = "dotted", color = "gray")) +
+                        geom_hline(data = sub_dashes, aes(yintercept = spat - 0.5, linetype = "dotted", color = "black")) +
                         xlim(-x_lim, x_lim) + guides(color = "none") +
                         theme(axis.text.y = element_text(angle = 0, vjust = 0.5, hjust=1),
-                            legend.title = element_blank(),
-                            axis.title = element_blank(),   
-                            axis.text = element_text(size = 16),
-                            legend.text = element_text(size = 18),
-                            plot.title = element_text(size = 20, face = "bold"),
-                            strip.text = element_text(size = 18)) + ggtitle(selected)
+                              axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+                              legend.title = element_blank(),
+                              axis.title = element_blank(),   
+                              axis.text = element_text(size = 16),
+                              legend.text = element_text(size = 18),
+                              plot.title = element_text(size = 20, face = "bold"),
+                              strip.text = element_text(size = 18)) + ggtitle(selected)
     }else{
         
         g = ggplot(subset_flow, aes(x = flow_plot, y = smc, fill = smc)) + 
                         geom_bar(stat = "identity", aes(color = mark), linewidth = 1.5) +
-                        facet_wrap(~time_bin, ncol = 4, labeller = labeller(time_bin = flow_label)) + 
+                        facet_wrap(~time_bin, nrow = 1, labeller = labeller(time_bin = flow_label)) + 
                         scale_fill_manual(values=ctype_color) + 
                         scale_color_manual(values = c("TRUE" = "black", "FALSE" = "white")) +
                         geom_vline(xintercept = 0, color = "black", linewidth = 1) +
                         xlim(-x_lim, x_lim) + guides(color = "none") +
                         theme(axis.text.y = element_text(angle = 0, vjust = 0.5, hjust=1),
-                            legend.title = element_blank(),
-                            axis.title = element_blank(),   
-                            axis.text = element_text(size = 16),
-                            legend.text = element_text(size = 18),
-                            plot.title = element_text(size = 20, face = "bold"),
-                            strip.text = element_text(size = 18)) + ggtitle(selected)
+                              axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+                              legend.title = element_blank(),
+                              axis.title = element_blank(),   
+                              axis.text = element_text(size = 16),
+                              legend.text = element_text(size = 18),
+                              plot.title = element_text(size = 20, face = "bold"),
+                              strip.text = element_text(size = 18)) + ggtitle(selected)
     }
     
     # file_name = selected
@@ -430,7 +436,7 @@ norm_selector <- function(input, output, session, dataset, ns) {
          shinyWidgets::pickerInput(
                 inputId = ns("spread_spatial"), 
                 label = "Spread Spatial",
-                choices = c('None','All', 'Rostral', 'Distal', 'Caudal', 'Lateral'),
+                choices = c('None', 'Rostral', 'Distal', 'Caudal', 'Lateral'), # 'All', 
                 selected = 'None',
                 multiple = FALSE,
                 options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "contains", dropupAuto = FALSE)
