@@ -11,7 +11,7 @@ which can be in the app using the right sidebar."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">MCView</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.40</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.41</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -39,7 +39,7 @@ which can be in the app using the right sidebar."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Import a dataset to an MCView project</h1>
-      <small class="dont-index">Source: <a href="https://github.com/tanaylab/MCView/blob/v0.2.40/R/import.R" class="external-link"><code>R/import.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/tanaylab/MCView/blob/master/R/import.R" class="external-link"><code>R/import.R</code></a></small>
       <div class="d-none name"><code>import_dataset.Rd</code></div>
     </div>
 
@@ -84,6 +84,7 @@ which can be in the app using the right sidebar.</p>
 <span>  layout <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  default_graph <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  overwrite <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  copy_source_file <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -255,6 +256,10 @@ log fraction (mc_fp) above this this value</p></dd>
 <dd><p>if a dataset with the same name already exists, overwrite it. Otherwise, an error would be thrown.</p></dd>
 
 
+<dt id="arg-copy-source-file">copy_source_file<a class="anchor" aria-label="anchor" href="#arg-copy-source-file"></a></dt>
+<dd><p>if TRUE, copy the source file to the project cache directory. If FALSE, create a symbolic link to the source file.</p></dd>
+
+
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>Arguments passed on to <code><a href="create_project.html">create_project</a></code></p><dl><dt><code>title</code></dt>
 <dd><p>The title of the app. This would be shown on the top left of the screen.</p></dd>
@@ -309,7 +314,6 @@ would contain objects used by MCView shiny app (such as the metacell matrix).</p
 <span class="r-in"><span>    <span class="st">"raw/PBMC_processed.tar.gz"</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/untar.html" class="external-link">untar</a></span><span class="op">(</span><span class="st">"raw/PBMC_processed.tar.gz"</span>, exdir <span class="op">=</span> <span class="st">"raw"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="create_project.html">create_project</a></span><span class="op">(</span><span class="st">"PBMC"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">import_dataset</span><span class="op">(</span><span class="st">"PBMC"</span>, <span class="st">"PBMC163k"</span>, <span class="st">"raw/metacells.h5ad"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>

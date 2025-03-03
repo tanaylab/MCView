@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">MCView</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.40</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.41</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,9 +35,19 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/tanaylab/MCView/blob/v0.2.40/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/tanaylab/MCView/blob/master/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.41" id="mcview-0241">MCView 0.2.41<a class="anchor" aria-label="anchor" href="#mcview-0241"></a></h2>
+<ul><li>Projects are now deployment-ready by default. An app.R file is automatically added during dataset import.</li>
+<li>Unified the project and bundle structures - no need for a separate bundle creation step for basic deployment.</li>
+<li>Added “Download data” button.</li>
+<li>Keep the creation command in the config directory.</li>
+<li>Added <code>copy_source_file</code> parameter to import_dataset to optionally copy the source h5ad file instead of creating a symlink.</li>
+<li>Improved project directory handling with streamlined overwrite logic.</li>
+<li>Added missing dataset name detection in import_dataset.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.40" id="mcview-0240">MCView 0.2.40<a class="anchor" aria-label="anchor" href="#mcview-0240"></a></h2>
 <ul><li>Show metadata in markers heatmap tooltip.</li>
