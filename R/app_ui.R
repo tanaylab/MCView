@@ -129,6 +129,15 @@ app_ui <- function(request) {
                     no_outline = FALSE
                 ),
                 shinyWidgets::actionBttn(
+                    inputId = "download_data_modal",
+                    label = "Download data",
+                    icon = NULL,
+                    color = "default",
+                    size = "sm",
+                    block = FALSE,
+                    no_outline = FALSE
+                ),
+                shinyWidgets::actionBttn(
                     inputId = "download_modal",
                     label = "Run locally",
                     icon = NULL,

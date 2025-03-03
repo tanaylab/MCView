@@ -70,6 +70,7 @@
 #' @param layout a data frame with a column named "metacell" with the metacell id and other columns with the x and y coordinates of the metacell. If NULL, the layout would be taken from the anndata object.
 #' @param default_graph a data frame with a column named "from", "to" and "weight" with the ids of the metacells and the weight of the edge. If NULL, the graph would be taken from the anndata object.
 #' @param overwrite if a dataset with the same name already exists, overwrite it. Otherwise, an error would be thrown.
+#' @param copy_source_file if TRUE, copy the source file to the project cache directory. If FALSE, create a symbolic link to the source file.
 #'
 #' @return invisibly returns an \code{AnnDataR6} object of the read \code{anndata_file}
 #'
@@ -82,7 +83,6 @@
 #'     "raw/PBMC_processed.tar.gz"
 #' )
 #' untar("raw/PBMC_processed.tar.gz", exdir = "raw")
-#' create_project("PBMC")
 #' import_dataset("PBMC", "PBMC163k", "raw/metacells.h5ad")
 #' }
 #'
@@ -121,9 +121,23 @@ import_dataset <- function(project,
                            layout = NULL,
                            default_graph = NULL,
                            overwrite = TRUE,
+                           copy_source_file = FALSE,
                            ...) {
+    if (missing(project)) {
+        cli::cli_abort("Please provide a {.field project} path")
+    }
+
+    if (missing(anndata_file)) {
+        cli::cli_abort("Please provide a path to an {.field anndata_file} (output of the metacells python package)")
+    }
+
     verbose <- !is.null(getOption("MCView.verbose")) && getOption("MCView.verbose")
-    verify_project_dir(project, create = TRUE, atlas = !is.null(atlas_project), ...)
+    project <- init_project_dir(project, create = TRUE, overwrite = overwrite, atlas = !is.null(atlas_project), ...)
+
+    if (missing(dataset)) {
+        dataset <- basename(project)
+        cli::cli_alert_info("Setting dataset name to {.field {dataset}}. Set {.field dataset} to a different name if you want to change it.")
+    }
 
     if (!grepl("^[A-Za-z0-9_.-]+$", dataset)) {
         cli_abort("Dataset name can only contain letters, numbers, '.', '-' and '_'")
@@ -135,6 +149,8 @@ import_dataset <- function(project,
     if (fs::dir_exists(fs::path(project_cache_dir(project), dataset))) {
         if (!overwrite) {
             cli_abort("Dataset {.field {dataset}} already exists in project {.field {project}}. If you want to overwrite it, set {.field overwrite=TRUE}.")
+        } else {
+            cli_alert_warning("Dataset {.field {dataset}} already exists in project {.field {project}}. Overwriting it.")
         }
         # delete the dataset directory
         fs::dir_delete(fs::path(project_cache_dir(project), dataset))
@@ -620,18 +636,29 @@ import_dataset <- function(project,
         as.character(utils::packageVersion("MCView")),
         project_version_file(project)
     )
+    cli::cli_alert_info("MCView version: {.field {utils::packageVersion('MCView')}}")
 
     if (!is.null(adata$uns$metacells_algorithm)) {
         writeLines(
             as.character(adata$uns$metacells_algorithm),
             project_metacells_algorithm_file(project)
         )
+        cli::cli_alert_info("Metacells algorithm version: {.field {adata$uns$metacells_algorithm}}")
     }
 
+    # Add app.R file to make the project ready for direct deployment
+    add_app_file(project)
+
+    # Add metacells file symlink
+    add_metacells_file(project, anndata_file, copy_source_file)
+
+    save_function_call(command_file_path(project), add_details = TRUE, project = project)
+    cli::cli_alert_info("Saving the command to {.file {command_file_path(project)}}")
 
     cli_alert_success("{.field {dataset}} dataset imported succesfully to {.path {project}} project")
     cli::cli_ul("You can now run the app using: {.field run_app(\"{project}\")}")
-    cli::cli_ul("or create a bundle using: {.field create_bundle(\"{project}\", name = \"name_of_bundle\")}")
+    cli::cli_ul("The project is deployment-ready. Just copy the entire project directory to a Shiny server.")
+    cli::cli_ul("For more advanced deployment options, you can create a bundle using: {.field create_bundle(\"{project}\", name = \"name_of_bundle\")}")
     invisible(adata)
 }
 

@@ -150,27 +150,61 @@ Running the app can be done by running:
 ```{r, eval=FALSE}
 MCView::run_app(project = "/path/to/my/project")
 ```
+
+
 ## Deployment
 
-__MCView__ can generate a 'deployment ready' version of the app by running: 
+Starting from version 0.2.41, MCView projects are deployment-ready by default. When you import a dataset using `import_dataset()`, an `app.R` file is automatically added to the project directory. This means you can simply copy the entire project directory to any Shiny server for deployment.
 
-```{r, eval=FALSE}
-MCView::create_bundle(project = "/path/to/my/project", path = "/path/to/the/bundle", name = "my_project")
+The structure of a deployment-ready MCView project looks like this:
+
+```
+my_project/
+├── app.R
+├── config/
+│   ├── about.Rmd
+│   ├── config.yaml
+│   └── help.yaml
+└── cache/
+    ├── dataset1/
+    └── dataset2/
 ```
 
-This would create a minimal shiny app in "/path/to/the/bundle/my_project" directory which would contain:
+To deploy the app, you can simply:
 
-1. app.R file. 
-2. project config and cache. 
-
-> Note: The bundle would use use the installed version of MCView in server. If you want to create a 'self-contained' bundle that would include MCView code as well, set `self_contained=TRUE`. 
-
-The bundle can then be deployed in shiny-server by running: 
+1. Copy the entire project directory to your Shiny server
+2. For shinyapps.io, run:
 
 ```{r, eval=FALSE}
-rsconnect::deployApp(appDir = "/path/to/the/bundle/my_project")
+rsconnect::deployApp(appDir = "my_project")
 ```
 
-or any other environment that supports serving shiny apps. 
+For backward compatibility, you can still create a separate bundle using:
 
-Note that when deploying to these services make sure you have the __MCView__ package installed. 
+```{r, eval=FALSE}
+MCView::create_bundle(project = "my_project", path = getwd(), name = "my_project_bundle")
+```
+
+However, this is no longer necessary as the project directory itself is already deployment-ready.
+
+Note: When deployed, the app will use the installed version of the MCView package on the server. If you want to ensure consistent behavior regardless of package updates, you can create a self-contained bundle that includes the MCView code:
+
+```{r, eval=FALSE}
+MCView::create_bundle(
+    project = "my_project",
+    path = getwd(),
+    name = "my_project_bundle",
+    self_contained = TRUE
+)
+```
+
+I you need to create a light version of MCView for deployment on a server with limited resources, you can use the `light_version=TRUE` argument:
+
+```{r, eval=FALSE}
+MCView::create_bundle(
+    project = "my_project",
+    path = getwd(),
+    name = "my_project_bundle",
+    light_version = TRUE
+)
+```

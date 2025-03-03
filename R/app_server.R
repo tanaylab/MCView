@@ -123,6 +123,7 @@ app_server <- function(input, output, session) {
     clipboard_reactives(dataset, input, output, session, metacell_types, cell_type_colors, gene_modules, globals)
 
     download_modal_reactives(input, output, session, globals)
+    download_data_modal_reactives(input, output, session, globals)
 
     help_reactives(input, output, session, globals)
 

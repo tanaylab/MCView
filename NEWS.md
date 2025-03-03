@@ -1,3 +1,13 @@
+# MCView 0.2.41
+
+* Projects are now deployment-ready by default. An app.R file is automatically added during dataset import.
+* Unified the project and bundle structures - no need for a separate bundle creation step for basic deployment.
+* Added "Download data" button.
+* Keep the creation command in the config directory.
+* Added `copy_source_file` parameter to import_dataset to optionally copy the source h5ad file instead of creating a symlink.
+* Improved project directory handling with streamlined overwrite logic.
+* Added missing dataset name detection in import_dataset.
+
 # MCView 0.2.40 
 
 * Show metadata in markers heatmap tooltip.

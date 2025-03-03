@@ -71,6 +71,7 @@ heatmap_sidebar <- function(id, ..., show_fitted_filter = FALSE) {
         include_noisy_ui <- NULL
     } else {
         max_gene_num_ui <- numericInput(ns("max_gene_num"), "Maximal number of genes", value = 100)
+        highlight_genes_ui <- shinyWidgets::actionGroupButtons(ns("highlight_genes"), labels = "Highlight selected genes", size = "sm")
         remove_genes_ui <- shinyWidgets::actionGroupButtons(ns("remove_genes"), labels = "Remove selected genes", size = "sm")
         add_genes_ui <- uiOutput(ns("add_genes_ui"))
         update_genes_ui <- shinyWidgets::actionGroupButtons(ns("update_genes"), labels = "Update genes", size = "sm")
@@ -136,6 +137,7 @@ heatmap_sidebar <- function(id, ..., show_fitted_filter = FALSE) {
             size = 30,
             selectize = FALSE
         ),
+        highlight_genes_ui,
         remove_genes_ui,
         update_genes_ui,
         show_only_fitted_ui,
@@ -257,8 +259,6 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
 
         markers(new_markers)
     })
-
-
 
     observeEvent(input$remove_genes, {
         req(markers())

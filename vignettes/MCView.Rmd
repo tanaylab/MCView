@@ -16,11 +16,13 @@ knitr::opts_chunk$set(
 
 ## Setup
 
-We would start by downloading a PBMC dataset that was pre-processed using the `metacells` python package. 
+First, let's load the MCView package:
 
 ```{r setup, eval = FALSE}
 library(MCView)
 ```
+
+For this tutorial, we'll use a PBMC dataset that was pre-processed using the `metacells` python package.
 
 ```{r download, eval=FALSE}
 dir.create("raw")
@@ -28,96 +30,76 @@ download.file("http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processe
 untar("raw/PBMC_processed.tar.gz", exdir = "raw")
 ```
 
-The above commands end result are two files named "raw/pbmc_metacells.h5ad" and "raw/cluster-colors.csv" which we would import to __MCView__ in the next steps. 
+This gives us two files: "raw/metacells.h5ad" (the metacell data) and "raw/cluster-colors.csv" (color assignments for cell types).
 
-## Create a project
+## Import Dataset
 
-> You can either start by creating a new project, or skip this step and import the dataset (a project would be created automatically).
-
-The first step in running __MCView__ is generating a project directory structure: 
-
-```{r, eval=FALSE}
-create_project("PBMC", title = "PBMC")
-```
-
-A text editor would be opened with `PBMC/config/config.yaml` file:
-
-```yaml
-title: PBMC
-tabs: ["QC", "Manifold", "Genes", "Markers", "Gene modules", "Diff. Expression", "Cell types","Annotate", "About"] # which tabs to show
-help: false # set to true to show introjs help on start
-# selected_gene1: Foxc1 # Default selected gene1
-# selected_gene2: Twist1 # Default selected gene2
-selected_mc1: 1 # Default selected metacell1 
-selected_mc2: 2 # Default selected metacell2
-```
-
-The configuration file was generated using `create_project` parameters, but we can edit them if we want, or add parameters per dataset, see the [architecture](https://tanaylab.github.io/MCView/articles/Architecture.html) vignette for a full description of the config parameters. 
-
-
-## Import 
-
-Next, we would import the PBMC dataset to the project we created. A project can contain multiple dataset, and switching between them can be done from the right sidebar. 
-
-This would pre-process the metacell dataset in order to view it in the shiny app: 
+The most common way to start with MCView is to directly import your dataset:
 
 ```{r, eval=FALSE}
 import_dataset(
-    project = "PBMC",
+    project = "PBMC", # This will create the project if it doesn't exist
     dataset = "PBMC",
     anndata_file = "raw/metacells.h5ad",
     cell_type_field = "type"
 )
 ```
 
-The most important field is the `anndata` field which points to the h5ad file we downloaded. 
+This single command:
+1. Creates a project directory structure if it doesn't exist
+2. Pre-processes the metacell dataset for viewing in the app
+3. Adds an `app.R` file, making the project deployment-ready
 
-You can see that we also specified a field in the `h5ad` object that has pre-computed cluster assignments per metacell at the 'type' field. 
+The `anndata_file` points to the h5ad file we downloaded, and `cell_type_field` specifies the field in the h5ad object that contains pre-computed cluster assignments.
 
-Note that the import part might take a few minutes, depending (mostly) on the number of metacells. If you see that it takes too long - set `calc_gg_cor` to `FALSE` in order to skip calculating correlation between all genes. This would save significant amount of import time but would make this feature unavailable in the app. 
+> **Note**: Import may take a few minutes depending on the number of metacells. If it's too slow, set `calc_gg_cor = FALSE` to skip calculating gene correlations. This saves significant import time but makes this feature unavailable in the app.
 
-In addition, some features would only be available if you ran `compute_for_mcview` in the `metacells` python package, so try to remember running it before importing to __MCView__.  
+> **Tip**: Run `compute_for_mcview` in the `metacells` python package before importing to enable all MCView features.
 
-__MCView__ supports also importing datasets from the old R `metacell` package, see `import_dataset_metacell1` for details.
+MCView also supports importing datasets from the old R `metacell` package with `import_dataset_metacell1`.
 
 ## Run the app
+
+Once import is complete, you can run the app:
 
 ```{r, eval=FALSE}
 run_app(project = "PBMC", launch.browser = TRUE)
 ```
 
-A browser window would be opened with the app. 
-
-You can also specify the port or host, or do not launch the browser window, e.g.: 
+This opens a browser window with the app. You can customize the port, host, and browser launch:
 
 ```{r, eval=FALSE}
 run_app(project = "PBMC", port = 5555, host = "127.0.0.1", launch.browser = FALSE)
 ```
 
+If you're already in the project directory, simply run:
+
+```{r, eval=FALSE}
+run_app(launch.browser = TRUE)
+```
+
 ## Update annotations
 
-After working a bit on the initial metacell model, we would usually want to update the default dataset annotations with the ones we created using __MCView__. This can be done by:
+After working with the initial metacell model, you might want to update the annotations:
 
-1. Pressing the "export" button in the upper left of "Annotate" screen and saving the file. 
-2. Running: 
-
-```{r, eval=FALSE}
-update_metacell_types("PBMC", "PBMC163k", "/path/to/metacell_types_file")
-```
-
-Where "/path/to/metacell_types_file" is the path of the exported file. 
-
-You can now rerun the app and the types/colors would be updated. 
-
-If you only want to update the cell type colors you can run: 
+1. Export your changes by pressing the "export" button in the upper left of the "Annotate" screen 
+2. Update the annotations with:
 
 ```{r, eval=FALSE}
-update_cell_type_colors("PBMC", "PBMC163k", "/path/to/cell_type_colors_file")
+update_metacell_types("PBMC", "PBMC", "/path/to/metacell_types_file")
 ```
 
-## Metadata
+Where "/path/to/metacell_types_file" is the path to your exported file.
 
-You can load metadata fields for each metacell using the `metadata` parameter in `import_dataset` command:
+To only update cell type colors:
+
+```{r, eval=FALSE}
+update_cell_type_colors("PBMC", "PBMC", "/path/to/cell_type_colors_file")
+```
+
+## Working with metadata
+
+You can add metadata for each metacell during import:
 
 ```{r, eval=FALSE}
 import_dataset(
@@ -128,45 +110,84 @@ import_dataset(
 )
 ```
 
-The format is a data frame (or a delimited filename) with a column named `metacell` and the annotation fields. The metadata fields can be either numeric or categorical. 
+The metadata should be a data frame (or file) with a column named `metacell` and additional annotation fields, which can be numeric or categorical.
 
-You can use the `metadata_colors` parameter to set the breaks and colors for each numerical metadata field, and color for each category for categorical fields. 
+Use `metadata_colors` to customize colors for each field.
 
-If you want to change the metadata fields or colors after the import, you can use the `update_metadata` and `update_metadata_colors` functions:
+To update metadata after import:
 
 ```{r, eval=FALSE}
 update_metadata(
     project = "PBMC",
-    dataset = "PBMC163k",
+    dataset = "PBMC",
     metadata = "new_metadata.csv"
 )
+
 update_metadata_colors(
     project = "PBMC",
-    dataset = "PBMC163k",
+    dataset = "PBMC",
     metadata_colors = new_metadata_colors
 )
 ```
 
-You can generate metadata per metacell from cell metadata using the `cell_metadata_to_metacell` and `cell_metadata_to_metacell_from_h5ad` functions. 
+You can generate metacell metadata from cell metadata using `cell_metadata_to_metacell` or `cell_metadata_to_metacell_from_h5ad`.
 
-## Deploy
+## Deploy your app
 
-Create a deployment ready bundle by running: 
+MCView projects are deployment-ready by default. The `app.R` file added during import means you can deploy your app by simply copying the entire project directory to a Shiny server.
+
+### Direct Deployment
+
+Deploy to [shinyapps.io](https://docs.rstudio.com/shinyapps.io/getting-started.html#deploying-applications):
 
 ```{r, eval=FALSE}
-create_bundle(project = "PBMC", path = getwd(), name = "PBMC_bundle")
+rsconnect::deployApp(appDir = "PBMC")
 ```
 
-You can then upload the bundle to [shinyapps.io](https://docs.rstudio.com/shinyapps.io/getting-started.html#deploying-applications) by running: 
+Or deploy to any Shiny server by copying the "PBMC" directory to the server.
+
+### Advanced Deployment (Optional)
+
+For additional customization (such as including MCView code in your bundle):
 
 ```{r, eval=FALSE}
+create_bundle(
+    project = "PBMC",
+    path = getwd(),
+    name = "PBMC_bundle",
+    self_contained = TRUE # Includes MCView code in the bundle
+)
+
+# Then deploy
 rsconnect::deployApp(appDir = file.path(getwd(), "PBMC_bundle"))
 ```
 
-Or to any shiny-server hosting service by uploading the "PBMC_bundle" directory to the service. 
+> **Note**: MCView keeps the metacell matrix in memory and requires around 1GB of RAM for small datasets like PBMC, and up to 2-4GB for larger datasets. Adjust your hosting service settings accordingly.
 
-> Note that you might need to set your hosting service to allow higher memory than the default - __MCView__ keeps the metacell matrix in-memory and therefore needs around 1GB of RAM for small datasets such as PBMC, but up to 2-4GB for large datasets such as MOCA. 
+## Advanced: Manual project creation
+
+If you want to customize your project configuration before importing data, you can manually create a project first:
+
+```{r, eval=FALSE}
+create_project("PBMC", title = "PBMC")
+```
+
+This opens a text editor with `PBMC/config/config.yaml`:
+
+```yaml
+title: PBMC
+tabs: ["QC", "Manifold", "Genes", "Markers", "Gene modules", "Diff. Expression", "Cell types","Annotate", "About"]
+help: false
+# selected_gene1: Foxc1
+# selected_gene2: Twist1
+selected_mc1: 1
+selected_mc2: 2
+```
+
+After editing, proceed with `import_dataset` as shown earlier.
+
+See the [architecture](https://tanaylab.github.io/MCView/articles/Architecture.html) vignette for a complete description of configuration parameters.
 
 ## Docker 
 
-See the [docker](https://tanaylab.github.io/MCView/articles/Docker.html) vignette for instructions of using the docker image. 
+See the [docker](https://tanaylab.github.io/MCView/articles/Docker.html) vignette for instructions on using the Docker image.

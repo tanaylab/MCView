@@ -20,7 +20,7 @@
 #'
 #' @export
 update_gene_modules <- function(project, dataset, gene_modules_file) {
-    verify_project_dir(project)
+    init_project_dir(project)
     verify_app_cache(project)
 
     gene_modules <- parse_gene_modules_file(gene_modules_file)
