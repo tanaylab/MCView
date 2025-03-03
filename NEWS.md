@@ -1,3 +1,7 @@
+# MCView 0.2.42 
+
+* Fix: apps did not start when `light_version` was TRUE.
+
 # MCView 0.2.41
 
 * Projects are now deployment-ready by default. An app.R file is automatically added during dataset import.
