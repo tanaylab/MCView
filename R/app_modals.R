@@ -43,3 +43,41 @@ download_modal_reactives <- function(input, output, session, globals) {
         }
     )
 }
+
+download_data_modal_reactives <- function(input, output, session, globals) {
+    creation_text <- ""
+    if (fs::file_exists(command_file_path(project)) && !(!is.null(config$show_command) && !config$show_command) && !config$light_version) {
+        cmd_text <- readLines(command_file_path(project))
+        cmd_text <- paste0(cmd_text, collapse = "\n")
+        cmd_text <- paste0("```r\n", cmd_text, "\n```")
+        creation_text <- glue("The MCView app was created using the following commands:\n\n{cmd_text}")
+        creation_text <- markdown::markdownToHTML(text = creation_text, fragment.only = TRUE)
+        Encoding(creation_text) <- "UTF-8"
+        creation_text <- HTML(creation_text)
+    }
+
+    observeEvent(
+        input$download_data_modal,
+        showModal(modalDialog(
+            title = "Download data",
+            "To download the metacells anndata file, press the download button below:",
+            br(),
+            br(),
+            downloadButton("download_mc_data", glue("Download ({fs::file_info(source_metacells_file_path(project), follow=TRUE)$size})"), style = "align-items: center;"),
+            br(),
+            br(),
+            creation_text,
+            easyClose = TRUE
+        ))
+    )
+
+    output$download_mc_data <- downloadHandler(
+        filename = function() {
+            glue("{basename(project)}_metacells.h5ad")
+        },
+        content = function(file) {
+            fs::file_copy(source_metacells_file_path(project), file)
+            invisible(file)
+        }
+    )
+}

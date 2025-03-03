@@ -37,6 +37,7 @@ import_dataset(
   layout = NULL,
   default_graph = NULL,
   overwrite = TRUE,
+  copy_source_file = FALSE,
   ...
 )
 }
@@ -140,6 +141,8 @@ log fraction (mc_fp) above this this value}
 
 \item{overwrite}{if a dataset with the same name already exists, overwrite it. Otherwise, an error would be thrown.}
 
+\item{copy_source_file}{if TRUE, copy the source file to the project cache directory. If FALSE, create a symbolic link to the source file.}
+
 \item{...}{
   Arguments passed on to \code{\link[=create_project]{create_project}}
   \describe{
@@ -178,7 +181,6 @@ download.file(
     "raw/PBMC_processed.tar.gz"
 )
 untar("raw/PBMC_processed.tar.gz", exdir = "raw")
-create_project("PBMC")
 import_dataset("PBMC", "PBMC163k", "raw/metacells.h5ad")
 }
 

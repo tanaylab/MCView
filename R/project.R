@@ -30,6 +30,27 @@ project_metacells_algorithm_file <- function(path) {
     fs::path(path, "config", "METACELLS_VERSION")
 }
 
+source_metacells_file_path <- function(path) {
+    fs::path(path, "config", "metacells.h5ad")
+}
+
+add_metacells_file <- function(path, metacells_file, copy = FALSE) {
+    dest <- source_metacells_file_path(path)
+    if (fs::file_exists(dest)) {
+        try(fs::file_delete(dest))
+    }
+    if (fs::link_exists(dest)) {
+        try(fs::link_delete(dest))
+    }
+    if (copy) {
+        fs::file_copy(metacells_file, dest)
+        cli::cli_alert_info("Copied metacells file to {.file {dest}}")
+    } else {
+        fs::link_create(fs::path_abs(metacells_file), dest)
+        cli::cli_alert_info("Linked metacells file {.file {metacells_file}} to {.file {dest}}")
+    }
+}
+
 verify_version <- function(path) {
     version_file <- project_version_file(path)
     if (!file.exists(version_file)) {
@@ -42,32 +63,85 @@ verify_version <- function(path) {
     }
 }
 
-verify_project_dir <- function(path, create = FALSE, atlas = FALSE, ...) {
+#' Initialize or ensure a project directory exists
+#'
+#' @param path Path to the project directory
+#' @param create Whether to create the project if it doesn't exist
+#' @param overwrite Whether to overwrite an existing project
+#' @param atlas Whether to use atlas configuration
+#' @param ... Additional parameters passed to create_project
+#'
+#' @return Path to the project directory (invisibly)
+#' @noRd
+init_project_dir <- function(path, create = FALSE, overwrite = FALSE, atlas = FALSE, ...) {
+    # If directory doesn't exist, create it if requested
     if (!dir.exists(path)) {
         if (create) {
             create_project(project = path, edit_config = FALSE, atlas = atlas, ...)
         } else {
-            cli_abort("{.path path} does not exist. Maybe there is a typo? You can start a new project by running {.code MCView::create_project}.")
+            cli_abort("Project directory {.path {path}} does not exist.")
         }
-    } else {
-        config_file <- project_config_file(path)
-        if (!file.exists(config_file)) {
-            if (file.exists(project_config_file(file.path(path, "project")))) {
-                path <- file.path(path, "project")
-                if (length(list(...)) > 0) {
-                    cli_alert_warning("Project config file already exists. Options such as title, tabs, help, selected_gene1, selected_gene2, selected_mc1, selected_mc2, scatters_point_size and other_params would not be applied. Please delete {.file {config_file}} if you want to apply these options.")
-                }
-            } else {
-                cli_abort("No config file found at {.file {config_file}}. Are you sure this is an MCView project dir? You can start a new project by running {.code MCView::create_project}.")
-            }
-        }
+        return(invisible(path))
     }
-    invisible(path)
+
+    # Directory exists, check if it's an MCView project
+    config_file <- project_config_file(path)
+    is_project <- file.exists(config_file)
+
+    # If it's a project but not at the root level (old structure with "project" subdirectory)
+    if (!is_project && file.exists(project_config_file(file.path(path, "project")))) {
+        return(invisible(file.path(path, "project")))
+    }
+
+    # It's a directory but not a project
+    if (!is_project) {
+        if (create) {
+            if (!overwrite) {
+                cli_abort("Directory {.path {path}} exists but is not an MCView project. Use {.field overwrite=TRUE} to create a new project here.")
+            }
+            # Create new project
+            create_project(project = path, edit_config = FALSE, atlas = atlas, ...)
+        } else {
+            cli_abort("Directory {.path {path}} is not an MCView project.")
+        }
+        return(invisible(path))
+    }
+
+    # It's a project and we want to overwrite it
+    if (create && overwrite) {
+        # Back up existing config directory
+        config_dir <- fs::path(path, "config")
+        backup_dir <- fs::path(path, "config.bak")
+
+        # Remove previous backup if it exists
+        if (fs::dir_exists(backup_dir)) {
+            fs::dir_delete(backup_dir)
+        }
+
+        # Backup existing config
+        cli_alert_info("Backing up existing config directory to {.file config.bak}")
+        fs::dir_copy(config_dir, backup_dir)
+
+        # Remove existing config dir
+        fs::dir_delete(config_dir)
+
+        # Remove existing cache dir
+        cache_dir <- project_cache_dir(path)
+        if (fs::dir_exists(cache_dir)) {
+            cli_alert_info("Removing existing cache directory")
+            fs::dir_delete(cache_dir)
+        }
+
+        # Create new project config
+        create_project(project = path, edit_config = FALSE, atlas = atlas, ...)
+    }
+
+    return(invisible(path))
 }
 
 create_project_dirs <- function(project_dir, atlas = FALSE) {
     fs::dir_create(project_dir)
-    cli_alert_info("creating {project_dir}")
+    cli_alert_info("Creating {.field {project_dir}} directory")
 
     fs::dir_create(project_cache_dir(project_dir))
     fs::dir_create(fs::path(project_dir, "config"))
@@ -313,21 +387,23 @@ create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overw
     }
 
     fs::file_copy(app_sys("app.R"), fs::path(bundle_dir, "app.R"))
-    fs::dir_copy(project, fs::path(bundle_dir, "project"))
+
+    fs::dir_copy(fs::path(project, "config"), fs::path(bundle_dir, "config"))
+    fs::dir_copy(fs::path(project, "cache"), fs::path(bundle_dir, "cache"))
 
     if (light_version) {
-        add_to_config(project_config_file(fs::path(bundle_dir, "project")), light_version = TRUE, excluded_tabs = excluded_tabs)
-        cli::cli_alert("Creating a light version of the bundle. Excluded tabs: {.field Gene modules, Annotate, Inner-fold, Stdev-fold}. To change this, edit the {.file project/config.yaml} file.")
+        add_to_config(project_config_file(bundle_dir), light_version = TRUE, excluded_tabs = excluded_tabs)
+        cli::cli_alert("Creating a light version of the bundle. Excluded tabs: {.field Gene modules, Annotate, Inner-fold, Stdev-fold}. To change this, edit the {.file config/config.yaml} file.")
     }
 
     if (!is.null(shiny_cache_dir)) {
-        add_to_config(project_config_file(fs::path(bundle_dir, "project")), shiny_cache_dir = shiny_cache_dir)
-        cli::cli_alert("Using shiny cache directory {shiny_cache_dir}. To change this, edit the {.file project/config.yaml} file.")
+        add_to_config(project_config_file(bundle_dir), shiny_cache_dir = shiny_cache_dir)
+        cli::cli_alert("Using shiny cache directory {shiny_cache_dir}. To change this, edit the {.file config/config.yaml} file.")
     }
 
     if (!is.null(shiny_cache_max_size)) {
-        add_to_config(project_config_file(fs::path(bundle_dir, "project")), shiny_cache_max_size = shiny_cache_max_size)
-        cli::cli_alert("Using shiny cache max size {.val {shiny_cache_max_size}}. To change this, edit the {.file project/config.yaml} file.")
+        add_to_config(project_config_file(bundle_dir), shiny_cache_max_size = shiny_cache_max_size)
+        cli::cli_alert("Using shiny cache max size {.val {shiny_cache_max_size}}. To change this, edit the {.file config/config.yaml} file.")
     }
 
     if (restart) {
@@ -355,4 +431,13 @@ add_to_config <- function(file, ...) {
     config <- yaml::read_yaml(file)
     config <- c(config, list(...))
     yaml::write_yaml(config, file)
+}
+
+
+add_app_file <- function(project_dir) {
+    app_file_path <- fs::path(project_dir, "app.R")
+    if (!fs::file_exists(app_file_path)) {
+        fs::file_copy(app_sys("app.R"), app_file_path)
+        cli_alert_info("Added app.R file to the project directory. The project is now ready for direct deployment.")
+    }
 }

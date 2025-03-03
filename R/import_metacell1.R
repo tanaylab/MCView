@@ -87,7 +87,7 @@ import_dataset_metacell1 <- function(project,
     }
 
     verbose <- !is.null(getOption("MCView.verbose")) && getOption("MCView.verbose")
-    verify_project_dir(project, create = TRUE, ...)
+    init_project_dir(project, create = TRUE, ...)
 
     cli_alert_info("Importing {.field {dataset}}")
 
