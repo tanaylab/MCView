@@ -41,17 +41,10 @@ See the [vignette](https://tanaylab.github.io/MCView/articles/MCView.html).
 
 Tl;dr:
 
-#### Initialize a new project: 
-
-```r
-MCView::create_project("PBMC")
-```
-
 #### Import a dataset:
 
 ```r
-MCView::import_dataset(project = "PBMC", 
-               dataset = "PBMC163k", 
+MCView::import_dataset(project = "PBMC",                
                anndata_file = "raw/metacells.h5ad")
 ```
 

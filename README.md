@@ -4,7 +4,6 @@
 # MCView
 
 <!-- badges: start -->
-
 <!-- badges: end -->
 
 MCView creates a shiny-app facilitating interactive exploration and
@@ -35,17 +34,10 @@ See the
 
 Tl;dr:
 
-#### Initialize a new project:
-
-``` r
-MCView::create_project("PBMC")
-```
-
 #### Import a dataset:
 
 ``` r
-MCView::import_dataset(project = "PBMC", 
-               dataset = "PBMC163k", 
+MCView::import_dataset(project = "PBMC",                
                anndata_file = "raw/metacells.h5ad")
 ```
 
