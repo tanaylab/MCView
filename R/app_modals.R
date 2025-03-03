@@ -56,19 +56,35 @@ download_data_modal_reactives <- function(input, output, session, globals) {
         creation_text <- HTML(creation_text)
     }
 
-    observeEvent(
-        input$download_data_modal,
-        showModal(modalDialog(
+    if (file.exists(source_metacells_file_path(project))) {
+        file_size <- fs::file_info(source_metacells_file_path(project), follow = TRUE)$size
+        if (!is.na(file_size)) {
+            dialog <- modalDialog(
+                title = "Download data",
+                "To download the metacells anndata file, press the download button below:",
+                br(),
+                br(),
+                downloadButton("download_mc_data", glue("Download ({file_size})"), style = "align-items: center;"),
+                br(),
+                br(),
+                creation_text,
+                easyClose = TRUE
+            )
+        }
+    } else {
+        dialog <- modalDialog(
             title = "Download data",
-            "To download the metacells anndata file, press the download button below:",
-            br(),
-            br(),
-            downloadButton("download_mc_data", glue("Download ({fs::file_info(source_metacells_file_path(project), follow=TRUE)$size})"), style = "align-items: center;"),
+            "The metacells anndata file is not available. Run the import commands with copy_source_file=TRUE to make it available.",
             br(),
             br(),
             creation_text,
             easyClose = TRUE
-        ))
+        )
+    }
+
+    observeEvent(
+        input$download_data_modal,
+        showModal(dialog)
     )
 
     output$download_mc_data <- downloadHandler(
