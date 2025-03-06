@@ -648,9 +648,16 @@ import_dataset <- function(project,
 
     # Add app.R file to make the project ready for direct deployment
     add_app_file(project)
-
-    # Add metacells file symlink
-    add_metacells_file(project, anndata_file, copy_source_file)
+    
+    if (inherits(anndata_file, "AnnDataR6")){
+        if (copy_source_file){
+            anndata::write_h5ad(adata, source_metacells_file_path(project))
+            cli::cli_alert_info("Copying the source anndata file to the project directory: {.file {source_metacells_file_path(project)}}")
+        }
+    } else {
+        # Add metacells file symlink
+        add_metacells_file(project, anndata_file, copy_source_file)
+    }
 
     save_function_call(command_file_path(project), add_details = TRUE, project = project)
     cli::cli_alert_info("Saving the command to {.file {command_file_path(project)}}")
