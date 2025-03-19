@@ -78,6 +78,7 @@ heatmap_sidebar <- function(id, ..., show_fitted_filter = FALSE) {
         add_genes_ui <- NULL
         update_genes_ui <- NULL
         load_genes_ui <- NULL
+        use_de_genes_ui <- NULL
         include_lateral_ui <- NULL
         include_noisy_ui <- NULL
         highlight_genes_ui <- NULL
@@ -93,6 +94,7 @@ heatmap_sidebar <- function(id, ..., show_fitted_filter = FALSE) {
         remove_genes_ui <- shinyWidgets::actionGroupButtons(ns("remove_genes"), labels = "Remove selected genes", size = "sm")
         add_genes_ui <- uiOutput(ns("add_genes_ui"))
         update_genes_ui <- shinyWidgets::actionGroupButtons(ns("update_genes"), labels = "Update genes", size = "sm")
+        use_de_genes_ui <- shinyWidgets::actionGroupButtons(ns("use_de_genes"), labels = "Use DE genes", size = "sm")
         include_lateral_ui <- shinyWidgets::awesomeCheckbox(
             inputId = ns("include_lateral"),
             label = "Include lateral",
@@ -158,6 +160,7 @@ heatmap_sidebar <- function(id, ..., show_fitted_filter = FALSE) {
         update_genes_ui,
         max_gene_num_ui,
         add_genes_ui,
+        use_de_genes_ui,
         show_only_fitted_ui,
         include_lateral_ui,
         include_noisy_ui,
@@ -210,6 +213,15 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
         } else {
             markers(new_markers)
             showNotification(glue("Loaded {length(new_markers)} genes"), type = "message")
+        }
+    })
+
+    observeEvent(input$use_de_genes, {
+        if (!is.null(globals$significant_genes) && length(globals$significant_genes) > 0) {
+            markers(globals$significant_genes)
+            showNotification(glue("Updated markers with {length(globals$significant_genes)} significant genes from current Diff. Expression comparison"), type = "message")
+        } else {
+            showNotification("No significant genes available in the current Diff. Expression comparison.", type = "warning")
         }
     })
 

@@ -188,3 +188,13 @@ diff_expr_switch_metacells <- function(dataset, input, output, session, groupA =
         }
     })
 }
+
+diff_expr_auto_update_globals <- function(mc_mc_gene_scatter_df, globals) {
+    observe({
+        req(mc_mc_gene_scatter_df())
+        globals$significant_genes <- mc_mc_gene_scatter_df() %>%
+            filter(col %in% c("darkred", "darkblue")) %>%
+            pull(gene) %>%
+            unique()
+    })
+}
