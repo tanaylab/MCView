@@ -1,6 +1,7 @@
-* MCView 0.2.43
+# MCView 0.2.43
 
 * Fix: changing `force_cell_type` did not update the heatmap when in zoom mode.
+* Fix: show "Enrichment type" toggle when filtering by clipboard, and allow updating genes.
 * Added profiling mode for debug purposes.
 
 # MCView 0.2.42 
