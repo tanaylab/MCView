@@ -25,3 +25,4 @@ $run_dev.*
 ^tests/testthat/PBMC/*
 ^start_app.R$
 ^publish_docker_image.sh$
+^example$

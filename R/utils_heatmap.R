@@ -188,7 +188,7 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
         req(input$load_genes)
         req(input$load_genes$datapath)
         req(input$load_genes$datapath != "")
-        new_markers <- read.csv(input$load_genes$datapath, header = FALSE, stringsAsFactors = FALSE)[, 1]
+        new_markers <- utils::read.csv(input$load_genes$datapath, header = FALSE, stringsAsFactors = FALSE)[, 1]
         new_markers <- new_markers[new_markers %in% gene_names(dataset())]
         if (length(new_markers) == 0) {
             showNotification("No valid genes were loaded", type = "warning")
@@ -735,7 +735,7 @@ print.gt_custom <- function(x) {
 filter_heatmap_by_metacell <- function(m, f) {
     if (!is.null(f) && length(f) > 0) {
         f <- f[f %in% colnames(m)]
-        m <- m[, f, drop = FALSE]
+        m <- m[, colnames(m) %in% f, drop = FALSE]
     }
     return(m)
 }
