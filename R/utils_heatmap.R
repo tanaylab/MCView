@@ -5,6 +5,7 @@ heatmap_box <- function(id,
                         low_color = "blue",
                         mid_color = "white",
                         high_color = "red",
+                        highlight_color = "#fba236",
                         gene_select_label = "Select on double-click (gene)",
                         gene_select_choices = c("X axis", "Y axis"),
                         legend_width = 2,
@@ -32,7 +33,8 @@ heatmap_box <- function(id,
                 colourpicker::colourInput(ns("mid_color"), "Mid color", mid_color),
                 checkboxInput(ns("plot_legend"), "Show legend", value = TRUE),
                 checkboxInput(ns("plot_cell_type_legend"), "Show cell type legend", value = TRUE),
-                checkboxInput(ns("plot_genes_legend"), "Show genes legend", value = TRUE),
+                checkboxInput(ns("plot_genes_legend"), "Show genes legend", value = config$show_heatmap_genes_legend %||% TRUE),
+                colourpicker::colourInput(ns("highlight_color"), "Gene highlight color", highlight_color),
                 numericInput(ns("legend_width"), "Legend width", min = 1, max = 11, step = 1, value = legend_width),
                 shinyWidgets::prettyRadioButtons(
                     inputId = ns("gene_select"),
@@ -73,8 +75,12 @@ heatmap_sidebar <- function(id, ..., show_fitted_filter = FALSE) {
         include_metadata_ui <- NULL
     } else {
         max_gene_num_ui <- numericInput(ns("max_gene_num"), "Maximal number of genes", value = 100)
-        # highlight_genes_ui <- shinyWidgets::actionGroupButtons(ns("highlight_genes"), labels = "Highlight selected genes", size = "sm")
-        highlight_genes_ui <- NULL
+        highlight_genes_ui <- shinyWidgets::actionGroupButtons(
+            inputIds = c(ns("highlight_genes"), ns("clear_highlights")),
+            labels = c("Highlight selected genes", "Clear highlights"),
+            status = c("primary", "default"),
+            size = "sm"
+        )
         remove_genes_ui <- shinyWidgets::actionGroupButtons(ns("remove_genes"), labels = "Remove selected genes", size = "sm")
         add_genes_ui <- uiOutput(ns("add_genes_ui"))
         update_genes_ui <- shinyWidgets::actionGroupButtons(ns("update_genes"), labels = "Update genes", size = "sm")
@@ -129,8 +135,7 @@ heatmap_sidebar <- function(id, ..., show_fitted_filter = FALSE) {
         shinyWidgets::virtualSelectInput(ns("metadata_order_var"), "Order by", choices = NULL, selected = NULL, multiple = FALSE, search = TRUE),
         tags$hr(),
         ...,
-        max_gene_num_ui,
-        add_genes_ui,
+        highlight_genes_ui,
         selectInput(
             ns("selected_marker_genes"),
             "Genes",
@@ -140,9 +145,10 @@ heatmap_sidebar <- function(id, ..., show_fitted_filter = FALSE) {
             size = 30,
             selectize = FALSE
         ),
-        highlight_genes_ui,
         remove_genes_ui,
         update_genes_ui,
+        max_gene_num_ui,
+        add_genes_ui,
         show_only_fitted_ui,
         include_lateral_ui,
         include_noisy_ui,
@@ -296,7 +302,6 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
 
 
         tagList(
-            shinyWidgets::actionGroupButtons(ns("add_genes"), labels = "Add genes", size = "sm"),
             shinyWidgets::virtualSelectInput(ns("genes_to_add"),
                 label = "Add genes",
                 choices = gene_choices,
@@ -307,7 +312,8 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
                 markSearchResults = TRUE,
                 searchByStartsWith = TRUE,
                 disableSelectAll = TRUE
-            )
+            ),
+            shinyWidgets::actionGroupButtons(ns("add_genes"), labels = "Add genes", size = "sm")
         )
     })
 
@@ -319,7 +325,7 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
 }
 
 
-heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_type_colors, globals, markers, lfp_range, mode, genes = NULL, highlighted_genes = NULL, highlight_color = "red", height = "80vh") {
+heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_type_colors, globals, markers, lfp_range, mode, genes = NULL, highlighted_genes = NULL, height = "80vh") {
     moduleServer(
         id,
         function(input, output, session) {
@@ -480,6 +486,21 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                 selected_metacells(character(0))
             })
 
+            observeEvent(input$highlight_genes, {
+                req(input$selected_marker_genes)
+                highlighted_genes(input$selected_marker_genes)
+
+                showNotification(
+                    glue::glue("Highlighted {length(input$selected_marker_genes)} gene(s)"),
+                    type = "message"
+                )
+            })
+
+            observeEvent(input$clear_highlights, {
+                highlighted_genes(NULL)
+                showNotification("Cleared gene highlights", type = "message")
+            })
+
             output$plotting_area <- renderUI({
                 heatmap <- plotOutput(
                     ns("heatmap"),
@@ -532,7 +553,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     }
 
                     if (input$plot_genes_legend) {
-                        gene_colors <- data.frame(type = c("lateral+noisy", "lateral", "noisy", "disjoined", "module"), color = c("purple", "blue", "red", "darkgray", "#012901"))
+                        gene_colors <- data.frame(type = c("lateral+noisy", "lateral", "noisy", "disjoined", "module", "highlighted"), color = c("purple", "blue", "red", "darkgray", "#012901", input$highlight_color))
                         p <- p +
                             geom_text(data = gene_colors, inherit.aes = FALSE, x = 1, y = 1, aes(label = type, color = type)) +
                             scale_color_manual("Genes", values = deframe(gene_colors))
@@ -589,9 +610,14 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                         gene_colors <- ifelse(names(gene_colors) %in% genes(), gene_colors, "#012901")
                     }
 
-                    if (!is.null(highlighted_genes) && length(highlighted_genes()) > 0 && highlighted_genes() %in% names(gene_colors)) {
-                        gene_colors[highlighted_genes()] <- highlight_color
+                    if (!is.null(highlighted_genes) && length(highlighted_genes()) > 0) {
+                        valid_genes <- highlighted_genes()[highlighted_genes() %in% names(gene_colors)]
+
+                        if (length(valid_genes) > 0) {
+                            gene_colors[valid_genes] <- input$highlight_color
+                        }
                     }
+
 
                     res <- plot_markers_mat(
                         m,
@@ -618,7 +644,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     return(structure(list(p = res$p, gtable = res$gtable), class = "gt_custom"))
                 },
                 res = 96
-            ) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), gene_modules(), lfp_range(), metacell_filter(), input$plot_legend, input$plot_cell_type_legend, input$plot_genes_legend, input$selected_md, markers(), input$selected_cell_types, input$force_cell_type, clipboard_changed(), input$high_color, input$low_color, input$mid_color, input$midpoint, genes(), input$show_genes, highlighted_genes(), highlight_color, input$max_gene_num, input$metadata_order_var, input$metadata_order_cell_type_var, input$mat_value)
+            ) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), gene_modules(), lfp_range(), metacell_filter(), input$plot_legend, input$plot_cell_type_legend, input$plot_genes_legend, input$selected_md, markers(), input$selected_cell_types, input$force_cell_type, clipboard_changed(), input$high_color, input$low_color, input$mid_color, input$midpoint, genes(), input$show_genes, highlighted_genes(), input$highlight_color, input$max_gene_num, input$metadata_order_var, input$metadata_order_cell_type_var, input$mat_value)
 
             observeEvent(input$heatmap_brush, {
                 req(input$brush_action)
