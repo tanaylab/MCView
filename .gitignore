@@ -25,3 +25,5 @@ check/
 settings.json
 atlas_proj/*
 .lintr
+example/
+*.Rprof
