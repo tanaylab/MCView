@@ -7,6 +7,7 @@
 #' @param port app port
 #' @param host app host
 #' @param launch.browser launch web browser after app start
+#' @param profile enable profiling for debugging
 #' @param ... A series of options to be used inside the app.
 #'
 #' @examples
@@ -22,10 +23,11 @@ run_app <- function(project,
                     port = NULL,
                     host = NULL,
                     launch.browser = FALSE,
+                    profile = FALSE,
                     ...) {
     project <- init_project_dir(project)
     verify_version(project)
-    init_config(project = project)
+    init_config(project = project, profile = profile)
     load_all_data(cache_dir = project_cache_dir(project))
     init_defs()
 

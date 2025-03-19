@@ -180,13 +180,8 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
         hc <- fastcluster::hclust(tgs_dist(tgs_cor(feat, pairwise.complete.obs = TRUE)), method = "ward.D2")
     }
 
-
-    d <- reorder(
-        as.dendrogram(hc),
-        feat[main_mark, ] - feat[second_mark, ],
-        agglo.FUN = mean
-    )
-    ord <- as.hclust(d)$order
+    reorder.hclust <- utils::getFromNamespace("reorder.hclust", "vegan")
+    ord <- reorder.hclust(hc, as.numeric(feat[main_mark, ] - feat[second_mark, ]), agglo.FUN = "uwmean")$order
 
     if (any(zero_mcs)) {
         mc_order <- c(colnames(feat)[ord], colnames(feat_zero))
@@ -195,11 +190,12 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
         mc_order <- colnames(feat)[ord]
     }
 
+
     if (force_cell_type) {
         ord_df <- tibble(metacell = colnames(feat)) %>%
-            mutate(orig_ord = 1:n()) %>%
+            mutate(orig_ord = seq_len(n())) %>%
             left_join(
-                tibble(metacell = mc_order) %>% mutate(glob_ord = 1:n()),
+                tibble(metacell = mc_order) %>% mutate(glob_ord = seq_len(n())),
                 by = "metacell"
             ) %>%
             left_join(
@@ -368,6 +364,7 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
             mc_order <- secondary_order
         } else {
             mc_order <- order_mc_by_most_var_genes(mat, force_cell_type = force_cell_type, metacell_types = metacell_types, epsilon = epsilon, notify_var_genes = notify_var_genes, log_transform = log_transform, cached_dist = cached_dist, secondary_order = secondary_order)
+
             if (!is.null(cell_type_order)) {
                 mc_order_names <- tibble(metacell = colnames(mat)[mc_order]) %>%
                     left_join(metacell_types, by = "metacell") %>%

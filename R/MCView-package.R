@@ -46,7 +46,6 @@
 #' @importFrom stats median
 #' @importFrom stats plogis
 #' @importFrom stats quantile
-#' @importFrom stats reorder
 #' @importFrom stats runif
 #' @importFrom stats setNames
 #' @importFrom stats time

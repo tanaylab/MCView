@@ -4,7 +4,14 @@
 \alias{run_app}
 \title{Run the MCView Application}
 \usage{
-run_app(project, port = NULL, host = NULL, launch.browser = FALSE, ...)
+run_app(
+  project,
+  port = NULL,
+  host = NULL,
+  launch.browser = FALSE,
+  profile = FALSE,
+  ...
+)
 }
 \arguments{
 \item{project}{path of the project to run.}
@@ -14,6 +21,8 @@ run_app(project, port = NULL, host = NULL, launch.browser = FALSE, ...)
 \item{host}{app host}
 
 \item{launch.browser}{launch web browser after app start}
+
+\item{profile}{enable profiling for debugging}
 
 \item{...}{
   Arguments passed on to \code{\link[shiny:shinyApp]{shiny::shinyApp}}
