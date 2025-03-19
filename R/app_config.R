@@ -1,8 +1,7 @@
 verify_config_file <- function(config) {
     required_fields <- c(
         "title",
-        "tabs",
-        "help"
+        "tabs"
     )
 
     for (field in required_fields) {
@@ -24,7 +23,6 @@ verify_config_file <- function(config) {
 #' @noRd
 init_config <- function(project, profile = FALSE) {
     config_file <- project_config_file(project)
-    help_file <- project_help_file(project)
     project <<- project
     about_file <<- fs::path_abs(project_about_file(project))
     cache_dir <<- project_cache_dir(project)
@@ -36,8 +34,6 @@ init_config <- function(project, profile = FALSE) {
     }
 
     verify_app_cache(project)
-
-    help_config <<- yaml::read_yaml(help_file)
 
     if (file.exists(project_metacells_algorithm_file(project))) {
         metacells_version <- readLines(project_metacells_algorithm_file(project))

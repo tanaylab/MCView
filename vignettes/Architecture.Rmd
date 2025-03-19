@@ -21,8 +21,7 @@ An __MCView__ app needs two components in order to run:
 
 The app can use additional files that are not essential:
 
-1. `help.yaml` - custom help messages. 
-2. `about.Rmd` - custom "About" page. 
+1. `about.Rmd` - custom "About" page. 
 
 In order to bundle together the configuration and cached data, __MCView__ supports a concept of a 'project'.
 
@@ -34,8 +33,7 @@ A project is a standard library structure that binds config and cache, e.g.:
 my_project
 ├── config
 │   ├── about.Rmd
-│   ├── config.yaml
-│   └── help.yaml
+│   └── config.yaml
 └── cache
     ├── ko
     └── wt
@@ -53,18 +51,16 @@ Which would open a text editor in order to edit the configuration file.
 
 ## Configuration files
 
-An __MCView__ project can have 3 configuration files: 
+An __MCView__ project can have 2 configuration files: 
 
 1. config.yaml - main configuration file (required)
-2. help.yaml - help text messages (optional)
-3. about.Rmd - text for the about tab (optional)
+2. about.Rmd - text for the about tab (optional)
 
 The main configuration file (`config/config.yaml`) contains the parameters:
 
 ```yaml
 title: MCView
 tabs: ["QC", "Manifold", "Genes", "Markers", "Gene modules", "Diff. Expression", "Cell types", "Annotate", "About"] # which tabs to show
-help: false # set to true to show introjs help on start
 selected_gene1: Foxc1 # Default selected gene1 (optional)
 selected_gene2: Twist1 # Default selected gene2 (optional)
 selected_mc1: 1 # Default selected metacell1 
@@ -95,10 +91,6 @@ Why would you want to add or remove tabs?
 
 Many times we would want to separate between a the 'development' version of an __MCView__ app which allows users to re-annotate the data and a 'production' version which only contains data analysis tabs. This can be done by removing "Annotate" from the `tabs` field. In addition, you might want to always start the app from the "Genes" tab instead of the "Manifold", which can be done by changing the order in the `tabs` field. And lastly, some tabs such as "Query", "Atlas" and "Flow" are not enabled by default and should be added explicitly to the tabs section of the config file.
 
-### help
-
-Controls wether to start the app with a help modal (from introjs). Help messages can be edited in `help.yaml` file (see below).
-
 ### selected_gene1/selected_gene2 (optional)
 
 The default genes that would be selected (in any screen with gene selection). If this parameter is missing, the 2 genes with highest max(expr)-min(expr) in the first dataset would be chosen. 
@@ -110,10 +102,6 @@ The default metacells that would be selected in the Diff. Expression tab.
 ### datasets (optional)
 
 Additional per-dataset parameters. Current parameters include default visualization properties of projection and scatter plots. 
-
-### help.yaml
-
-This file contains the help messages used by introjs. It shouldn't be changed in general, except maybe the introduction message. Note that the messages refer to shiny elements, so you would have to look at the code itself in order to identify the element of each message. 
 
 ### about.Rmd
 
@@ -163,8 +151,7 @@ my_project/
 ├── app.R
 ├── config/
 │   ├── about.Rmd
-│   ├── config.yaml
-│   └── help.yaml
+│   └── config.yaml
 └── cache/
     ├── dataset1/
     └── dataset2/

@@ -125,8 +125,6 @@ app_server <- function(input, output, session) {
     download_modal_reactives(input, output, session, globals)
     download_data_modal_reactives(input, output, session, globals)
 
-    help_reactives(input, output, session, globals)
-
     if (!is.null(config$profile) && config$profile) {
         if (!requireNamespace("profvis", quietly = TRUE)) {
             stop("Please install profvis R package in order to use profiling")

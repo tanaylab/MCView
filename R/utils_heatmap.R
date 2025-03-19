@@ -14,7 +14,16 @@ heatmap_box <- function(id,
     div(
         generic_box(
             id = ns("heatmap_box"),
-            title = title,
+            title = span(
+                title,
+                actionButton(
+                    ns("show_help"),
+                    icon = icon("question-circle"),
+                    label = "",
+                    class = "btn-link",
+                    style = "padding: 0 0 0 0; color: white; font-size: 16px; background: transparent; border: none;"
+                )
+            ),
             status = "primary",
             solidHeader = TRUE,
             collapsible = TRUE,
@@ -335,6 +344,10 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
 
             genes <- genes %||% reactiveVal()
             highlighted_genes <- highlighted_genes %||% reactiveVal()
+
+            observeEvent(input$show_help, {
+                showModal(create_heatmap_help_modal(mode))
+            })
 
             mat <- reactive({
                 req(markers())
