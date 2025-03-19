@@ -26,4 +26,4 @@ $run_dev.*
 ^start_app.R$
 ^publish_docker_image.sh$
 ^example$
-^*\.Rprof$
+^.*\.Rprof$
