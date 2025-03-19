@@ -28,6 +28,7 @@ create_heatmap_help_modal <- function(mode = "Markers") {
         },
         h4("Metacell Ordering"),
         p("By default, metacells are ordered based on the value selected in 'Order by' in the sidebar (available under 'Order cell types by' dropdown)."),
+        p("When 'Hierarchical clustering' is enabled, the dendrogram is sorted by the difference between the gene covering the largest number of metacells, and the gene that is the most anti-correlated to it."),
         p("When 'Force cell type' is enabled, metacells from the same cell type are grouped together. The order of cell types is determined by the 'Order cell types by' setting."),
         h4("Cell Type Filtering"),
         p("You can filter the heatmap to show only specific cell types by selecting them from the 'Cell types' dropdown in the sidebar."),
