@@ -227,6 +227,13 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
             } else {
                 markers_df <- new_markers_df
             }
+
+            if (!is.null(input$filter_by_clipboard) && input$filter_by_clipboard) {
+                if (!is.null(globals$clipboard) && length(globals$clipboard) > 0) {
+                    markers_df <- markers_df %>%
+                        filter(metacell %in% globals$clipboard)
+                }
+            }
         }
 
         req(input$max_gene_num)
@@ -436,9 +443,31 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
             })
 
             observe({
-                shinyjs::toggle(id = "reset_zoom_ui", condition = !is.null(metacell_filter()) && length(metacell_filter()) > 0)
-                shinyjs::toggle(id = "mat_value_ui", condition = (!is.null(metacell_filter()) && length(metacell_filter()) > 0) || (!is.null(input$selected_cell_types) && length(input$selected_cell_types) < nrow(cell_type_colors())))
-                shinyjs::toggle(id = "copy_metacells_ui", condition = !is.null(selected_metacells()) && length(selected_metacells()) > 0 && !is.null(input$brush_action) && input$brush_action == "Select")
+                shinyjs::toggle(
+                    id = "reset_zoom_ui",
+                    condition = !is.null(metacell_filter()) && length(metacell_filter()) > 0
+                )
+                shinyjs::toggle(
+                    id = "mat_value_ui",
+                    condition = (!is.null(metacell_filter()) && length(metacell_filter()) > 0) ||
+                        (
+                            !is.null(input$selected_cell_types) &&
+                                length(input$selected_cell_types) < nrow(cell_type_colors())
+                        ) ||
+                        (
+                            !is.null(input$filter_by_clipboard) &&
+                                input$filter_by_clipboard &&
+                                !is.null(globals$clipboard) &&
+                                length(globals$clipboard) > 0
+                        )
+                )
+                shinyjs::toggle(
+                    id = "copy_metacells_ui",
+                    condition = !is.null(selected_metacells()) &&
+                        length(selected_metacells()) > 0 &&
+                        !is.null(input$brush_action) &&
+                        input$brush_action == "Select"
+                )
             })
 
             observeEvent(input$reset_zoom, {
