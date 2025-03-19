@@ -177,7 +177,6 @@ This opens a text editor with `PBMC/config/config.yaml`:
 ```yaml
 title: PBMC
 tabs: ["QC", "Manifold", "Genes", "Markers", "Gene modules", "Diff. Expression", "Cell types","Annotate", "About"]
-help: false
 # selected_gene1: Foxc1
 # selected_gene2: Twist1
 selected_mc1: 1

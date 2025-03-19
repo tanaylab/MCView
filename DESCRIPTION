@@ -49,7 +49,6 @@ Imports:
     promises,
     purrr,
     qs,
-    rintrojs,
     rlang,
     rmarkdown,
     scales,

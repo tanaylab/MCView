@@ -2,14 +2,6 @@ project_config_file <- function(path) {
     fs::path(path, "config", "config.yaml")
 }
 
-project_help_file <- function(path) {
-    fn <- fs::path(path, "config", "help.yaml")
-    if (!file.exists(fn)) {
-        fn <- app_sys("default-config", "help.yaml")
-    }
-    return(fn)
-}
-
 project_about_file <- function(path) {
     fn <- fs::path(path, "config", "about.Rmd")
     if (!file.exists(fn)) {
@@ -148,7 +140,7 @@ create_project_dirs <- function(project_dir, atlas = FALSE) {
 
     defaults_dir <- app_sys("default-config")
 
-    files <- c("help.yaml", "about.Rmd")
+    files <- c("about.Rmd")
     for (file in files) {
         if (!fs::file_exists(fs::path(project_dir, "config", file))) {
             fs::file_copy(fs::path(defaults_dir, file), fs::path(project_dir, "config", file))
@@ -161,7 +153,6 @@ create_project_dirs <- function(project_dir, atlas = FALSE) {
 create_project_config_file <- function(project_dir,
                                        title = "MCView",
                                        tabs = NULL,
-                                       help = FALSE,
                                        selected_gene1 = NULL,
                                        selected_gene2 = NULL,
                                        selected_mc1 = NULL,
@@ -179,7 +170,6 @@ create_project_config_file <- function(project_dir,
         }
     }
     config$tabs <- tabs
-    config$help <- help
     config$selected_gene1 <- selected_gene1
     config$selected_gene2 <- selected_gene2
     config$selected_mc1 <- selected_mc1
@@ -232,7 +222,6 @@ create_project_config_file <- function(project_dir,
 #' @param project path of the project
 #' @param title The title of the app. This would be shown on the top left of the screen.
 #' @param tabs Controls which tabs to show in the left sidebar and their order. Options are: "QC", "Projection-QC", "Manifold", "Genes", "Query", "Atlas", "Markers", "Gene modules", "Projected-fold", "Diff. Expression", "Cell types", "Flow", "Annotate", "About". When NULL - default tabs would be set. For projects with atlas projections, please set \code{atlas} to TRUE.
-#' @param help Controls wether to start the app with a help modal (from introjs). Help messages can be edited in help.yaml file (see 'Architecture' vignette).
 #' @param selected_gene1,selected_gene2 The default genes that would be selected (in any screen with gene selection). If this parameter is missing, the 2 genes with highest max(expr)-min(expr) in the first dataset would be chosen.
 #' @param selected_mc1,selected_mc2 The default metacells that would be selected in the Diff. Expression tab.
 #' @param datasets A named list with additional per-dataset parameters. Current parameters include default visualization properties of projection and scatter plots.
@@ -255,7 +244,6 @@ create_project_config_file <- function(project_dir,
 create_project <- function(project,
                            title = "MCView",
                            tabs = NULL,
-                           help = FALSE,
                            selected_gene1 = NULL,
                            selected_gene2 = NULL,
                            selected_mc1 = NULL,
@@ -269,7 +257,6 @@ create_project <- function(project,
         project_dir = project,
         title = title,
         tabs = tabs,
-        help = help,
         selected_gene1 = selected_gene1,
         selected_gene2 = selected_gene2,
         selected_mc1 = selected_mc1,

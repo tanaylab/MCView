@@ -105,8 +105,6 @@ globalVariables(unique(c(
     "cell_type", "metacell",
     # get_samples_mat:
     "cell_type", "metacell",
-    # get_tab_steps:
-    "element", "help_config",
     # get_top_cor_gene:
     "egc_epsilon", "gene1", "gene2", "label",
     # golem_add_external_resources:

@@ -145,15 +145,6 @@ app_ui <- function(request) {
                     size = "sm",
                     block = FALSE,
                     no_outline = FALSE
-                ),
-                shinyWidgets::actionBttn(
-                    inputId = "help",
-                    label = "Help",
-                    icon = NULL,
-                    color = "default",
-                    size = "sm",
-                    block = FALSE,
-                    no_outline = FALSE
                 )
             )
         ),
@@ -188,7 +179,6 @@ app_ui <- function(request) {
         profiler,
         tags$script(screen_size_jscode),
         shinyjs::useShinyjs(), # Set up shinyjs
-        rintrojs::introjsUI(),
         golem_add_external_resources(),
         shinybusy::add_busy_spinner(spin = "breeding-rhombus", position = "bottom-right", timeout = 100),
         dashboard_page

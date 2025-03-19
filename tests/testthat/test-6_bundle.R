@@ -7,7 +7,6 @@ test_bundle <- function(project_bundle) {
     expect_true(fs::file_exists(fs::path(project_bundle, "app.R")))
     expect_true(fs::file_exists(fs::path(project_bundle, "project", "config", "config.yaml")))
     expect_true(fs::file_exists(fs::path(project_bundle, "project", "config", "about.Rmd")))
-    expect_true(fs::file_exists(fs::path(project_bundle, "project", "config", "help.yaml")))
 
     test_dataset(fs::path(project_bundle, "project"), "PBMC163k")
 

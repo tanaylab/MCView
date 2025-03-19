@@ -12,7 +12,6 @@
 #' @import cli
 #' @importFrom Matrix t rowSums
 #' @importFrom rlang has_name
-#' @importFrom rintrojs introBox
 #' @importFrom glue glue
 #' @importFrom promises %...>%
 #' @importFrom promises future_promise
