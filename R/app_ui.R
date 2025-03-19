@@ -176,8 +176,16 @@ app_ui <- function(request) {
         });
     '
 
+    profiler <- NULL
+    if (!is.null(config$profile) && config$profile) {
+        if (!requireNamespace("profvis", quietly = TRUE)) {
+            stop("Please install profvis R package in order to use profiling")
+        }
+        profiler <- profvis::profvis_ui("profiler")
+    }
+
     tagList(
-        # profvis::profvis_ui("profiler"),
+        profiler,
         tags$script(screen_size_jscode),
         shinyjs::useShinyjs(), # Set up shinyjs
         rintrojs::introjsUI(),

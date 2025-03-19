@@ -22,7 +22,7 @@ verify_config_file <- function(config) {
 #' @param project path of the project to initialize
 #'
 #' @noRd
-init_config <- function(project) {
+init_config <- function(project, profile = FALSE) {
     config_file <- project_config_file(project)
     help_file <- project_help_file(project)
     project <<- project
@@ -43,6 +43,7 @@ init_config <- function(project) {
         metacells_version <- readLines(project_metacells_algorithm_file(project))
         config$metacells_version <<- metacells_version
     }
+    config$profile <<- profile
 }
 
 init_defs <- function() {

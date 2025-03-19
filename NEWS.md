@@ -1,3 +1,8 @@
+* MCView 0.2.43
+
+* Fix: changing `force_cell_type` did not update the heatmap when in zoom mode.
+* Added profiling mode for debug purposes.
+
 # MCView 0.2.42 
 
 * Fix: apps did not start when `light_version` was TRUE.

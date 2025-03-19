@@ -1,6 +1,6 @@
 Package: MCView
 Title: A Shiny App for Metacell Analysis
-Version: 0.2.42
+Version: 0.2.43
 Authors@R: 
     person(given = "Aviezer",
            family = "Lifshitz",
@@ -68,6 +68,7 @@ Imports:
     tibble,
     tidyr,
     viridis,
+    vegan,
     yaml,
     zip,
     Matrix,
@@ -83,7 +84,8 @@ Suggests:
     processx,
     testthat,
     withr,
-    metacell
+    metacell,
+    profvis
 VignetteBuilder: 
     knitr
 Remotes: 

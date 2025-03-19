@@ -127,13 +127,18 @@ app_server <- function(input, output, session) {
 
     help_reactives(input, output, session, globals)
 
-    # callModule(profvis::profvis_server, "profiler")
-    # Rprof(strftime(Sys.time(), "%Y-%m-%d-%H-%M-%S.Rprof"),
-    #     interval = 0.01, line.profiling = TRUE,
-    #     gc.profiling = FALSE, memory.profiling = FALSE
-    # )
+    if (!is.null(config$profile) && config$profile) {
+        if (!requireNamespace("profvis", quietly = TRUE)) {
+            stop("Please install profvis R package in order to use profiling")
+        }
+        callModule(profvis::profvis_server, "profiler")
+        # Rprof(strftime(Sys.time(), "%Y-%m-%d-%H-%M-%S.Rprof"),
+        #     interval = 0.01, line.profiling = TRUE,
+        #     gc.profiling = FALSE, memory.profiling = FALSE
+        # )
 
-    # onStop(function() {
-    #     Rprof(NULL)
-    # })
+        # onStop(function() {
+        #     Rprof(NULL)
+        # })
+    }
 }
