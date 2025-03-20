@@ -681,8 +681,8 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 shinyjs::toggle(id = "delete_cell_type_colors_modal", condition = !is.null(input$cell_type_table_rows_selected))
                 shinyjs::toggle(id = "rename_cell_type_colors_modal", condition = !is.null(input$cell_type_table_rows_selected) && length(input$cell_type_table_rows_selected) == 1)
                 shinyjs::toggle(id = "merge_cell_types_modal", condition = !is.null(input$cell_type_table_rows_selected) && length(input$cell_type_table_rows_selected) > 1)
-                shinyjs::toggle(id = "move_cell_type_up", condition = !is.null(input$cell_type_table_rows_selected) && length(input$cell_type_table_rows_selected) == 1)
-                shinyjs::toggle(id = "move_cell_type_down", condition = !is.null(input$cell_type_table_rows_selected) && length(input$cell_type_table_rows_selected) == 1)
+                shinyjs::toggle(id = "move_cell_type_up", condition = !is.null(input$cell_type_table_rows_selected))
+                shinyjs::toggle(id = "move_cell_type_down", condition = !is.null(input$cell_type_table_rows_selected))
             })
 
             observe({
@@ -701,74 +701,110 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
             # Add observers for the up and down buttons
             observeEvent(input$move_cell_type_up, {
                 req(input$cell_type_table_rows_selected)
-                req(length(input$cell_type_table_rows_selected) == 1)
 
-                row_idx <- input$cell_type_table_rows_selected
-                if (row_idx > 1) { # Can't move up if already at the top
+                # Get the selected rows
+                selected_rows <- sort(input$cell_type_table_rows_selected)
+
+                # Can't move up if the first selected row is already at the top
+                if (min(selected_rows) > 1) {
                     new_data <- cell_type_colors()
 
-                    # Get the actual row in the data that corresponds to the selected row in the table
-                    selected_cell_type <- new_data$cell_type[row_idx]
+                    # Find the minimum order value of the selection
+                    min_order <- min(new_data$order[selected_rows])
 
-                    # Find the row above in the ordered data
-                    above_cell_type <- new_data$cell_type[row_idx - 1]
+                    # Find the row with order value just before min_order
+                    row_above <- which(new_data$order == (min_order - 1))
 
-                    # Swap their order values
-                    new_data <- new_data %>%
-                        mutate(order = case_when(
-                            cell_type == selected_cell_type ~ order - 1,
-                            cell_type == above_cell_type ~ order + 1,
-                            TRUE ~ order
-                        )) %>%
-                        arrange(order)
+                    # If there are consecutive selected rows, we only need to swap with the row above the top selection
+                    if (length(row_above) == 1) {
+                        # Get all selected cell types
+                        selected_cell_types <- new_data$cell_type[selected_rows]
 
-                    # Update the data
-                    cell_type_colors(new_data)
+                        # Get the cell type that needs to move down
+                        above_cell_type <- new_data$cell_type[row_above]
 
-                    # Find the new index of the selected cell type
-                    new_idx <- which(new_data$cell_type == selected_cell_type)
+                        # Create a temporary order column to preserve relative positions
+                        new_data <- new_data %>%
+                            mutate(temp_order = order)
 
-                    # Update the selection to follow the moved row
-                    shinyjs::delay(100, {
-                        DT::selectRows(DT::dataTableProxy("cell_type_table"), new_idx)
-                    })
+                        # Move the above cell type down below all selected rows
+                        new_data$temp_order[row_above] <- min_order + length(selected_rows) - 1
+
+                        # Move all selected rows up by 1
+                        new_data$temp_order[selected_rows] <- new_data$temp_order[selected_rows] - 1
+
+                        # Update the order column and sort
+                        new_data <- new_data %>%
+                            mutate(order = rank(temp_order, ties.method = "first")) %>%
+                            select(-temp_order) %>%
+                            arrange(order)
+
+                        # Update the data
+                        cell_type_colors(new_data)
+
+                        # Find the new indices of the selected cell types
+                        new_indices <- which(new_data$cell_type %in% selected_cell_types)
+
+                        # Update the selection to follow the moved rows
+                        shinyjs::delay(100, {
+                            DT::selectRows(DT::dataTableProxy("cell_type_table"), new_indices)
+                        })
+                    }
                 }
             })
 
             observeEvent(input$move_cell_type_down, {
                 req(input$cell_type_table_rows_selected)
-                req(length(input$cell_type_table_rows_selected) == 1)
 
-                row_idx <- input$cell_type_table_rows_selected
+                # Get the selected rows
+                selected_rows <- sort(input$cell_type_table_rows_selected)
+
                 new_data <- cell_type_colors()
                 total_rows <- nrow(new_data)
 
-                if (row_idx < total_rows) { # Can't move down if already at the bottom
-                    # Get the actual row in the data that corresponds to the selected row in the table
-                    selected_cell_type <- new_data$cell_type[row_idx]
+                # Can't move down if the last selected row is already at the bottom
+                if (max(selected_rows) < total_rows) {
+                    # Find the maximum order value of the selection
+                    max_order <- max(new_data$order[selected_rows])
 
-                    # Find the row below in the ordered data
-                    below_cell_type <- new_data$cell_type[row_idx + 1]
+                    # Find the row with order value just after max_order
+                    row_below <- which(new_data$order == (max_order + 1))
 
-                    # Swap their order values
-                    new_data <- new_data %>%
-                        mutate(order = case_when(
-                            cell_type == selected_cell_type ~ order + 1,
-                            cell_type == below_cell_type ~ order - 1,
-                            TRUE ~ order
-                        )) %>%
-                        arrange(order)
+                    # If there are consecutive selected rows, we only need to swap with the row below the bottom selection
+                    if (length(row_below) == 1) {
+                        # Get all selected cell types
+                        selected_cell_types <- new_data$cell_type[selected_rows]
 
-                    # Update the data
-                    cell_type_colors(new_data)
+                        # Get the cell type that needs to move up
+                        below_cell_type <- new_data$cell_type[row_below]
 
-                    # Find the new index of the selected cell type
-                    new_idx <- which(new_data$cell_type == selected_cell_type)
+                        # Create a temporary order column to preserve relative positions
+                        new_data <- new_data %>%
+                            mutate(temp_order = order)
 
-                    # Update the selection to follow the moved row
-                    shinyjs::delay(100, {
-                        DT::selectRows(DT::dataTableProxy("cell_type_table"), new_idx)
-                    })
+                        # Move the below cell type up above all selected rows
+                        new_data$temp_order[row_below] <- max_order - length(selected_rows) + 1
+
+                        # Move all selected rows down by 1
+                        new_data$temp_order[selected_rows] <- new_data$temp_order[selected_rows] + 1
+
+                        # Update the order column and sort
+                        new_data <- new_data %>%
+                            mutate(order = rank(temp_order, ties.method = "first")) %>%
+                            select(-temp_order) %>%
+                            arrange(order)
+
+                        # Update the data
+                        cell_type_colors(new_data)
+
+                        # Find the new indices of the selected cell types
+                        new_indices <- which(new_data$cell_type %in% selected_cell_types)
+
+                        # Update the selection to follow the moved rows
+                        shinyjs::delay(100, {
+                            DT::selectRows(DT::dataTableProxy("cell_type_table"), new_indices)
+                        })
+                    }
                 }
             })
 
