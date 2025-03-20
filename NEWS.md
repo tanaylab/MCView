@@ -1,6 +1,7 @@
 # MCView 0.2.46
 
 * Added "Move up" and "Move down" buttons to the 'Cell types' tab.
+* Added "Random seed" input to the 'Manifold' tab.
 
 # MCView 0.2.45
 
