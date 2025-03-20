@@ -1,6 +1,7 @@
-# MCView 0.2.44
+# MCView 0.2.45
 
 * Reorder boxplot in cell types tab by cell type colors table. 
+* Added "Show correlations" button, and compute correlation based on selected cell types in the 'Cell types' tab.
 
 # MCView 0.2.44
 
