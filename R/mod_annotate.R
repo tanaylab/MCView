@@ -348,13 +348,14 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 req(nrow(selected_metacell_types()) > 0)
 
                 showModal({
+                    suggested_color <- sample(chameleon::distinct_colors(nrow(cell_type_colors()))$name, 1)
                     modalDialog(
                         title = "Create a new cell type",
                         textInput(ns("new_cell_type_name_from_selection"), "Cell type name"),
-                        colourpicker::colourInput(ns("new_cell_type_color_from_selection"), NULL, "red"),
+                        colourpicker::colourInput(ns("new_cell_type_color_from_selection"), NULL, suggested_color),
                         footer = tagList(
                             modalButton("Cancel"),
-                            actionButton(ns("add_cell_type_from_selection"), "Add metacells to the new cell type")
+                            actionButton(ns("add_cell_type_from_selection"), "Create a new cell type and add the selected metacells to it")
                         )
                     )
                 })
@@ -602,10 +603,11 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
 
             observeEvent(input$add_cell_type_modal, {
                 showModal({
+                    suggested_color <- sample(chameleon::distinct_colors(nrow(cell_type_colors()))$name, 1)
                     modalDialog(
                         title = "Add a new cell type",
                         textInput(ns("new_cell_type_name"), "Cell type name"),
-                        colourpicker::colourInput(ns("new_cell_type_color"), NULL, "red"),
+                        colourpicker::colourInput(ns("new_cell_type_color"), NULL, suggested_color),
                         footer = tagList(
                             modalButton("Cancel"),
                             actionButton(ns("add_cell_type"), "OK")
