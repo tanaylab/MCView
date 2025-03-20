@@ -653,11 +653,25 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
 
             output$annot_color_picker <- renderUI({
                 fluidRow(
-                    column(3, actionButton(ns("submit_new_color"), "Change color")),
-                    column(3, colourpicker::colourInput(ns("selected_new_color"), NULL, "black")),
-                    column(3, actionButton(ns("delete_cell_type_colors_modal"), "Delete")),
-                    column(3, actionButton(ns("rename_cell_type_colors_modal"), "Rename")),
-                    column(3, actionButton(ns("merge_cell_types_modal"), "Merge"))
+                    column(2, actionButton(ns("submit_new_color"), "Change color")),
+                    column(2, colourpicker::colourInput(ns("selected_new_color"), NULL, "black")),
+                    column(2, actionButton(ns("delete_cell_type_colors_modal"), "Delete")),
+                    column(2, actionButton(ns("rename_cell_type_colors_modal"), "Rename")),
+                    column(2, actionButton(ns("merge_cell_types_modal"), "Merge")),
+                    column(1,
+                        style = "padding:0; margin:0;",
+                        shinyjs::hidden(actionButton(ns("move_cell_type_up"), "",
+                            icon = icon("arrow-up"),
+                            style = "padding:6px 8px; margin:0;"
+                        ))
+                    ),
+                    column(1,
+                        style = "padding:0; margin:0;",
+                        shinyjs::hidden(actionButton(ns("move_cell_type_down"), "",
+                            icon = icon("arrow-down"),
+                            style = "padding:6px 8px; margin:0;"
+                        ))
+                    )
                 )
             })
 
@@ -667,6 +681,8 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 shinyjs::toggle(id = "delete_cell_type_colors_modal", condition = !is.null(input$cell_type_table_rows_selected))
                 shinyjs::toggle(id = "rename_cell_type_colors_modal", condition = !is.null(input$cell_type_table_rows_selected) && length(input$cell_type_table_rows_selected) == 1)
                 shinyjs::toggle(id = "merge_cell_types_modal", condition = !is.null(input$cell_type_table_rows_selected) && length(input$cell_type_table_rows_selected) > 1)
+                shinyjs::toggle(id = "move_cell_type_up", condition = !is.null(input$cell_type_table_rows_selected) && length(input$cell_type_table_rows_selected) == 1)
+                shinyjs::toggle(id = "move_cell_type_down", condition = !is.null(input$cell_type_table_rows_selected) && length(input$cell_type_table_rows_selected) == 1)
             })
 
             observe({
@@ -682,6 +698,79 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 cell_type_colors(new_data)
             })
 
+            # Add observers for the up and down buttons
+            observeEvent(input$move_cell_type_up, {
+                req(input$cell_type_table_rows_selected)
+                req(length(input$cell_type_table_rows_selected) == 1)
+
+                row_idx <- input$cell_type_table_rows_selected
+                if (row_idx > 1) { # Can't move up if already at the top
+                    new_data <- cell_type_colors()
+
+                    # Get the actual row in the data that corresponds to the selected row in the table
+                    selected_cell_type <- new_data$cell_type[row_idx]
+
+                    # Find the row above in the ordered data
+                    above_cell_type <- new_data$cell_type[row_idx - 1]
+
+                    # Swap their order values
+                    new_data <- new_data %>%
+                        mutate(order = case_when(
+                            cell_type == selected_cell_type ~ order - 1,
+                            cell_type == above_cell_type ~ order + 1,
+                            TRUE ~ order
+                        )) %>%
+                        arrange(order)
+
+                    # Update the data
+                    cell_type_colors(new_data)
+
+                    # Find the new index of the selected cell type
+                    new_idx <- which(new_data$cell_type == selected_cell_type)
+
+                    # Update the selection to follow the moved row
+                    shinyjs::delay(100, {
+                        DT::selectRows(DT::dataTableProxy("cell_type_table"), new_idx)
+                    })
+                }
+            })
+
+            observeEvent(input$move_cell_type_down, {
+                req(input$cell_type_table_rows_selected)
+                req(length(input$cell_type_table_rows_selected) == 1)
+
+                row_idx <- input$cell_type_table_rows_selected
+                new_data <- cell_type_colors()
+                total_rows <- nrow(new_data)
+
+                if (row_idx < total_rows) { # Can't move down if already at the bottom
+                    # Get the actual row in the data that corresponds to the selected row in the table
+                    selected_cell_type <- new_data$cell_type[row_idx]
+
+                    # Find the row below in the ordered data
+                    below_cell_type <- new_data$cell_type[row_idx + 1]
+
+                    # Swap their order values
+                    new_data <- new_data %>%
+                        mutate(order = case_when(
+                            cell_type == selected_cell_type ~ order + 1,
+                            cell_type == below_cell_type ~ order - 1,
+                            TRUE ~ order
+                        )) %>%
+                        arrange(order)
+
+                    # Update the data
+                    cell_type_colors(new_data)
+
+                    # Find the new index of the selected cell type
+                    new_idx <- which(new_data$cell_type == selected_cell_type)
+
+                    # Update the selection to follow the moved row
+                    shinyjs::delay(100, {
+                        DT::selectRows(DT::dataTableProxy("cell_type_table"), new_idx)
+                    })
+                }
+            })
 
             # Select metacell when clicking on it
             observe_mc_click_event("proj_annot_plot", input, session, cell_type_colors, metacell_types, selected_metacell_types)

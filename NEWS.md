@@ -1,3 +1,7 @@
+# MCView 0.2.46
+
+* Added "Move up" and "Move down" buttons to the 'Cell types' tab.
+
 # MCView 0.2.45
 
 * Reorder boxplot in cell types tab by cell type colors table. 
