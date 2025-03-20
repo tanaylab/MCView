@@ -33,6 +33,7 @@ cell_type_gene_boxplot <- function(gene,
     ymin <- max(c(1:length(ylims))[ylims <= min(egc_gene)])
 
     p <- df %>%
+        mutate(`Cell type` = factor(`Cell type`, levels = names(col_to_ct))) %>%
         ggplot(aes(x = `Cell type`, y = !!sym(gene), fill = `Cell type`)) +
         geom_boxplot() +
         scale_fill_manual(values = col_to_ct) +

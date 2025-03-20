@@ -1,5 +1,9 @@
 # MCView 0.2.44
 
+* Reorder boxplot in cell types tab by cell type colors table. 
+
+# MCView 0.2.44
+
 * Added "Use DE genes" button to the 'Markers' tab, that uses the significantly differentially expressed genes from the 'Diff. Expr.' tab.
 
 # MCView 0.2.43
