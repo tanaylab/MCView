@@ -1,6 +1,6 @@
 # MCView 0.2.44
 
-* Added "User DE genes" button to the 'Markers' tab, that uses the significantly differentially expressed genes from the 'Diff. Expr.' tab.
+* Added "Use DE genes" button to the 'Markers' tab, that uses the significantly differentially expressed genes from the 'Diff. Expr.' tab.
 
 # MCView 0.2.43
 
