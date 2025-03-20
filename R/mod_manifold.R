@@ -68,6 +68,7 @@ mod_manifold_sidebar_ui <- function(id) {
             numericInput(ns("min_dist"), "Minimum distance", value = 0.96, min = 0, max = 1, step = 0.01),
             numericInput(ns("n_epoch"), "Number of epochs", value = 500, min = 1, max = 10000, step = 1),
             numericInput(ns("min_log_expr"), "Minimum log expression", value = -14, min = -50, max = 0, step = 0.1),
+            numericInput(ns("random_seed"), "Random seed", value = 60427, min = 1, max = 99999, step = 1),
             tags$hr(),
             downloadButton(ns("download_projection"), "Download 2D layout", align = "center", style = "margin: 5px 5px 5px 15px; "),
             fileInput(ns("load_projection"),
@@ -123,7 +124,11 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 showNotification("Recomputing 2D projection")
                 mc_egc <- get_mc_egc(dataset())
 
-                mc2d <- compute_umap(mc_egc, globals$anchor_genes, n_neighbors = input$n_neighbors, min_dist = input$min_dist, n_epoch = input$n_epoch, min_log_expr = input$min_log_expr, genes_per_anchor = input$genes_per_anchor)
+                mc2d <- compute_umap(mc_egc, globals$anchor_genes,
+                    n_neighbors = input$n_neighbors, min_dist = input$min_dist,
+                    n_epoch = input$n_epoch, min_log_expr = input$min_log_expr,
+                    genes_per_anchor = input$genes_per_anchor, random_seed = input$random_seed
+                )
                 if (is.null(mc2d)) {
                     showNotification("Recomputing 2D projection failed", type = "error")
                 }
