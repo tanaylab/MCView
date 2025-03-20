@@ -143,6 +143,12 @@ top_correlated_selector_multiple_genes <- function(input, output, session, datas
 }
 
 top_correlated_selector <- function(gene_id, id, type_id, input, output, session, dataset, ns, button_labels = c("X", "Y", "Color", "2D"), ids = c("x", "y", "color", "proj2d"), gene_modules = NULL, metacell_types = NULL, selected_cell_types = NULL) {
+    if (is.character(selected_cell_types)) {
+        ct_id <- selected_cell_types
+        selected_cell_types <- function() {
+            input[[ct_id]]
+        }
+    }
     output[[glue("top_correlated_select_{id}")]] <- renderUI({
         if (!is.null(input$show_correlations) && !input$show_correlations) {
             if (input[[type_id]] == "Gene") {
