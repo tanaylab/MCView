@@ -277,6 +277,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                         textOutput(ns("number_of_selected_metacells")),
                         actionButton(ns("update_annotation"), "Apply"),
                         actionButton(ns("reset_annotation"), "Reset Selection"),
+                        actionButton(ns("create_new_cell_type"), "Create New Cell Type"),
                         shinyWidgets::radioGroupButtons(
                             inputId = ns("update_option"),
                             label = "",
@@ -340,6 +341,93 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
             observeEvent(input$reset_annotation, {
                 selected_metacell_types(tibble(metacell = character(), cell_type = character()))
                 to_show(NULL)
+            })
+
+            observeEvent(input$create_new_cell_type, {
+                req(selected_metacell_types())
+                req(nrow(selected_metacell_types()) > 0)
+
+                showModal({
+                    modalDialog(
+                        title = "Create a new cell type",
+                        textInput(ns("new_cell_type_name_from_selection"), "Cell type name"),
+                        colourpicker::colourInput(ns("new_cell_type_color_from_selection"), NULL, "red"),
+                        footer = tagList(
+                            modalButton("Cancel"),
+                            actionButton(ns("add_cell_type_from_selection"), "Add metacells to the new cell type")
+                        )
+                    )
+                })
+            })
+
+            observeEvent(input$add_cell_type_from_selection, {
+                req(input$new_cell_type_name_from_selection)
+                req(input$new_cell_type_color_from_selection)
+                req(selected_metacell_types())
+                req(nrow(selected_metacell_types()) > 0)
+
+                if (input$new_cell_type_name_from_selection %in% cell_type_colors()$cell_type) {
+                    showNotification(glue("Cell type {input$new_cell_type_name_from_selection} already exists"), type = "error")
+                    removeModal()
+                    req(FALSE)
+                }
+
+                # Add the new cell type to cell_type_colors
+                new_cell_type_colors <- cell_type_colors()
+                new_row <- tibble(
+                    cell_type = input$new_cell_type_name_from_selection,
+                    color = input$new_cell_type_color_from_selection,
+                    order = max(new_cell_type_colors$order) + 1
+                )
+
+                new_cell_type_colors <- bind_rows(
+                    new_cell_type_colors,
+                    new_row
+                ) %>%
+                    arrange(order) %>%
+                    distinct(cell_type, .keep_all = TRUE) %>%
+                    mutate(order = 1:n())
+
+                cell_type_colors(new_cell_type_colors)
+
+                # Update the metacell types for the selected metacells
+                if (input$update_option == "Change all") {
+                    req(input$mc_type_table_rows_all)
+                    metacells <- selected_metacell_types()[input$mc_type_table_rows_all, ] %>% pull(metacell)
+                } else {
+                    req(input$mc_type_table_rows_selected)
+                    metacells <- selected_metacell_types()[input$mc_type_table_rows_selected, ] %>% pull(metacell)
+                }
+
+                new_metacell_types <- metacell_types() %>% mutate(
+                    cell_type = ifelse(metacell %in% metacells, input$new_cell_type_name_from_selection, cell_type)
+                )
+
+                metacell_types(new_metacell_types)
+
+                # Update the selected metacell types
+                new_selected_annot <- selected_metacell_types() %>% mutate(
+                    cell_type = ifelse(metacell %in% metacells, input$new_cell_type_name_from_selection, cell_type)
+                )
+
+                selected_metacell_types(new_selected_annot)
+                last_chosen_cell_type(input$new_cell_type_name_from_selection)
+
+                # Add the new cell type to selected_cell_types for filtering
+                selected_cell_types(unique(c(selected_cell_types(), input$new_cell_type_name_from_selection)))
+
+                # Reset selection if needed
+                if (!is.null(input$reset_on_apply) && input$reset_on_apply) {
+                    selected_metacell_types(tibble(metacell = character(), cell_type = character()))
+                    to_show(NULL)
+                }
+
+                removeModal()
+
+                # Show a success notification
+                showNotification(glue("Created new cell type '{input$new_cell_type_name_from_selection}' and assigned {length(metacells)} metacells to it"),
+                    type = "message"
+                )
             })
 
 
