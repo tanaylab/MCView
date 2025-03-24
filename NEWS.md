@@ -1,3 +1,8 @@
+
+# MCView 0.2.47
+
+* Fix: diff. expr. crashed when comparing metacells.
+
 # MCView 0.2.46
 
 * Added "Move up" and "Move down" buttons to the 'Cell types' tab.

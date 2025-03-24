@@ -135,6 +135,8 @@ mc_mc_gene_scatter_df_reactive <- function(dataset, input, output, session, meta
         if (input$mode == "MCs") {
             req(input$metacell1)
             req(input$metacell2)
+            req(input$metacell1 %in% metacell_types()$metacell)
+            req(input$metacell2 %in% metacell_types()$metacell)
             calc_mc_mc_gene_df(dataset(), input$metacell1, input$metacell2)
         } else if (input$mode == "Types") {
             req(metacell_types())
@@ -157,6 +159,8 @@ mc_mc_gene_scatter_df_reactive <- function(dataset, input, output, session, meta
             req(groupB)
             req(groupA())
             req(groupB())
+            req(groupA() %in% metacell_types()$metacell)
+            req(groupB() %in% metacell_types()$metacell)
             group_types_df <- bind_rows(
                 tibble(metacell = groupA(), cell_type = "Group A"),
                 tibble(metacell = groupB(), cell_type = "Group B")
