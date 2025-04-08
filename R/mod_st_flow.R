@@ -9,13 +9,13 @@
 #' @importFrom shiny NS tagList
 mod_st_flow_ui <- function(id) {
     ns <- NS(id)
-    tagList(
+    tagList(   
         generic_column(
             width = 12,
             generic_box(
                 title = "Temporal Flow",
                 width = 12,
-                plotOutput(ns("Temporal_Flow"), height = "500px"),
+                plotOutput(ns("Temporal_Flow"), height = "300px"),
                 status = "primary",
                 solidHeader = TRUE
             )

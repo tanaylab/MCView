@@ -189,6 +189,11 @@ init_tab_defs <- function() {
             title = "ST flow",
             module_name = "st_flow",
             icon = "fish"#"" #"puzzle-piece"
+        ),
+        "Beatle flow" = list(
+            title = "Beatle flow",
+            module_name = "beatle_flow",
+            icon = "puzzle-piece"
         )
     )
 
