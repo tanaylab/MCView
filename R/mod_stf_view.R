@@ -214,7 +214,6 @@ strip_beatle_flow_plot = function(input, data, dataset, metacell_names, metacell
             p[[idx]] = bp + gg_theme() + ggtitle(sprintf('time bin %s %s', tb, ifelse(sb == 'ALL', '', sprintf('\n %s', sb))))
             idx = idx + 1
         }
-
         g = arrangeGrob(grobs = lapply(p, ggplotGrob), nrow = 1)
         # ggsave(file="whatever.pdf", g) #saves g
 
@@ -228,7 +227,6 @@ strip_beatle_flow_plot = function(input, data, dataset, metacell_names, metacell
         type_idx = 0
 
         if(input$from_to == 'Outgo'){
-            # browser()
             to_flows = unique(plot_dynamics$ent2)
             to_flows = c(to_plot, to_flows[to_flows != to_plot])
             to_flows = to_flows[!is.na(to_flows)]
@@ -298,7 +296,6 @@ strip_beatle_flow_plot = function(input, data, dataset, metacell_names, metacell
             return(grid.draw(g))
             
         }else{
-            # browser()
             from_flows = unique(plot_dynamics$ent1)
             from_flows = c(to_plot, from_flows[from_flows != to_plot])
             from_flows = from_flows[!is.na(from_flows)]
@@ -393,7 +390,7 @@ summarise_flow_spatial_tbs = function(data, to_plot, sb, metacell_types, metacel
         }
     }
 
-    min_th = 0.05
+    min_th = 0.005
     plot_focus = flow[flow$ent2 == to_plot & flow$sbin2 %in% sb, ]
     plot_focus = plot_focus %>% group_by(ent2, sbin2, time_bin) %>% summarise(flow = sum(flow))
     f = plot_focus %>% group_by(time_bin) %>% summarise(flow_tot = sum(flow))
