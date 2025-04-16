@@ -10,6 +10,16 @@
 mod_beatle_flow_ui <- function(id) {
     ns <- NS(id)
     tagList(
+        generic_column(
+            width = 12,
+                generic_box(
+                    title = "Type composition",
+                    width = 12,
+                    plotOutput(ns("Type_composition_beatle_flow"), height = "200px"),
+                    status = "primary",
+                    solidHeader = TRUE
+                )
+        ),
         fluidRow(
             generic_column(
                 width = 5,
@@ -54,8 +64,8 @@ mod_beatle_flow_sidebar_ui <- function(id) {
                     inputId = ns("from_to"),
                     label = "Select direction:",
                     choices = c(
-                        "From",
-                        "To"
+                        "To",
+                        "From"
                     ),
                     selected = "To",
                     justified = TRUE
@@ -100,6 +110,8 @@ mod_beatle_flow_server <- function(id, dataset, metacell_types, cell_type_colors
                 beatle_flow_plot(input, data, dataset, metacell_names, metacell_types, cell_type_colors, main = T)
             })
 
+            output$Type_composition_beatle_flow = renderPlot({plot_type_composition_beatle_flow(input, output, session, dataset, data, metacell_types, metacell_names, cell_type_colors)})
+
             f_th = 0.1
             # browser()
             output$st_flow_spat_contribs <- renderPlot({      
@@ -107,6 +119,56 @@ mod_beatle_flow_server <- function(id, dataset, metacell_types, cell_type_colors
             }, height = function(){300*n_contribs(input, data, metacell_names, metacell_types, f_th)})
 
     })
+}
+
+
+plot_type_composition_beatle_flow = function(input, output, session, dataset, data, metacell_types, metacell_names, cell_type_colors){
+    
+    req(input$mode)
+
+    metacell_types_df = metacell_types()
+
+    if(input$mode == 'Types'){
+            req(input$display_select_type_smc %in% metacell_types_df$cell_type)
+            selected = input$display_select_type_smc
+    }else if(input$mode == 'SMCs'){
+            req(input$display_select_type_smc %in% metacell_names())
+            smc = input$display_select_type_smc
+            selected = metacell_types_df[metacell_types_df$metacell == smc,]$cell_type
+    }
+
+    flow = data$f_sm_sb_tb
+    flow = flow[flow$cell_type == selected,] %>% group_by(smc, time_bin) %>% summarise(f = sum(f))
+    flow_total = flow %>% group_by(smc) %>% summarise(f = sum(f))
+    relevant_smcs = flow_total[flow_total$f > 0,]$smc
+    flow = flow[flow$smc %in% relevant_smcs,]
+    flow$time_bin = factor(flow$time_bin, levels = as.character(sort(as.numeric(unique(flow$time_bin)))))
+
+    if(input$mode == 'SMCs'){
+        flow$selected = flow$smc == smc
+    }else{
+        flow$selected = FALSE
+    }
+
+    ctype_color = metacell_types_df$mc_col
+    names(ctype_color) = metacell_types_df$metacell
+
+    g = ggplot(flow, aes(y=f, x=smc, fill = smc)) + 
+            geom_bar(stat = "identity", aes(color = selected), linewidth = 1.5) + 
+            facet_wrap(~time_bin, nrow = 1) + 
+            scale_fill_manual(values=ctype_color) + 
+            scale_color_manual(values = c("TRUE" = "black", "FALSE" = "white")) +
+            guides(color = "none") +
+            theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+                    legend.title = element_blank(),
+                    axis.title = element_blank(),   
+                    axis.text = element_text(size = 16),
+                    legend.text = element_text(size = 18),
+                    plot.title = element_text(size = 20, face = "bold"),
+                    strip.text = element_text(size = 18)) + ggtitle(selected) + guides(fill="none")
+
+    return(g)
+
 }
 
 summarise_flow_spatial = function(data, to_plot, tb, sb, metacell_types, metacell_names, from = TRUE){
@@ -367,7 +429,7 @@ beatle_flow_plot = function(input, data, dataset, metacell_names, metacell_types
     
 }
 
-scatter_beatle_plot = function(input, data, tbin_time, tb, to_plot_scatter, color, N = 10000){
+scatter_beatle_plot = function(input, data, tbin_time, tb, to_plot_scatter, color, N = 10000, only_points = F){
 
     # browser()
     spat_model = round(data$tbin_time[[as.character(tb)]],1)
@@ -387,7 +449,11 @@ scatter_beatle_plot = function(input, data, tbin_time, tb, to_plot_scatter, colo
     points_df <- Map(generate_points_in_poly, poly_list, n_plot)
     points_df = do.call(rbind, points_df)
 
-    p = proj$heatmap(fill = "white") + geom_point(data = points_df, aes(x = x, y = y), colour = color, alpha = 0.25)
+    if(only_points){
+        p = geom_point(data = points_df, aes(x = x, y = y), colour = color, alpha = 0.25)
+    }else{
+        p = proj$heatmap(fill = "white") + geom_point(data = points_df, aes(x = x, y = y), colour = color, alpha = 0.25)
+    }
 
     return(p)
 }
