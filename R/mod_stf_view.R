@@ -194,24 +194,30 @@ strip_beatle_flow_plot = function(input, data, dataset, metacell_names, metacell
 
         p = list()
         idx = 1
+
+        tbin_time = unique(data$f_sm_sb_tb[,c('time_bin', 'age')])$age
+        names(tbin_time) = unique(data$f_sm_sb_tb[,c('time_bin', 'age')])$time_bin
+        tbin_time_l = paste0(names(tbin_time), ' ~E',tbin_time)
+        names(tbin_time_l) = names(tbin_time)
+
         for(tb in tbs){
         
             bp = scatter_beatle_plot(input, data, tbin_time, tb, 
                                      ungroup(plot_focus[plot_focus$time_bin == tb, c('sbin2', 'flow')]), 
                                      color)
 
-            if(tb %in% tbs_dynamics){
-                if(input$from_to == 'Outgo'){
-                    bp = flow_arrow_plot(bp, data, tb, 
-                                     ungroup(plot_dynamics[plot_dynamics$time_bin == as.character(as.numeric(tb)+1), c('ent1', 'ent2', 'sbin1', 'sbin2', 'flow')]))  
-                }else{
-                    bp = flow_arrow_plot(bp, data, tb, 
-                                     ungroup(plot_dynamics[plot_dynamics$time_bin == tb, c('ent1', 'ent2', 'sbin1', 'sbin2', 'flow')]))     
-                }
+            # if(tb %in% tbs_dynamics){
+            #     if(input$from_to == 'Outgo'){
+            #         bp = flow_arrow_plot(bp, data, tb, 
+            #                          ungroup(plot_dynamics[plot_dynamics$time_bin == as.character(as.numeric(tb)+1), c('ent1', 'ent2', 'sbin1', 'sbin2', 'flow')]))  
+            #     }else{
+            #         bp = flow_arrow_plot(bp, data, tb, 
+            #                          ungroup(plot_dynamics[plot_dynamics$time_bin == tb, c('ent1', 'ent2', 'sbin1', 'sbin2', 'flow')]))     
+            #     }
                 
-            }
+            # }
 
-            p[[idx]] = bp + gg_theme() + ggtitle(sprintf('time bin %s %s', tb, ifelse(sb == 'ALL', '', sprintf('\n %s', sb))))
+            p[[idx]] = bp + gg_theme() + ggtitle(sprintf('time bin %s ~E%s %s', tb, unname(tbin_time_l[tb]), ifelse(sb == 'ALL', '', sprintf('\n %s', sb))))
             idx = idx + 1
         }
         g = arrangeGrob(grobs = lapply(p, ggplotGrob), nrow = 1)
@@ -240,9 +246,10 @@ strip_beatle_flow_plot = function(input, data, dataset, metacell_names, metacell
                 flow_frac = sum(plot_focus[plot_focus$time_bin == tb,]$flow)
 
                 for(to_flow in to_flows){
+                    # browser()
                     # "to flow" related to focus
                     plot_focus_to_flow = plot_dynamics[plot_dynamics$ent2 == to_flow & plot_dynamics$time_bin == as.character(as.numeric(tb)+1),]
-
+                    
                     if(sum(plot_focus_to_flow$flow)/flow_frac >= f_th & flow_frac >= 1e-4){
 
                         if(input$mode == 'Types'){
@@ -325,7 +332,7 @@ strip_beatle_flow_plot = function(input, data, dataset, metacell_names, metacell
                 flow_frac = sum(plot_focus[plot_focus$time_bin == tb,]$flow)
 
                 for(from_flow in from_flows){
-
+                    # browser()
                     # "to flow" related to focus
                     plot_focus_from_flow = plot_dynamics[plot_dynamics$ent1 == from_flow & plot_dynamics$time_bin == tb,]
 
@@ -390,7 +397,7 @@ summarise_flow_spatial_tbs = function(data, to_plot, sb, metacell_types, metacel
         }
     }
 
-    min_th = 0.005
+    min_th = 0.0001
     plot_focus = flow[flow$ent2 == to_plot & flow$sbin2 %in% sb, ]
     plot_focus = plot_focus %>% group_by(ent2, sbin2, time_bin) %>% summarise(flow = sum(flow))
     f = plot_focus %>% group_by(time_bin) %>% summarise(flow_tot = sum(flow))

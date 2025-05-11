@@ -228,7 +228,8 @@ summarise_flow <- function(input, data, mode, tbin_time){
         smc = NULL
         ctype_manif = NULL
         # P(s|t)
-        f_sb_tb = data$f_sm_sb_tb %>% group_by(sbin, time_bin) %>% summarise(p_s = sum(f))
+        # browser()
+        f_sb_tb = data$f_sm_sb_tb %>% group_by(sbin, layer, time_bin) %>% summarise(p_s = sum(f))
 
         if(mode == 'Types'){
             # P(ctype|t)
@@ -245,7 +246,7 @@ summarise_flow <- function(input, data, mode, tbin_time){
                                     mutate(p_ct_sb = f/sum(f))
         }
 
-        f_ct_sb_tb = left_join(f_ct_sb_tb, f_sb_tb, by = c('sbin', 'time_bin'))
+        f_ct_sb_tb = left_join(f_ct_sb_tb, f_sb_tb, by = c('sbin', 'time_bin', 'layer'))
 
         f_ct_sb_tb$density = f_ct_sb_tb$p_ct_sb/f_ct_sb_tb$p_s
 
@@ -269,7 +270,7 @@ summarise_insitu = function(input, data, dataset, mode = 'egc'){
     }else{
         sub_manif = unique(f_ct_sb_tb[f_ct_sb_tb$cell_type == layer, ]$cell_type)
     }
-
+    
     f_ct_sb_tb = f_ct_sb_tb[f_ct_sb_tb$cell_type %in% sub_manif, ]
     # f_ct_sb_tb = f_ct_sb_tb %>% group_by(time_bin) %>% mutate(layer_frac = sum(f))
     f_ct_sb_tb = f_ct_sb_tb %>% group_by(time_bin, sbin, smc) %>% mutate(f_m_s = sum(f))
@@ -450,7 +451,7 @@ beatle_plot_wrap = function(input, data, plot_data, tbin_time, tb, smc, f_ct_sb_
 
     if(insitu){
         color_sacle = c("white", "yellow", "orange", "red")
-        title = paste('tb: ', tb, '\n egc: ', format(unique(plot_data$egc), digits=2))
+        title = paste(tb, ' E~', unname(tbin_time[tb]),'\n egc: ', format(unique(plot_data$egc), digits=2))
         min_scale = egc_epsilon
     }else{
         min_scale = 0

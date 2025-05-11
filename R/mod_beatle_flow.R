@@ -295,11 +295,16 @@ beatle_flow_plot = function(input, data, dataset, metacell_names, metacell_types
     plot_focus = flow_plot$plot_focus[,c('sbin2', 'flow')]
     plot_dynamics = flow_plot$plot_dynamics
 
+    tbin_time = unique(data$f_sm_sb_tb[,c('time_bin', 'age')])$age
+    names(tbin_time) = unique(data$f_sm_sb_tb[,c('time_bin', 'age')])$time_bin
+    tbin_time_l = paste0(names(tbin_time), ' ~E',tbin_time)
+    names(tbin_time_l) = names(tbin_time)
+
     if(main){
         
         bp = scatter_beatle_plot(input, data, tbin_time, tb, plot_focus, color)
         bp = flow_arrow_plot(bp, data, tb, plot_dynamics)
-        bp = bp + gg_theme() + ggtitle(sprintf('%s \n time bin %s %s', to_plot, tb, ifelse(sb == 'ALL', '', sprintf('\n %s', sb))))
+        bp = bp + gg_theme() + ggtitle(sprintf('%s \n time bin %s ~E%s, %s', to_plot, tb, unname(tbin_time_l[tb]), ifelse(sb == 'ALL', '', sprintf('\n %s', sb))))
 
         return(bp)
 

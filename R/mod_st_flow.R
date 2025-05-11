@@ -123,9 +123,16 @@ plot_type_composition = function(input, output, session, dataset, data, metacell
     ctype_color = metacell_types_df$mc_col
     names(ctype_color) = metacell_types_df$metacell
 
+    tbin_time = unique(data$f_sm_sb_tb[,c('time_bin', 'age')])$age
+    names(tbin_time) = unique(data$f_sm_sb_tb[,c('time_bin', 'age')])$time_bin
+    tbin_time_l = paste0(names(tbin_time), ' ~E',tbin_time)
+    names(tbin_time_l) = names(tbin_time)
+
+    # browser()
     g = ggplot(flow, aes(y=f, x=smc, fill = smc)) + 
             geom_bar(stat = "identity", aes(color = selected), linewidth = 1.5) + 
-            facet_wrap(~time_bin, nrow = 1) + 
+            facet_wrap(~time_bin, nrow = 1,
+            labeller = labeller(time_bin = tbin_time_l)) + 
             scale_fill_manual(values=ctype_color) + 
             scale_color_manual(values = c("TRUE" = "black", "FALSE" = "white")) +
             guides(color = "none") +
