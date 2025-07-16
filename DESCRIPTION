@@ -1,6 +1,6 @@
 Package: MCView
 Title: A Shiny App for Metacell Analysis
-Version: 0.2.47
+Version: 0.2.48
 Authors@R: 
     person(given = "Aviezer",
            family = "Lifshitz",
@@ -25,7 +25,7 @@ Imports:
     cli,
     colourpicker,
     circlize,
-    cowplot,
+    cowplot (>= 1.2.0),
     cachem,
     dplyr,
     DT,

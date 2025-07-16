@@ -1,3 +1,6 @@
+# MCView 0.2.48
+
+* Added controls for plotly download format, width, height and scale.
 
 # MCView 0.2.47
 
