@@ -35,7 +35,7 @@ compute_umap <- function(mc_egc, anchors, min_dist = 0.96, n_neighbors = 10, n_e
         config <- umap::umap.defaults
         config$min_dist <- min_dist
         config$n_neighbors <- n_neighbors
-        config$n_epoch <- n_epoch
+        config$n_epochs <- n_epoch
         config$random_state <- random_seed
     }
 
