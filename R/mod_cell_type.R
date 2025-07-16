@@ -146,7 +146,8 @@ mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, 
                 req(p)
 
                 fig <- plotly::ggplotly(p, source = "cell_type_boxplot") %>%
-                    sanitize_plotly_buttons()
+                    sanitize_plotly_buttons() %>%
+                    sanitize_plotly_download(globals)
 
                 return(fig)
             })

@@ -1,4 +1,4 @@
-plot_sample_stacked_types <- function(dataset, metacell_types, cell_type_colors, input) {
+plot_sample_stacked_types <- function(dataset, globals, metacell_types, cell_type_colors, input) {
     plotly::renderPlotly({
         samp_mc_count <- get_samp_mc_count(dataset())
         mc_types <- metacell_types() %>%
@@ -63,8 +63,9 @@ plot_sample_stacked_types <- function(dataset, metacell_types, cell_type_colors,
             guides(fill = "none")
 
         p <- plotly::ggplotly(p, source = "samp_types_plot") %>%
-            sanitize_plotly_buttons()
+            sanitize_plotly_buttons() %>%
+            sanitize_plotly_download(globals)
 
         return(p)
-    }) %>% bindCache(dataset, metacell_types, cell_type_colors, input$sample_types_ordering)
+    }) %>% bindCache(dataset, metacell_types, cell_type_colors, input$sample_types_ordering, globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
 }

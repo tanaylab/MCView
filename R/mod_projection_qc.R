@@ -175,12 +175,12 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
 
             output$correction_factor_box <- gene_correction_factor_stat_box(ns, id, dataset, "Correction factor per gene", "plot_correction_factor_scatter")
 
-            output$plot_correction_factor_scatter <- gene_correction_factor_scatter_plot(dataset, input)
+            output$plot_correction_factor_scatter <- gene_correction_factor_scatter_plot(dataset, input, globals)
             output$gene_correction_factor_table <- gene_correction_factor_table(dataset, input)
 
             output$plot_mc_stacked_type <- plot_type_predictions_bar(dataset, metacell_types, cell_type_colors)
 
-            output$plot_fitted_genes_per_cell_type <- fitted_genes_per_cell_type_plot(dataset, input)
+            output$plot_fitted_genes_per_cell_type <- fitted_genes_per_cell_type_plot(dataset, input, globals)
             output$fitted_genes_per_cell_type_table <- fitted_genes_per_cell_type_table(dataset, input)
 
             output$fitted_gene_per_cell_type_selector <- fitted_gene_per_cell_type_selector(ns, dataset, input)
@@ -212,7 +212,7 @@ gene_correction_factor_stat_box <- function(ns, id, dataset, title, output_id, w
     })
 }
 
-gene_correction_factor_scatter_plot <- function(dataset, input) {
+gene_correction_factor_scatter_plot <- function(dataset, input, globals) {
     plotly::renderPlotly({
         gene_qc <- get_gene_qc(dataset())
         if (is.null(gene_qc) || is.null(gene_qc$correction_factor)) {
@@ -237,8 +237,9 @@ gene_correction_factor_scatter_plot <- function(dataset, input) {
         plotly::ggplotly(p) %>%
             sanitize_for_WebGL() %>%
             plotly::toWebGL() %>%
-            sanitize_plotly_buttons()
-    }) %>% bindCache(dataset())
+            sanitize_plotly_buttons() %>%
+            sanitize_plotly_download(globals)
+    }) %>% bindCache(dataset(), globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
 }
 
 gene_correction_factor_table <- function(dataset, input) {
@@ -357,7 +358,7 @@ fitted_genes_per_cell_type_table <- function(dataset, input) {
     )
 }
 
-fitted_genes_per_cell_type_plot <- function(dataset, input) {
+fitted_genes_per_cell_type_plot <- function(dataset, input, globals) {
     plotly::renderPlotly({
         gene_qc <- get_gene_qc(dataset())
         if (is.null(gene_qc)) {
@@ -398,6 +399,8 @@ fitted_genes_per_cell_type_plot <- function(dataset, input) {
             theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
             ggtitle(glue("Common set: {sum(common_set)} genes"))
 
-        plotly::ggplotly(p) %>% sanitize_plotly_buttons()
+        plotly::ggplotly(p) %>%
+            sanitize_plotly_buttons() %>%
+            sanitize_plotly_download(globals)
     })
 }

@@ -221,7 +221,9 @@ mod_flow_server <- function(id, dataset, metacell_types, cell_type_colors, gene_
                 req(has_network(dataset()))
                 req(input$selected_metacell)
 
-                plotly::ggplotly(plot_gene_trajectory(dataset(), input$traj_genes, input$selected_metacell, anchor_genes = NULL) + theme(axis.title.y = element_text(color = "darkblue")), source = "traj_plot", tooltip = "tooltip_text") %>% sanitize_plotly_buttons()
+                plotly::ggplotly(plot_gene_trajectory(dataset(), input$traj_genes, input$selected_metacell, anchor_genes = NULL) + theme(axis.title.y = element_text(color = "darkblue")), source = "traj_plot", tooltip = "tooltip_text") %>%
+                    sanitize_plotly_buttons() %>%
+                    sanitize_plotly_download(globals)
             })
         }
     )

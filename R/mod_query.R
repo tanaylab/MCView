@@ -260,7 +260,7 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
             output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, projected_metacell_types, atlas_colors, gene_modules, globals, group = group, source = "proj_mc_plot_proj_tab")
 
             # Differential expression
-            output$plot_mc_mc_gene_scatter <- render_mc_mc_gene_plotly(input, output, session, ns, dataset, gene_modules, mc_mc_gene_scatter_df, metacell_names, atlas_colors, metacell_types = metacell_types)
+            output$plot_mc_mc_gene_scatter <- render_mc_mc_gene_plotly(input, output, session, ns, dataset, globals, gene_modules, mc_mc_gene_scatter_df, metacell_names, atlas_colors, metacell_types = metacell_types)
 
             # Select a gene when clicking on it
             plotly_click_observer("projection_diff_expr_plot", session, "axis_var", notification_prefix = "Selected ", update_function = shinyWidgets::updatePickerInput)
@@ -318,7 +318,8 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
                     plotly::ggplotly(tooltip = "tooltip_text", source = "obs_proj_plot") %>%
                     sanitize_for_WebGL() %>%
                     plotly::toWebGL() %>%
-                    sanitize_plotly_buttons()
+                    sanitize_plotly_buttons() %>%
+                    sanitize_plotly_download(globals)
 
                 if (input$color_by_var == "Cell type") {
                     fig <- plotly::hide_legend(fig)
@@ -337,7 +338,7 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
 
 
                 return(fig)
-            }) %>% bindCache(dataset(), input$axis_var, input$axis_type, input$color_by_type, input$color_by_var, metacell_types(), cell_type_colors(), input$gene_gene_point_size, input$gene_gene_stroke, input$mode)
+            }) %>% bindCache(dataset(), input$axis_var, input$axis_type, input$color_by_type, input$color_by_var, metacell_types(), cell_type_colors(), input$gene_gene_point_size, input$gene_gene_stroke, input$mode, globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
 
             # Point size selector
             output$point_size_ui <- renderUI({

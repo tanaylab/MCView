@@ -50,7 +50,18 @@ rm_plotly_grid <- function(fig) {
 sanitize_plotly_buttons <- function(p,
                                     buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"),
                                     ...) {
-    p %>% plotly::config(displaylogo = FALSE, modeBarButtonsToRemove = buttons, ...)
+    p %>% plotly::config(
+        displaylogo = FALSE,
+        modeBarButtonsToRemove = buttons,
+        ...
+    )
+}
+
+sanitize_plotly_download <- function(p, globals) {
+    to_image_options <- list(format = globals$plotly_format, width = globals$plotly_width, height = globals$plotly_height, scale = globals$plotly_scale)
+    p %>% plotly::config(
+        toImageButtonOptions = to_image_options
+    )
 }
 
 plotly_text_plot <- function(text) {

@@ -304,7 +304,11 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
                     input$graph_name,
                     input$legend_orientation,
                     input$show_legend_projection,
-                    globals$mc2d
+                    globals$mc2d,
+                    globals$plotly_format,
+                    globals$plotly_width,
+                    globals$plotly_height,
+                    globals$plotly_scale
                 )
         }
     )
