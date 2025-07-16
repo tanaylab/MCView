@@ -95,16 +95,16 @@ mod_qc_server <- function(id, dataset, metacell_types, cell_type_colors, gene_mo
             output$median_umis_per_metacell <- qc_value_box("median_umis_per_metacell", "Median UMIs / MC", dataset, color = "blue")
             output$median_cells_per_metacell <- qc_value_box("median_cells_per_metacell", "Median cells / MC", dataset, color = "maroon")
 
-            output$plot_qc_umis <- qc_stat_plot("umis", "Number of UMIs per metacell", dataset, input, "plot_qc_umis_type", log_scale = TRUE)
-            output$plot_qc_cell_num <- qc_stat_plot("cells", "Number of cells per metacell", dataset, input, "plot_qc_cell_num_type")
-            output$plot_qc_inner_fold <- qc_stat_plot(c("max_inner_fold", "max_inner_fold_no_lateral"), "Max inner-fold per metacell", dataset, input, "plot_qc_inner_fold_type", field_input = "include_lateral")
-            output$plot_qc_std <- qc_stat_plot("max_inner_stdev_log", "Max stdev(log(fractions)) per metacell", dataset, input, "plot_qc_std_type")
-            output$plot_mc_zero_fold <- qc_stat_plot("zero_fold", "Max log2(# of zero cells / expected) per metacell", dataset, input, "plot_mc_zero_fold_type")
+            output$plot_qc_umis <- qc_stat_plot("umis", "Number of UMIs per metacell", dataset, input, "plot_qc_umis_type", globals, log_scale = TRUE)
+            output$plot_qc_cell_num <- qc_stat_plot("cells", "Number of cells per metacell", dataset, input, "plot_qc_cell_num_type", globals)
+            output$plot_qc_inner_fold <- qc_stat_plot(c("max_inner_fold", "max_inner_fold_no_lateral"), "Max inner-fold per metacell", dataset, input, "plot_qc_inner_fold_type", globals, field_input = "include_lateral")
+            output$plot_qc_std <- qc_stat_plot("max_inner_stdev_log", "Max stdev(log(fractions)) per metacell", dataset, input, "plot_qc_std_type", globals)
+            output$plot_mc_zero_fold <- qc_stat_plot("zero_fold", "Max log2(# of zero cells / expected) per metacell", dataset, input, "plot_mc_zero_fold_type", globals)
 
-            output$plot_zero_fold <- zero_fold_gene_plot(dataset, input)
+            output$plot_zero_fold <- zero_fold_gene_plot(dataset, input, globals)
             output$zero_fold_table <- zero_fold_table(dataset, input)
 
-            output$plot_gene_inner_fold_scatter <- gene_inner_fold_scatter_plot(dataset, input)
+            output$plot_gene_inner_fold_scatter <- gene_inner_fold_scatter_plot(dataset, input, globals)
             output$gene_inner_fold_table <- gene_inner_fold_table(dataset, input)
         }
     )
@@ -205,7 +205,7 @@ zero_fold_table <- function(dataset, input) {
     )
 }
 
-zero_fold_gene_plot <- function(dataset, input) {
+zero_fold_gene_plot <- function(dataset, input, globals) {
     plotly::renderPlotly({
         zero_fold_df <- get_mc_data(dataset(), "gene_zero_fold")
         req(zero_fold_df)
@@ -223,8 +223,9 @@ zero_fold_gene_plot <- function(dataset, input) {
         plotly::ggplotly(p) %>%
             sanitize_for_WebGL() %>%
             plotly::toWebGL() %>%
-            sanitize_plotly_buttons()
-    }) %>% bindCache(dataset())
+            sanitize_plotly_buttons() %>%
+            sanitize_plotly_download(globals)
+    }) %>% bindCache(dataset(), globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
 }
 
 gene_inner_fold_stat_box <- function(ns, id, title, output_id, width = 12, height = "35vh") {
@@ -275,7 +276,7 @@ gene_inner_fold_table <- function(dataset, input) {
     )
 }
 
-gene_inner_fold_scatter_plot <- function(dataset, input) {
+gene_inner_fold_scatter_plot <- function(dataset, input, globals) {
     plotly::renderPlotly({
         gene_inner_fold_df <- get_gene_qc(dataset())
         if (is.null(gene_inner_fold_df) || is.null(gene_inner_fold_df$significant_inner_folds_count)) {
@@ -296,11 +297,12 @@ gene_inner_fold_scatter_plot <- function(dataset, input) {
         plotly::ggplotly(p) %>%
             sanitize_for_WebGL() %>%
             plotly::toWebGL() %>%
-            sanitize_plotly_buttons()
-    }) %>% bindCache(dataset())
+            sanitize_plotly_buttons() %>%
+            sanitize_plotly_download(globals)
+    }) %>% bindCache(dataset(), globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
 }
 
-qc_stat_plot <- function(field, xlab, dataset, input, plot_type_id, ylab = NULL, log_scale = FALSE, field_input = plot_type_id) {
+qc_stat_plot <- function(field, xlab, dataset, input, plot_type_id, globals, ylab = NULL, log_scale = FALSE, field_input = plot_type_id) {
     plotly::renderPlotly({
         qc_df <- as_tibble(get_mc_data(dataset(), "mc_qc_metadata"))
 
@@ -322,16 +324,18 @@ qc_stat_plot <- function(field, xlab, dataset, input, plot_type_id, ylab = NULL,
         req(input[[plot_type_id]])
 
         if (input[[plot_type_id]] == "ECDF") {
-            p <- qc_ecdf(qc_df, field, xlab, ylab, log_scale = log_scale)
+            p <- qc_ecdf(qc_df, field, xlab, ylab, globals, log_scale = log_scale)
         } else {
-            p <- qc_density(qc_df, field, xlab, ylab, log_scale = log_scale)
+            p <- qc_density(qc_df, field, xlab, ylab, globals, log_scale = log_scale)
         }
 
+        p <- sanitize_plotly_download(p, globals)
+
         return(p)
-    }) %>% bindCache(dataset(), input[[plot_type_id]], field, plot_type_id, input[[field_input]])
+    }) %>% bindCache(dataset(), input[[plot_type_id]], field, plot_type_id, input[[field_input]], globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
 }
 
-qc_density <- function(qc_df, field, xlab, ylab, log_scale = FALSE) {
+qc_density <- function(qc_df, field, xlab, ylab, globals, log_scale = FALSE) {
     if (is.null(ylab)) {
         ylab <- "Density"
     }
@@ -377,12 +381,13 @@ qc_density <- function(qc_df, field, xlab, ylab, log_scale = FALSE) {
             ax = 0,
             ay = 0
         ) %>%
-        sanitize_plotly_buttons()
+        sanitize_plotly_buttons() %>%
+        sanitize_plotly_download(globals)
 
     return(p)
 }
 
-qc_ecdf <- function(qc_df, field, xlab, ylab, log_scale = FALSE) {
+qc_ecdf <- function(qc_df, field, xlab, ylab, globals, log_scale = FALSE) {
     if (is.null(ylab)) {
         ylab <- "% of metacells <= x"
     }
@@ -426,7 +431,8 @@ qc_ecdf <- function(qc_df, field, xlab, ylab, log_scale = FALSE) {
             ax = 0,
             ay = 0
         ) %>%
-        sanitize_plotly_buttons()
+        sanitize_plotly_buttons() %>%
+        sanitize_plotly_download(globals)
 
 
     return(p)

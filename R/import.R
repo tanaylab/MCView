@@ -374,7 +374,6 @@ import_dataset <- function(project,
     }
 
     metacell_types <- metacell_types %>% mutate(cell_type = forcats::fct_na_value_to_level(factor(cell_type), "(Missing)"))
-
     if (!is.null(cell_type_colors_file)) {
         cli_alert_info("Loading cell type color annotations from {.file {cell_type_colors_file}}")
         cell_type_colors <- parse_cell_type_colors(cell_type_colors_file)

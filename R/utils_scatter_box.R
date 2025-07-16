@@ -164,7 +164,8 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
             plotly::ggplotly(tooltip = "tooltip_text", source = plotly_source) %>%
             sanitize_for_WebGL() %>%
             plotly::toWebGL() %>%
-            sanitize_plotly_buttons(buttons = plotly_buttons)
+            sanitize_plotly_buttons(buttons = plotly_buttons) %>%
+            sanitize_plotly_download(globals)
 
         if (!is.null(dragmode)) {
             fig <- fig %>%
@@ -185,7 +186,7 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
         }
 
         return(fig)
-    }) %>% bindCache(dataset(), input$x_axis_var, input$x_axis_type, input$y_axis_var, input$y_axis_type, input$color_by_type, input$color_by_var, metacell_types(), cell_type_colors(), gene_modules(), input$gene_gene_point_size, input$gene_gene_stroke, input$use_atlas_limits, input$gene_gene_fixed_limits, input$gene_gene_xyline, dragmode, plotly_buttons, clipboard_changed(), input$show_legend_scatter, selected_cell_types(), input$show_correlation, input$log_labels, input$correlation_type, input$use_corrected)
+    }) %>% bindCache(dataset(), input$x_axis_var, input$x_axis_type, input$y_axis_var, input$y_axis_type, input$color_by_type, input$color_by_var, metacell_types(), cell_type_colors(), gene_modules(), input$gene_gene_point_size, input$gene_gene_stroke, input$use_atlas_limits, input$gene_gene_fixed_limits, input$gene_gene_xyline, dragmode, plotly_buttons, clipboard_changed(), input$show_legend_scatter, selected_cell_types(), input$show_correlation, input$log_labels, input$correlation_type, input$use_corrected, globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
 }
 
 axis_selector <- function(axis, selected, ns, choices = c("Metadata", "Gene", "Gene module"), orientation = "horizontal", wrap_in_box = TRUE) {

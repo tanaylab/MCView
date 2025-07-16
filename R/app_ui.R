@@ -62,6 +62,10 @@ app_ui <- function(request) {
             ),
             shinydashboardPlus::controlbarItem(
                 "Options",
+                selectInput("plotly_format", label = "Download format", choices = c("png", "svg", "jpeg", "webp"), selected = "svg"),
+                numericInput("plotly_width", label = "Download width (px)", value = NULL, min = 700, max = 10000, step = 100),
+                numericInput("plotly_height", label = "Download height (px)", value = NULL, min = 450, max = 10000, step = 100),
+                numericInput("plotly_scale", label = "Download scale", value = 1, min = 0.1, max = 10, step = 0.1)
             ),
             shinydashboardPlus::controlbarItem(
                 "Theme",

@@ -49,7 +49,7 @@ plot_mc_mc_gene <- function(df, metacell1, metacell2, highlight = NULL, label_pr
     return(p)
 }
 
-render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, gene_modules, mc_mc_gene_scatter_df = NULL, metacell_names = NULL, cell_type_colors = NULL, mode = NULL, source_suffix = "", dragmode = NULL, plotly_buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), metacell_types = NULL) {
+render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, globals, gene_modules, mc_mc_gene_scatter_df = NULL, metacell_names = NULL, cell_type_colors = NULL, mode = NULL, source_suffix = "", dragmode = NULL, plotly_buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), metacell_types = NULL) {
     plotly::renderPlotly({
         req(mc_mc_gene_scatter_df)
 
@@ -172,7 +172,8 @@ render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, gene_m
             plotly::hide_legend() %>%
             sanitize_for_WebGL() %>%
             plotly::toWebGL() %>%
-            sanitize_plotly_buttons(buttons = plotly_buttons)
+            sanitize_plotly_buttons(buttons = plotly_buttons) %>%
+            sanitize_plotly_download(globals)
 
         if (!is.null(dragmode)) {
             fig <- fig %>%

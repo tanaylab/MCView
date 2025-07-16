@@ -412,7 +412,9 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
             buttons <- buttons[!(buttons %in% c("select2d", "lasso2d"))]
         }
 
-        fig <- fig %>% sanitize_plotly_buttons(buttons = buttons)
+        fig <- fig %>%
+            sanitize_plotly_buttons(buttons = buttons) %>%
+            sanitize_plotly_download(globals)
 
         if (!is.null(input$legend_orientation)) {
             if (input$legend_orientation == "Horizontal") {
@@ -435,6 +437,9 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
         #     arrange_2d_proj_tooltip()
         fig <- fig %>%
             rm_plotly_grid()
+
+        fig <- fig %>%
+            sanitize_plotly_download(globals)
 
         return(fig)
     })
