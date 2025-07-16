@@ -585,9 +585,9 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     }
 
                     p <- p + theme(legend.position = c(0.5, 0.5))
-                    
+
                     legend <- cowplot::get_legend(p)
-                    
+
                     cowplot::ggdraw(legend)
                 },
                 res = 96

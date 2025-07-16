@@ -136,6 +136,7 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
             metacell_filter <- NULL
         }
 
+
         fig <- plot_mc_scatter(
             dataset(),
             input$x_axis_var,

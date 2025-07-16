@@ -195,6 +195,8 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
 
                     new_metacell_types <- sanitize_metacell_types(new_metacell_types, cell_type_colors(), dataset())
                     metacell_types(new_metacell_types)
+                    # Reset the selected cell types to match the (possibly) new cell type list that was just loaded
+                    selected_cell_types(unique(cell_type_colors()$cell_type))
                     values$file_status <- NULL
                 }
             })
@@ -240,6 +242,8 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 selected_metacell_types(tibble(metacell = character(), cell_type = character()))
                 to_show(NULL)
                 last_chosen_cell_type("(Missing)")
+                # After resetting, make all current cell types selected by default
+                selected_cell_types(unique(cell_type_colors()$cell_type))
                 values$file_status <- NULL
             })
 
@@ -840,7 +844,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 selected_cell_types = selected_cell_types
             )
 
-            selected_cell_types <- reactiveVal(NULL)
+            # Use the already defined selected_cell_types reactiveVal (defined at the top of the server) so that it is shared across the module
             scatter_box_outputs(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, ns, selected_cell_types = selected_cell_types, plotly_source = "gene_gene_plot_annot", plotly_buttons = c("hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = "select")
 
             connect_gene_plots(input, output, session, ns, source = "proj_annot_plot")
