@@ -37,7 +37,7 @@ jobs:
       - name: Install BiocManager and set version
         run: |
           install.packages("BiocManager")
-          BiocManager::install(version = "3.19", ask = FALSE)
+          BiocManager::install(version = "3.21", ask = FALSE)
         shell: Rscript {0}
 
       - name: Install dependencies
