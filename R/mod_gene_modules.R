@@ -182,6 +182,11 @@ mod_gene_modules_server <- function(id, dataset, metacell_types, cell_type_color
 
             # Scatter plot
             selected_cell_types <- reactiveVal(NULL)
+            # Keep the selected cell types list consistent with the current cell_type_colors()
+            observe({
+                req(cell_type_colors())
+                selected_cell_types(unique(cell_type_colors()$cell_type))
+            })
             scatter_box_outputs(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, ns, selected_cell_types = selected_cell_types, plotly_source = "gene_modules_md_md_plot")
 
             # Diff. expression

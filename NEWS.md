@@ -1,6 +1,7 @@
 # MCView 0.2.48
 
 * Added controls for plotly download format, width, height and scale.
+* Fix: new cell types loaded from annotation file were not updated in all tabs.
 
 # MCView 0.2.47
 

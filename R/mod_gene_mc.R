@@ -59,6 +59,15 @@ mod_gene_mc_server <- function(id, dataset, metacell_types, cell_type_colors, ge
             ns <- session$ns
             selected_cell_types <- reactiveVal(NULL)
 
+            # Keep the selected cell types in sync with the current list of cell types. Whenever the
+            # reactive `cell_type_colors` data changes (e.g., after loading a new metacell_types file
+            # in the annotation module), refresh the selection to include all available cell types so
+            # that downstream filters (metacell_filter) stay consistent with the updated data.
+            observe({
+                req(cell_type_colors())
+                selected_cell_types(unique(cell_type_colors()$cell_type))
+            })
+
             top_correlated_selectors(input, output, session, dataset, metacell_types, ns, gene_modules = gene_modules, selected_cell_types = selected_cell_types)
             mod_gene_mc_plotly_observers(input, session)
             mod_gene_mc_globals_observers(input, session, globals, dataset)
