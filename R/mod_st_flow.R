@@ -9,17 +9,7 @@
 #' @importFrom shiny NS tagList
 mod_st_flow_ui <- function(id) {
     ns <- NS(id)
-    tagList(   
-        generic_column(
-            width = 12,
-            generic_box(
-                title = "Temporal Flow",
-                width = 12,
-                plotOutput(ns("Temporal_Flow"), height = "300px"),
-                status = "primary",
-                solidHeader = TRUE
-            )
-        ),        
+    tagList(  
         generic_column(
             width = 12,
             generic_box(
@@ -29,7 +19,17 @@ mod_st_flow_ui <- function(id) {
                 status = "primary",
                 solidHeader = TRUE
             )
-        )
+        ),  
+        generic_column(
+            width = 12,
+            generic_box(
+                title = "Temporal Flow",
+                width = 12,
+                plotOutput(ns("Temporal_Flow"), height = "300px"),
+                status = "primary",
+                solidHeader = TRUE
+            )
+        )       
     )
 }
 
@@ -85,11 +85,30 @@ mod_st_flow_server <- function(id, dataset, metacell_types, cell_type_colors, ge
             flow_to_spat = summarise_flow_to_spatial(data$ed)
             flow_from_spat = summarise_flow_from_spatial(data$ed)
 
-            output$Temporal_Flow = renderPlot({plot_temporal_flow_bars(input, output, session, dataset, data, metacell_types, metacell_names, cell_type_colors,
-                                                                       flow_to, flow_from, flow_to_spat, flow_from_spat)})
             output$Type_composition = renderPlot({plot_type_composition(input, output, session, dataset, data, metacell_types, metacell_names, cell_type_colors)})
+            
+            output$Temporal_Flow = renderPlot({plot_temporal_flow_bars_wraper(input, output, session, dataset, data, metacell_types, metacell_names, cell_type_colors,
+                                                                        flow_to, flow_from, flow_to_spat, flow_from_spat)}, 
+                                                                        height = function(){300*plot_height_smcs(input, metacell_types)})
         }
     )
+}
+
+plot_height_smcs = function(input, metacell_types){
+
+    expand_smc = ifelse(is.null(input$Expand_Smcs), FALSE, input$Expand_Smcs)
+
+    if(input$mode =='SMCs' | (input$mode =='Types' & !expand_smc)){
+        n = 1
+    }else if(expand_smc){
+        type = input$display_select
+
+        metacell_types_df = metacell_types()
+        selected = metacell_types_df[metacell_types_df$cell_type == type,]$metacell
+        n = length(selected)
+    }
+
+    return(n)
 }
 
 plot_type_composition = function(input, output, session, dataset, data, metacell_types, metacell_names, cell_type_colors){
@@ -128,7 +147,6 @@ plot_type_composition = function(input, output, session, dataset, data, metacell
     tbin_time_l = paste0(names(tbin_time), ' ~E',tbin_time)
     names(tbin_time_l) = names(tbin_time)
 
-    # browser()
     g = ggplot(flow, aes(y=f, x=smc, fill = smc)) + 
             geom_bar(stat = "identity", aes(color = selected), linewidth = 1.5) + 
             facet_wrap(~time_bin, nrow = 1,
@@ -203,7 +221,7 @@ summarise_flow_from_spatial = function(ed){
     return(flow_from)
 }
 
-plot_temporal_flow_bars = function(input, output, session, dataset, data, metacell_types, metacell_names, cell_type_colors, flow_to, flow_from, flow_to_spat, flow_from_spat){
+plot_temporal_flow_bars_wraper = function(input, output, session, dataset, data, metacell_types, metacell_names, cell_type_colors, flow_to, flow_from, flow_to_spat, flow_from_spat){
     
     req(input$mode)
     req(input$spread_spatial)
@@ -226,8 +244,9 @@ plot_temporal_flow_bars = function(input, output, session, dataset, data, metace
     names(metacell_types_l) = metacell_types_df$metacell
 
     expand_type = ifelse(is.null(input$Expand_Type), FALSE, input$Expand_Type)
+    expand_smc = ifelse(is.null(input$Expand_Smcs), FALSE, input$Expand_Smcs)
 
-    if(input$mode == 'Types' | (input$mode == 'SMCs' & expand_type)){
+    if((input$mode == 'Types' & !expand_smc) | (input$mode == 'SMCs' & expand_type)){
 
         flow_from$ent1 = metacell_types_l[flow_from$smc1]
         flow_from$ent2 = metacell_types_l[flow_from$smc2]
@@ -262,9 +281,18 @@ plot_temporal_flow_bars = function(input, output, session, dataset, data, metace
         names(ctype_color) = cell_type_colors()$cell_type
         ctype_color[c('source', 'sink')] = 'gray'
 
-    }else if(input$mode == 'SMCs'){
-        req(input$display_select %in% metacell_names())
-        selected = input$display_select
+    }else if((input$mode == 'SMCs' & !expand_type) | (input$mode == 'Types' & expand_smc)){
+
+        if(input$mode == 'SMCs'){
+            req(input$display_select %in% metacell_names())
+            selected = input$display_select
+
+        }else if(input$mode == 'Types' & expand_smc){
+            req(input$display_select %in% metacell_types_df$cell_type)
+            type = input$display_select
+            selected = metacell_types_df[metacell_types_df$cell_type == type,]$metacell
+        }
+
         flow_from$ent1 = flow_from$smc1
         flow_from$ent2 = flow_from$smc2
         flow_to$ent1 = flow_to$smc1
@@ -283,19 +311,34 @@ plot_temporal_flow_bars = function(input, output, session, dataset, data, metace
     flow_to[is.na(flow_to$ent1),]$ent1 = 'source'
     flow_to[is.na(flow_to$f_norm),]$f_norm = 0
     
-    if(input$spread_spatial %in% c("Rostral","Distal","Lateral", "Caudal")){
-        subset_flow_from = flow_from[flow_from$ent1 == selected & flow_from$spat1 == input$spread_spatial,]
-        subset_flow_to = flow_to[flow_to$ent2 == selected & flow_to$spat2 == input$spread_spatial,]
-    }else{
-        subset_flow_from = flow_from[flow_from$ent1 == selected,]
-        subset_flow_to = flow_to[flow_to$ent2 == selected,]
+    gs = list()
+    idx = 1
+    for(selected_obj in selected){
+
+        if(input$spread_spatial %in% c("Rostral","Distal","Lateral", "Caudal")){
+            subset_flow_from = flow_from[flow_from$ent1 == selected_obj & flow_from$spat1 == input$spread_spatial,]
+            subset_flow_to = flow_to[flow_to$ent2 == selected_obj & flow_to$spat2 == input$spread_spatial,]
+        }else{
+            subset_flow_from = flow_from[flow_from$ent1 == selected_obj,]
+            subset_flow_to = flow_to[flow_to$ent2 == selected_obj,]
+        }
+
+        gs[[idx]] = plot_temporal_flow_bars(input, selected_obj, time_bins, ctype_color, subset_flow_to, subset_flow_from)
+        idx = idx + 1
     }
+       
+    g = arrangeGrob(grobs = lapply(gs, ggplotGrob), nrow = length(gs))
+
+    return(grid.draw(g))
+}
+
+plot_temporal_flow_bars = function(input, selected, time_bins, ctype_color, subset_flow_to, subset_flow_from){
 
     subset_flow_from = subset_flow_from[subset_flow_from$f_norm > 0.05 | subset_flow_from$ent2 == selected,]
     subset_flow_from$time_bin = as.character(as.numeric(subset_flow_from$time_bin)-1)
 
     subset_flow_to = subset_flow_to[subset_flow_to$f_norm > 0.05 | subset_flow_to$ent1 == selected,]
-
+    
     subset_flow = data.frame(time_bin = c(subset_flow_from$time_bin, subset_flow_to$time_bin),
                              smc = c(subset_flow_from$ent2, subset_flow_to$ent1),
                              f = c(subset_flow_from$f, -subset_flow_to$f),
@@ -330,9 +373,7 @@ plot_temporal_flow_bars = function(input, output, session, dataset, data, metace
     }
 
     x_lim = max(abs(min(subset_flow$flow_plot, na.rm = T)), max(subset_flow$flow_plot, na.rm = T))
-
     if(input$spread_spatial %in% c("Rostral","Distal","Lateral", "Caudal")){ # "All", 
-        # browser()
         dashes_df = data.frame(smc = as.numeric(unique(subset_flow$smc)))
         sub_dashes = data.frame(spat = c(dashes_df$smc, dashes_df$smc + 0.25, dashes_df$smc + 0.5, dashes_df$smc + 0.75))
 
@@ -371,15 +412,6 @@ plot_temporal_flow_bars = function(input, output, session, dataset, data, metace
                               plot.title = element_text(size = 20, face = "bold"),
                               strip.text = element_text(size = 18)) + ggtitle(selected)
     }
-    
-    # file_name = selected
-    # if(grepl('/', file_name)){
-    #     file_name = gsub(x = file_name, pattern = '/', replacement = '_')
-    # }
-    # if(grepl('\\?', file_name)){
-    #     file_name = gsub(x = file_name, pattern = '\\?', replacement = 'o')
-    # }
-    # ggsave(paste0(file_name, '_', input$spread_spatial, '.png'))
 
     return(g)
 }
@@ -432,7 +464,13 @@ display_selectors <- function(input, output, session, dataset, ns, metacell_name
                     choicesOpt = list(
                         style = paste0("color: ", cell_types_hex, ";")
                     )
-                )
+                ),
+            shinyWidgets::switchInput(
+                inputId = ns("Expand_Smcs"),
+                label = "Show Smcs",
+                size = "sm",
+                value = FALSE
+            )
             )
         }
     })}

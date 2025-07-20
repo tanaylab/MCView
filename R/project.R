@@ -102,7 +102,7 @@ create_project_config_file <- function(project_dir,
         if (atlas) {
             tabs <- c("QC", "Projection QC", "Manifold", "Genes", "Query", "Atlas", "Markers", "Gene modules", "Projected-fold", "Diff. Expression", "Cell types", "Annotate", "About")
         } else if(spatial){
-            tabs <- c("QC", "Manifold", "Spatial", "ST flow", "Genes", "Markers", "Gene modules", "Diff. Expression", "Cell types", "Annotate", "About")
+            tabs <- c("QC", "Manifold", "Spatial", "ST flow", "Beatle flow","Stf view", "Genes", "Markers", "Gene modules", "Diff. Expression", "Cell types", "Annotate", "About")
         }else{
             tabs <- c("QC", "Manifold", "Genes", "Markers", "Gene modules", "Diff. Expression", "Cell types", "Annotate", "About")
         }
