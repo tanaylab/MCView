@@ -171,7 +171,7 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
                 )
             })
 
-            output$plot_projected_correlation <- qc_stat_plot("projected_correlation", "Projected correlation per metacell", dataset, input, "plot_projected_correlation_type")
+            output$plot_projected_correlation <- qc_stat_plot("projected_correlation", "Projected correlation per metacell", dataset, input, "plot_projected_correlation_type", globals)
 
             output$correction_factor_box <- gene_correction_factor_stat_box(ns, id, dataset, "Correction factor per gene", "plot_correction_factor_scatter")
 
