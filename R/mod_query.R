@@ -268,7 +268,7 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
             output$diff_expr_table <- render_mc_mc_gene_diff_table(input, output, session, ns, dataset, mc_mc_gene_scatter_df)
 
             # Scatter
-            render_axis_select_ui("axis", "Data", "axis_select", md_choices = dataset_metadata_fields_numeric(dataset(), atlas = TRUE), md_selected = dataset_metadata_fields_numeric(dataset(), atlas = TRUE)[1], selected_gene = default_gene1, input = input, output = output, ns = ns, dataset = dataset, gene_modules = gene_modules, session = session)
+            render_axis_select_ui("axis", "Data", "axis_select", md_choices = dataset_metadata_fields_numeric(dataset(), atlas = TRUE), md_selected = dataset_metadata_fields_numeric(dataset(), atlas = TRUE)[1], selected_gene = mcv_get("default_gene1"), input = input, output = output, ns = ns, dataset = dataset, gene_modules = gene_modules, session = session)
 
             render_axis_select_ui(
                 "color_by",
@@ -280,7 +280,7 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
                     dataset_metadata_fields(dataset(), atlas = FALSE)
                 ),
                 md_selected = "Cell type",
-                selected_gene = default_gene1,
+                selected_gene = mcv_get("default_gene1"),
                 input = input,
                 output = output,
                 ns = ns,
@@ -460,6 +460,7 @@ metacell_selectors_mod_query <- function(input, output, session, dataset, ns, me
     output$diff_select <- renderUI({
         req(dataset())
         req(input$mode)
+        config <- mcv_get("config")
         if (input$mode == "MC") {
             req(metacell_colors())
             req(metacell_names())

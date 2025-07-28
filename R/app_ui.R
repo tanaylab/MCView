@@ -5,6 +5,12 @@
 #' @import shiny
 #' @noRd
 app_ui <- function(request) {
+    tab_defs <- mcv_get("tab_defs")
+    config <- mcv_get("config")
+    project <- mcv_get("project")
+    dataset <- mcv_get("dataset")
+    mc_data <- mcv_get("mc_data")
+
     modules <- purrr::map_chr(tab_defs, "module_name")
 
     ui_sidebar_funcs <- purrr::map(modules, ~ {
@@ -206,7 +212,7 @@ golem_add_external_resources <- function() {
         favicon(),
         bundle_resources(
             path = app_sys("app/www"),
-            app_title = config$title
+            app_title = mcv_get("config")$title
         )
         # Add here other external resources
         # for example, you can add shinyalert::useShinyalert()

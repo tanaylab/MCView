@@ -216,11 +216,11 @@ atlas_gene_gene <- function(input, output, session, dataset, metacell_types, cel
     scatter_selectors(ns, dataset, output, globals, prefix = "atlas_gene_gene")
 
     # Metadata/Metadata plots
-    render_axis_select_ui("atlas_x_axis", "X axis", "atlas_x_axis_select", md_choices = dataset_metadata_fields_numeric(dataset(), atlas = TRUE), md_selected = dataset_metadata_fields_numeric(dataset(), atlas = TRUE)[1], selected_gene = default_gene1, input = input, output = output, ns = ns, dataset = dataset, gene_modules = gene_modules, session = session, atlas = TRUE)
+    render_axis_select_ui("atlas_x_axis", "X axis", "atlas_x_axis_select", md_choices = dataset_metadata_fields_numeric(dataset(), atlas = TRUE), md_selected = dataset_metadata_fields_numeric(dataset(), atlas = TRUE)[1], selected_gene = mcv_get("default_gene1"), input = input, output = output, ns = ns, dataset = dataset, gene_modules = gene_modules, session = session, atlas = TRUE)
 
-    render_axis_select_ui("atlas_y_axis", "Y axis", "atlas_y_axis_select", md_choices = dataset_metadata_fields_numeric(dataset(), atlas = TRUE), md_selected = dataset_metadata_fields_numeric(dataset(), atlas = TRUE)[2], selected_gene = default_gene2, input = input, output = output, ns = ns, dataset = dataset, gene_modules = gene_modules, session = session, atlas = TRUE)
+    render_axis_select_ui("atlas_y_axis", "Y axis", "atlas_y_axis_select", md_choices = dataset_metadata_fields_numeric(dataset(), atlas = TRUE), md_selected = dataset_metadata_fields_numeric(dataset(), atlas = TRUE)[2], selected_gene = mcv_get("default_gene2"), input = input, output = output, ns = ns, dataset = dataset, gene_modules = gene_modules, session = session, atlas = TRUE)
 
-    render_axis_select_ui("atlas_color_by", "Color", "atlas_color_by_select", md_choices = c("Cell type", dataset_metadata_fields_numeric(dataset(), atlas = TRUE)), md_selected = "Cell type", selected_gene = default_gene1, input = input, output = output, ns = ns, dataset = dataset, gene_modules = gene_modules, session = session, atlas = TRUE)
+    render_axis_select_ui("atlas_color_by", "Color", "atlas_color_by_select", md_choices = c("Cell type", dataset_metadata_fields_numeric(dataset(), atlas = TRUE)), md_selected = "Cell type", selected_gene = mcv_get("default_gene1"), input = input, output = output, ns = ns, dataset = dataset, gene_modules = gene_modules, session = session, atlas = TRUE)
 
     output$atlas_plot_gene_gene_mc <- plotly::renderPlotly({
         req(has_atlas(dataset()))
@@ -244,12 +244,12 @@ atlas_gene_gene <- function(input, output, session, dataset, metacell_types, cel
         y_limits <- NULL
         if (input$use_query_limits) {
             if (input$atlas_x_axis_type == "Gene") {
-                egc_x <- get_gene_egc(input$atlas_x_axis_var, dataset(), atlas = FALSE) + egc_epsilon
+                egc_x <- get_gene_egc(input$atlas_x_axis_var, dataset(), atlas = FALSE) + mcv_get("egc_epsilon")
                 x_limits <- c(min(egc_x), max(egc_x))
             }
 
             if (input$atlas_y_axis_type == "Gene") {
-                egc_y <- get_gene_egc(input$atlas_y_axis_var, dataset(), atlas = FALSE) + egc_epsilon
+                egc_y <- get_gene_egc(input$atlas_y_axis_var, dataset(), atlas = FALSE) + mcv_get("egc_epsilon")
                 y_limits <- c(min(egc_y), max(egc_y))
             }
         }

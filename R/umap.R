@@ -78,7 +78,7 @@ compute_umap <- function(mc_egc, anchors, min_dist = 0.96, n_neighbors = 10, n_e
 }
 
 load_default_2d_projection <- function(project, dataset, adata, mc_egc, umap_anchors, min_umap_log_expr, umap_config, genes_per_anchor) {
-    cache_dir <- project_cache_dir(project)
+    cache_dir <- project_cache_dir(mcv_get("project"))
 
     mc2d_list <- NULL
     if (!is.null(umap_anchors)) {
@@ -125,11 +125,11 @@ load_default_2d_projection <- function(project, dataset, adata, mc_egc, umap_anc
 #'
 #' @export
 update_2d_projection <- function(project, dataset, layout, graph) {
-    cache_dir <- project_cache_dir(project)
+    cache_dir <- project_cache_dir(mcv_get("project"))
 
     cli_alert_info("Loading 2D projection for dataset {.val {dataset}}")
 
-    metacells <- get_metacell_ids(project, dataset)
+    metacells <- get_metacell_ids(mcv_get("project"), dataset)
 
     mc2d_list <- layout_and_graph_to_mc2d(layout, graph, metacells)
 

@@ -353,9 +353,9 @@ plot_mc_scatter <- function(dataset,
             mutate(x_str = glue("{x_name}: {x_values}", x_values = round(!!sym(x_var), digits = 3)))
     } else {
         if (x_type == "Gene module") {
-            egc_x <- get_gene_module_egc(x_var, dataset, gene_modules, atlas = atlas) + egc_epsilon
+            egc_x <- get_gene_module_egc(x_var, dataset, gene_modules, atlas = atlas) + mcv_get("egc_epsilon")
         } else {
-            egc_x <- get_gene_egc(x_var, dataset, atlas = atlas, corrected = corrected) + egc_epsilon
+            egc_x <- get_gene_egc(x_var, dataset, atlas = atlas, corrected = corrected) + mcv_get("egc_epsilon")
         }
         df <- df %>%
             mutate(!!x_var := egc_x[metacell]) %>%
@@ -372,9 +372,9 @@ plot_mc_scatter <- function(dataset,
             mutate(y_str = glue("{y_name}: {y_values}", y_values = round(!!sym(y_var), digits = 3)))
     } else {
         if (y_type == "Gene module") {
-            egc_y <- get_gene_module_egc(y_var, dataset, gene_modules, atlas = atlas) + egc_epsilon
+            egc_y <- get_gene_module_egc(y_var, dataset, gene_modules, atlas = atlas) + mcv_get("egc_epsilon")
         } else {
-            egc_y <- get_gene_egc(y_var, dataset, atlas = atlas, corrected = corrected) + egc_epsilon
+            egc_y <- get_gene_egc(y_var, dataset, atlas = atlas, corrected = corrected) + mcv_get("egc_epsilon")
         }
 
         df <- df %>%
@@ -416,9 +416,9 @@ plot_mc_scatter <- function(dataset,
         }
     } else if (color_type %in% c("Gene", "Gene module")) {
         if (color_type == "Gene module") {
-            egc_color <- get_gene_module_egc(color_var, dataset, gene_modules, atlas = atlas) + egc_epsilon
+            egc_color <- get_gene_module_egc(color_var, dataset, gene_modules, atlas = atlas) + mcv_get("egc_epsilon")
         } else {
-            egc_color <- get_gene_egc(color_var, dataset, atlas = atlas, corrected = corrected) + egc_epsilon
+            egc_color <- get_gene_egc(color_var, dataset, atlas = atlas, corrected = corrected) + mcv_get("egc_epsilon")
         }
         df <- df %>%
             mutate(expression = log2(egc_color[df$metacell]))
@@ -511,7 +511,7 @@ plot_mc_scatter <- function(dataset,
         if (log_labels) {
             xylims <- 2^seq(-17, 0, by = 1)
         } else {
-            xylims <- expr_breaks
+            xylims <- mcv_get("expr_breaks")
         }
     }
 
@@ -642,7 +642,7 @@ plot_sample_scatter <- function(dataset,
             left_join(get_var_md(x_var, x_name, "x_str"), by = "samp_id")
     } else if (x_type == "Gene") {
         req(x_var %in% gene_names(dataset))
-        egc_x <- get_samples_gene_egc(x_var, dataset, selected_mc) + egc_epsilon
+        egc_x <- get_samples_gene_egc(x_var, dataset, selected_mc) + mcv_get("egc_epsilon")
         df <- df %>%
             mutate(!!x_var := egc_x[df$samp_id]) %>%
             mutate(x_str = glue("{x_name} expression (log2): {expr_text}", expr_text = round(log2(!!sym(x_var)), digits = 2)))
@@ -663,7 +663,7 @@ plot_sample_scatter <- function(dataset,
             left_join(get_var_md(y_var, y_name, "y_str"), by = "samp_id")
     } else if (y_type == "Gene") {
         req(y_var %in% gene_names(dataset))
-        egc_y <- get_samples_gene_egc(y_var, dataset, selected_mc) + egc_epsilon
+        egc_y <- get_samples_gene_egc(y_var, dataset, selected_mc) + mcv_get("egc_epsilon")
         df <- df %>%
             mutate(!!y_var := egc_y[df$samp_id]) %>%
             mutate(y_str = glue("{y_name} expression (log2): {expr_text}", expr_text = round(log2(!!sym(y_var)), digits = 2)))
@@ -713,7 +713,7 @@ plot_sample_scatter <- function(dataset,
             }
         } else if (color_type == "Gene") {
             req(color_var %in% gene_names(dataset))
-            egc_color <- get_samples_gene_egc(color_var, dataset, selected_mc) + egc_epsilon
+            egc_color <- get_samples_gene_egc(color_var, dataset, selected_mc) + mcv_get("egc_epsilon")
             df <- df %>%
                 mutate(expression = log2(egc_color[df$samp_id]))
             min_expr <- min(df$expression, na.rm = TRUE)
@@ -818,7 +818,7 @@ plot_sample_scatter <- function(dataset,
         ylab(y_var)
 
     # arrange axis for gene expression
-    xylims <- expr_breaks
+    xylims <- mcv_get("expr_breaks")
 
     if (x_type %in% c("Gene", "Gene module")) {
         xmax <- min(c(1:length(xylims))[xylims >= max(egc_x)])
@@ -898,8 +898,8 @@ plot_obs_proj_scatter <- function(dataset,
         #     left_join(metadata %>% select(metacell, !!x_var), by = "metacell") %>%
         #     mutate(x_str = glue("{x_name}: {x_values}", x_values = round(!!sym(x_var), digits = 3)))
     } else {
-        egc_obs <- get_gene_egc(axis_var, dataset, corrected = TRUE) + egc_epsilon
-        egc_proj <- get_gene_egc(axis_var, dataset, projected = TRUE) + egc_epsilon
+        egc_obs <- get_gene_egc(axis_var, dataset, corrected = TRUE) + mcv_get("egc_epsilon")
+        egc_proj <- get_gene_egc(axis_var, dataset, projected = TRUE) + mcv_get("egc_epsilon")
 
         x_var <- glue("{axis_var} - observed (corrected)")
         y_var <- glue("{axis_var} - projected")
@@ -964,7 +964,7 @@ plot_obs_proj_scatter <- function(dataset,
                 mutate(color_str = glue("{color_name}: {color_values}\nCell type: {`Cell type`}", color_values = round(!!sym(color_var), digits = 3)))
         }
     } else if (color_type == "Gene") {
-        egc_color <- get_gene_egc(color_var, dataset) + egc_epsilon
+        egc_color <- get_gene_egc(color_var, dataset) + mcv_get("egc_epsilon")
         df <- df %>%
             mutate(expression = log2(egc_color[df$metacell]))
         min_expr <- min(df$expression, na.rm = TRUE)
@@ -1036,7 +1036,7 @@ plot_obs_proj_scatter <- function(dataset,
     }
 
     # arrange axis for gene expression
-    xylims <- expr_breaks
+    xylims <- mcv_get("expr_breaks")
 
     if (axis_type %in% c("Gene", "Gene module")) {
         xmax <- min(c(1:length(xylims))[xylims >= max(egc_obs) - 1e-10])

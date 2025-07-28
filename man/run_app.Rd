@@ -6,6 +6,8 @@
 \usage{
 run_app(
   project,
+  dataset_name = "daf_data",
+  config_file = NULL,
   port = NULL,
   host = NULL,
   launch.browser = FALSE,
@@ -14,7 +16,11 @@ run_app(
 )
 }
 \arguments{
-\item{project}{path of the project to run.}
+\item{project}{Either a project path (existing behavior) or a DAF object}
+
+\item{dataset_name}{Name for the dataset when using DAF object (default: "daf_data")}
+
+\item{config_file}{Optional YAML configuration file (for DAF mode)}
 
 \item{port}{app port}
 

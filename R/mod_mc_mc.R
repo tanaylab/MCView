@@ -230,6 +230,7 @@ metacell_selectors <- function(input, output, session, dataset, ns, metacell_nam
     output$metacell1_select <- renderUI({
         req(dataset())
         req(input$mode)
+        config <- mcv_get("config")
         if (input$mode == "MCs") {
             req(metacell_colors())
             req(metacell_names())

@@ -253,7 +253,7 @@ create_project <- function(project,
                            edit_config = TRUE,
                            atlas = FALSE) {
     project_dir <- create_project_dirs(project, atlas = atlas)
-    config <- create_project_config_file(
+    create_project_config_file(
         project_dir = project,
         title = title,
         tabs = tabs,
@@ -265,12 +265,12 @@ create_project <- function(project,
         other_params = other_params,
         atlas = atlas
     )
-    project_dir <- fs::path(project_dir, "config")
+    config_path <- fs::path(project_dir, "config")
 
     if (rlang::is_interactive() && edit_config) {
-        utils::file.edit(fs::path(project_dir, "config.yaml"))
+        utils::file.edit(fs::path(config_path, "config.yaml"))
     }
-    cli_alert("You can edit the app configuration at {.file {fs::path(project_dir, 'config.yaml')}}")
+    cli_alert("You can edit the app configuration at {.file {fs::path(config_path, 'config.yaml')}}")
 }
 
 #' Generate a 'deployment ready' bundle of the a project app
@@ -339,8 +339,9 @@ create_project <- function(project,
 #' @export
 create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overwrite = FALSE, self_contained = FALSE, branch = "latest_release", restart = overwrite, permissions = NULL, light_version = FALSE, excluded_tabs = c("Gene modules", "Annotate", "Inner-fold", "Stdev-fold"), shiny_cache_dir = NULL, shiny_cache_max_size = NULL, ...) {
     bundle_dir <- fs::path(path, name)
-    if (!(fs::dir_exists(project))) {
-        cli::cli_abort("{.path {project}} does not exists.")
+    project_path <- mcv_get("project")
+    if (!(fs::dir_exists(project_path))) {
+        cli::cli_abort("{.path {project_path}} does not exists.")
     }
     if (fs::dir_exists(bundle_dir)) {
         if (overwrite) {
@@ -375,8 +376,8 @@ create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overw
 
     fs::file_copy(app_sys("app.R"), fs::path(bundle_dir, "app.R"))
 
-    fs::dir_copy(fs::path(project, "config"), fs::path(bundle_dir, "config"))
-    fs::dir_copy(fs::path(project, "cache"), fs::path(bundle_dir, "cache"))
+    fs::dir_copy(fs::path(project_path, "config"), fs::path(bundle_dir, "config"))
+    fs::dir_copy(fs::path(project_path, "cache"), fs::path(bundle_dir, "cache"))
 
     if (light_version) {
         add_to_config(project_config_file(bundle_dir), light_version = TRUE, excluded_tabs = excluded_tabs)

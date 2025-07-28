@@ -68,6 +68,7 @@ gene_modules_selector <- function(dataset, gene_modules, ns, id, label = "Gene m
 
 metacell_selector <- function(dataset, ns, id, label, selected = NULL, atlas = FALSE, ...) {
     renderUI({
+        config <- mcv_get("config")
         metacell_names <- colnames(get_mc_data(dataset(), "mc_mat", atlas = atlas))
         shinyWidgets::pickerInput(ns(id), label,
             choices = metacell_names,
@@ -82,6 +83,7 @@ colored_metacell_selector <- function(dataset, ns, id, label, metacell_colors, m
     renderUI({
         req(metacell_colors())
         req(metacell_names())
+        config <- mcv_get("config")
 
         # add 'similar' annotation
         md <- get_mc_data(dataset(), "metadata")
@@ -182,7 +184,7 @@ top_correlated_selector <- function(gene_id, id, type_id, input, output, session
         } else if (input[[type_id]] == "Gene module") {
             req(!is.null(gene_modules))
             req(gene %in% gene_modules()$module)
-            data_vec <- get_gene_module_egc(gene, dataset(), gene_modules()) + egc_epsilon
+            data_vec <- get_gene_module_egc(gene, dataset(), gene_modules()) + mcv_get("egc_epsilon")
             exclude <- gene_modules()$gene[gene_modules()$module == gene]
         } else {
             metadata <- get_mc_data(dataset(), "metadata")

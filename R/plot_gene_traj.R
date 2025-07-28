@@ -32,7 +32,7 @@ plot_gene_trajectory <- function(dataset, genes, metacell, anchor_genes = NULL) 
     time_annot <- get_mc_data(dataset, "time_annot")
 
     mc_egc_t <- calc_mc_egc_t(dataset, metacell, genes)
-    lfp <- t(mc_egc_t + egc_epsilon)
+    lfp <- t(mc_egc_t + mcv_get("egc_epsilon"))
 
     colnames(lfp) <- genes
 
@@ -49,7 +49,7 @@ plot_gene_trajectory <- function(dataset, genes, metacell, anchor_genes = NULL) 
         df <- df %>% mutate(gene = forcats::fct_relevel(gene, anchor_genes))
     }
 
-    ylims <- expr_breaks
+    ylims <- mcv_get("expr_breaks")
     ymax <- min(c(1:length(ylims))[ylims >= max(df$expr, na.rm = TRUE)])
     ymin <- max(c(1:length(ylims))[ylims <= min(df$expr, na.rm = TRUE)])
 

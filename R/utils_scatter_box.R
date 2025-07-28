@@ -61,11 +61,11 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
 
     output$cell_type_list <- cell_type_selector(dataset, ns, id = "selected_cell_types", label = "Cell types", selected = "all", cell_type_colors = cell_type_colors, metacell_types = metacell_types, apply_button = TRUE)
 
-    render_axis_select_ui("x_axis", "X axis", "x_axis_select", md_choices = dataset_metadata_fields_numeric(dataset()), md_selected = dataset_metadata_fields_numeric(dataset())[1], selected_gene = default_gene1, input = input, output = output, ns = ns, dataset = dataset, gene_modules = gene_modules, session = session, atlas = atlas)
+    render_axis_select_ui("x_axis", "X axis", "x_axis_select", md_choices = dataset_metadata_fields_numeric(dataset()), md_selected = dataset_metadata_fields_numeric(dataset())[1], selected_gene = mcv_get("default_gene1"), input = input, output = output, ns = ns, dataset = dataset, gene_modules = gene_modules, session = session, atlas = atlas)
 
-    render_axis_select_ui("y_axis", "Y axis", "y_axis_select", md_choices = dataset_metadata_fields_numeric(dataset()), md_selected = dataset_metadata_fields_numeric(dataset())[2], selected_gene = default_gene2, input = input, output = output, ns = ns, dataset = dataset, gene_modules = gene_modules, session = session, atlas = atlas)
+    render_axis_select_ui("y_axis", "Y axis", "y_axis_select", md_choices = dataset_metadata_fields_numeric(dataset()), md_selected = dataset_metadata_fields_numeric(dataset())[2], selected_gene = mcv_get("default_gene2"), input = input, output = output, ns = ns, dataset = dataset, gene_modules = gene_modules, session = session, atlas = atlas)
 
-    render_axis_select_ui("color_by", "Color", "color_by_select", md_choices = c("Cell type", "Clipboard", dataset_metadata_fields(dataset())), md_selected = "Cell type", selected_gene = default_gene1, input = input, output = output, ns = ns, dataset = dataset, gene_modules = gene_modules, session = session, atlas = atlas)
+    render_axis_select_ui("color_by", "Color", "color_by_select", md_choices = c("Cell type", "Clipboard", dataset_metadata_fields(dataset())), md_selected = "Cell type", selected_gene = mcv_get("default_gene1"), input = input, output = output, ns = ns, dataset = dataset, gene_modules = gene_modules, session = session, atlas = atlas)
 
     output$use_atlas_limits_ui <- renderUI({
         req(has_atlas(dataset()))
@@ -108,12 +108,12 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
         if (!is.null(input$use_atlas_limits) && input$use_atlas_limits) {
             req(has_atlas(dataset()))
             if (input$x_axis_type == "Gene") {
-                egc_x <- get_gene_egc(input$x_axis_var, dataset(), atlas = TRUE) + egc_epsilon
+                egc_x <- get_gene_egc(input$x_axis_var, dataset(), atlas = TRUE) + mcv_get("egc_epsilon")
                 x_limits <- c(min(egc_x), max(egc_x))
             }
 
             if (input$y_axis_type == "Gene") {
-                egc_y <- get_gene_egc(input$y_axis_var, dataset(), atlas = TRUE) + egc_epsilon
+                egc_y <- get_gene_egc(input$y_axis_var, dataset(), atlas = TRUE) + mcv_get("egc_epsilon")
                 y_limits <- c(min(egc_y), max(egc_y))
             }
         }

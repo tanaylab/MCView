@@ -23,27 +23,28 @@ verify_config_file <- function(config) {
 #' @noRd
 init_config <- function(project, profile = FALSE) {
     config_file <- project_config_file(project)
-    project <<- project
-    about_file <<- fs::path_abs(project_about_file(project))
-    cache_dir <<- project_cache_dir(project)
+    mcv_set("project", project)
+    mcv_set("about_file", fs::path_abs(project_about_file(project)))
+    mcv_set("cache_dir", project_cache_dir(project))
 
-    config <<- yaml::read_yaml(config_file)
+    config <- yaml::read_yaml(config_file)
     verify_config_file(config)
     if (is.null(config$light_version)) {
-        config$light_version <<- FALSE
+        config$light_version <- FALSE
     }
 
     verify_app_cache(project)
 
     if (file.exists(project_metacells_algorithm_file(project))) {
         metacells_version <- readLines(project_metacells_algorithm_file(project))
-        config$metacells_version <<- metacells_version
+        config$metacells_version <- metacells_version
     }
-    config$profile <<- profile
+    config$profile <- profile
+    mcv_set("config", config)
 }
 
 init_defs <- function() {
-    egc_epsilon <<- 1e-5
+    mcv_set("egc_epsilon", 1e-5)
     options(spinner.type = 6)
 
     theme_set(theme_classic())
@@ -52,10 +53,12 @@ init_defs <- function() {
 
     init_selected_genes()
 
-    expr_breaks <<- c(1e-5, 2e-5, 4e-5, 1e-4, 2e-4, 4e-4, 1e-3, 2e-3, 4e-3, 1e-2, 2e-2, 4e-2, 1e-1, 2e-1, 4e-1, 1)
+    mcv_set("expr_breaks", c(1e-5, 2e-5, 4e-5, 1e-4, 2e-4, 4e-4, 1e-3, 2e-3, 4e-3, 1e-2, 2e-2, 4e-2, 1e-1, 2e-1, 4e-1, 1))
 }
 
 init_selected_genes <- function() {
+    config <- mcv_get("config")
+    project <- mcv_get("project")
     # if selected genes are not set - choose them from the first dataset
     if (is.null(config$selected_gene1) || is.null(config$selected_gene2)) {
         mc_egc <- get_mc_egc(dataset_ls(project)[1])
@@ -80,13 +83,13 @@ init_selected_genes <- function() {
         genes <- names(head(sort(minmax, decreasing = TRUE), n = 2))
     }
 
-    default_gene1 <<- config$selected_gene1 %||% genes[1]
-    default_gene2 <<- config$selected_gene2 %||% genes[2]
+    mcv_set("default_gene1", config$selected_gene1 %||% genes[1])
+    mcv_set("default_gene2", config$selected_gene2 %||% genes[2])
 }
 
 
 init_tab_defs <- function() {
-    tab_defs <<- list(
+    tab_defs <- list(
         "About" = list(
             title = "About",
             module_name = "about",
@@ -178,17 +181,18 @@ init_tab_defs <- function() {
             icon = "atlas"
         )
     )
+    mcv_set("tab_defs", tab_defs)
 
     default_tabs <- c("About", "Genes", "Diff. Expression")
 
-    cur_config <- config
+    cur_config <- mcv_get("config")
 
     if (!is.null(cur_config$tabs)) {
         cur_config$original_tabs <- cur_config$tabs
         cur_config$tabs[cur_config$tabs == "Metacells"] <- "Diff. Expression" # here for backward compatibility
-        cur_config$tabs <- cur_config$tabs[config$tabs != "Metadata"] # ignore "Metadata" for backward compatibility
+        cur_config$tabs <- cur_config$tabs[cur_config$tabs != "Metadata"] # ignore "Metadata" for backward compatibility
         for (.x in cur_config$tabs) {
-            if (!(.x %in% names(tab_defs))) {
+            if (!(.x %in% names(mcv_get("tab_defs")))) {
                 cli_warn("{.x} is not a valid tab name. Update `tabs` in your configuration file.")
                 cur_config$tabs <- cur_config$tabs[cur_config$tabs != .x]
             }
@@ -198,7 +202,8 @@ init_tab_defs <- function() {
     }
 
     if (!is.null(cur_config$excluded_tabs)) {
-        tab_defs <<- tab_defs[!(names(tab_defs) %in% cur_config$excluded_tabs)]
+        tab_defs <- mcv_get("tab_defs")
+        mcv_set("tab_defs", tab_defs[!(names(tab_defs) %in% cur_config$excluded_tabs)])
         cur_config$tabs <- cur_config$tabs[!(cur_config$tabs %in% cur_config$excluded_tabs)]
     }
 
@@ -207,14 +212,14 @@ init_tab_defs <- function() {
         cur_config$tabs <- cur_config$tabs[cur_config$tabs != "About"]
     }
 
-    if (!is.null(config$light_version) && config$light_version) {
+    if (!is.null(cur_config$light_version) && cur_config$light_version) {
         # make the About tab first if exists
         if ("About" %in% cur_config$tabs) {
             cur_config$tabs <- c("About", cur_config$tabs[cur_config$tabs != "About"])
         }
     }
 
-    config <<- cur_config
+    mcv_set("config", cur_config)
 }
 
 order_tabs <- function(tabs) {
@@ -228,6 +233,14 @@ order_tabs <- function(tabs) {
     }
 
     return(new_tabs)
+}
+
+app_config <- function(key = NULL) {
+    config <- mcv_get("config")
+    if (is.null(key)) {
+        return(config)
+    }
+    config[[key]]
 }
 
 gene_names <- function(dataset, atlas = FALSE) {

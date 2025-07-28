@@ -1,4 +1,5 @@
 download_modal_reactives <- function(input, output, session, globals) {
+    project <- mcv_get("project")
     dl_text <- glue("
     Then, run the following lines in R (make sure that you are at the download directory):
 
@@ -36,17 +37,18 @@ download_modal_reactives <- function(input, output, session, globals) {
 
     output$download_bundle <- downloadHandler(
         filename = function() {
-            glue("MCView-{basename(project)}.zip")
+            glue("MCView-{basename(mcv_get('project'))}.zip")
         },
         content = function(file) {
-            download_project(file, project)
+            download_project(file, mcv_get("project"))
         }
     )
 }
 
 download_data_modal_reactives <- function(input, output, session, globals) {
+    project <- mcv_get("project")
     creation_text <- ""
-    if (fs::file_exists(command_file_path(project)) && !(!is.null(config$show_command) && !config$show_command) && !config$light_version) {
+    if (fs::file_exists(command_file_path(project)) && !(!is.null(app_config("show_command")) && !app_config("show_command")) && !app_config("light_version")) {
         cmd_text <- readLines(command_file_path(project))
         cmd_text <- paste0(cmd_text, collapse = "\n")
         cmd_text <- paste0("```r\n", cmd_text, "\n```")
@@ -89,10 +91,10 @@ download_data_modal_reactives <- function(input, output, session, globals) {
 
     output$download_mc_data <- downloadHandler(
         filename = function() {
-            glue("{basename(project)}_metacells.h5ad")
+            glue("{basename(mcv_get('project'))}_metacells.h5ad")
         },
         content = function(file) {
-            fs::file_copy(source_metacells_file_path(project), file)
+            fs::file_copy(source_metacells_file_path(mcv_get("project")), file)
             invisible(file)
         }
     )

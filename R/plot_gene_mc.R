@@ -7,8 +7,8 @@
 #'
 #' @noRd
 plot_gg_over_mc <- function(dataset, g1, g2, metacell_types = get_mc_data(dataset, "metacell_types"), cell_type_colors = get_mc_data(dataset, "cell_type_colors"), plot_text = TRUE, point_size = initial_scatters_point_size(dataset), stroke = initial_scatters_stroke(dataset)) {
-    egc_g1 <- get_gene_egc(g1, dataset) + egc_epsilon
-    egc_g2 <- get_gene_egc(g2, dataset) + egc_epsilon
+    egc_g1 <- get_gene_egc(g1, dataset) + mcv_get("egc_epsilon")
+    egc_g2 <- get_gene_egc(g2, dataset) + mcv_get("egc_epsilon")
 
     egc_g1 <- egc_g1[metacell_types$metacell]
     egc_g2 <- egc_g2[metacell_types$metacell]
@@ -31,7 +31,7 @@ plot_gg_over_mc <- function(dataset, g1, g2, metacell_types = get_mc_data(datase
         df <- df %>% rename(`Age` = mc_age)
     }
 
-    xylims <- expr_breaks
+    xylims <- mcv_get("expr_breaks")
 
     xmax <- min(c(1:length(xylims))[xylims >= max(egc_g1) - 1e-10])
     xmin <- max(c(1:length(xylims))[xylims <= min(egc_g1) + 1e-10])
@@ -78,7 +78,7 @@ plot_gg_over_mc <- function(dataset, g1, g2, metacell_types = get_mc_data(datase
 #'
 #' @noRd
 plot_gene_time_over_mc <- function(dataset, gene, metacell_types = get_mc_data(dataset, "metacell_types"), cell_type_colors = get_mc_data(dataset, "cell_type_colors"), point_size = initial_scatters_point_size(dataset), stroke = initial_scatters_stroke(dataset), plot_text = TRUE) {
-    egc_gene <- get_gene_egc(gene, dataset) + egc_epsilon
+    egc_gene <- get_gene_egc(gene, dataset) + mcv_get("egc_epsilon")
     egc_gene <- egc_gene[metacell_types$metacell]
 
     df <- metacell_types %>%
@@ -93,7 +93,7 @@ plot_gene_time_over_mc <- function(dataset, gene, metacell_types = get_mc_data(d
             `Age` = mc_age
         )
 
-    ylims <- expr_breaks
+    ylims <- mcv_get("expr_breaks")
     ymax <- min(c(1:length(ylims))[ylims >= max(egc_gene)])
     ymin <- max(c(1:length(ylims))[ylims <= min(egc_gene)])
 
@@ -151,6 +151,7 @@ connect_gene_plots <- function(input, output, session, ns, source) {
 }
 
 initial_scatters_point_size <- function(dataset, screen_width = NULL, screen_height = NULL, weight = 2, atlas = FALSE) {
+    config <- mcv_get("config")
     if (!is.null(config$datasets[[dataset]]$scatters_point_size)) {
         return(config$datasets[[dataset]]$scatters_point_size)
     } else if (!is.null(config$scatters_point_size)) {
@@ -166,6 +167,7 @@ initial_scatters_point_size <- function(dataset, screen_width = NULL, screen_hei
 }
 
 initial_scatters_stroke <- function(dataset) {
+    config <- mcv_get("config")
     if (!is.null(config$datasets[[dataset]]$scatters_stroke)) {
         return(config$datasets[[dataset]]$scatters_stroke)
     } else if (!is.null(config$scatters_stroke)) {
@@ -175,6 +177,7 @@ initial_scatters_stroke <- function(dataset) {
 }
 
 default_scatters_log_labels <- function(dataset) {
+    config <- mcv_get("config")
     if (!is.null(config$datasets[[dataset]]$scatters_log_labels)) {
         return(config$datasets[[dataset]]$scatters_log_labels)
     } else if (!is.null(config$scatters_log_labels)) {

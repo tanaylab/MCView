@@ -4,7 +4,7 @@ cell_type_gene_boxplot <- function(gene,
                                    metacell_types = get_mc_data(dataset, "metacell_types"),
                                    cell_type_colors = get_mc_data(dataset, "cell_type_colors"),
                                    egc_gene = NULL) {
-    egc_gene <- egc_gene %||% get_gene_egc(gene, dataset) + egc_epsilon
+    egc_gene <- egc_gene %||% get_gene_egc(gene, dataset) + mcv_get("egc_epsilon")
 
     df <- metacell_types %>%
         mutate(
@@ -28,7 +28,7 @@ cell_type_gene_boxplot <- function(gene,
 
     col_to_ct <- get_cell_type_colors(dataset, cell_type_colors)
 
-    ylims <- expr_breaks
+    ylims <- mcv_get("expr_breaks")
     ymax <- min(c(1:length(ylims))[ylims >= max(egc_gene)])
     ymin <- max(c(1:length(ylims))[ylims <= min(egc_gene)])
 

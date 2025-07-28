@@ -6,11 +6,7 @@ globalVariables(unique(c(
     # add_markers_colorbars:
     "metacell",
     # app_server:
-    "cell_type", "color", "config", "module", "project", "tab_defs",
-    # app_server : dataset:
-    "project",
-    # app_ui:
-    "project", "tab_defs",
+    "cell_type", "color", "module", "tab_defs",
     # atlas_gene_gene:
     "default_gene1", "default_gene2", "egc_epsilon",
     # calc_ct_ct_gene_df:
@@ -26,15 +22,15 @@ globalVariables(unique(c(
     # calc_obs_exp_type_df:
     "egc_epsilon",
     # calc_samp_mc_count:
-    "mc_data", "metacell", "samp_id",
+    "metacell", "samp_id",
     # calc_samp_mc_frac:
-    "mc_data",
+    "samp_id",
     # calc_samp_metadata:
-    "mc_data", "samp_id",
+    "samp_id",
     # calc_samp_samp_gene_df:
     "egc_epsilon",
     # calc_samples_list:
-    "mc_data",
+    "samp_id",
     # cell_metadata_to_metacell:
     "cat_var_n", "cat_varp", "cell_id", "metacell",
     # cell_metadata_to_metacell_from_h5ad:
@@ -51,14 +47,8 @@ globalVariables(unique(c(
     "cell_type", "metacell",
     # clipboard_reactives : <anonymous>:
     "cell_type", "metacell",
-    # colored_metacell_selector:
-    "config",
     # compute_umap:
     "idx", "k", "mc1", "mc2", "weight",
-    # config_shiny_cache:
-    "config", "project",
-    # download_modal_reactives : <anonymous>:
-    "project",
     # dt_selector_column:
     "cell_type",
     # filter_mat_by_cell_types:
@@ -80,25 +70,15 @@ globalVariables(unique(c(
     # get_cell_type_colors:
     "cell_type", "color",
     # get_cell_type_data:
-    "cell_type", "mc_data",
+    "cell_type",
     # get_cell_types_mat:
     "cell_type", "metacell",
-    # get_marker_genes:
-    "config",
-    # get_markers:
-    "cache_dir",
     # get_mc_color_key:
     "cell_type", "mc_col",
-    # get_mc_config:
-    "config",
-    # get_mc_data:
-    "mc_data",
     # get_mc_gene_modules_egc:
     "module",
     # get_metacell_types_data:
-    "cell_type", "color", "mc_data", "metacell",
-    # get_metadata:
-    "mc_data",
+    "cell_type", "color", "metacell",
     # get_module_genes:
     "gene",
     # get_samples_egc:
@@ -107,22 +87,12 @@ globalVariables(unique(c(
     "cell_type", "metacell",
     # get_top_cor_gene:
     "egc_epsilon", "gene1", "gene2", "label",
-    # golem_add_external_resources:
-    "config",
     # group_selectors:
     "cell_type", "metacell",
     # group_selectors_mod_query:
     "cell_type", "metacell",
-    # has_atlas:
-    "mc_data",
-    # heatmap_matrix_reactives:
-    "cell_type", "config", "metacell",
     # heatmap_reactives : <anonymous>:
     "cell_type", "color", "type",
-    # heatmap_sidebar:
-    "config",
-    # help_reactives:
-    "config", "help_config",
     # import_atlas:
     "atlas", "cell_type", "color", "dtype", "gene", "metacell", "projected_type", "similar", "top1_gene", "top1_lfp", "top2_gene", "top2_lfp", "type", "value", "weight",
     # import_cell_metadata:
@@ -131,30 +101,14 @@ globalVariables(unique(c(
     "cell_type", "cluster", "color", "correction_factor", "fp", "gene", "gene1", "gene2", "grouped", "metacell", "significant_inner_folds_count", "total_umis",
     # import_dataset_metacell1:
     "cell_type", "color", "metacell", "time_bin",
-    # init_config:
-    "config",
-    # init_selected_genes:
-    "config", "project",
-    # init_tab_defs:
-    "config", "tab_defs",
     # init_temp_scdb:
     ".",
-    # initial_proj_point_size:
-    "config",
-    # initial_proj_stroke:
-    "config",
-    # initial_scatters_point_size:
-    "config",
-    # initial_scatters_stroke:
-    "config",
     # layout_and_graph_to_mc2d:
     "from", "metacell", "to",
-    # load_all_data:
-    "project",
     # load_all_mc_data:
-    ".", "mc_data",
+    ".",
     # load_all_mc_data_atlas:
-    ".", "mc_data",
+    ".",
     # load_default_2d_projection:
     "i", "j", "x", "y",
     # load_outliers:
@@ -173,26 +127,16 @@ globalVariables(unique(c(
     "mc_col", "metacell",
     # metacell_from_coords_proj:
     "diff1", "diff2",
-    # metacell_selector:
-    "config",
-    # metacell_selectors:
-    "config",
-    # metacell_selectors_mod_query:
-    "cell_type", "config",
     # metacells_to_types:
     "cell_type", "metacell",
-    # min_edge_length:
-    "config",
     # mod_about_server : <anonymous>:
     "cell_type", "color", "default_gene1", "default_gene2", "x", "x_mc1", "x_mc2", "y", "y_mc1", "y_mc2",
     # mod_about_ui:
-    "about_file", "config",
+    "about_file",
     # mod_annotate_server : <anonymous>:
-    "color", "metacell", "project",
+    "color", "metacell",
     # mod_annotate_server : <anonymous> : <anonymous>:
     "color", "metacell", "top1_gene", "top1_lfp", "top2_gene", "top2_lfp",
-    # mod_atlas_server : <anonymous>:
-    "project",
     # mod_cell_type_server : <anonymous>:
     "default_gene1", "egc_epsilon",
     # mod_flow_server : <anonymous>:
@@ -202,7 +146,7 @@ globalVariables(unique(c(
     # mod_gene_module_controllers : <anonymous>:
     "gene", "module",
     # mod_manifold_server : <anonymous>:
-    "mc1", "mc2", "project",
+    "mc1", "mc2",
     # mod_manifold_server : <anonymous> : <anonymous>:
     "mc1", "mc2",
     # mod_outliers_server : <anonymous>:
@@ -273,10 +217,6 @@ globalVariables(unique(c(
     "default_gene1", "default_gene2", "egc_epsilon", "metacell",
     # select_top_fold_genes_per_metacell:
     "fp", "gene", "metacell",
-    # top_correlated_selector:
-    "project",
-    # top_correlated_selector_multiple_genes:
-    "project",
     # update_metacell_types:
     "cell_type", "metacell",
     # update_metadata:
@@ -288,5 +228,5 @@ globalVariables(unique(c(
     # zero_fold_table:
     "avg", "Expected", "Expression", "FC", "gene", "metacell", "obs", "type", "zero_fold",
     ":=", "sec_ord", "metacell_names", "scdb_mctnetwork", "scdb_mc", "mctnetwork_get_flow_mat",
-    "mc_data", "ord_mean"
+    "ord_mean"
 )))

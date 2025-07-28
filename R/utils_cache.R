@@ -48,13 +48,13 @@ load_all_mc_data_atlas <- function(dataset, cache_dir) {
     atlas_dir <- fs::path(cache_dir, dataset, "atlas")
     if (fs::dir_exists(atlas_dir)) {
         files <- list.files(atlas_dir, pattern = "*\\.(qs|tsv|csv)")
-
+        mc_data <- mcv_get("mc_data")
         if (is.null(mc_data[[dataset]])) {
-            mc_data[[dataset]] <<- list()
+            mc_data[[dataset]] <- list()
         }
 
         if (is.null(mc_data[[dataset]]$atlas)) {
-            mc_data[[dataset]]$atlas <<- list()
+            mc_data[[dataset]]$atlas <- list()
         }
 
         for (fn in files) {
@@ -63,8 +63,9 @@ load_all_mc_data_atlas <- function(dataset, cache_dir) {
                 sub("\\.tsv$", "", .)
             obj <- load_shiny_data(var_name, dataset, cache_dir, atlas = TRUE)
 
-            mc_data[[dataset]]$atlas[[var_name]] <<- obj
+            mc_data[[dataset]]$atlas[[var_name]] <- obj
         }
+        mcv_set("mc_data", mc_data)
     }
 }
 
@@ -75,9 +76,10 @@ load_all_mc_data <- function(dataset, cache_dir) {
     }
 
     files <- list.files(fs::path(cache_dir, dataset), pattern = "*\\.(qs|tsv|csv)")
+    mc_data <- mcv_get("mc_data")
 
     if (is.null(mc_data[[dataset]])) {
-        mc_data[[dataset]] <<- list()
+        mc_data[[dataset]] <- list()
     }
 
     for (fn in files) {
@@ -86,8 +88,9 @@ load_all_mc_data <- function(dataset, cache_dir) {
             sub("\\.tsv$", "", .)
         obj <- load_shiny_data(var_name, dataset, cache_dir)
 
-        mc_data[[dataset]][[var_name]] <<- obj
+        mc_data[[dataset]][[var_name]] <- obj
     }
+    mcv_set("mc_data", mc_data)
 }
 
 verify_app_cache <- function(project, required_files = c("mc_mat.qs", "mc_sum.qs", "mc2d.qs", "metacell_types.tsv", "cell_type_colors.tsv"), datasets = NULL) {
@@ -108,15 +111,16 @@ verify_app_cache <- function(project, required_files = c("mc_mat.qs", "mc_sum.qs
 
 load_all_data <- function(cache_dir, datasets = NULL) {
     if (is.null(datasets)) {
-        datasets <- dataset_ls(project)
+        datasets <- dataset_ls(mcv_get("project"))
     }
 
-    mc_data <<- list()
+    mcv_set("mc_data", list())
 
     purrr::walk(datasets, ~ load_all_mc_data(dataset = .x, cache_dir = cache_dir))
 }
 
 get_cell_type_data <- function(dataset, atlas = FALSE) {
+    mc_data <- mcv_get("mc_data")
     if (atlas) {
         cell_type_colors <- mc_data[[dataset]]$atlas[["cell_type_colors"]]
     } else {
@@ -130,6 +134,7 @@ get_cell_type_data <- function(dataset, atlas = FALSE) {
 }
 
 get_metacell_types_data <- function(dataset, atlas = FALSE) {
+    mc_data <- mcv_get("mc_data")
     if (atlas) {
         metacell_types <- mc_data[[dataset]]$atlas[["metacell_types"]]
     } else {
@@ -159,6 +164,7 @@ get_mc_color_key <- function(dataset) {
 }
 
 get_metadata <- function(dataset, atlas = FALSE) {
+    mc_data <- mcv_get("mc_data")
     if (atlas) {
         return(mc_data[[dataset]]$atlas[["metadata"]])
     } else {
@@ -185,7 +191,29 @@ get_metadata <- function(dataset, atlas = FALSE) {
     return(metadata)
 }
 
+#' Enhanced get_mc_data with backend dispatch
 get_mc_data <- function(dataset, var_name, atlas = FALSE) {
+    backend <- current_backend()
+
+    if (backend$kind == "daf") {
+        return(get_daf_mc_data(dataset, var_name, atlas))
+    } else {
+        return(get_cache_mc_data(dataset, var_name, atlas))
+    }
+}
+
+get_daf_mc_data <- function(dataset, var_name, atlas = FALSE) {
+    mc_data <- mcv_get("mc_data")
+    if (is.null(mc_data[[dataset]]) || mc_data[[dataset]]$type != "daf") {
+        return(NULL)
+    }
+
+    daf_obj <- mc_data[[dataset]]$daf_obj
+    convert_daf_to_mcview(daf_obj, var_name, atlas)
+}
+
+get_cache_mc_data <- function(dataset, var_name, atlas = FALSE) {
+    mc_data <- mcv_get("mc_data")
     if (var_name == "metacell_types") {
         return(get_metacell_types_data(dataset, atlas = atlas))
     } else if (var_name == "cell_type_colors") {
@@ -201,7 +229,9 @@ get_mc_data <- function(dataset, var_name, atlas = FALSE) {
     }
 }
 
+
 get_mc_config <- function(dataset, var_name) {
+    config <- mcv_get("config")
     if (is.null(config$datasets)) {
         return(NULL)
     }
@@ -244,6 +274,7 @@ has_corrected <- function(dataset) {
 }
 
 has_atlas <- function(dataset) {
+    mc_data <- mcv_get("mc_data")
     !is.null(mc_data[[dataset]]$atlas)
 }
 
@@ -260,7 +291,9 @@ calc_samp_mc_count <- function(dataset) {
         spread(metacell, n, fill = 0) %>%
         column_to_rownames("samp_id") %>%
         as.matrix()
-    mc_data[[dataset]][["samp_mc_count"]] <<- samp_mc_count
+    mc_data <- mcv_get("mc_data")
+    mc_data[[dataset]][["samp_mc_count"]] <- samp_mc_count
+    mcv_set("mc_data", mc_data)
     return(samp_mc_count)
 }
 
@@ -272,7 +305,9 @@ calc_samp_mc_frac <- function(dataset) {
     metadata <- get_mc_data(dataset, "cell_metadata")
     samp_mc_count <- get_samp_mc_count(dataset)
     samp_mc_frac <- samp_mc_count / rowSums(samp_mc_count)
-    mc_data[[dataset]][["samp_mc_frac"]] <<- samp_mc_frac
+    mc_data <- mcv_get("mc_data")
+    mc_data[[dataset]][["samp_mc_frac"]] <- samp_mc_frac
+    mcv_set("mc_data", mc_data)
     return(samp_mc_frac)
 }
 
@@ -291,7 +326,9 @@ calc_samp_metadata <- function(dataset) {
         arrange(samp_id) %>%
         distinct(samp_id, .keep_all = TRUE)
 
-    mc_data[[dataset]][["samp_metadata"]] <<- samp_md
+    mc_data <- mcv_get("mc_data")
+    mc_data[[dataset]][["samp_metadata"]] <- samp_md
+    mcv_set("mc_data", mc_data)
     return(samp_md)
 }
 
@@ -308,7 +345,9 @@ calc_samples_list <- function(dataset) {
     }
     samp_md <- get_samp_metadata(dataset)
     samp_list <- sort(unique(samp_md$samp_id))
-    mc_data[[dataset]][["samp_list"]] <<- samp_list
+    mc_data <- mcv_get("mc_data")
+    mc_data[[dataset]][["samp_list"]] <- samp_list
+    mcv_set("mc_data", mc_data)
     return(samp_list)
 }
 

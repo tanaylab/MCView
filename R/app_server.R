@@ -5,6 +5,7 @@
 #' @import shiny
 #' @noRd
 app_server <- function(input, output, session) {
+    project <- mcv_get("project")
     if (length(dataset_ls(project)) > 1) {
         dataset <- reactive(input$dataset)
     } else {
@@ -19,7 +20,7 @@ app_server <- function(input, output, session) {
         globals$screen_width <- input$screen_width
         globals$screen_height <- input$screen_height
         globals$clipboard <- character(0)
-        globals$active_tabs <- config$tabs
+        globals$active_tabs <- app_config("tabs")
         globals$mc2d <- get_mc_data(dataset(), "mc2d")
         globals$anchor_genes <- get_mc_data(dataset(), "umap_anchors")
         globals$plotly_scale <- 1
@@ -36,7 +37,7 @@ app_server <- function(input, output, session) {
     })
 
     output$menu <- shinydashboard::renderMenu({
-        items_list <- purrr::map(tab_defs[globals$active_tabs], ~ {
+        items_list <- purrr::map(mcv_get("tab_defs")[globals$active_tabs], ~ {
             shinydashboard::menuSubItem(.x$title, tabName = .x$module_name, icon = icon(.x$icon))
         })
 
@@ -51,13 +52,13 @@ app_server <- function(input, output, session) {
     })
 
     observeEvent(input$update_tabs, {
-        globals$active_tabs <- c(config$tabs, setdiff(input$selected_tabs, config$tabs))
+        globals$active_tabs <- c(app_config("tabs"), setdiff(input$selected_tabs, app_config("tabs")))
         globals$active_tabs <- globals$active_tabs[globals$active_tabs %in% input$selected_tabs]
         globals$active_tabs <- order_tabs(globals$active_tabs)
     })
 
     observe({
-        available_tabs <- names(tab_defs)
+        available_tabs <- names(mcv_get("tab_defs"))
         if (!has_atlas(dataset())) {
             available_tabs <- available_tabs[!(available_tabs %in% c("Atlas", "Query", "Projected-fold"))]
         }
@@ -129,14 +130,14 @@ app_server <- function(input, output, session) {
         }
     }
 
-    purrr::map(tab_defs, ~ load_tab(.x$module_name))
+    purrr::map(mcv_get("tab_defs"), ~ load_tab(.x$module_name))
 
     clipboard_reactives(dataset, input, output, session, metacell_types, cell_type_colors, gene_modules, globals)
 
     download_modal_reactives(input, output, session, globals)
     download_data_modal_reactives(input, output, session, globals)
 
-    if (!is.null(config$profile) && config$profile) {
+    if (!is.null(app_config("profile")) && app_config("profile")) {
         if (!requireNamespace("profvis", quietly = TRUE)) {
             stop("Please install profvis R package in order to use profiling")
         }

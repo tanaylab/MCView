@@ -103,7 +103,7 @@ projection_selectors <- function(ns, dataset, output, input, gene_modules, globa
             session = session,
             inputId = "color_proj_gene",
             choices = gene_names_label(dataset(), atlas = atlas),
-            selected = default_gene1
+            selected = mcv_get("default_gene1")
         )
 
         shinyWidgets::updateVirtualSelect(

@@ -13,7 +13,7 @@ mod_about_ui <- function(id) {
         fluidRow(
             generic_box(
                 id = ns("about"),
-                title = config$about_title %||% "About",
+                title = app_config("about_title") %||% "About",
                 collapsible = FALSE,
                 closable = FALSE,
                 width = 12,
@@ -21,7 +21,7 @@ mod_about_ui <- function(id) {
                 fluidRow(
                     column(
                         width = 6,
-                        includeRMarkdown(about_file)
+                        # includeRMarkdown(mcv_get("about_file"))
                     ),
                     column(
                         width = 6,
@@ -58,6 +58,8 @@ mod_about_server <- function(id, dataset, metacell_types, cell_type_colors, gene
         id,
         function(input, output, session) {
             ns <- session$ns
+            default_gene1 <- mcv_get("default_gene1")
+            default_gene2 <- mcv_get("default_gene2")
             output$about_2d_plot <- renderPlot(
                 {
                     mc2d <- get_mc_data(dataset(), "mc2d")

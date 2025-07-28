@@ -398,7 +398,7 @@ add_genes_to_marker_matrix <- function(mat, genes, dataset) {
 get_marker_genes <- function(dataset, mode = "Markers") {
     if (mode == "Inner") {
         if (is.null(get_mc_data(dataset, "inner_fold_mat"))) {
-            if ("Inner-fold" %in% config$original_tabs) {
+            if ("Inner-fold" %in% app_config("original_tabs")) {
                 showNotification(glue("Inner-fold matrix was not computed. Please compute it in python using the metacells package and rerun the import"), type = "error")
             }
             req(FALSE)
@@ -406,7 +406,7 @@ get_marker_genes <- function(dataset, mode = "Markers") {
         return(get_mc_data(dataset, "marker_genes_inner_fold"))
     } else if (mode == "Stdev") {
         if (is.null(get_mc_data(dataset, "inner_stdev_mat"))) {
-            if ("Stdev-fold" %in% config$original_tabs) {
+            if ("Stdev-fold" %in% app_config("original_tabs")) {
                 showNotification(glue("Inner-stdev matrix was not computed. Please compute it in python using the metacells package and rerun the import"), type = "error")
             }
             req(FALSE)
@@ -414,7 +414,7 @@ get_marker_genes <- function(dataset, mode = "Markers") {
         return(get_mc_data(dataset, "marker_genes_inner_stdev"))
     } else if (mode == "Proj") {
         if (is.null(get_mc_data(dataset, "projected_fold"))) {
-            if ("Projected-fold" %in% config$original_tabs) {
+            if ("Projected-fold" %in% app_config("original_tabs")) {
                 showNotification(glue("Projected-fold matrix was not computed. Please compute it in python using the metacells package and rerun the import"), type = "error")
             }
             req(FALSE)
@@ -422,7 +422,7 @@ get_marker_genes <- function(dataset, mode = "Markers") {
         return(get_mc_data(dataset, "marker_genes_projected"))
     } else if (mode == "Outliers") {
         if (is.null(get_mc_data(dataset, "deviant_fold_mat"))) {
-            if ("Outliers" %in% config$original_tabs) {
+            if ("Outliers" %in% app_config("original_tabs")) {
                 showNotification(glue("Outliers matrix was not imported. Please use outliers_anndata_file paramter to import it and re-run the app"), type = "error")
             }
             req(FALSE)

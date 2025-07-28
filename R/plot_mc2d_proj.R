@@ -9,12 +9,12 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
     min_lfp <- min_lfp %||% -3
     max_lfp <- max_lfp %||% 3
     if (length(gene) > 1) {
-        lfp <- colSums(get_mc_egc(dataset, genes = gene, atlas = atlas), na.rm = TRUE) + egc_epsilon
+        lfp <- colSums(get_mc_egc(dataset, genes = gene, atlas = atlas), na.rm = TRUE) + mcv_get("egc_epsilon")
         mc_fp <- lfp / median(lfp, na.rm = TRUE)
         gene <- gene_name %||% gene[1]
     } else if (length(gene) == 1) {
         mc_fp <- get_gene_fp(gene, dataset, atlas = atlas)
-        lfp <- get_gene_egc(gene, dataset, atlas = atlas) + egc_epsilon
+        lfp <- get_gene_egc(gene, dataset, atlas = atlas) + mcv_get("egc_epsilon")
     } else {
         stop("gene paramater should have at least one gene")
     }
@@ -448,10 +448,10 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
 
 
 initial_proj_point_size <- function(dataset, screen_width = NULL, screen_height = NULL, weight = 1, atlas = FALSE) {
-    if (!is.null(config$datasets[[dataset]]$projection_point_size)) {
-        return(config$datasets[[dataset]]$projection_point_size * weight)
-    } else if (!is.null(config$projection_point_size)) {
-        return(config$projection_point_size * weight)
+    if (!is.null(app_config("datasets")[[dataset]]$projection_point_size)) {
+        return(app_config("datasets")[[dataset]]$projection_point_size * weight)
+    } else if (!is.null(app_config("projection_point_size"))) {
+        return(app_config("projection_point_size") * weight)
     }
     n_metacells <- length(get_mc_data(dataset, "mc_sum", atlas = atlas))
     screen_width <- screen_width %||% 1920
@@ -463,12 +463,12 @@ initial_proj_point_size <- function(dataset, screen_width = NULL, screen_height 
 }
 
 initial_proj_stroke <- function(dataset) {
-    if (!is.null(config$datasets[[dataset]]$projection_stroke)) {
-        return(config$datasets[[dataset]]$projection_stroke)
+    if (!is.null(app_config("datasets")[[dataset]]$projection_stroke)) {
+        return(app_config("datasets")[[dataset]]$projection_stroke)
     }
     return(0.2)
 }
 
 min_edge_length <- function(dataset) {
-    config$datasets[[dataset]]$min_d %||% 0.025
+    app_config("datasets")[[dataset]]$min_d %||% 0.025
 }

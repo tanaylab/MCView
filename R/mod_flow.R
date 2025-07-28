@@ -121,7 +121,7 @@ mod_flow_server <- function(id, dataset, metacell_types, cell_type_colors, gene_
                     ns("gene"),
                     label = "Gene:",
                     choices = gene_names(dataset()),
-                    selected = default_gene1,
+                    selected = mcv_get("default_gene1"),
                     width = "70%",
                     multiple = FALSE,
                     options = picker_options

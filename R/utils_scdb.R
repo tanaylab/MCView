@@ -1,5 +1,5 @@
 init_temp_scdb <- function(scdb, matrix, mc, mc2d, network = NULL, dataset, scdb_dir = fs::path(tempdir(), dataset, "scdb"), force_copy = TRUE) {
-    scdb_dir <<- scdb_dir
+    mcv_set("scdb_dir", scdb_dir)
     fs::dir_create(scdb_dir)
     metacell::scdb_init(base_dir = scdb_dir, force_reinit = TRUE)
 

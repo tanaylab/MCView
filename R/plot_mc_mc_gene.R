@@ -6,7 +6,7 @@
 #'
 #' @noRd
 plot_mc_mc_gene <- function(df, metacell1, metacell2, highlight = NULL, label_prefix = "MC #", x_label_suffix = "") {
-    xylims <- expr_breaks
+    xylims <- mcv_get("expr_breaks")
 
     xmax <- min(c(1:length(xylims))[xylims >= max(df[, metacell1]) - 1e-10])
     xmin <- max(c(1:length(xylims))[xylims <= min(df[, metacell1]) + 1e-10])

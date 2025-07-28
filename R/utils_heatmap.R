@@ -42,7 +42,7 @@ heatmap_box <- function(id,
                 colourpicker::colourInput(ns("mid_color"), "Mid color", mid_color),
                 checkboxInput(ns("plot_legend"), "Show legend", value = TRUE),
                 checkboxInput(ns("plot_cell_type_legend"), "Show cell type legend", value = TRUE),
-                checkboxInput(ns("plot_genes_legend"), "Show genes legend", value = config$show_heatmap_genes_legend %||% TRUE),
+                checkboxInput(ns("plot_genes_legend"), "Show genes legend", value = mcv_get("config")$show_heatmap_genes_legend %||% TRUE),
                 colourpicker::colourInput(ns("highlight_color"), "Gene highlight color", highlight_color),
                 numericInput(ns("legend_width"), "Legend width", min = 1, max = 11, step = 1, value = legend_width),
                 shinyWidgets::prettyRadioButtons(
@@ -72,6 +72,7 @@ heatmap_box <- function(id,
 heatmap_sidebar <- function(id, ..., show_fitted_filter = FALSE) {
     ns <- NS(id)
     show_only_fitted_ui <- NULL
+    config <- mcv_get("config")
     if (config$light_version) {
         max_gene_num_ui <- NULL
         remove_genes_ui <- NULL
@@ -188,6 +189,7 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
 
     observe({
         if (is.null(markers())) {
+            config <- mcv_get("config")
             if (config$light_version) {
                 max_gene_num <- 100
             } else {
