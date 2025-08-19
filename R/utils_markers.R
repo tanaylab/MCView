@@ -361,7 +361,9 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
         }
 
         if (!is.null(secondary_order) && !force_cell_type) {
-            mc_order <- secondary_order
+            mc_order <- intersect(secondary_order, colnames(mat))
+            # transform to match the order of mat
+            mc_order <- match(mc_order, colnames(mat))
         } else {
             mc_order <- order_mc_by_most_var_genes(mat, force_cell_type = force_cell_type, metacell_types = metacell_types, epsilon = epsilon, notify_var_genes = notify_var_genes, log_transform = log_transform, cached_dist = cached_dist, secondary_order = secondary_order)
 
@@ -374,7 +376,6 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
                 mc_order <- match(mc_order_names, colnames(mat))
             }
         }
-
         mat <- mat[, mc_order, drop = FALSE]
     }
 
