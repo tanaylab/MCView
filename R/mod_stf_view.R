@@ -105,12 +105,14 @@ mod_Stf_view_server <- function(id, dataset, metacell_types, cell_type_colors, g
             output$Type_composition_Stf_view = renderPlot({plot_type_composition_beatle_flow(input, output, session, dataset, data, metacell_types, metacell_names, cell_type_colors)})
 
             output$Stf_view_focus <- renderPlot({      
-                strip_beatle_flow_plot(input, data, dataset, metacell_names, metacell_types, cell_type_colors, main = T)
+                g = strip_beatle_flow_plot(input, data, dataset, metacell_names, metacell_types, cell_type_colors, main = T)
+                grid.draw(g)
             })
 
             f_th = 0.1
             output$Stf_view_contribs <- renderPlot({     
-                strip_beatle_flow_plot(input, data, dataset, metacell_names, metacell_types, cell_type_colors, f_th, main = F)
+                g = strip_beatle_flow_plot(input, data, dataset, metacell_names, metacell_types, cell_type_colors, f_th, main = F)
+                grid.draw(g)
             }, height = function(){250*n_contribs_tbs(input, data, metacell_names, metacell_types, f_th)})
 
     })
@@ -223,7 +225,7 @@ strip_beatle_flow_plot = function(input, data, dataset, metacell_names, metacell
         g = arrangeGrob(grobs = lapply(p, ggplotGrob), nrow = 1)
         # ggsave(file="whatever.pdf", g) #saves g
 
-        return(grid.draw(g))
+        return(g)
 
 
     }else{
@@ -246,7 +248,6 @@ strip_beatle_flow_plot = function(input, data, dataset, metacell_names, metacell
                 flow_frac = sum(plot_focus[plot_focus$time_bin == tb,]$flow)
 
                 for(to_flow in to_flows){
-                    # browser()
                     # "to flow" related to focus
                     plot_focus_to_flow = plot_dynamics[plot_dynamics$ent2 == to_flow & plot_dynamics$time_bin == as.character(as.numeric(tb)+1),]
                     
@@ -300,7 +301,7 @@ strip_beatle_flow_plot = function(input, data, dataset, metacell_names, metacell
             g = arrangeGrob(grobs = lapply(p, ggplotGrob), nrow = length(to_flows),
                             top = sprintf('%s %s', to_plot, ifelse(sb == 'ALL', '', sb)))
 
-            return(grid.draw(g))
+            return(g)
             
         }else{
             from_flows = unique(plot_dynamics$ent1)
@@ -332,7 +333,6 @@ strip_beatle_flow_plot = function(input, data, dataset, metacell_names, metacell
                 flow_frac = sum(plot_focus[plot_focus$time_bin == tb,]$flow)
 
                 for(from_flow in from_flows){
-                    # browser()
                     # "to flow" related to focus
                     plot_focus_from_flow = plot_dynamics[plot_dynamics$ent1 == from_flow & plot_dynamics$time_bin == tb,]
 
@@ -370,7 +370,7 @@ strip_beatle_flow_plot = function(input, data, dataset, metacell_names, metacell
             g = arrangeGrob(grobs = lapply(p, ggplotGrob), nrow = length(from_flows),
                             top = sprintf('%s %s %s', to_plot, tb, ifelse(sb == 'ALL', '', sb)))
 
-            return(grid.draw(g))
+            return(g)
         }
     }
 }

@@ -78,7 +78,8 @@ mod_spatial_server <- function(id, dataset, metacell_types, cell_type_colors, ge
             data <- get_mc_data(dataset(), "spatial_flow_data")
 
             output$beatleplot <- renderPlot({      
-                plot_map(input, data, dataset, metacell_names, metacell_types)
+                g = plot_map(input, data, dataset, metacell_names, metacell_types)
+                grid.draw(g)
             }, height = function(){200*plot_height(input, data)})
 
             output$APplot <- renderPlot({
@@ -427,7 +428,7 @@ plot_map <- function(input, data, dataset, metacell_names, metacell_types) {
     }
 
     g = arrangeGrob(grobs = lapply(p, ggplotGrob), ncol = length(tbs), top = to_plot)
-    return(grid.draw(g))
+    return(g)
 }
 
 gg_theme = function(){

@@ -87,9 +87,11 @@ mod_st_flow_server <- function(id, dataset, metacell_types, cell_type_colors, ge
 
             output$Type_composition = renderPlot({plot_type_composition(input, output, session, dataset, data, metacell_types, metacell_names, cell_type_colors)})
             
-            output$Temporal_Flow = renderPlot({plot_temporal_flow_bars_wraper(input, output, session, dataset, data, metacell_types, metacell_names, cell_type_colors,
-                                                                        flow_to, flow_from, flow_to_spat, flow_from_spat)}, 
-                                                                        height = function(){300*plot_height_smcs(input, metacell_types)})
+            output$Temporal_Flow = renderPlot({g = plot_temporal_flow_bars_wraper(input, output, session, dataset, data, metacell_types, metacell_names, cell_type_colors,
+                                                                        flow_to, flow_from, flow_to_spat, flow_from_spat)
+                                               grid.draw(g)}, 
+                                               height = function(){300*plot_height_smcs(input, metacell_types)},
+                                               width = "auto")
         }
     )
 }
@@ -329,7 +331,7 @@ plot_temporal_flow_bars_wraper = function(input, output, session, dataset, data,
        
     g = arrangeGrob(grobs = lapply(gs, ggplotGrob), nrow = length(gs))
 
-    return(grid.draw(g))
+    return(g)
 }
 
 plot_temporal_flow_bars = function(input, selected, time_bins, ctype_color, subset_flow_to, subset_flow_from){

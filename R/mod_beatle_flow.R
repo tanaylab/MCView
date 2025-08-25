@@ -107,7 +107,8 @@ mod_beatle_flow_server <- function(id, dataset, metacell_types, cell_type_colors
             display_selector_sbin(input, output, session, sbins, ns)
 
             output$st_flow_spat <- renderPlot({      
-                beatle_flow_plot(input, data, dataset, metacell_names, metacell_types, cell_type_colors, main = T)
+                g = beatle_flow_plot(input, data, dataset, metacell_names, metacell_types, cell_type_colors, main = T)
+                grid.draw(g)
             })
 
             output$Type_composition_beatle_flow = renderPlot({plot_type_composition_beatle_flow(input, output, session, dataset, data, metacell_types, metacell_names, cell_type_colors)})
@@ -115,7 +116,8 @@ mod_beatle_flow_server <- function(id, dataset, metacell_types, cell_type_colors
             f_th = 0.1
             # browser()
             output$st_flow_spat_contribs <- renderPlot({      
-                beatle_flow_plot(input, data, dataset, metacell_names, metacell_types, cell_type_colors, f_th)
+                g = beatle_flow_plot(input, data, dataset, metacell_names, metacell_types, cell_type_colors, f_th)
+                grid.draw(g)
             }, height = function(){300*n_contribs(input, data, metacell_names, metacell_types, f_th)})
 
     })
@@ -429,7 +431,7 @@ beatle_flow_plot = function(input, data, dataset, metacell_names, metacell_types
         g = arrangeGrob(grobs = lapply(p, ggplotGrob), ncol = 3,
                         top = sprintf('%s %s %s', to_plot, tb, ifelse(sb == 'ALL', '', sb)))
 
-        return(grid.draw(g))
+        return(g)
     }
     
 }
