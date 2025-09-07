@@ -1,4 +1,4 @@
-cell_type_selector <- function(dataset, ns, id = "selected_cell_types", label = "Cell types", selected = NULL, cell_type_colors = NULL, metacell_types = NULL, apply_button = FALSE) {
+cell_type_selector <- function(dataset, ns, id = "selected_cell_types", label = "Cell types", selected = NULL, cell_type_colors = NULL, metacell_types = NULL, apply_button = FALSE, apply_button_label = "Change cell types") {
     renderUI({
         if (is.null(cell_type_colors)) {
             colors <- NULL
@@ -39,7 +39,7 @@ cell_type_selector <- function(dataset, ns, id = "selected_cell_types", label = 
         if (apply_button) {
             tagList(
                 picker,
-                shiny::actionButton(ns("apply_cell_types"), "Change cell types", size = "sm")
+                shiny::actionButton(ns("apply_cell_types"), apply_button_label, size = "sm")
             )
         } else {
             picker

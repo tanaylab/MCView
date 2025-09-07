@@ -1,3 +1,7 @@
+# MCView 0.2.49
+
+* Added "Apply" button (and apply behaviour) to the 'Markers' tab. 
+
 # MCView 0.2.48
 
 * Added controls for plotly download format, width, height and scale.
