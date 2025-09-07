@@ -1,3 +1,7 @@
+# MCView 0.2.50
+
+* Added "Gene correlation" tab.
+
 # MCView 0.2.49
 
 * Added "Apply" button (and apply behaviour) to the 'Markers' tab. 

@@ -168,6 +168,7 @@ heatmap_sidebar <- function(id, ..., show_fitted_filter = FALSE) {
         tags$hr(),
         load_genes_ui,
         downloadButton(ns("download_genes"), "Save genes", align = "center", style = "margin: 5px 5px 5px 15px; "),
+        actionButton(ns("copy_genes_to_clipboard"), "Copy genes to clipboard", align = "center", style = "margin: 5px 5px 5px 15px; ", icon = icon("copy")),
         tags$hr(),
         include_metadata_ui,
         downloadButton(ns("download_matrix"), "Download matrix", align = "center", style = "margin: 5px 5px 5px 15px; ")
@@ -450,6 +451,15 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     )
                 }
             )
+
+            # Copy genes to clipboard
+            observeEvent(input$copy_genes_to_clipboard, {
+                req(markers())
+                globals$clipboard <- markers()
+                showNotification(paste("Copied", length(markers()), "genes to clipboard"),
+                    type = "default"
+                )
+            })
 
 
             heatmap_matrix_reactives(ns, input, output, session, dataset, metacell_types, cell_type_colors, globals, markers, lfp_range, mode, metacell_filter, mat)
