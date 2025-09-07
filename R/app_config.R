@@ -176,6 +176,11 @@ init_tab_defs <- function() {
             title = "Atlas",
             module_name = "atlas",
             icon = "atlas"
+        ),
+        "Gene correlation" = list(
+            title = "Gene correlation",
+            module_name = "gene_correlation",
+            icon = "exchange-alt"
         )
     )
 
@@ -208,6 +213,13 @@ init_tab_defs <- function() {
     }
 
     if (!is.null(config$light_version) && config$light_version) {
+        # exclude Gene correlation tab in light version
+        if (is.null(cur_config$excluded_tabs)) {
+            cur_config$excluded_tabs <- c("Gene correlation")
+        } else {
+            cur_config$excluded_tabs <- unique(c(cur_config$excluded_tabs, "Gene correlation"))
+        }
+
         # make the About tab first if exists
         if ("About" %in% cur_config$tabs) {
             cur_config$tabs <- c("About", cur_config$tabs[cur_config$tabs != "About"])
@@ -218,7 +230,7 @@ init_tab_defs <- function() {
 }
 
 order_tabs <- function(tabs) {
-    tabs_order <- c("QC", "Projection QC", "Manifold", "Genes", "Query", "Atlas", "Markers", "Gene modules", "Projected-fold", "Diff. Expression", "Samples", "Cell types", "Annotate")
+    tabs_order <- c("QC", "Projection QC", "Manifold", "Genes", "Query", "Atlas", "Markers", "Gene modules", "Gene correlation", "Projected-fold", "Diff. Expression", "Samples", "Cell types", "Annotate")
 
     # order the tabs according to the order in tabs_order. Tabs that are not in tabs_order will be added at the end
     new_tabs <- c(tabs_order[tabs_order %in% tabs], tabs[!(tabs %in% tabs_order)])

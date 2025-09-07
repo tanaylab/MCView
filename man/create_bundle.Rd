@@ -14,7 +14,8 @@ create_bundle(
   restart = overwrite,
   permissions = NULL,
   light_version = FALSE,
-  excluded_tabs = c("Gene modules", "Annotate", "Inner-fold", "Stdev-fold"),
+  excluded_tabs = c("Gene modules", "Annotate", "Inner-fold", "Stdev-fold",
+    "Gene correlation"),
   shiny_cache_dir = NULL,
   shiny_cache_max_size = NULL,
   ...
