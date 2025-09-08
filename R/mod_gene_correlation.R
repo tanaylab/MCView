@@ -443,12 +443,12 @@ mod_gene_correlation_server <- function(id, dataset, metacell_types, cell_type_c
 
             # Control visualization display
             output$show_heatmap <- reactive({
-                !is.null(correlation_results()) && length(parsed_genes()) > 1
+                !is.null(correlation_results()) && length(unique(correlation_results()$input_gene)) > 1
             })
             outputOptions(output, "show_heatmap", suspendWhenHidden = FALSE)
 
             output$show_barplot <- reactive({
-                !is.null(correlation_results()) && length(parsed_genes()) == 1
+                !is.null(correlation_results()) && length(unique(correlation_results()$input_gene)) == 1
             })
             outputOptions(output, "show_barplot", suspendWhenHidden = FALSE)
 
@@ -460,11 +460,12 @@ mod_gene_correlation_server <- function(id, dataset, metacell_types, cell_type_c
             # Heatmap visualization with caching
             output$correlation_heatmap <- renderPlot({
                 req(correlation_results())
-                req(length(parsed_genes()) > 1)
+                req(length(unique(correlation_results()$input_gene)) > 1)
 
+                input_genes <- unique(correlation_results()$input_gene)
                 plot_correlation_heatmap(
                     correlation_results(),
-                    parsed_genes(),
+                    input_genes,
                     dataset(),
                     threshold = input$cor_threshold,
                     cluster = input$cluster_heatmap,
@@ -472,16 +473,17 @@ mod_gene_correlation_server <- function(id, dataset, metacell_types, cell_type_c
                     mask_low_correlations = input$mask_low_correlations,
                     correlation_mode = input$correlation_mode
                 )
-            }) %>% bindCache(correlation_results(), parsed_genes(), dataset(), input$heatmap_top_genes, input$cor_threshold, input$cluster_heatmap, input$mask_low_correlations, input$correlation_mode)
+            }) %>% bindCache(correlation_results(), dataset(), input$heatmap_top_genes, input$cor_threshold, input$cluster_heatmap, input$mask_low_correlations, input$correlation_mode)
 
             # Barplot visualization
             output$correlation_barplot <- plotly::renderPlotly({
                 req(correlation_results())
-                req(length(parsed_genes()) == 1)
+                req(length(unique(correlation_results()$input_gene)) == 1)
 
+                input_gene <- unique(correlation_results()$input_gene)[1]
                 plot_correlation_barplot(
                     correlation_results(),
-                    gene = parsed_genes()[1],
+                    gene = input_gene,
                     threshold = input$cor_threshold
                 )
             })
