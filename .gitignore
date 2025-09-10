@@ -27,3 +27,4 @@ atlas_proj/*
 .lintr
 example/
 *.Rprof
+dev/annotation-persistence-plan.md
