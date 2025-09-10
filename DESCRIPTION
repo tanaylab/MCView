@@ -33,6 +33,7 @@ Imports:
     fs,
     furrr,
     future,
+    ggforce,
     fastcluster,
     gert,
     grid,
