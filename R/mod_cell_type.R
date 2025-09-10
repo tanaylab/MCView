@@ -51,6 +51,15 @@ mod_cell_type_sidebar_ui <- function(id) {
     tagList(
         list(
             axis_selector("boxplot_axis", "Gene", ns, choices = c("Metadata", "Gene", "Gene module"), orientation = "vertical", wrap_in_box = FALSE),
+            shinyWidgets::prettyRadioButtons(
+                ns("plot_type"),
+                label = "Plot type:",
+                choices = c("Boxplot" = "boxplot", "Violin plot" = "violin", "Sina plot" = "sina"),
+                selected = "boxplot",
+                inline = TRUE,
+                status = "primary",
+                fill = TRUE
+            ),
             uiOutput(ns("confusion_color_by_selector")),
             uiOutput(ns("cell_type_list")),
             shinyWidgets::switchInput(ns("show_correlations"), "Show correlations", value = FALSE, onLabel = "Yes", offLabel = "No", onStatus = "success", offStatus = "danger", size = "mini"),
@@ -101,6 +110,7 @@ mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, 
                 req(cell_type_colors())
                 req(input$boxplot_cell_types)
                 req(input$boxplot_axis_var)
+                req(input$plot_type)
 
                 if (input$boxplot_axis_type %in% c("Gene", "Gene module")) {
                     if (input$boxplot_axis_type == "Gene module") {
@@ -118,7 +128,8 @@ mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, 
                         cell_types = input$boxplot_cell_types,
                         metacell_types = metacell_types(),
                         cell_type_colors = cell_type_colors(),
-                        egc_gene = egc_gene
+                        egc_gene = egc_gene,
+                        plot_type = input$plot_type
                     )
                 } else {
                     metadata <- get_mc_data(dataset(), "metadata")
@@ -130,7 +141,8 @@ mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, 
                             dataset(),
                             cell_types = input$boxplot_cell_types,
                             metacell_types = metacell_types(),
-                            cell_type_colors = cell_type_colors()
+                            cell_type_colors = cell_type_colors(),
+                            plot_type = input$plot_type
                         )
                     } else {
                         p <- cell_type_metadata_confusion(

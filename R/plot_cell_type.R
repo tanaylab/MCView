@@ -3,7 +3,8 @@ cell_type_gene_boxplot <- function(gene,
                                    cell_types = NULL,
                                    metacell_types = get_mc_data(dataset, "metacell_types"),
                                    cell_type_colors = get_mc_data(dataset, "cell_type_colors"),
-                                   egc_gene = NULL) {
+                                   egc_gene = NULL,
+                                   plot_type = "boxplot") {
     egc_gene <- egc_gene %||% get_gene_egc(gene, dataset) + egc_epsilon
 
     df <- metacell_types %>%
@@ -34,8 +35,17 @@ cell_type_gene_boxplot <- function(gene,
 
     p <- df %>%
         mutate(`Cell type` = factor(`Cell type`, levels = names(col_to_ct))) %>%
-        ggplot(aes(x = `Cell type`, y = !!sym(gene), fill = `Cell type`)) +
-        geom_boxplot() +
+        ggplot(aes(x = `Cell type`, y = !!sym(gene), fill = `Cell type`))
+
+    if (plot_type == "boxplot") {
+        p <- p + geom_boxplot()
+    } else if (plot_type == "violin") {
+        p <- p + geom_violin()
+    } else if (plot_type == "sina") {
+        p <- p + geom_boxplot() + ggforce::geom_sina()
+    }
+
+    p <- p +
         scale_fill_manual(values = col_to_ct) +
         scale_y_continuous(limits = c(ylims[ymin], ylims[ymax]), trans = "log2", breaks = ylims[ymin:ymax], labels = scales::scientific(ylims[ymin:ymax])) +
         xlab("") +
@@ -51,7 +61,8 @@ cell_type_metadata_boxplot <- function(var,
                                        cell_types = NULL,
                                        metadata = NULL,
                                        metacell_types = get_mc_data(dataset, "metacell_types"),
-                                       cell_type_colors = get_mc_data(dataset, "cell_type_colors")) {
+                                       cell_type_colors = get_mc_data(dataset, "cell_type_colors"),
+                                       plot_type = "boxplot") {
     metadata <- metadata %||% get_mc_data(dataset, "metadata")
 
     metadata <- metadata %>%
@@ -79,8 +90,17 @@ cell_type_metadata_boxplot <- function(var,
     col_to_ct <- get_cell_type_colors(dataset, cell_type_colors)
 
     p <- df %>%
-        ggplot(aes(x = `Cell type`, y = !!sym(var), fill = `Cell type`)) +
-        geom_boxplot() +
+        ggplot(aes(x = `Cell type`, y = !!sym(var), fill = `Cell type`))
+
+    if (plot_type == "boxplot") {
+        p <- p + geom_boxplot()
+    } else if (plot_type == "violin") {
+        p <- p + geom_violin()
+    } else if (plot_type == "sina") {
+        p <- p + geom_boxplot() + ggforce::geom_sina()
+    }
+
+    p <- p +
         scale_fill_manual(values = col_to_ct) +
         xlab("") +
         ylab(var) +
