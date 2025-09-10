@@ -1,3 +1,4 @@
+#' @importFrom rclipboard rclipboardSetup rclipButton
 heatmap_box <- function(id,
                         title = "Heatmap",
                         fold_change_range = c(-3, 3),
@@ -11,61 +12,65 @@ heatmap_box <- function(id,
                         legend_width = 2,
                         height = "80vh") {
     ns <- NS(id)
-    div(
-        generic_box(
-            id = ns("heatmap_box"),
-            title = span(
-                title,
-                actionButton(
-                    ns("show_help"),
-                    icon = icon("question-circle"),
-                    label = "",
-                    class = "btn-link",
-                    style = "padding: 0 0 0 0; color: white; font-size: 16px; background: transparent; border: none;"
-                )
-            ),
-            status = "primary",
-            solidHeader = TRUE,
-            collapsible = TRUE,
-            closable = FALSE,
-            width = 12,
-            height = height,
-            sidebar = shinydashboardPlus::boxSidebar(
-                startOpen = FALSE,
-                width = 25,
-                id = ns("heatmap_sidebar"),
-                checkboxInput(ns("filter_by_clipboard"), "Filter by clipboard", value = FALSE),
-                shinyWidgets::numericRangeInput(ns("lfp_range"), "Fold change range", fold_change_range, width = "80%", separator = " to "),
-                numericInput(ns("midpoint"), "Midpoint", midpoint),
-                colourpicker::colourInput(ns("low_color"), "Low color", low_color),
-                colourpicker::colourInput(ns("high_color"), "High color", high_color),
-                colourpicker::colourInput(ns("mid_color"), "Mid color", mid_color),
-                checkboxInput(ns("plot_legend"), "Show legend", value = TRUE),
-                checkboxInput(ns("plot_cell_type_legend"), "Show cell type legend", value = TRUE),
-                checkboxInput(ns("plot_genes_legend"), "Show genes legend", value = config$show_heatmap_genes_legend %||% TRUE),
-                colourpicker::colourInput(ns("highlight_color"), "Gene highlight color", highlight_color),
-                numericInput(ns("legend_width"), "Legend width", min = 1, max = 11, step = 1, value = legend_width),
-                shinyWidgets::prettyRadioButtons(
-                    inputId = ns("gene_select"),
-                    label = gene_select_label,
-                    choices = gene_select_choices,
-                    inline = TRUE,
-                    status = "danger",
-                    fill = TRUE
+    tagList(
+        # Setup clipboard functionality
+        rclipboard::rclipboardSetup(),
+        div(
+            generic_box(
+                id = ns("heatmap_box"),
+                title = span(
+                    title,
+                    actionButton(
+                        ns("show_help"),
+                        icon = icon("question-circle"),
+                        label = "",
+                        class = "btn-link",
+                        style = "padding: 0 0 0 0; color: white; font-size: 16px; background: transparent; border: none;"
+                    )
                 ),
-                shinyWidgets::prettyRadioButtons(
-                    inputId = ns("metacell_select"),
-                    label = "Select on double-click (metacell)",
-                    choices = c("Metacell A", "Metacell B"),
-                    inline = TRUE,
-                    status = "danger",
-                    fill = TRUE
-                )
+                status = "primary",
+                solidHeader = TRUE,
+                collapsible = TRUE,
+                closable = FALSE,
+                width = 12,
+                height = height,
+                sidebar = shinydashboardPlus::boxSidebar(
+                    startOpen = FALSE,
+                    width = 25,
+                    id = ns("heatmap_sidebar"),
+                    checkboxInput(ns("filter_by_clipboard"), "Filter by clipboard", value = FALSE),
+                    shinyWidgets::numericRangeInput(ns("lfp_range"), "Fold change range", fold_change_range, width = "80%", separator = " to "),
+                    numericInput(ns("midpoint"), "Midpoint", midpoint),
+                    colourpicker::colourInput(ns("low_color"), "Low color", low_color),
+                    colourpicker::colourInput(ns("high_color"), "High color", high_color),
+                    colourpicker::colourInput(ns("mid_color"), "Mid color", mid_color),
+                    checkboxInput(ns("plot_legend"), "Show legend", value = TRUE),
+                    checkboxInput(ns("plot_cell_type_legend"), "Show cell type legend", value = TRUE),
+                    checkboxInput(ns("plot_genes_legend"), "Show genes legend", value = config$show_heatmap_genes_legend %||% TRUE),
+                    colourpicker::colourInput(ns("highlight_color"), "Gene highlight color", highlight_color),
+                    numericInput(ns("legend_width"), "Legend width", min = 1, max = 11, step = 1, value = legend_width),
+                    shinyWidgets::prettyRadioButtons(
+                        inputId = ns("gene_select"),
+                        label = gene_select_label,
+                        choices = gene_select_choices,
+                        inline = TRUE,
+                        status = "danger",
+                        fill = TRUE
+                    ),
+                    shinyWidgets::prettyRadioButtons(
+                        inputId = ns("metacell_select"),
+                        label = "Select on double-click (metacell)",
+                        choices = c("Metacell A", "Metacell B"),
+                        inline = TRUE,
+                        status = "danger",
+                        fill = TRUE
+                    )
+                ),
+                uiOutput(ns("plotting_area"))
             ),
-            uiOutput(ns("plotting_area"))
-        ),
-        style = "position:relative",
-        uiOutput(ns("hover_info"), style = "pointer-events: none")
+            style = "position:relative",
+            uiOutput(ns("hover_info"), style = "pointer-events: none")
+        )
     )
 }
 
@@ -168,7 +173,7 @@ heatmap_sidebar <- function(id, ..., show_fitted_filter = FALSE) {
         tags$hr(),
         load_genes_ui,
         downloadButton(ns("download_genes"), "Save genes", align = "center", style = "margin: 5px 5px 5px 15px; "),
-        actionButton(ns("copy_genes_to_clipboard"), "Copy genes to clipboard", align = "center", style = "margin: 5px 5px 5px 15px; ", icon = icon("copy")),
+        uiOutput(ns("copy_genes_button")),
         tags$hr(),
         include_metadata_ui,
         downloadButton(ns("download_matrix"), "Download matrix", align = "center", style = "margin: 5px 5px 5px 15px; ")
@@ -452,14 +457,19 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                 }
             )
 
-            # Copy genes to clipboard
-            observeEvent(input$copy_genes_to_clipboard, {
-                req(markers())
-                globals$clipboard <- markers()
-                showNotification(paste("Copied", length(markers()), "genes to clipboard"),
-                    type = "default"
-                )
-            })
+            # Render copy genes button using utility function
+            output$copy_genes_button <- clipboard_copy_button_ui(
+                ns, "copy_genes_to_clipboard", markers,
+                label = "Copy genes to clipboard",
+                style = "margin: 5px 5px 5px 15px; background-color: #17a2b8; color: white; border: none;",
+                tooltip = "Copy all genes to system clipboard"
+            )
+
+            # Handle copy functionality using utility function
+            clipboard_copy_button_server(
+                input, "copy_genes_to_clipboard", markers, globals,
+                message_template = "Copied {count} genes to clipboard"
+            )
 
 
             heatmap_matrix_reactives(ns, input, output, session, dataset, metacell_types, cell_type_colors, globals, markers, lfp_range, mode, metacell_filter, mat)

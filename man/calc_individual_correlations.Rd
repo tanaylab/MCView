@@ -9,6 +9,7 @@ calc_individual_correlations(
   genes,
   n_top = 30,
   cell_type_filter = NULL,
+  threshold = 0,
   atlas = FALSE
 )
 }
@@ -20,6 +21,8 @@ calc_individual_correlations(
 \item{n_top}{Number of top correlations to return per gene}
 
 \item{cell_type_filter}{Optional vector of cell types to filter metacells}
+
+\item{threshold}{Minimum correlation threshold to include}
 }
 \value{
 Data frame with correlation results

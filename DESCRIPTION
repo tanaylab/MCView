@@ -49,6 +49,7 @@ Imports:
     promises,
     purrr,
     qs,
+    rclipboard,
     rlang,
     rmarkdown,
     scales,
