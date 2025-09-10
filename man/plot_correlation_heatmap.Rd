@@ -8,7 +8,6 @@ plot_correlation_heatmap(
   correlation_results,
   input_genes,
   dataset,
-  threshold = 0.3,
   cluster = TRUE,
   max_genes = 50,
   mask_low_correlations = FALSE,
@@ -21,8 +20,6 @@ plot_correlation_heatmap(
 \item{input_genes}{Vector of input gene names}
 
 \item{dataset}{Dataset name}
-
-\item{threshold}{Correlation threshold for filtering}
 
 \item{cluster}{Whether to cluster genes}
 

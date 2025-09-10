@@ -4,14 +4,12 @@
 \alias{plot_correlation_barplot}
 \title{Create correlation barplot for single gene}
 \usage{
-plot_correlation_barplot(correlation_results, gene, threshold = 0.3)
+plot_correlation_barplot(correlation_results, gene)
 }
 \arguments{
 \item{correlation_results}{Data frame from correlation calculations}
 
 \item{gene}{Gene name to plot}
-
-\item{threshold}{Correlation threshold for filtering}
 }
 \description{
 Create correlation barplot for single gene

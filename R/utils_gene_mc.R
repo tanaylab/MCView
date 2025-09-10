@@ -99,8 +99,9 @@ get_top_cor_gene <- function(dataset, gene, type = "pos", atlas = FALSE, data_ve
 #' @param genes Vector of gene names
 #' @param n_top Number of top correlations to return per gene
 #' @param cell_type_filter Optional vector of cell types to filter metacells
+#' @param threshold Minimum correlation threshold to include
 #' @return Data frame with correlation results
-calc_individual_correlations <- function(dataset, genes, n_top = 30, cell_type_filter = NULL, atlas = FALSE) {
+calc_individual_correlations <- function(dataset, genes, n_top = 30, cell_type_filter = NULL, threshold = 0, atlas = FALSE) {
     # Get available genes to validate input
     available_genes <- gene_names(dataset, atlas = atlas)
     valid_genes <- genes[genes %in% available_genes]
@@ -124,7 +125,10 @@ calc_individual_correlations <- function(dataset, genes, n_top = 30, cell_type_f
     results <- purrr::map_dfr(valid_genes, function(gene) {
         cors <- calc_top_cors(dataset, gene, "both", NULL, metacell_filter, NULL, atlas = atlas)
 
-        # Take top positive and negative correlations
+        # Filter by threshold and take top correlations
+        cors <- cors %>%
+            filter(abs(cor) >= threshold)
+
         pos_cors <- cors %>%
             filter(cor > 0) %>%
             arrange(desc(cor)) %>%
@@ -155,8 +159,9 @@ calc_individual_correlations <- function(dataset, genes, n_top = 30, cell_type_f
 #' @param genes Vector of gene names to treat as module
 #' @param n_top Number of top correlations to return
 #' @param cell_type_filter Optional vector of cell types to filter metacells
+#' @param threshold Minimum correlation threshold to include
 #' @return Data frame with correlation results
-calc_module_correlations <- function(dataset, genes, n_top = 30, cell_type_filter = NULL, atlas = FALSE) {
+calc_module_correlations <- function(dataset, genes, n_top = 30, cell_type_filter = NULL, threshold = 0, atlas = FALSE) {
     # Get expression matrix
     mc_egc <- get_mc_egc(dataset, atlas = atlas)
     available_genes <- rownames(mc_egc)
@@ -168,7 +173,7 @@ calc_module_correlations <- function(dataset, genes, n_top = 30, cell_type_filte
 
     if (length(valid_genes) == 1) {
         # Fall back to individual correlation for single gene
-        return(calc_individual_correlations(dataset, valid_genes, n_top, cell_type_filter, atlas))
+        return(calc_individual_correlations(dataset, valid_genes, n_top, cell_type_filter, threshold, atlas))
     }
 
     # Calculate metacell filter if cell types specified
@@ -196,6 +201,7 @@ calc_module_correlations <- function(dataset, genes, n_top = 30, cell_type_filte
     }
 
     results <- cors %>%
+        filter(abs(cor) >= threshold) %>%
         arrange(desc(abs(cor))) %>%
         head(n_top * 2) %>%
         mutate(
@@ -207,20 +213,76 @@ calc_module_correlations <- function(dataset, genes, n_top = 30, cell_type_filte
     return(results)
 }
 
+#' Calculate gene-gene correlations (correlation between input genes)
+#'
+#' @param dataset Dataset name
+#' @param genes Vector of gene names
+#' @param cell_type_filter Optional vector of cell types to filter metacells
+#' @param threshold Minimum correlation threshold to include
+#' @return Data frame with gene-gene correlation results
+calc_gene_gene_correlations <- function(dataset, genes, cell_type_filter = NULL, threshold = 0, atlas = FALSE) {
+    # Get expression matrix
+    mc_egc <- get_mc_egc(dataset, atlas = atlas)
+    available_genes <- rownames(mc_egc)
+    valid_genes <- genes[genes %in% available_genes]
+
+    if (length(valid_genes) < 2) {
+        stop("Need at least 2 valid genes for gene-gene correlation")
+    }
+
+    # Calculate metacell filter if cell types specified
+    metacell_filter <- NULL
+    if (!is.null(cell_type_filter)) {
+        metacell_types <- get_mc_data(dataset, "metacell_types")
+        if (!is.null(metacell_types)) {
+            metacell_filter <- metacell_types %>%
+                filter(cell_type %in% cell_type_filter) %>%
+                pull(metacell)
+        }
+    }
+
+    # Filter metacells if needed
+    expr_data <- mc_egc[valid_genes, , drop = FALSE]
+    if (!is.null(metacell_filter)) {
+        metacell_filter <- intersect(metacell_filter, colnames(expr_data))
+        expr_data <- expr_data[, metacell_filter, drop = FALSE]
+    }
+
+    # Calculate all pairwise correlations between genes
+    cor_matrix <- cor(t(expr_data), use = "pairwise.complete.obs")
+
+    # Convert to long format, excluding self-correlations
+    results <- expand.grid(
+        input_gene = valid_genes,
+        gene2 = valid_genes,
+        stringsAsFactors = FALSE
+    ) %>%
+        filter(input_gene != gene2) %>%
+        mutate(
+            cor = mapply(function(g1, g2) cor_matrix[g1, g2], input_gene, gene2),
+            correlation_type = ifelse(cor > 0, "positive", "negative")
+        ) %>%
+        filter(abs(cor) >= threshold) %>%
+        mutate(
+            rank = ave(abs(cor), input_gene, FUN = function(x) rank(-x))
+        ) %>%
+        arrange(input_gene, desc(abs(cor)))
+
+    return(results)
+}
+
 #' Create correlation heatmap for multiple genes
 #'
 #' @param correlation_results Data frame from calc_individual_correlations
 #' @param input_genes Vector of input gene names
 #' @param dataset Dataset name
-#' @param threshold Correlation threshold for filtering
 #' @param cluster Whether to cluster genes
 #' @param max_genes Maximum number of genes to include in heatmap
-plot_correlation_heatmap <- function(correlation_results, input_genes, dataset, threshold = 0.3,
+plot_correlation_heatmap <- function(correlation_results, input_genes, dataset,
                                      cluster = TRUE, max_genes = 50, mask_low_correlations = FALSE,
                                      correlation_mode = "individual") {
     # Get top correlated genes across all input genes
     top_genes <- correlation_results %>%
-        filter(abs(cor) >= threshold) %>%
         arrange(desc(abs(cor))) %>%
         head(max_genes) %>%
         pull(gene2)
@@ -250,33 +312,17 @@ plot_correlation_heatmap <- function(correlation_results, input_genes, dataset, 
     expr_subset <- mc_egc[genes_in_data, , drop = FALSE]
     cor_matrix <- cor(t(expr_subset), use = "pairwise.complete.obs")
 
-    # Remove genes that have no correlations above threshold (when threshold > 0)
-    if (threshold > 0) {
-        # Find genes that have at least one correlation above threshold (excluding self-correlation)
-        genes_with_correlations <- apply(cor_matrix, 1, function(row) {
-            any(abs(row) >= threshold & abs(row) < 1, na.rm = TRUE) # exclude diagonal (self-correlation = 1)
-        })
-
-        # Also keep input genes even if they don't meet threshold
-        genes_to_keep <- genes_with_correlations | (rownames(cor_matrix) %in% input_genes)
-
-        if (sum(genes_to_keep) < 2) {
-            plot.new()
-            text(0.5, 0.5, "Not enough genes above threshold\nfor heatmap",
-                cex = 1.5, adj = c(0.5, 0.5)
-            )
-            return()
-        }
-
-        cor_matrix <- cor_matrix[genes_to_keep, genes_to_keep, drop = FALSE]
-        genes_in_data <- rownames(cor_matrix)
+    # Check if we have enough genes for heatmap
+    if (length(genes_in_data) < 2) {
+        plot.new()
+        text(0.5, 0.5, "Not enough genes for heatmap\n(need at least 2 genes)",
+            cex = 1.5, adj = c(0.5, 0.5)
+        )
+        return()
     }
 
-    # Optionally mask low correlations (make them NA for display)
+    # Keep the correlation matrix as-is for display
     cor_matrix_display <- cor_matrix
-    if (mask_low_correlations) {
-        cor_matrix_display[abs(cor_matrix_display) < threshold] <- NA
-    }
 
     # Create annotation for input genes
     if (correlation_mode == "module") {
@@ -368,7 +414,7 @@ plot_correlation_heatmap <- function(correlation_results, input_genes, dataset, 
                 annotation_row = gene_annotation,
                 annotation_col = gene_annotation,
                 annotation_colors = ann_colors,
-                main = paste("Gene Correlations (threshold >=", threshold, ")"),
+                main = "Gene Correlations",
                 fontsize = 10,
                 fontsize_row = 8,
                 fontsize_col = 8
@@ -376,7 +422,7 @@ plot_correlation_heatmap <- function(correlation_results, input_genes, dataset, 
         } else {
             # Simple base R heatmap
             heatmap(cor_matrix_display,
-                main = paste("Gene Correlations (threshold >=", threshold, ")"),
+                main = "Gene Correlations",
                 col = colorRampPalette(c("blue", "white", "red"))(50)
             )
         }
@@ -387,12 +433,10 @@ plot_correlation_heatmap <- function(correlation_results, input_genes, dataset, 
 #'
 #' @param correlation_results Data frame from correlation calculations
 #' @param gene Gene name to plot
-#' @param threshold Correlation threshold for filtering
-plot_correlation_barplot <- function(correlation_results, gene, threshold = 0.3) {
+plot_correlation_barplot <- function(correlation_results, gene) {
     # Filter and prepare data
     plot_data <- correlation_results %>%
         filter(input_gene == gene | grepl("Module", input_gene)) %>%
-        filter(abs(cor) >= threshold) %>%
         arrange(desc(abs(cor))) %>%
         head(30) %>%
         mutate(
@@ -405,7 +449,7 @@ plot_correlation_barplot <- function(correlation_results, gene, threshold = 0.3)
         p <- ggplot() +
             annotate("text",
                 x = 0.5, y = 0.5,
-                label = paste("No correlations above threshold", threshold),
+                label = "No correlations found",
                 size = 5
             ) +
             xlim(0, 1) +

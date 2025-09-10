@@ -7,10 +7,35 @@
 #' @noRd
 #'
 #' @importFrom shiny NS tagList
+#' @importFrom rclipboard rclipboardSetup rclipButton
 mod_gene_correlation_ui <- function(id) {
     ns <- NS(id)
 
     tagList(
+        # Setup clipboard functionality
+        if (requireNamespace("rclipboard", quietly = TRUE)) {
+            rclipboard::rclipboardSetup()
+        } else {
+            tags$head(tags$script(
+                "function copyToClipboard(text) {
+                    if (navigator.clipboard) {
+                        navigator.clipboard.writeText(text).then(function() {
+                            console.log('Copied to clipboard');
+                        }).catch(function(err) {
+                            console.error('Failed to copy: ', err);
+                        });
+                    } else {
+                        // Fallback for older browsers
+                        var textArea = document.createElement('textarea');
+                        textArea.value = text;
+                        document.body.appendChild(textArea);
+                        textArea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textArea);
+                    }
+                }"
+            ))
+        },
         fluidRow(
             # Left panel: Input and controls
             generic_column(
@@ -33,13 +58,7 @@ mod_gene_correlation_ui <- function(id) {
                     ),
                     fluidRow(
                         generic_column(
-                            width = 6,
-                            actionButton(ns("paste_genes"), "Paste from Clipboard",
-                                class = "btn-outline-secondary", style = "width: 100%;"
-                            )
-                        ),
-                        generic_column(
-                            width = 6,
+                            width = 12,
                             actionButton(ns("clear_genes"), "Clear",
                                 class = "btn-outline-secondary", style = "width: 100%;"
                             )
@@ -65,12 +84,34 @@ mod_gene_correlation_ui <- function(id) {
                         justified = TRUE
                     ),
 
-                    # Help text for modes
+                    # Toggle for gene search vs correlation calculation
                     conditionalPanel(
                         condition = paste0("input['", ns("correlation_mode"), "'] == 'individual'"),
+                        shinyWidgets::radioGroupButtons(
+                            inputId = ns("analysis_type"),
+                            label = "Analysis Type:",
+                            choices = list(
+                                "Find correlated genes" = "find_genes",
+                                "Calculate gene-gene correlation" = "gene_gene_cor"
+                            ),
+                            selected = "find_genes",
+                            justified = TRUE
+                        )
+                    ),
+
+                    # Help text for modes
+                    conditionalPanel(
+                        condition = paste0("input['", ns("correlation_mode"), "'] == 'individual' && input['", ns("analysis_type"), "'] == 'find_genes'"),
                         div(
                             class = "alert alert-info", style = "font-size: 12px;",
-                            icon("info-circle"), " Calculate correlations for each gene separately"
+                            icon("info-circle"), " Find genes correlated with each input gene separately"
+                        )
+                    ),
+                    conditionalPanel(
+                        condition = paste0("input['", ns("correlation_mode"), "'] == 'individual' && input['", ns("analysis_type"), "'] == 'gene_gene_cor'"),
+                        div(
+                            class = "alert alert-info", style = "font-size: 12px;",
+                            icon("info-circle"), " Calculate correlations between the input genes (all correlations shown, filters disabled)"
                         )
                     ),
                     conditionalPanel(
@@ -83,11 +124,27 @@ mod_gene_correlation_ui <- function(id) {
                     tags$hr(),
 
                     # Parameters
-                    numericInput(ns("n_correlations"), "Top correlations per gene",
-                        value = 30, min = 5, max = 100, step = 5
-                    ),
-                    sliderInput(ns("cor_threshold"), "Correlation threshold for display",
-                        min = 0, max = 1, value = 0, step = 0.05
+                    conditionalPanel(
+                        condition = paste0("!(input['", ns("correlation_mode"), "'] == 'individual' && input['", ns("analysis_type"), "'] == 'gene_gene_cor')"),
+                        numericInput(ns("n_correlations"), "Top correlations per gene",
+                            value = 30, min = 5, max = 100, step = 5
+                        ),
+                        sliderInput(ns("cor_threshold"), "Correlation threshold",
+                            min = 0, max = 1, value = 0, step = 0.05
+                        ),
+
+                        # Correlation direction filter
+                        shinyWidgets::radioGroupButtons(
+                            inputId = ns("correlation_direction"),
+                            label = "Correlation Direction:",
+                            choices = list(
+                                "Positive only" = "positive",
+                                "Negative only" = "negative",
+                                "Both" = "both"
+                            ),
+                            selected = "positive",
+                            justified = TRUE
+                        )
                     ),
 
                     # Cell type filtering
@@ -192,9 +249,19 @@ mod_gene_correlation_ui <- function(id) {
                             DT::DTOutput(ns("correlation_table"))
                         ),
                         br(),
-                        downloadButton(ns("download_correlations"), "Export Results",
-                            class = "btn-success",
-                            icon = icon("download")
+                        fluidRow(
+                            generic_column(
+                                width = 6,
+                                downloadButton(ns("download_correlations"), "Export Results",
+                                    class = "btn-success",
+                                    icon = icon("download"),
+                                    style = "width: 100%;"
+                                )
+                            ),
+                            generic_column(
+                                width = 6,
+                                uiOutput(ns("copy_genes_button"))
+                            )
                         )
                     ),
                     conditionalPanel(
@@ -275,24 +342,6 @@ mod_gene_correlation_server <- function(id, dataset, metacell_types, cell_type_c
                 )
             })
 
-            # Clipboard integration
-            observeEvent(input$paste_genes, {
-                if (!is.null(globals$clipboard) && length(globals$clipboard) > 0) {
-                    current_text <- input$gene_list
-                    new_genes <- paste(globals$clipboard, collapse = "\n")
-                    combined <- if (nzchar(current_text)) {
-                        paste(current_text, new_genes, sep = "\n")
-                    } else {
-                        new_genes
-                    }
-                    updateTextAreaInput(session, "gene_list", value = combined)
-                    showNotification(paste("Pasted", length(globals$clipboard), "genes from clipboard"),
-                        type = "default"
-                    )
-                } else {
-                    showNotification("No genes found in clipboard", type = "warning")
-                }
-            })
 
             # Clear genes
             observeEvent(input$clear_genes, {
@@ -365,6 +414,33 @@ mod_gene_correlation_server <- function(id, dataset, metacell_types, cell_type_c
                     return()
                 }
 
+                # Apply gene limits based on mode
+                if (input$correlation_mode == "individual") {
+                    if (!is.null(input$analysis_type) && input$analysis_type == "gene_gene_cor") {
+                        # Limit to 250 genes for gene-gene correlation
+                        if (length(valid_genes) > 250) {
+                            valid_genes <- valid_genes[1:250]
+                            showNotification(
+                                paste("Limited to first 250 genes for gene-gene correlation analysis. Using:", paste(head(valid_genes, 5), collapse = ", "), "..."),
+                                type = "warning",
+                                duration = 5
+                            )
+                        }
+                    } else {
+                        # Limit to 300 genes for finding neighbors
+                        if (length(valid_genes) > 300) {
+                            valid_genes <- valid_genes[1:300]
+                            showNotification(
+                                paste("Limited to first 300 genes for correlation analysis. Using:", paste(head(valid_genes, 5), collapse = ", "), "..."),
+                                type = "warning",
+                                duration = 5
+                            )
+                        }
+                    }
+                } else {
+                    # Module mode - no additional limit beyond existing logic
+                }
+
                 # Show progress
                 calculation_status("Calculating correlations...")
 
@@ -382,23 +458,42 @@ mod_gene_correlation_server <- function(id, dataset, metacell_types, cell_type_c
                     tryCatch(
                         {
                             if (input$correlation_mode == "individual") {
-                                incProgress(0.2, detail = "Individual gene correlations")
-                                results <- calc_individual_correlations(dataset(), valid_genes, input$n_correlations, cell_type_filter)
+                                if (!is.null(input$analysis_type) && input$analysis_type == "gene_gene_cor") {
+                                    incProgress(0.2, detail = "Gene-gene correlations")
+                                    # For gene-gene correlations, don't apply threshold - show all correlations between input genes
+                                    results <- calc_gene_gene_correlations(dataset(), valid_genes, cell_type_filter, threshold = 0)
+                                } else {
+                                    incProgress(0.2, detail = "Individual gene correlations")
+                                    results <- calc_individual_correlations(dataset(), valid_genes, input$n_correlations, cell_type_filter, input$cor_threshold)
+                                }
                             } else {
                                 incProgress(0.2, detail = "Module correlation")
-                                results <- calc_module_correlations(dataset(), valid_genes, input$n_correlations, cell_type_filter)
+                                results <- calc_module_correlations(dataset(), valid_genes, input$n_correlations, cell_type_filter, input$cor_threshold)
                             }
 
                             incProgress(0.6, detail = "Processing results")
 
-                            # Add additional columns
+                            # Add additional columns and filter by direction
                             results <- results %>%
                                 mutate(
                                     mode = input$correlation_mode,
                                     correlation_type = ifelse(cor > 0, "positive", "negative"),
                                     abs_cor = abs(cor)
-                                ) %>%
-                                arrange(input_gene, desc(abs_cor))
+                                )
+
+                            # Filter by correlation direction (except for gene-gene correlations)
+                            if (input$correlation_mode == "individual" &&
+                                !is.null(input$analysis_type) && input$analysis_type == "gene_gene_cor") {
+                                # For gene-gene correlations, don't apply direction filter
+                            } else {
+                                if (input$correlation_direction == "positive") {
+                                    results <- results %>% filter(cor > 0)
+                                } else if (input$correlation_direction == "negative") {
+                                    results <- results %>% filter(cor < 0)
+                                }
+                            }
+
+                            results <- results %>% arrange(input_gene, desc(abs_cor))
 
                             incProgress(0.2, detail = "Finalizing")
 
@@ -467,13 +562,12 @@ mod_gene_correlation_server <- function(id, dataset, metacell_types, cell_type_c
                     correlation_results(),
                     input_genes,
                     dataset(),
-                    threshold = input$cor_threshold,
                     cluster = input$cluster_heatmap,
                     max_genes = input$heatmap_top_genes,
                     mask_low_correlations = input$mask_low_correlations,
                     correlation_mode = input$correlation_mode
                 )
-            }) %>% bindCache(correlation_results(), dataset(), input$heatmap_top_genes, input$cor_threshold, input$cluster_heatmap, input$mask_low_correlations, input$correlation_mode)
+            }) %>% bindCache(correlation_results(), dataset(), input$heatmap_top_genes, input$cluster_heatmap, input$mask_low_correlations, input$correlation_mode)
 
             # Barplot visualization
             output$correlation_barplot <- plotly::renderPlotly({
@@ -483,18 +577,30 @@ mod_gene_correlation_server <- function(id, dataset, metacell_types, cell_type_c
                 input_gene <- unique(correlation_results()$input_gene)[1]
                 plot_correlation_barplot(
                     correlation_results(),
-                    gene = input_gene,
-                    threshold = input$cor_threshold
+                    gene = input_gene
                 )
-            })
+            }) %>% bindCache(correlation_results())
 
             # Results table
             output$correlation_table <- DT::renderDataTable({
                 req(correlation_results())
 
-                # Filter by threshold
-                filtered_data <- correlation_results() %>%
-                    filter(abs_cor >= input$cor_threshold) %>%
+                # Filter by direction (except for gene-gene correlations)
+                filtered_data <- correlation_results()
+
+                # Apply direction filter (except for gene-gene correlations)
+                if (input$correlation_mode == "individual" &&
+                    !is.null(input$analysis_type) && input$analysis_type == "gene_gene_cor") {
+                    # For gene-gene correlations, don't apply direction filter
+                } else {
+                    if (input$correlation_direction == "positive") {
+                        filtered_data <- filtered_data %>% filter(cor > 0)
+                    } else if (input$correlation_direction == "negative") {
+                        filtered_data <- filtered_data %>% filter(cor < 0)
+                    }
+                }
+
+                filtered_data <- filtered_data %>%
                     select(
                         `Input Gene` = input_gene,
                         `Correlated Gene` = gene2,
@@ -508,10 +614,8 @@ mod_gene_correlation_server <- function(id, dataset, metacell_types, cell_type_c
                     filtered_data,
                     escape = FALSE,
                     rownames = FALSE,
-                    extensions = c("Buttons"),
                     options = list(
                         dom = "Bfrtip",
-                        buttons = c("copy"),
                         pageLength = 25,
                         scrollX = TRUE,
                         columnDefs = list(
@@ -529,6 +633,41 @@ mod_gene_correlation_server <- function(id, dataset, metacell_types, cell_type_c
                     )
             })
 
+            # Reactive for genes to copy
+            copy_genes_data <- reactive({
+                req(correlation_results())
+
+                all_genes <- correlation_results()
+
+                # Apply direction filter (except for gene-gene correlations)
+                if (input$correlation_mode == "individual" &&
+                    !is.null(input$analysis_type) && input$analysis_type == "gene_gene_cor") {
+                    # For gene-gene correlations, don't apply direction filter
+                } else {
+                    if (input$correlation_direction == "positive") {
+                        all_genes <- all_genes %>% filter(cor > 0)
+                    } else if (input$correlation_direction == "negative") {
+                        all_genes <- all_genes %>% filter(cor < 0)
+                    }
+                }
+
+                unique(all_genes$gene2)
+            })
+
+            # Render copy button using utility function
+            output$copy_genes_button <- clipboard_copy_button_ui(
+                ns, "copy_all_genes", copy_genes_data,
+                label = "Copy All Genes",
+                style = "width: 100%; background-color: #17a2b8; color: white; border: none;",
+                tooltip = "Copy all found genes to clipboard"
+            )
+
+            # Copy all genes functionality using utility function
+            clipboard_copy_button_server(
+                input, "copy_all_genes", copy_genes_data, globals,
+                message_template = "Copied {count} genes to clipboard"
+            )
+
             # Export functionality
             output$download_correlations <- downloadHandler(
                 filename = function() {
@@ -538,8 +677,21 @@ mod_gene_correlation_server <- function(id, dataset, metacell_types, cell_type_c
                 content = function(file) {
                     req(correlation_results())
 
-                    data <- correlation_results() %>%
-                        filter(abs_cor >= input$cor_threshold) %>%
+                    data <- correlation_results()
+
+                    # Apply direction filter (except for gene-gene correlations)
+                    if (input$correlation_mode == "individual" &&
+                        !is.null(input$analysis_type) && input$analysis_type == "gene_gene_cor") {
+                        # For gene-gene correlations, don't apply direction filter
+                    } else {
+                        if (input$correlation_direction == "positive") {
+                            data <- data %>% filter(cor > 0)
+                        } else if (input$correlation_direction == "negative") {
+                            data <- data %>% filter(cor < 0)
+                        }
+                    }
+
+                    data <- data %>%
                         select(
                             input_gene,
                             correlated_gene = gene2,
@@ -555,6 +707,8 @@ mod_gene_correlation_server <- function(id, dataset, metacell_types, cell_type_c
                         "# MCView Gene Correlation Export",
                         paste("# Date:", Sys.time()),
                         paste("# Mode:", input$correlation_mode),
+                        paste("# Analysis type:", if (!is.null(input$analysis_type)) input$analysis_type else "find_genes"),
+                        paste("# Direction:", input$correlation_direction),
                         paste("# Threshold:", input$cor_threshold),
                         paste("# Input genes:", paste(parsed_genes(), collapse = ", ")),
                         paste("# Total correlations:", nrow(data)),

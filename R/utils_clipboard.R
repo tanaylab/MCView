@@ -94,3 +94,74 @@ clipboard_reactives <- function(dataset, input, output, session, metacell_types,
         }
     )
 }
+
+#' Create a reactive copy button using rclipboard
+#'
+#' @param ns Namespace function
+#' @param id Button ID
+#' @param data_reactive Reactive expression that returns the data to copy
+#' @param label Button label
+#' @param style Button styling
+#' @param tooltip Tooltip text
+#' @param disabled_label Label when button is disabled
+#' @return UI output for the copy button
+#' @importFrom rclipboard rclipButton
+clipboard_copy_button_ui <- function(ns, id, data_reactive, label = "Copy to Clipboard",
+                                     style = "background-color: #17a2b8; color: white; border: none;",
+                                     tooltip = "Copy to system clipboard",
+                                     disabled_label = NULL) {
+    renderUI({
+        data <- data_reactive()
+        if (!is.null(data) && length(data) > 0) {
+            clip_text <- if (is.character(data)) {
+                paste(data, collapse = "\n")
+            } else {
+                paste(as.character(data), collapse = "\n")
+            }
+
+            rclipboard::rclipButton(
+                inputId = ns(id),
+                label = label,
+                clipText = clip_text,
+                icon = icon("copy"),
+                tooltip = tooltip,
+                placement = "top",
+                style = style
+            )
+        } else {
+            actionButton(ns(paste0(id, "_disabled")),
+                disabled_label %||% label,
+                icon = icon("copy"),
+                style = style,
+                disabled = TRUE
+            )
+        }
+    })
+}
+
+#' Create server logic for copy button notifications
+#'
+#' @param input Shiny input
+#' @param id Button ID
+#' @param data_reactive Reactive expression that returns the data
+#' @param globals Global reactive values (optional, for internal clipboard)
+#' @param message_template Template for success message with {count} placeholder
+#' @return Observer for button clicks
+clipboard_copy_button_server <- function(input, id, data_reactive, globals = NULL,
+                                         message_template = "Copied {count} items to clipboard") {
+    observeEvent(input[[id]], {
+        data <- data_reactive()
+        if (!is.null(data) && length(data) > 0) {
+            # Update internal clipboard if globals provided
+            if (!is.null(globals) && !is.null(globals$clipboard)) {
+                globals$clipboard <- as.character(data)
+            }
+
+            # Show notification
+            message <- glue::glue(message_template, count = length(data))
+            showNotification(message, type = "default")
+        } else {
+            showNotification("No data to copy", type = "warning")
+        }
+    })
+}
