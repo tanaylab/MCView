@@ -31,8 +31,13 @@ create_heatmap_help_modal <- function(mode = "Markers") {
         p("By default, metacells are ordered based on the value selected in 'Order by' in the sidebar (available under 'Order cell types by' dropdown)."),
         p("When 'Hierarchical clustering' is enabled, the dendrogram is sorted by the difference between the gene covering the largest number of metacells, and the gene that is the most anti-correlated to it."),
         p("When 'Force cell type' is enabled, metacells from the same cell type are grouped together. The order of cell types is determined by the 'Order cell types by' setting."),
-        h4("Cell Type Filtering"),
-        p("You can filter the heatmap to show only specific cell types by selecting them from the 'Cell types' dropdown in the sidebar."),
+        h4("Updating the Heatmap"),
+        p("To apply any filtering or display changes, click the", strong("'🔄 Update Heatmap'"), "button at the top of the left sidebar. Changes to filters and settings are batched and only applied when this button is clicked."),
+        h4("Filtering Options"),
+        tags$ul(
+            tags$li(strong("Cell Type Filtering"), " - Select specific cell types from the 'Cell types' dropdown"),
+            tags$li(strong("Categorical Filtering"), " - Enable categorical filtering to filter by metadata variables (treatment, condition, batch, etc.). Choose a categorical field and select which values to include.")
+        ),
         h4("Color Scale"),
         p("The colors represent log-fold change values:"),
         tags$ul(
@@ -79,6 +84,7 @@ create_heatmap_help_modal <- function(mode = "Markers") {
         h4("Advanced Features"),
         p("Additional functionality available in the left sidebar:"),
         tags$ul(
+            tags$li(strong("Update Heatmap"), " - Apply all filtering and display changes (located at the top of the sidebar)"),
             tags$li(strong("Highlight genes"), " - Select genes from the list and click to highlight them in the plot"),
             tags$li(strong("Brush action"), " - Choose between zooming in on a region or selecting metacells"),
             tags$li(strong("Include lateral / noisy"), " - Include lateral and noisy genes in the heatmap"),
