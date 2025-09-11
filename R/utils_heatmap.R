@@ -38,32 +38,84 @@ heatmap_box <- function(id,
                     startOpen = FALSE,
                     width = 25,
                     id = ns("heatmap_sidebar"),
-                    checkboxInput(ns("filter_by_clipboard"), "Filter by clipboard", value = FALSE),
-                    shinyWidgets::numericRangeInput(ns("lfp_range"), "Fold change range", fold_change_range, width = "80%", separator = " to "),
-                    numericInput(ns("midpoint"), "Midpoint", midpoint),
-                    colourpicker::colourInput(ns("low_color"), "Low color", low_color),
-                    colourpicker::colourInput(ns("high_color"), "High color", high_color),
-                    colourpicker::colourInput(ns("mid_color"), "Mid color", mid_color),
-                    checkboxInput(ns("plot_legend"), "Show legend", value = TRUE),
-                    checkboxInput(ns("plot_cell_type_legend"), "Show cell type legend", value = TRUE),
-                    checkboxInput(ns("plot_genes_legend"), "Show genes legend", value = config$show_heatmap_genes_legend %||% TRUE),
-                    colourpicker::colourInput(ns("highlight_color"), "Gene highlight color", highlight_color),
-                    numericInput(ns("legend_width"), "Legend width", min = 1, max = 11, step = 1, value = legend_width),
-                    shinyWidgets::prettyRadioButtons(
-                        inputId = ns("gene_select"),
-                        label = gene_select_label,
-                        choices = gene_select_choices,
-                        inline = TRUE,
-                        status = "danger",
-                        fill = TRUE
+                    div(
+                        title = "Show only metacells that are currently in the clipboard (copied from other views or selections)",
+                        style = "cursor: help;",
+                        checkboxInput(ns("filter_by_clipboard"), "Filter by clipboard", value = FALSE)
                     ),
-                    shinyWidgets::prettyRadioButtons(
-                        inputId = ns("metacell_select"),
-                        label = "Select on double-click (metacell)",
-                        choices = c("Metacell A", "Metacell B"),
-                        inline = TRUE,
-                        status = "danger",
-                        fill = TRUE
+                    div(
+                        title = "Set the range of fold-change values displayed in the heatmap. Values outside this range will be clipped to the min/max colors.",
+                        style = "cursor: help;",
+                        shinyWidgets::numericRangeInput(ns("lfp_range"), "Fold change range", fold_change_range, width = "80%", separator = " to ")
+                    ),
+                    div(
+                        title = "The fold-change value that corresponds to the neutral (mid) color. Usually 0 for log fold-change data.",
+                        style = "cursor: help;",
+                        numericInput(ns("midpoint"), "Midpoint", midpoint)
+                    ),
+                    div(
+                        title = "Color for low/negative fold-change values",
+                        style = "cursor: help;",
+                        colourpicker::colourInput(ns("low_color"), "Low color", low_color)
+                    ),
+                    div(
+                        title = "Color for high/positive fold-change values",
+                        style = "cursor: help;",
+                        colourpicker::colourInput(ns("high_color"), "High color", high_color)
+                    ),
+                    div(
+                        title = "Color for neutral fold-change values (around the midpoint)",
+                        style = "cursor: help;",
+                        colourpicker::colourInput(ns("mid_color"), "Mid color", mid_color)
+                    ),
+                    div(
+                        title = "Show or hide the color legend and cell type legend to the right of the heatmap",
+                        style = "cursor: help;",
+                        checkboxInput(ns("plot_legend"), "Show legend", value = TRUE)
+                    ),
+                    div(
+                        title = "Show cell type color legend in the legend panel",
+                        style = "cursor: help;",
+                        checkboxInput(ns("plot_cell_type_legend"), "Show cell type legend", value = TRUE)
+                    ),
+                    div(
+                        title = "Show gene category legend (lateral, noisy, highlighted genes) in the legend panel",
+                        style = "cursor: help;",
+                        checkboxInput(ns("plot_genes_legend"), "Show genes legend", value = config$show_heatmap_genes_legend %||% TRUE)
+                    ),
+                    div(
+                        title = "Color used to highlight selected genes in the heatmap",
+                        style = "cursor: help;",
+                        colourpicker::colourInput(ns("highlight_color"), "Gene highlight color", highlight_color)
+                    ),
+                    div(
+                        title = "Width of the legend panel (in grid units from 1-11). Larger values make the legend wider and the heatmap narrower.",
+                        style = "cursor: help;",
+                        numericInput(ns("legend_width"), "Legend width", min = 1, max = 11, step = 1, value = legend_width)
+                    ),
+                    div(
+                        title = "Choose which axis (X or Y) will receive the gene when you double-click on a gene in the heatmap. This allows you to quickly set up gene-gene comparisons.",
+                        style = "cursor: help;",
+                        shinyWidgets::prettyRadioButtons(
+                            inputId = ns("gene_select"),
+                            label = gene_select_label,
+                            choices = gene_select_choices,
+                            inline = TRUE,
+                            status = "danger",
+                            fill = TRUE
+                        )
+                    ),
+                    div(
+                        title = "Choose which slot (A or B) will receive the metacell when you double-click on a metacell in the heatmap. This allows you to quickly set up metacell comparisons.",
+                        style = "cursor: help;",
+                        shinyWidgets::prettyRadioButtons(
+                            inputId = ns("metacell_select"),
+                            label = "Select on double-click (metacell)",
+                            choices = c("Metacell A", "Metacell B"),
+                            inline = TRUE,
+                            status = "danger",
+                            fill = TRUE
+                        )
                     )
                 ),
                 uiOutput(ns("plotting_area"))
@@ -89,78 +141,145 @@ heatmap_sidebar <- function(id, ..., show_fitted_filter = FALSE) {
         highlight_genes_ui <- NULL
         include_metadata_ui <- NULL
     } else {
-        max_gene_num_ui <- numericInput(ns("max_gene_num"), "Maximal number of genes", value = 100)
-        highlight_genes_ui <- shinyWidgets::actionGroupButtons(
-            inputIds = c(ns("highlight_genes"), ns("clear_highlights")),
-            labels = c("Highlight selected genes", "Clear highlights"),
-            status = c("primary", "default"),
-            size = "sm"
+        max_gene_num_ui <- div(
+            title = "Maximum number of genes to display in the heatmap. More genes provide more detail but may make the plot harder to read. Click 'Update genes' after changing this value.",
+            style = "cursor: help;",
+            numericInput(ns("max_gene_num"), "Maximal number of genes", value = 100)
         )
-        remove_genes_ui <- shinyWidgets::actionGroupButtons(ns("remove_genes"), labels = "Remove selected genes", size = "sm")
+        highlight_genes_ui <- div(
+            title = "Highlight selected genes in the heatmap with a special color, or clear all highlights",
+            style = "cursor: help;",
+            shinyWidgets::actionGroupButtons(
+                inputIds = c(ns("highlight_genes"), ns("clear_highlights")),
+                labels = c("Highlight selected genes", "Clear highlights"),
+                status = c("primary", "default"),
+                size = "sm"
+            )
+        )
+        remove_genes_ui <- div(
+            title = "Remove the currently selected genes from the heatmap display",
+            style = "cursor: help;",
+            shinyWidgets::actionGroupButtons(ns("remove_genes"), labels = "Remove selected genes", size = "sm")
+        )
         add_genes_ui <- uiOutput(ns("add_genes_ui"))
-        update_genes_ui <- shinyWidgets::actionGroupButtons(ns("update_genes"), labels = "Update genes", size = "sm")
-        use_de_genes_ui <- shinyWidgets::actionGroupButtons(ns("use_de_genes"), labels = "Use DE genes", size = "sm")
-        include_lateral_ui <- shinyWidgets::awesomeCheckbox(
-            inputId = ns("include_lateral"),
-            label = "Include lateral",
-            value = TRUE
+        update_genes_ui <- div(
+            title = "Recalculate which genes to display based on current filters and settings",
+            style = "cursor: help;",
+            shinyWidgets::actionGroupButtons(ns("update_genes"), labels = "Update genes", size = "sm")
         )
-        include_noisy_ui <- shinyWidgets::awesomeCheckbox(
-            inputId = ns("include_noisy"),
-            label = "Include noisy",
-            value = TRUE
+        use_de_genes_ui <- div(
+            title = "Use genes from the current differential expression tab (if available)",
+            style = "cursor: help;",
+            shinyWidgets::actionGroupButtons(ns("use_de_genes"), labels = "Use DE genes", size = "sm")
+        )
+        include_lateral_ui <- div(
+            title = "Include lateral genes (genes expressed in multiple cell types) in the gene selection. Click 'Update genes' after changing this setting.",
+            style = "cursor: help;",
+            shinyWidgets::awesomeCheckbox(
+                inputId = ns("include_lateral"),
+                label = "Include lateral",
+                value = TRUE
+            )
+        )
+        include_noisy_ui <- div(
+            title = "Include noisy genes (genes with high variability) in the gene selection. Click 'Update genes' after changing this setting.",
+            style = "cursor: help;",
+            shinyWidgets::awesomeCheckbox(
+                inputId = ns("include_noisy"),
+                label = "Include noisy",
+                value = TRUE
+            )
         )
         if (show_fitted_filter) {
-            show_only_fitted_ui <- shinyWidgets::awesomeCheckbox(
-                inputId = ns("show_only_fitted"),
-                label = "Show only fitted",
-                value = FALSE
+            show_only_fitted_ui <- div(
+                title = "Show only fitted genes in the gene selection. Click 'Update genes' after changing this setting.",
+                style = "cursor: help;",
+                shinyWidgets::awesomeCheckbox(
+                    inputId = ns("show_only_fitted"),
+                    label = "Show only fitted",
+                    value = FALSE
+                )
             )
         }
-        load_genes_ui <- fileInput(ns("load_genes"), label = NULL, buttonLabel = "Load genes", multiple = FALSE, accept = c(
-            "text/csv",
-            "text/comma-separated-values,text/plain",
-            "text/tab-separated-values",
-            ".csv",
-            ".tsv"
-        ))
-        include_metadata_ui <- shinyWidgets::awesomeCheckbox(
-            inputId = ns("include_metadata"),
-            label = "Include metadata",
-            value = FALSE
+        load_genes_ui <- div(
+            title = "Load a list of genes from a file (CSV/TSV format, one gene per line) to replace the current gene selection",
+            style = "cursor: help;",
+            fileInput(ns("load_genes"), label = NULL, buttonLabel = "Load genes", multiple = FALSE, accept = c(
+                "text/csv",
+                "text/comma-separated-values,text/plain",
+                "text/tab-separated-values",
+                ".csv",
+                ".tsv"
+            ))
+        )
+        include_metadata_ui <- div(
+            title = "Include metadata annotations in the downloaded matrix file",
+            style = "cursor: help;",
+            shinyWidgets::awesomeCheckbox(
+                inputId = ns("include_metadata"),
+                label = "Include metadata",
+                value = FALSE
+            )
         )
     }
 
     list(
+        uiOutput(ns("apply_heatmap_changes_ui")),
+        tags$hr(),
         uiOutput(ns("reset_zoom_ui")),
-        shinyWidgets::radioGroupButtons(
-            inputId = ns("brush_action"),
-            label = "Brush action:",
-            choices = c("Zoom", "Select"),
-            selected = "Zoom",
-            size = "sm",
-            justified = TRUE
+        div(
+            title = "Choose what happens when you drag to select an area on the heatmap: 'Zoom' will zoom into the selected region, 'Select' will copy the selected metacells to clipboard for further analysis.",
+            style = "cursor: help;",
+            shinyWidgets::radioGroupButtons(
+                inputId = ns("brush_action"),
+                label = "Brush action:",
+                choices = c("Zoom", "Select"),
+                selected = "Zoom",
+                size = "sm",
+                justified = TRUE
+            )
         ),
         uiOutput(ns("mat_value_ui")),
         uiOutput(ns("copy_metacells_ui")),
         tags$hr(),
-        uiOutput(ns("apply_heatmap_changes_ui")),
         uiOutput(ns("cell_type_list")),
         uiOutput(ns("metadata_list")),
-        checkboxInput(ns("force_cell_type"), "Force cell type", value = TRUE),
-        shinyWidgets::virtualSelectInput(ns("metadata_order_cell_type_var"), "Order cell types by", choices = NULL, selected = NULL, multiple = FALSE, search = TRUE),
-        shinyWidgets::virtualSelectInput(ns("metadata_order_var"), "Order by", choices = NULL, selected = NULL, multiple = FALSE, search = TRUE),
+        div(
+            title = "When enabled, metacells are grouped by cell type first, then ordered by other criteria. When disabled, ordering is based solely on the selected metadata variable or by hierarchical clustering.",
+            style = "cursor: help;",
+            checkboxInput(ns("force_cell_type"), "Force cell type", value = TRUE)
+        ),
+        div(
+            title = "Choose how to order cell types within the heatmap. 'Hierarchical-Clustering' uses expression similarity, 'Colors table' uses the cell type color order, or select a metadata variable.",
+            style = "cursor: help;",
+            shinyWidgets::virtualSelectInput(ns("metadata_order_cell_type_var"), "Order cell types by", choices = NULL, selected = NULL, multiple = FALSE, search = TRUE)
+        ),
+        div(
+            title = "Choose how to order metacells within the heatmap. 'Hierarchical-Clustering' groups similar expression patterns together, or select a metadata variable to order by its values. ",
+            style = "cursor: help;",
+            shinyWidgets::virtualSelectInput(ns("metadata_order_var"), "Order by", choices = NULL, selected = NULL, multiple = FALSE, search = TRUE)
+        ),
+        div(
+            title = "Filter the heatmap by categorical metadata variables like treatment, condition, batch, etc. Enable this option, select a categorical field, choose values to include, then click 'Update Heatmap'.",
+            style = "cursor: help;",
+            checkboxInput(ns("enable_categorical_filter"), "Enable categorical filtering", value = FALSE)
+        ),
+        uiOutput(ns("categorical_filter_ui")),
         tags$hr(),
         ...,
         highlight_genes_ui,
-        selectInput(
-            ns("selected_marker_genes"),
-            "Genes",
-            choices = NULL,
-            selected = NULL,
-            multiple = TRUE,
-            size = 30,
-            selectize = FALSE
+        div(
+            title = "List of genes currently displayed in the heatmap. Select genes here to highlight them or remove them from the display.",
+            style = "cursor: help;",
+            selectInput(
+                ns("selected_marker_genes"),
+                "Genes",
+                choices = NULL,
+                selected = NULL,
+                multiple = TRUE,
+                size = 30,
+                selectize = FALSE
+            )
         ),
         remove_genes_ui,
         update_genes_ui,
@@ -172,11 +291,19 @@ heatmap_sidebar <- function(id, ..., show_fitted_filter = FALSE) {
         include_noisy_ui,
         tags$hr(),
         load_genes_ui,
-        downloadButton(ns("download_genes"), "Save genes", align = "center", style = "margin: 5px 5px 5px 15px; "),
+        div(
+            title = "Download the current list of genes as a text file for later use",
+            style = "cursor: help; display: inline-block;",
+            downloadButton(ns("download_genes"), "Save genes", align = "center", style = "margin: 5px 5px 5px 15px; ")
+        ),
         uiOutput(ns("copy_genes_button")),
         tags$hr(),
         include_metadata_ui,
-        downloadButton(ns("download_matrix"), "Download matrix", align = "center", style = "margin: 5px 5px 5px 15px; ")
+        div(
+            title = "Download the heatmap matrix data as a CSV file. Use 'Include metadata' checkbox above to include annotations.",
+            style = "cursor: help; display: inline-block;",
+            downloadButton(ns("download_matrix"), "Download matrix", align = "center", style = "margin: 5px 5px 5px 15px; ")
+        )
     )
 }
 
@@ -191,6 +318,50 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
         shinyWidgets::updateVirtualSelect(session = session, inputId = "metadata_order_cell_type_var", choices = c("Hierarchical-Clustering", "Colors table", dataset_metadata_fields_numeric(dataset())), selected = "Hierarchical-Clustering")
 
         shinyjs::toggle(id = "metadata_order_cell_type_var", condition = input$force_cell_type)
+        shinyjs::toggle(id = "categorical_filter_ui", condition = input$enable_categorical_filter)
+    })
+
+    output$categorical_filter_ui <- renderUI({
+        categorical_fields <- dataset_metadata_fields_categorical(dataset())
+        if (length(categorical_fields) == 0) {
+            return(p("No filterable categorical metadata fields available",
+                style = "color: #6c757d; font-style: italic;"
+            ))
+        }
+
+        tagList(
+            shinyWidgets::virtualSelectInput(
+                ns("categorical_filter_field"),
+                "Filter by categorical variable:",
+                choices = categorical_fields,
+                selected = categorical_fields[1],
+                multiple = FALSE,
+                search = TRUE
+            ),
+            uiOutput(ns("categorical_filter_values_ui"))
+        )
+    })
+
+    output$categorical_filter_values_ui <- renderUI({
+        req(input$categorical_filter_field)
+
+        metadata <- get_mc_data(dataset(), "metadata")
+        req(metadata)
+        req(input$categorical_filter_field %in% colnames(metadata))
+
+        unique_values <- unique(metadata[[input$categorical_filter_field]])
+        # Remove NULL, NA, and empty strings
+        unique_values <- unique_values[!is.na(unique_values) & !is.null(unique_values) & unique_values != ""]
+        unique_values <- sort(unique_values)
+
+        shinyWidgets::virtualSelectInput(
+            ns("categorical_filter_values"),
+            "Select values to include:",
+            choices = unique_values,
+            selected = unique_values,
+            multiple = TRUE,
+            search = TRUE
+        )
     })
 
     observe({
@@ -330,18 +501,26 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
 
 
         tagList(
-            shinyWidgets::virtualSelectInput(ns("genes_to_add"),
-                label = "Add genes",
-                choices = gene_choices,
-                selected = c(),
-                multiple = TRUE,
-                showSelectedOptionsFirst = TRUE,
-                search = TRUE,
-                markSearchResults = TRUE,
-                searchByStartsWith = TRUE,
-                disableSelectAll = TRUE
+            div(
+                title = "Search and select additional genes to add to the current heatmap display",
+                style = "cursor: help;",
+                shinyWidgets::virtualSelectInput(ns("genes_to_add"),
+                    label = "Add genes",
+                    choices = gene_choices,
+                    selected = c(),
+                    multiple = TRUE,
+                    showSelectedOptionsFirst = TRUE,
+                    search = TRUE,
+                    markSearchResults = TRUE,
+                    searchByStartsWith = TRUE,
+                    disableSelectAll = TRUE
+                )
             ),
-            shinyWidgets::actionGroupButtons(ns("add_genes"), labels = "Add genes", size = "sm")
+            div(
+                title = "Add the selected genes to the heatmap display",
+                style = "cursor: help; display: inline-block;",
+                shinyWidgets::actionGroupButtons(ns("add_genes"), labels = "Add genes", size = "sm")
+            )
         )
     })
 
@@ -371,6 +550,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                 showModal(create_heatmap_help_modal(mode))
             })
 
+
             mat <- reactive({
                 req(markers())
                 req(dataset())
@@ -398,6 +578,24 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                 if (input$filter_by_clipboard) {
                     if (!is.null(globals$clipboard) && length(globals$clipboard) > 0) {
                         m <- m[, intersect(colnames(m), globals$clipboard), drop = FALSE]
+                    }
+                }
+
+                # Apply categorical filtering if enabled
+                if (!is.null(applied_params()$enable_categorical_filter) && applied_params()$enable_categorical_filter &&
+                    !is.null(applied_params()$categorical_filter_field) && !is.null(applied_params()$categorical_filter_values) &&
+                    length(applied_params()$categorical_filter_values) > 0) {
+                    metadata <- get_mc_data(dataset(), "metadata")
+                    if (!is.null(metadata) && applied_params()$categorical_filter_field %in% colnames(metadata)) {
+                        # Filter out rows with NULL, NA, or empty values in the categorical field
+                        field_values <- metadata[[applied_params()$categorical_filter_field]]
+                        valid_rows <- !is.na(field_values) & !is.null(field_values) & field_values != ""
+
+                        filtered_metacells <- metadata %>%
+                            filter(valid_rows) %>%
+                            filter(.data[[applied_params()$categorical_filter_field]] %in% applied_params()$categorical_filter_values) %>%
+                            pull(metacell)
+                        m <- m[, intersect(colnames(m), filtered_metacells), drop = FALSE]
                     }
                 }
 
@@ -474,9 +672,21 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
 
             heatmap_matrix_reactives(ns, input, output, session, dataset, metacell_types, cell_type_colors, globals, markers, lfp_range, mode, metacell_filter, mat)
 
-            output$cell_type_list <- cell_type_selector(dataset, ns, id = "selected_cell_types", label = "Cell types", selected = "all", cell_type_colors = cell_type_colors, metacell_types = metacell_types)
+            output$cell_type_list <- renderUI({
+                div(
+                    title = "Select which cell types to show in the heatmap. Only metacells from selected cell types will be displayed. Click 'Update Heatmap' to apply changes.",
+                    style = "cursor: help;",
+                    cell_type_selector(dataset, ns, id = "selected_cell_types", label = "Cell types", selected = "all", cell_type_colors = cell_type_colors, metacell_types = metacell_types)
+                )
+            })
 
-            output$metadata_list <- metadata_selector(dataset, ns, id = "selected_md", label = "Metadata", metadata_id = "metadata", additional_fields = "Clipboard")
+            output$metadata_list <- renderUI({
+                div(
+                    title = "Select which metadata fields to display as annotations in the heatmap. Selected metadata will appear as colored bars below the heatmap.",
+                    style = "cursor: help;",
+                    metadata_selector(dataset, ns, id = "selected_md", label = "Metadata", metadata_id = "metadata", additional_fields = "Clipboard")
+                )
+            })
 
             # Initialize applied_params with default values
             observe({
@@ -489,18 +699,22 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                         selected_cell_types = all_types,
                         selected_md = NULL,
                         force_cell_type = TRUE,
-                        metadata_order_cell_type_var = "Hierarchical-Clustering"
+                        metadata_order_cell_type_var = "Hierarchical-Clustering",
+                        enable_categorical_filter = FALSE,
+                        categorical_filter_field = NULL,
+                        categorical_filter_values = NULL
                     ))
                 }
             })
 
             # Dynamic UI for apply button
             output$apply_heatmap_changes_ui <- renderUI({
-                shinyWidgets::actionGroupButtons(
+                actionButton(
                     ns("apply_heatmap_changes"),
-                    labels = "Draw heatmap",
-                    size = "sm",
-                    status = "primary"
+                    "🔄 Update Heatmap",
+                    class = "btn-primary",
+                    style = "font-weight: bold; margin-bottom: 5px; width: 85%;",
+                    title = "Click to apply all filtering and display changes from the sidebar."
                 )
             })
 
@@ -510,27 +724,42 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     selected_cell_types = input$selected_cell_types,
                     selected_md = input$selected_md,
                     force_cell_type = input$force_cell_type %||% TRUE,
-                    metadata_order_cell_type_var = input$metadata_order_cell_type_var
+                    metadata_order_cell_type_var = input$metadata_order_cell_type_var,
+                    enable_categorical_filter = input$enable_categorical_filter,
+                    categorical_filter_field = input$categorical_filter_field,
+                    categorical_filter_values = input$categorical_filter_values
                 ))
                 showNotification(glue("Applied changes - updating heatmap..."), type = "message")
             })
 
             output$reset_zoom_ui <- renderUI({
-                shinyWidgets::actionGroupButtons(ns("reset_zoom"), labels = "Reset zoom", size = "sm")
+                div(
+                    title = "Reset the heatmap zoom to show all metacells and genes",
+                    style = "cursor: help;",
+                    shinyWidgets::actionGroupButtons(ns("reset_zoom"), labels = "Reset zoom", size = "sm")
+                )
             })
 
             output$copy_metacells_ui <- renderUI({
-                shinyWidgets::actionGroupButtons(ns("copy_metacells"), labels = "Copy metacells", size = "sm")
+                div(
+                    title = "Copy all currently visible metacells to the clipboard for use in other tabs",
+                    style = "cursor: help;",
+                    shinyWidgets::actionGroupButtons(ns("copy_metacells"), labels = "Copy metacells", size = "sm")
+                )
             })
 
             output$mat_value_ui <- renderUI({
-                shinyWidgets::radioGroupButtons(
-                    inputId = ns("mat_value"),
-                    label = "Enrichment type:",
-                    choices = c("Global", "Local"),
-                    selected = "Global",
-                    size = "sm",
-                    justified = TRUE
+                div(
+                    title = "'Global' shows enrichment calculated from all metacells in dataset. 'Local' recalculates enrichment using only visible metacells (useful when zoomed or filtered).",
+                    style = "cursor: help;",
+                    shinyWidgets::radioGroupButtons(
+                        inputId = ns("mat_value"),
+                        label = "Enrichment type:",
+                        choices = c("Global", "Local"),
+                        selected = "Global",
+                        size = "sm",
+                        justified = TRUE
+                    )
                 )
             })
 
