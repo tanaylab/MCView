@@ -1,6 +1,6 @@
 # MCView 0.2.51
 
-* Added caregorical filtering to the Markers tab.
+* Added categorical filtering to the Markers tab.
 * Added sina/violin plots to the Cell types tab and added the option to set x axis to categorical metadata. 
 * Added facets to the Cell types tab.
 
