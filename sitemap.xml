@@ -10,7 +10,12 @@
 <url><loc>/index.html</loc></url>
 <url><loc>/news/index.html</loc></url>
 <url><loc>/reference/MCView-package.html</loc></url>
+<url><loc>/reference/calc_gene_gene_correlations.html</loc></url>
+<url><loc>/reference/calc_individual_correlations.html</loc></url>
+<url><loc>/reference/calc_module_correlations.html</loc></url>
 <url><loc>/reference/cell_metadata_to_metacell.html</loc></url>
+<url><loc>/reference/clipboard_copy_button_server.html</loc></url>
+<url><loc>/reference/clipboard_copy_button_ui.html</loc></url>
 <url><loc>/reference/create_bundle.html</loc></url>
 <url><loc>/reference/create_project.html</loc></url>
 <url><loc>/reference/dataset_ls.html</loc></url>
@@ -19,6 +24,8 @@
 <url><loc>/reference/import_dataset.html</loc></url>
 <url><loc>/reference/import_dataset_metacell1.html</loc></url>
 <url><loc>/reference/index.html</loc></url>
+<url><loc>/reference/plot_correlation_barplot.html</loc></url>
+<url><loc>/reference/plot_correlation_heatmap.html</loc></url>
 <url><loc>/reference/print.gt_custom.html</loc></url>
 <url><loc>/reference/run_app.html</loc></url>
 <url><loc>/reference/update_2d_projection.html</loc></url>
