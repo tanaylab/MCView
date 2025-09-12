@@ -186,15 +186,27 @@ mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, 
 
                     # Create a simple version similar to the original cell_type_selector
                     tagList(
-                        checkboxGroupInput(ns("boxplot_cell_types"),
-                            "Cell types:",
-                            choices = as.character(cell_types),
-                            selected = as.character(cell_types)
+                        div(
+                            title = "Select which cell types to include in the analysis. Deselecting cell types will exclude them from the visualization.",
+                            style = "cursor: help;",
+                            checkboxGroupInput(ns("boxplot_cell_types"),
+                                "Cell types:",
+                                choices = as.character(cell_types),
+                                selected = as.character(cell_types)
+                            )
                         ),
                         div(
                             style = "margin-top: 5px;",
-                            actionButton(ns("select_all_cell_types"), "Select All", size = "xs", style = "margin-right: 5px;"),
-                            actionButton(ns("clear_all_cell_types"), "Clear All", size = "xs")
+                            div(
+                                title = "Select all available cell types",
+                                style = "cursor: help; display: inline-block;",
+                                actionButton(ns("select_all_cell_types"), "Select All", size = "xs", style = "margin-right: 5px;")
+                            ),
+                            div(
+                                title = "Deselect all cell types",
+                                style = "cursor: help; display: inline-block;",
+                                actionButton(ns("clear_all_cell_types"), "Clear All", size = "xs")
+                            )
                         )
                     )
                 } else {
@@ -203,22 +215,30 @@ mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, 
                     cell_types <- unique(metacell_types()$cell_type)
                     cell_types <- cell_types[!is.na(cell_types)]
 
-                    checkboxGroupInput(ns("cell_type_filter"),
-                        "Filter by cell types:",
-                        choices = as.character(cell_types),
-                        selected = as.character(cell_types)
+                    div(
+                        title = "Filter the analysis to include only specific cell types when using metadata on X-axis. This controls which cell types contribute to each metadata category.",
+                        style = "cursor: help;",
+                        checkboxGroupInput(ns("cell_type_filter"),
+                            "Filter by cell types:",
+                            choices = as.character(cell_types),
+                            selected = as.character(cell_types)
+                        )
                     )
                 }
             })
 
             output$confusion_color_by_selector <- renderUI({
-                shinyWidgets::prettyRadioButtons(
-                    ns("confusion_color_by"),
-                    label = "Normalize by:",
-                    choices = c("X axis", "Y Axis"),
-                    inline = TRUE,
-                    status = "danger",
-                    fill = TRUE
+                div(
+                    title = "Choose normalization for the confusion matrix: 'X axis' shows proportions within each X category, 'Y axis' shows proportions within each Y category.",
+                    style = "cursor: help;",
+                    shinyWidgets::prettyRadioButtons(
+                        ns("confusion_color_by"),
+                        label = "Normalize by:",
+                        choices = c("X axis", "Y Axis"),
+                        inline = TRUE,
+                        status = "danger",
+                        fill = TRUE
+                    )
                 )
             })
 
@@ -233,10 +253,14 @@ mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, 
                 categorical_cols <- categorical_cols[categorical_cols != "metacell"]
 
                 if (length(categorical_cols) > 0) {
-                    selectInput(ns("x_axis_metadata_var"),
-                        "Select metadata variable:",
-                        choices = categorical_cols,
-                        selected = categorical_cols[1]
+                    div(
+                        title = "Choose which categorical metadata variable to use for grouping on the X-axis (e.g., treatment, condition, batch, tissue type).",
+                        style = "cursor: help;",
+                        selectInput(ns("x_axis_metadata_var"),
+                            "Select metadata variable:",
+                            choices = categorical_cols,
+                            selected = categorical_cols[1]
+                        )
                     )
                 } else {
                     tags$div(style = "color: orange;", "No categorical metadata variables found")
@@ -256,15 +280,27 @@ mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, 
 
                 if (length(categories) > 0) {
                     tagList(
-                        checkboxGroupInput(ns("x_axis_categories"),
-                            "Select categories to plot:",
-                            choices = as.character(categories),
-                            selected = as.character(categories)
+                        div(
+                            title = "Select which specific categories from the metadata variable to include in the plot. Useful for comparing specific subsets.",
+                            style = "cursor: help;",
+                            checkboxGroupInput(ns("x_axis_categories"),
+                                "Select categories to plot:",
+                                choices = as.character(categories),
+                                selected = as.character(categories)
+                            )
                         ),
                         div(
                             style = "margin-bottom: 5px;",
-                            actionButton(ns("select_all_categories"), "Select All", size = "xs", style = "margin-right: 5px;"),
-                            actionButton(ns("clear_all_categories"), "Clear All", size = "xs")
+                            div(
+                                title = "Select all available categories",
+                                style = "cursor: help; display: inline-block;",
+                                actionButton(ns("select_all_categories"), "Select All", size = "xs", style = "margin-right: 5px;")
+                            ),
+                            div(
+                                title = "Deselect all categories",
+                                style = "cursor: help; display: inline-block;",
+                                actionButton(ns("clear_all_categories"), "Clear All", size = "xs")
+                            )
                         )
                     )
                 }
@@ -286,10 +322,14 @@ mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, 
                 }
 
                 if (length(categorical_cols) > 0) {
-                    selectInput(ns("facet_metadata_var"),
-                        "Select metadata variable for faceting:",
-                        choices = categorical_cols,
-                        selected = categorical_cols[1]
+                    div(
+                        title = "Choose a different categorical metadata variable to create separate panels. Each unique value will get its own panel in the plot.",
+                        style = "cursor: help;",
+                        selectInput(ns("facet_metadata_var"),
+                            "Select metadata variable for faceting:",
+                            choices = categorical_cols,
+                            selected = categorical_cols[1]
+                        )
                     )
                 } else {
                     tags$div(style = "color: orange;", "No additional categorical metadata variables available for faceting")

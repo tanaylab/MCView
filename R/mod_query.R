@@ -501,17 +501,25 @@ metacell_selectors_mod_query <- function(input, output, session, dataset, ns, me
             req(metacell_names())
             cell_types_hex <- col2hex(metacell_colors())
             tagList(
-                shinyWidgets::pickerInput(ns("metacell"), "Metacell",
-                    choices = metacell_names(),
-                    selected = config$selected_mc1 %||% metacell_names()[1], multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "contains", dropupAuto = FALSE),
-                    choicesOpt = list(
-                        style = paste0("color: ", cell_types_hex, ";")
+                div(
+                    title = "Select a metacell to add to the custom group for analysis",
+                    style = "cursor: help;",
+                    shinyWidgets::pickerInput(ns("metacell"), "Metacell",
+                        choices = metacell_names(),
+                        selected = config$selected_mc1 %||% metacell_names()[1], multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "contains", dropupAuto = FALSE),
+                        choicesOpt = list(
+                            style = paste0("color: ", cell_types_hex, ";")
+                        )
                     )
                 ),
-                shinyWidgets::actionGroupButtons(
-                    ns("add_metacell_to_group"),
-                    labels = c("Add to group"),
-                    size = "sm"
+                div(
+                    title = "Add the selected metacell to your custom group for differential expression analysis",
+                    style = "cursor: help;",
+                    shinyWidgets::actionGroupButtons(
+                        ns("add_metacell_to_group"),
+                        labels = c("Add to group"),
+                        size = "sm"
+                    )
                 )
             )
         }
@@ -561,9 +569,21 @@ group_selectors_mod_query <- function(input, output, session, dataset, ns, group
             collapsible = TRUE,
             closable = FALSE,
             width = 12,
-            actionButton(ns("reset_group"), "Reset"),
-            actionButton(ns("remove_group_metacells"), "Remove"),
-            actionButton(ns("paste_group_metacells"), "Paste"),
+            div(
+                title = "Clear all metacells from the custom group",
+                style = "cursor: help; display: inline-block;",
+                actionButton(ns("reset_group"), "Reset")
+            ),
+            div(
+                title = "Remove selected metacells from the group (select rows in table first)",
+                style = "cursor: help; display: inline-block;",
+                actionButton(ns("remove_group_metacells"), "Remove")
+            ),
+            div(
+                title = "Add metacells from clipboard to the group",
+                style = "cursor: help; display: inline-block;",
+                actionButton(ns("paste_group_metacells"), "Paste")
+            ),
             shinycssloaders::withSpinner(
                 DT::dataTableOutput(ns("group_table"))
             )

@@ -50,52 +50,72 @@ mod_gene_correlation_ui <- function(id) {
                     width = 12,
 
                     # Gene list input methods
-                    textAreaInput(ns("gene_list"),
-                        "Gene List (one per line or comma-separated)",
-                        rows = 8,
-                        value = "",
-                        placeholder = "Enter gene names here...\nExample:\nACTB\nGAPDH\nTP53"
+                    div(
+                        title = "Enter gene symbols one per line or comma-separated. Use standard gene names (e.g., ACTB, GAPDH, TP53). Invalid genes will be ignored with a warning.",
+                        style = "cursor: help;",
+                        textAreaInput(ns("gene_list"),
+                            "Gene List (one per line or comma-separated)",
+                            rows = 8,
+                            value = "",
+                            placeholder = "Enter gene names here...\nExample:\nACTB\nGAPDH\nTP53"
+                        )
                     ),
                     fluidRow(
                         generic_column(
                             width = 12,
-                            actionButton(ns("clear_genes"), "Clear",
-                                class = "btn-outline-secondary", style = "width: 100%;"
+                            div(
+                                title = "Clear all entered gene names from the text area",
+                                style = "cursor: help;",
+                                actionButton(ns("clear_genes"), "Clear",
+                                    class = "btn-outline-secondary", style = "width: 100%;"
+                                )
                             )
                         )
                     ),
                     br(),
-                    fileInput(ns("gene_file"), "Or upload file",
-                        accept = c(".csv", ".txt", ".tsv"),
-                        buttonLabel = "Browse...",
-                        placeholder = "No file selected"
+                    div(
+                        title = "Upload a file containing gene names. Supports CSV, TSV, and TXT formats. Genes can be in any column/format - they will be extracted automatically.",
+                        style = "cursor: help;",
+                        fileInput(ns("gene_file"), "Or upload file",
+                            accept = c(".csv", ".txt", ".tsv"),
+                            buttonLabel = "Browse...",
+                            placeholder = "No file selected"
+                        )
                     ),
                     tags$hr(),
 
                     # Mode selection
-                    shinyWidgets::radioGroupButtons(
-                        inputId = ns("correlation_mode"),
-                        label = "Correlation Mode:",
-                        choices = list(
-                            "Individual genes" = "individual",
-                            "Gene module/anchor" = "module"
-                        ),
-                        selected = "individual",
-                        justified = TRUE
+                    div(
+                        title = "Choose analysis mode: 'Individual genes' finds correlations for each gene separately. 'Gene module/anchor' treats all input genes as one module and finds genes correlated with the combined expression pattern.",
+                        style = "cursor: help;",
+                        shinyWidgets::radioGroupButtons(
+                            inputId = ns("correlation_mode"),
+                            label = "Correlation Mode:",
+                            choices = list(
+                                "Individual genes" = "individual",
+                                "Gene module/anchor" = "module"
+                            ),
+                            selected = "individual",
+                            justified = TRUE
+                        )
                     ),
 
                     # Toggle for gene search vs correlation calculation
                     conditionalPanel(
                         condition = paste0("input['", ns("correlation_mode"), "'] == 'individual'"),
-                        shinyWidgets::radioGroupButtons(
-                            inputId = ns("analysis_type"),
-                            label = "Analysis Type:",
-                            choices = list(
-                                "Find correlated genes" = "find_genes",
-                                "Calculate gene-gene correlation" = "gene_gene_cor"
-                            ),
-                            selected = "find_genes",
-                            justified = TRUE
+                        div(
+                            title = "Choose analysis type: 'Find correlated genes' searches for genes similar to your input genes. 'Calculate gene-gene correlation' computes correlations only between your input genes (useful for exploring relationships within a gene set).",
+                            style = "cursor: help;",
+                            shinyWidgets::radioGroupButtons(
+                                inputId = ns("analysis_type"),
+                                label = "Analysis Type:",
+                                choices = list(
+                                    "Find correlated genes" = "find_genes",
+                                    "Calculate gene-gene correlation" = "gene_gene_cor"
+                                ),
+                                selected = "find_genes",
+                                justified = TRUE
+                            )
                         )
                     ),
 
@@ -126,24 +146,36 @@ mod_gene_correlation_ui <- function(id) {
                     # Parameters
                     conditionalPanel(
                         condition = paste0("!(input['", ns("correlation_mode"), "'] == 'individual' && input['", ns("analysis_type"), "'] == 'gene_gene_cor')"),
-                        numericInput(ns("n_correlations"), "Top correlations per gene",
-                            value = 30, min = 5, max = 100, step = 5
+                        div(
+                            title = "Maximum number of correlated genes to find per input gene. Higher values provide more results but may include weaker correlations.",
+                            style = "cursor: help;",
+                            numericInput(ns("n_correlations"), "Top correlations per gene",
+                                value = 30, min = 5, max = 100, step = 5
+                            )
                         ),
-                        sliderInput(ns("cor_threshold"), "Correlation threshold",
-                            min = 0, max = 1, value = 0, step = 0.05
+                        div(
+                            title = "Minimum absolute correlation value to include in results. 0 = include all correlations, 0.5 = only include strong correlations. Higher thresholds focus on stronger relationships.",
+                            style = "cursor: help;",
+                            sliderInput(ns("cor_threshold"), "Correlation threshold",
+                                min = 0, max = 1, value = 0, step = 0.05
+                            )
                         ),
 
                         # Correlation direction filter
-                        shinyWidgets::radioGroupButtons(
-                            inputId = ns("correlation_direction"),
-                            label = "Correlation Direction:",
-                            choices = list(
-                                "Positive only" = "positive",
-                                "Negative only" = "negative",
-                                "Both" = "both"
-                            ),
-                            selected = "positive",
-                            justified = TRUE
+                        div(
+                            title = "Filter correlations by direction: 'Positive only' finds genes that increase together, 'Negative only' finds genes with opposite patterns, 'Both' includes all relationships.",
+                            style = "cursor: help;",
+                            shinyWidgets::radioGroupButtons(
+                                inputId = ns("correlation_direction"),
+                                label = "Correlation Direction:",
+                                choices = list(
+                                    "Positive only" = "positive",
+                                    "Negative only" = "negative",
+                                    "Both" = "both"
+                                ),
+                                selected = "positive",
+                                justified = TRUE
+                            )
                         )
                     ),
 
@@ -152,10 +184,14 @@ mod_gene_correlation_ui <- function(id) {
                     br(),
 
                     # Calculate button
-                    actionButton(ns("calculate_correlations"), "Calculate Correlations",
-                        class = "btn-primary btn-lg",
-                        style = "width: 100%; font-weight: bold;",
-                        icon = icon("calculator")
+                    div(
+                        title = "Start the correlation analysis with your current settings. Results will appear in the visualization and table sections below.",
+                        style = "cursor: help;",
+                        actionButton(ns("calculate_correlations"), "Calculate Correlations",
+                            class = "btn-primary btn-lg",
+                            style = "width: 100%; font-weight: bold;",
+                            icon = icon("calculator")
+                        )
                     ),
                     br(), br(),
 
@@ -181,10 +217,22 @@ mod_gene_correlation_ui <- function(id) {
                             startOpen = FALSE,
                             width = 50,
                             id = ns("heatmap_sidebar"),
-                            checkboxInput(ns("cluster_heatmap"), "Cluster genes", value = TRUE),
-                            checkboxInput(ns("mask_low_correlations"), "Mask low correlations", value = FALSE),
-                            numericInput(ns("heatmap_top_genes"), "Max genes to show",
-                                value = 50, min = 10, max = 200, step = 10
+                            div(
+                                title = "Group similar genes together using hierarchical clustering to reveal correlation patterns more clearly",
+                                style = "cursor: help;",
+                                checkboxInput(ns("cluster_heatmap"), "Cluster genes", value = TRUE)
+                            ),
+                            div(
+                                title = "Hide weak correlations in the heatmap to emphasize strong relationships. Values below 0.3 absolute correlation will be shown as neutral.",
+                                style = "cursor: help;",
+                                checkboxInput(ns("mask_low_correlations"), "Mask low correlations", value = FALSE)
+                            ),
+                            div(
+                                title = "Maximum number of genes to display in the heatmap. Shows the most highly correlated genes for better visualization.",
+                                style = "cursor: help;",
+                                numericInput(ns("heatmap_top_genes"), "Max genes to show",
+                                    value = 50, min = 10, max = 200, step = 10
+                                )
                             )
                         ),
                         shinycssloaders::withSpinner(
@@ -252,10 +300,14 @@ mod_gene_correlation_ui <- function(id) {
                         fluidRow(
                             generic_column(
                                 width = 6,
-                                downloadButton(ns("download_correlations"), "Export Results",
-                                    class = "btn-success",
-                                    icon = icon("download"),
-                                    style = "width: 100%;"
+                                div(
+                                    title = "Download all correlation results as a CSV file with metadata header. Includes input parameters and full results table.",
+                                    style = "cursor: help;",
+                                    downloadButton(ns("download_correlations"), "Export Results",
+                                        class = "btn-success",
+                                        icon = icon("download"),
+                                        style = "width: 100%;"
+                                    )
                                 )
                             ),
                             generic_column(
@@ -361,25 +413,33 @@ mod_gene_correlation_server <- function(id, dataset, metacell_types, cell_type_c
                     names(cell_types_hex) <- cell_type_colors()$cell_type
 
                     tagList(
-                        checkboxInput(ns("enable_cell_type_filter"),
-                            "Filter by cell types",
-                            value = FALSE
+                        div(
+                            title = "Enable filtering to calculate correlations using only specific cell types. Useful for finding cell-type-specific correlation patterns.",
+                            style = "cursor: help;",
+                            checkboxInput(ns("enable_cell_type_filter"),
+                                "Filter by cell types",
+                                value = FALSE
+                            )
                         ),
                         conditionalPanel(
                             condition = paste0("input['", ns("enable_cell_type_filter"), "']"),
-                            shinyWidgets::pickerInput(
-                                ns("selected_cell_types"),
-                                "Cell types:",
-                                choices = cell_types,
-                                selected = cell_types,
-                                multiple = TRUE,
-                                options = list(
-                                    `actions-box` = TRUE,
-                                    `dropup-auto` = FALSE,
-                                    `live-search` = TRUE
-                                ),
-                                choicesOpt = list(
-                                    style = paste0("color: ", cell_types_hex[cell_types], ";")
+                            div(
+                                title = "Select which cell types to include in correlation analysis. Only metacells from selected cell types will be used for calculating correlations.",
+                                style = "cursor: help;",
+                                shinyWidgets::pickerInput(
+                                    ns("selected_cell_types"),
+                                    "Cell types:",
+                                    choices = cell_types,
+                                    selected = cell_types,
+                                    multiple = TRUE,
+                                    options = list(
+                                        `actions-box` = TRUE,
+                                        `dropup-auto` = FALSE,
+                                        `live-search` = TRUE
+                                    ),
+                                    choicesOpt = list(
+                                        style = paste0("color: ", cell_types_hex[cell_types], ";")
+                                    )
                                 )
                             )
                         )
