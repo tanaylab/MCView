@@ -24,13 +24,25 @@ mod_mc_mc_ui <- function(id) {
                         startOpen = FALSE,
                         width = 80,
                         id = ns("mc_mc_sidebar"),
-                        checkboxInput(ns("hide_lateral"), "Hide lateral genes", value = FALSE),
-                        checkboxInput(ns("hide_noisy"), "Hide noisy genes", value = FALSE)
+                        div(
+                            title = "Hide lateral genes (genes expressed in multiple cell types) from the differential expression analysis",
+                            style = "cursor: help;",
+                            checkboxInput(ns("hide_lateral"), "Hide lateral genes", value = FALSE)
+                        ),
+                        div(
+                            title = "Hide noisy genes (genes with high variability) from the differential expression analysis",
+                            style = "cursor: help;",
+                            checkboxInput(ns("hide_noisy"), "Hide noisy genes", value = FALSE)
+                        )
                     ),
                     shinycssloaders::withSpinner(
                         plotly::plotlyOutput(ns("plot_mc_mc_gene_scatter"))
                     ),
-                    shinyWidgets::prettySwitch(inputId = ns("show_diff_expr_table"), value = FALSE, label = "Show table"),
+                    div(
+                        title = "Toggle display of the differential expression results table showing detailed statistics for each gene",
+                        style = "cursor: help;",
+                        shinyWidgets::prettySwitch(inputId = ns("show_diff_expr_table"), value = FALSE, label = "Show table")
+                    ),
                     DT::DTOutput(ns("diff_expr_table"))
                 )
             ),
@@ -89,21 +101,33 @@ mod_mc_mc_sidebar_ui <- function(id) {
         list(
             div(
                 id = ns("sidebar_select"),
-                shinyWidgets::radioGroupButtons(
-                    inputId = ns("mode"),
-                    label = "Compare:",
-                    choices = c(
-                        "MCs",
-                        "Types",
-                        "Groups"
-                    ),
-                    selected = "Types",
-                    justified = TRUE
+                div(
+                    title = "Choose comparison mode: 'MCs' compares individual metacells, 'Types' compares cell types, 'Groups' allows custom selection of multiple metacells for comparison",
+                    style = "cursor: help;",
+                    shinyWidgets::radioGroupButtons(
+                        inputId = ns("mode"),
+                        label = "Compare:",
+                        choices = c(
+                            "MCs",
+                            "Types",
+                            "Groups"
+                        ),
+                        selected = "Types",
+                        justified = TRUE
+                    )
                 ),
                 uiOutput(ns("metacell1_select")),
                 uiOutput(ns("metacell2_select")),
-                shinyWidgets::actionGroupButtons(ns("switch_metacells"), labels = c("Switch"), size = "sm"),
-                checkboxInput(ns("filter_by_clipboard"), "Filter by clipboard", value = FALSE)
+                div(
+                    title = "Swap the two selected items (metacells, cell types, or groups) to reverse the comparison direction",
+                    style = "cursor: help;",
+                    shinyWidgets::actionGroupButtons(ns("switch_metacells"), labels = c("Switch"), size = "sm")
+                ),
+                div(
+                    title = "Filter analysis to include only metacells currently in the clipboard (copied from other views or selections)",
+                    style = "cursor: help;",
+                    checkboxInput(ns("filter_by_clipboard"), "Filter by clipboard", value = FALSE)
+                )
             )
         )
     )

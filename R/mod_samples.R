@@ -29,13 +29,17 @@ mod_samples_ui <- function(id) {
                         shinydashboardPlus::accordionItem(
                             title = "Order by",
                             collapsed = FALSE,
-                            shinyWidgets::virtualSelectInput(
-                                ns("sample_types_ordering"),
-                                "",
-                                choices = c(),
-                                multiple = FALSE,
-                                search = TRUE,
-                                dropboxWrapper = "body"
+                            div(
+                                title = "Choose how to order samples in the stacked bar chart. Options include numeric metadata fields or 'Default' ordering.",
+                                style = "cursor: help;",
+                                shinyWidgets::virtualSelectInput(
+                                    ns("sample_types_ordering"),
+                                    "",
+                                    choices = c(),
+                                    multiple = FALSE,
+                                    search = TRUE,
+                                    dropboxWrapper = "body"
+                                )
                             )
                         )
                     )
@@ -68,9 +72,21 @@ mod_samples_ui <- function(id) {
                         shinydashboardPlus::accordionItem(
                             title = "Select axes",
                             collapsed = FALSE,
-                            axis_selector("x_axis", "Metadata", ns, choices = c("Metadata", "Gene", "Cell type")),
-                            axis_selector("y_axis", "Metadata", ns, choices = c("Metadata", "Gene", "Cell type")),
-                            axis_selector("color_by", "Metadata", ns, choices = c("Metadata", "Gene", "Cell type"))
+                            div(
+                                title = "Choose what to display on the X-axis: metadata variables, gene expression, or cell type proportions",
+                                style = "cursor: help;",
+                                axis_selector("x_axis", "Metadata", ns, choices = c("Metadata", "Gene", "Cell type"))
+                            ),
+                            div(
+                                title = "Choose what to display on the Y-axis: metadata variables, gene expression, or cell type proportions",
+                                style = "cursor: help;",
+                                axis_selector("y_axis", "Metadata", ns, choices = c("Metadata", "Gene", "Cell type"))
+                            ),
+                            div(
+                                title = "Choose how to color points: by metadata variables, gene expression, or cell types",
+                                style = "cursor: help;",
+                                axis_selector("color_by", "Metadata", ns, choices = c("Metadata", "Gene", "Cell type"))
+                            )
                         )
                     )
                 ),
@@ -153,23 +169,31 @@ mod_samples_server <- function(id, dataset, metacell_types, cell_type_colors, ge
 
                 picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "contains", dropupAuto = FALSE)
                 tagList(
-                    shinyWidgets::pickerInput(
-                        ns("samp1"),
-                        label = "Sample A:",
-                        choices = samp_list,
-                        selected = samp_list[1],
-                        width = "70%",
-                        multiple = FALSE,
-                        options = picker_options
+                    div(
+                        title = "Select the first sample for comparison. This will be shown in scatter plots and differential expression analysis.",
+                        style = "cursor: help;",
+                        shinyWidgets::pickerInput(
+                            ns("samp1"),
+                            label = "Sample A:",
+                            choices = samp_list,
+                            selected = samp_list[1],
+                            width = "70%",
+                            multiple = FALSE,
+                            options = picker_options
+                        )
                     ),
-                    shinyWidgets::pickerInput(
-                        ns("samp2"),
-                        label = "Sample B:",
-                        choices = samp_list,
-                        selected = selected2,
-                        width = "70%",
-                        multiple = FALSE,
-                        options = picker_options
+                    div(
+                        title = "Select the second sample for comparison. This will be compared against Sample A in differential expression analysis.",
+                        style = "cursor: help;",
+                        shinyWidgets::pickerInput(
+                            ns("samp2"),
+                            label = "Sample B:",
+                            choices = samp_list,
+                            selected = selected2,
+                            width = "70%",
+                            multiple = FALSE,
+                            options = picker_options
+                        )
                     )
                 )
             })
@@ -235,7 +259,11 @@ mod_samples_server <- function(id, dataset, metacell_types, cell_type_colors, ge
                     shinycssloaders::withSpinner(
                         plotly::plotlyOutput(ns("plot_samp_samp_gene_scatter"))
                     ),
-                    shinyWidgets::prettySwitch(inputId = ns("show_diff_expr_table"), value = FALSE, label = "Show table"),
+                    div(
+                        title = "Toggle display of the differential expression results table showing detailed statistics for each gene",
+                        style = "cursor: help;",
+                        shinyWidgets::prettySwitch(inputId = ns("show_diff_expr_table"), value = FALSE, label = "Show table")
+                    ),
                     DT::DTOutput(ns("diff_expr_table"))
                 )
             })

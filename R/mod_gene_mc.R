@@ -40,7 +40,11 @@ mod_gene_mc_sidebar_ui <- function(id) {
         list(
             uiOutput(ns("cell_type_list")),
             tags$hr(),
-            shinyWidgets::switchInput(ns("show_correlations"), "Show correlations", value = FALSE, onLabel = "Yes", offLabel = "No", onStatus = "success", offStatus = "danger", size = "mini"),
+            div(
+                title = "Show controls for finding genes correlated with the selected genes. This will add correlation analysis options to discover related genes.",
+                style = "cursor: help;",
+                shinyWidgets::switchInput(ns("show_correlations"), "Show correlations", value = FALSE, onLabel = "Yes", offLabel = "No", onStatus = "success", offStatus = "danger", size = "mini")
+            ),
             uiOutput(ns("top_correlated_select_x_axis")),
             uiOutput(ns("top_correlated_select_y_axis")),
             uiOutput(ns("top_correlated_select_color_by")),
@@ -186,7 +190,11 @@ atlas_gene_gene <- function(input, output, session, dataset, metacell_types, cel
                 id = ns("atlas_gene_gene_sidebar"),
                 uiOutput(ns("atlas_gene_gene_xyline_ui")),
                 uiOutput(ns("atlas_gene_gene_fixed_limits_ui")),
-                checkboxInput(ns("use_query_limits"), label = "Use query limits", value = FALSE),
+                div(
+                    title = "Use the same axis limits as the query data for direct comparison between query and atlas. Useful for seeing relative positions.",
+                    style = "cursor: help;",
+                    checkboxInput(ns("use_query_limits"), label = "Use query limits", value = FALSE)
+                ),
                 uiOutput(ns("atlas_gene_gene_point_size_ui")),
                 uiOutput(ns("atlas_gene_gene_stroke_ui"))
             ),
@@ -197,9 +205,21 @@ atlas_gene_gene <- function(input, output, session, dataset, metacell_types, cel
                 id = ns("gene_gene_atlas_accordion"),
                 shinydashboardPlus::accordionItem(
                     title = "Select axes",
-                    axis_selector("atlas_x_axis", "Gene", ns),
-                    axis_selector("atlas_y_axis", "Gene", ns),
-                    axis_selector("atlas_color_by", "Metadata", ns),
+                    div(
+                        title = "Choose what to display on the X-axis for the atlas comparison plot",
+                        style = "cursor: help;",
+                        axis_selector("atlas_x_axis", "Gene", ns)
+                    ),
+                    div(
+                        title = "Choose what to display on the Y-axis for the atlas comparison plot",
+                        style = "cursor: help;",
+                        axis_selector("atlas_y_axis", "Gene", ns)
+                    ),
+                    div(
+                        title = "Choose how to color points in the atlas comparison plot",
+                        style = "cursor: help;",
+                        axis_selector("atlas_color_by", "Metadata", ns)
+                    ),
                 )
             )
         )

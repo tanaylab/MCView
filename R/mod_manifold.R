@@ -32,72 +32,136 @@ mod_manifold_sidebar_ui <- function(id) {
     tagList(
         list(
             uiOutput(ns("top_correlated_select_color_proj")),
-            shinyWidgets::actionGroupButtons(ns("recompute"), labels = "Recompute 2D projection", size = "sm"),
-            shinyWidgets::actionGroupButtons(ns("reset"), labels = "Restore default", size = "sm"),
+            div(
+                title = "Recalculate the 2D projection using current gene selection and parameters. This may take a few minutes depending on dataset size.",
+                style = "cursor: help;",
+                shinyWidgets::actionGroupButtons(ns("recompute"), labels = "Recompute 2D projection", size = "sm")
+            ),
+            div(
+                title = "Reset the projection to the default layout that was computed when the dataset was created",
+                style = "cursor: help;",
+                shinyWidgets::actionGroupButtons(ns("reset"), labels = "Restore default", size = "sm")
+            ),
             tags$hr(),
             uiOutput(ns("add_genes_ui")),
-            selectInput(
-                ns("selected_anchor_genes"),
-                "Anchor Genes",
-                choices = NULL,
-                selected = NULL,
-                multiple = TRUE,
-                size = 15,
-                selectize = FALSE
+            div(
+                title = "List of genes currently used as anchors for the 2D projection. These genes define the main axes of variation. Select genes to highlight or remove them.",
+                style = "cursor: help;",
+                selectInput(
+                    ns("selected_anchor_genes"),
+                    "Anchor Genes",
+                    choices = NULL,
+                    selected = NULL,
+                    multiple = TRUE,
+                    size = 15,
+                    selectize = FALSE
+                )
             ),
-            shinyWidgets::actionGroupButtons(ns("remove_genes"), labels = "Remove selected genes", size = "sm"),
+            div(
+                title = "Remove the selected anchor genes from the projection calculation. You'll need to recompute the projection afterward.",
+                style = "cursor: help;",
+                shinyWidgets::actionGroupButtons(ns("remove_genes"), labels = "Remove selected genes", size = "sm")
+            ),
             uiOutput(ns("add_gene_modules_ui")),
             tags$hr(),
-            downloadButton(ns("download_genes"), "Save genes", align = "center", style = "margin: 5px 5px 5px 15px; "),
-            fileInput(ns("load_genes"),
-                label = NULL,
-                buttonLabel = "Load genes",
-                multiple = FALSE,
-                accept =
-                    c(
-                        "text/csv",
-                        "text/comma-separated-values,text/plain",
-                        "text/tab-separated-values",
-                        ".csv",
-                        ".tsv"
-                    )
+            div(
+                title = "Download the current list of anchor genes as a text file for later use",
+                style = "cursor: help; display: inline-block;",
+                downloadButton(ns("download_genes"), "Save genes", align = "center", style = "margin: 5px 5px 5px 15px; ")
+            ),
+            div(
+                title = "Load a list of anchor genes from a file (CSV/TSV format, one gene per line) to replace the current selection",
+                style = "cursor: help;",
+                fileInput(ns("load_genes"),
+                    label = NULL,
+                    buttonLabel = "Load genes",
+                    multiple = FALSE,
+                    accept =
+                        c(
+                            "text/csv",
+                            "text/comma-separated-values,text/plain",
+                            "text/tab-separated-values",
+                            ".csv",
+                            ".tsv"
+                        )
+                )
             ),
             tags$hr(),
-            numericInput(ns("genes_per_anchor"), "Genes per anchor", value = 30, min = 1, max = 100, step = 1),
-            numericInput(ns("n_neighbors"), "Number of neighbors", value = 10, min = 1, max = 100, step = 1),
-            numericInput(ns("min_dist"), "Minimum distance", value = 0.96, min = 0, max = 1, step = 0.01),
-            numericInput(ns("n_epoch"), "Number of epochs", value = 500, min = 1, max = 10000, step = 1),
-            numericInput(ns("min_log_expr"), "Minimum log expression", value = -14, min = -50, max = 0, step = 0.1),
-            numericInput(ns("random_seed"), "Random seed", value = 60427, min = 1, max = 99999, step = 1),
-            tags$hr(),
-            downloadButton(ns("download_projection"), "Download 2D layout", align = "center", style = "margin: 5px 5px 5px 15px; "),
-            fileInput(ns("load_projection"),
-                label = NULL,
-                buttonLabel = "Load 2D layout",
-                multiple = FALSE,
-                accept =
-                    c(
-                        "text/csv",
-                        "text/comma-separated-values,text/plain",
-                        "text/tab-separated-values",
-                        ".csv",
-                        ".tsv"
-                    )
+            div(
+                title = "Number of genes to include per anchor gene when calculating the projection. Higher values include more genes but may reduce specificity.",
+                style = "cursor: help;",
+                numericInput(ns("genes_per_anchor"), "Genes per anchor", value = 30, min = 1, max = 100, step = 1)
+            ),
+            div(
+                title = "UMAP parameter: number of neighbors to consider for each point. Higher values preserve global structure better, lower values preserve local structure.",
+                style = "cursor: help;",
+                numericInput(ns("n_neighbors"), "Number of neighbors", value = 10, min = 1, max = 100, step = 1)
+            ),
+            div(
+                title = "UMAP parameter: minimum distance between points in the projection. Lower values create tighter clusters, higher values spread points more evenly.",
+                style = "cursor: help;",
+                numericInput(ns("min_dist"), "Minimum distance", value = 0.96, min = 0, max = 1, step = 0.01)
+            ),
+            div(
+                title = "UMAP parameter: number of training iterations. More epochs improve quality but increase computation time.",
+                style = "cursor: help;",
+                numericInput(ns("n_epoch"), "Number of epochs", value = 500, min = 1, max = 10000, step = 1)
+            ),
+            div(
+                title = "Minimum log expression level for genes to be included in projection calculation. Filters out very low-expressed genes.",
+                style = "cursor: help;",
+                numericInput(ns("min_log_expr"), "Minimum log expression", value = -14, min = -50, max = 0, step = 0.1)
+            ),
+            div(
+                title = "Random seed for reproducible results. Use the same seed to get identical projections across runs.",
+                style = "cursor: help;",
+                numericInput(ns("random_seed"), "Random seed", value = 60427, min = 1, max = 99999, step = 1)
             ),
             tags$hr(),
-            downloadButton(ns("download_graph"), "Download graph", align = "center", style = "margin: 5px 5px 5px 15px; "),
-            fileInput(ns("load_graph"),
-                label = NULL,
-                buttonLabel = "Load graph",
-                multiple = FALSE,
-                accept =
-                    c(
-                        "text/csv",
-                        "text/comma-separated-values,text/plain",
-                        "text/tab-separated-values",
-                        ".csv",
-                        ".tsv"
-                    )
+            div(
+                title = "Download the current 2D projection coordinates as a CSV file for backup or sharing",
+                style = "cursor: help; display: inline-block;",
+                downloadButton(ns("download_projection"), "Download 2D layout", align = "center", style = "margin: 5px 5px 5px 15px; ")
+            ),
+            div(
+                title = "Load a previously saved 2D projection layout from a CSV file to replace the current projection",
+                style = "cursor: help;",
+                fileInput(ns("load_projection"),
+                    label = NULL,
+                    buttonLabel = "Load 2D layout",
+                    multiple = FALSE,
+                    accept =
+                        c(
+                            "text/csv",
+                            "text/comma-separated-values,text/plain",
+                            "text/tab-separated-values",
+                            ".csv",
+                            ".tsv"
+                        )
+                )
+            ),
+            tags$hr(),
+            div(
+                title = "Download the current graph structure as a CSV file for backup or analysis",
+                style = "cursor: help; display: inline-block;",
+                downloadButton(ns("download_graph"), "Download graph", align = "center", style = "margin: 5px 5px 5px 15px; ")
+            ),
+            div(
+                title = "Load a previously saved graph structure from a CSV file to replace the current graph",
+                style = "cursor: help;",
+                fileInput(ns("load_graph"),
+                    label = NULL,
+                    buttonLabel = "Load graph",
+                    multiple = FALSE,
+                    accept =
+                        c(
+                            "text/csv",
+                            "text/comma-separated-values,text/plain",
+                            "text/tab-separated-values",
+                            ".csv",
+                            ".tsv"
+                        )
+                )
             )
         )
     )
