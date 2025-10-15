@@ -1,3 +1,7 @@
+# MCView 0.2.52
+
+* Fix: 's' was considered as a new line character in gene list input in the 'Gene correlation' tab.
+
 # MCView 0.2.51
 
 * Added categorical filtering to the Markers tab.

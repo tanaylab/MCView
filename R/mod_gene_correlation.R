@@ -349,7 +349,7 @@ mod_gene_correlation_server <- function(id, dataset, metacell_types, cell_type_c
 
                 # From text area
                 if (!is.null(input$gene_list) && nzchar(input$gene_list)) {
-                    text_genes <- strsplit(input$gene_list, "[\n\r,;\\s]+")[[1]]
+                    text_genes <- strsplit(input$gene_list, "[,;[:space:]]+")[[1]]
                     genes <- c(genes, text_genes)
                 }
 
