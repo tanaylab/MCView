@@ -1,3 +1,8 @@
+# MCView 0.2.53
+
+* Fix: stroke was not working in the atlas tab.
+* Fix: "Gene", "Gene module" and "Metadata" selectors were not working in the atlas tab.
+
 # MCView 0.2.52
 
 * Fix: 's' was considered as a new line character in gene list input in the 'Gene correlation' tab.

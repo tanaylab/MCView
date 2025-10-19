@@ -212,7 +212,7 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
             return(fig)
         }
 
-        plot_2d_metadata <- function(md, metadata = NULL, colors = NULL, color_breaks = NULL) {
+        plot_2d_metadata <- function(md, metadata = NULL, colors = NULL, color_breaks = NULL, stroke = NULL) {
             fig <- mc2d_plot_metadata_ggp(
                 dataset(),
                 md,
@@ -222,7 +222,7 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
                 atlas = atlas,
                 metadata = metadata,
                 colors = colors,
-                stroke = input$stroke,
+                stroke = stroke %||% input$stroke,
                 color_breaks = color_breaks,
                 graph_name = input$graph_name,
                 mc2d = mc2d,
