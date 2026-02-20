@@ -1,5 +1,5 @@
 calc_diff_expr <- function(mat, egc, columns, diff_thresh = 1.5, pval_thresh = 0.01) {
-    df <- egc %>%
+    df <- as.matrix(egc) %>%
         as.data.frame()
 
     df$diff <- log2(df[, columns[1]]) - log2(df[, columns[2]])
@@ -47,12 +47,13 @@ calc_diff_expr <- function(mat, egc, columns, diff_thresh = 1.5, pval_thresh = 0
 #'
 #' @noRd
 calc_mc_mc_gene_df <- function(dataset, metacell1, metacell2, diff_thresh = 1.5, pval_thresh = 0.01) {
-    mat <- get_mc_data(dataset, "mc_mat")
+    # Query only the 2 needed metacells from DAF instead of loading the full matrix
+    daf_obj <- get_dataset_daf(dataset)
+    mat <- as.matrix(daf_query_mc_mat(daf_obj, metacells = c(metacell1, metacell2), cache = TRUE))
 
     egc <- get_metacells_egc(c(metacell1, metacell2), dataset) + mcv_get("egc_epsilon")
 
     df <- calc_diff_expr(mat, egc, c(metacell1, metacell2), diff_thresh, pval_thresh)
-
 
     return(df)
 }
@@ -90,21 +91,58 @@ calc_samp_samp_gene_df <- function(dataset, samp1, samp2, metacell_types, cell_t
 }
 
 calc_obs_exp_mc_df <- function(dataset, metacell, diff_thresh = 1.5, pval_thresh = 0.01, corrected = TRUE) {
-    obs_mat <- get_mc_data(dataset, "mc_mat_corrected")
-    if (is.null(obs_mat)) {
-        obs_mat <- get_mc_data(dataset, "mc_mat")
-    }
-    exp_mat <- get_mc_data(dataset, "projected_mat")
-    obs_egc <- get_metacells_egc(metacell, dataset, corrected = TRUE) + mcv_get("egc_epsilon")
-    exp_egc <- get_metacells_egc(metacell, dataset, projected = TRUE) + mcv_get("egc_epsilon")
+    daf_obj <- get_dataset_daf(dataset)
+    mc_sum_val <- daf_query_mc_sum(daf_obj, metacells = metacell)
 
-    genes <- intersect(rownames(obs_mat), rownames(exp_mat))
-    mat <- as.matrix(data.frame(Observed = obs_mat[genes, 1], Projected = exp_mat[, 1]))
-    egc <- as.matrix(data.frame(Observed = obs_egc[genes, 1], Projected = exp_egc[, 1]))
+    # Query single-metacell UMIs from corrected/projected via DAF instead of loading full matrices
+    obs_umis <- get_single_mc_fraction_umis(daf_obj, metacell, mc_sum_val, "corrected_fraction")
+    if (is.null(obs_umis)) {
+        # Fallback to regular UMIs if no corrected fraction
+        obs_umis <- daf_query_mc_mat(daf_obj, metacells = metacell)
+        obs_umis <- as.numeric(obs_umis[, 1])
+        names(obs_umis) <- dafr::axis_entries(daf_obj, "gene")
+    }
+    exp_umis <- get_single_mc_fraction_umis(daf_obj, metacell, mc_sum_val, "projected_fraction")
+    if (is.null(exp_umis)) {
+        return(NULL)
+    }
+
+    genes <- intersect(names(obs_umis), names(exp_umis))
+    mat <- as.matrix(data.frame(Observed = obs_umis[genes], Projected = exp_umis[genes]))
+    rownames(mat) <- genes
+
+    obs_egc <- obs_umis[genes] / sum(obs_umis[genes])
+    exp_egc <- exp_umis[genes] / sum(exp_umis[genes])
+    egc <- as.matrix(data.frame(
+        Observed = obs_egc + mcv_get("egc_epsilon"),
+        Projected = exp_egc + mcv_get("egc_epsilon")
+    ))
+    rownames(egc) <- genes
 
     df <- calc_diff_expr(mat, egc, c("Observed", "Projected"), diff_thresh, pval_thresh)
 
     return(df)
+}
+
+# Helper: extract a single metacell's UMIs from a fraction matrix via DAF
+get_single_mc_fraction_umis <- function(daf_obj, metacell, mc_sum_val, fraction_name) {
+    if (!dafr::has_matrix(daf_obj, "metacell", "gene", fraction_name)) {
+        return(NULL)
+    }
+    gene_names <- dafr::axis_entries(daf_obj, "gene")
+    frac_vec <- tryCatch(
+        {
+            query <- glue::glue("/ gene / metacell = {escape_daf_value(metacell)} : {fraction_name}")
+            daf_obj[query]
+        },
+        error = function(e) NULL
+    )
+    if (is.null(frac_vec)) {
+        return(NULL)
+    }
+    umis <- as.numeric(frac_vec) * as.numeric(mc_sum_val)
+    names(umis) <- gene_names
+    umis
 }
 
 calc_obs_exp_type_df <- function(dataset, cell_type, metacell_types, diff_thresh = 1.5, pval_thresh = 0.01) {

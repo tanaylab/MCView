@@ -4,12 +4,12 @@
 \alias{dataset_rm}
 \title{Remove a dataset from a project}
 \usage{
-dataset_rm(project, dataset)
+dataset_rm(dataset)
 }
 \arguments{
-\item{project}{path to the project directory}
-
 \item{dataset}{name of the dataset to remove}
+
+\item{project}{path to the project directory}
 }
 \description{
 Remove a dataset from a project

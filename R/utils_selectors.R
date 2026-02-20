@@ -6,7 +6,7 @@ cell_type_selector <- function(dataset, ns, id = "selected_cell_types", label = 
             colors <- cell_type_colors()
         }
 
-        if (!is.null(metacell_types)) {
+        if (!is.null(metacell_types) && !is.null(colors)) {
             colors <- colors %>% filter(cell_type %in% metacell_types()$cell_type)
         }
 
@@ -69,7 +69,10 @@ gene_modules_selector <- function(dataset, gene_modules, ns, id, label = "Gene m
 metacell_selector <- function(dataset, ns, id, label, selected = NULL, atlas = FALSE, ...) {
     renderUI({
         config <- mcv_get("config")
-        metacell_names <- colnames(get_mc_data(dataset(), "mc_mat", atlas = atlas))
+        # Use DAF axis entries instead of loading full matrix for column names
+        daf_obj <- get_daf_for_query(dataset(), atlas)
+        req(daf_obj)
+        metacell_names <- dafr::axis_entries(daf_obj, "metacell")
         shinyWidgets::pickerInput(ns(id), label,
             choices = metacell_names,
             selected = selected %||% config$selected_mc1 %||% metacell_names[1],
@@ -125,7 +128,7 @@ metadata_selector <- function(dataset, ns, id = "selected_md", label = "Metadata
 
 
 top_correlated_selector_multiple_genes <- function(input, output, session, dataset, ns, id, label, gene, action_id, action_label = "Add") {
-    req(has_gg_mc_top_cor(project, dataset()))
+    req(has_gg_mc_top_cor(dataset()))
     tagList(
         selectInput(
             ns(id),
@@ -165,7 +168,7 @@ top_correlated_selector <- function(gene_id, id, type_id, input, output, session
             }
             req(input$show_correlations)
         }
-        req(has_gg_mc_top_cor(project, dataset()))
+        req(has_gg_mc_top_cor(dataset()))
         req(input[[type_id]] == "Gene" || input[[type_id]] == "Gene module" || input[[type_id]] == "Metadata")
         req(input[[gene_id]])
 

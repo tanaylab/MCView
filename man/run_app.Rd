@@ -5,30 +5,37 @@
 \title{Run the MCView Application}
 \usage{
 run_app(
-  project,
-  dataset_name = "daf_data",
+  daf,
+  name = "data",
+  atlas = NULL,
   config_file = NULL,
   port = NULL,
   host = NULL,
   launch.browser = FALSE,
   profile = FALSE,
+  cache_in_daf = NULL,
   ...
 )
 }
 \arguments{
-\item{project}{Either a project path (existing behavior) or a DAF object}
+\item{daf}{A DAF object, a named list of DAF objects, or a path to a DAF directory/H5 file}
 
-\item{dataset_name}{Name for the dataset when using DAF object (default: "daf_data")}
+\item{name}{Name for the dataset when using a single DAF object (default: "data").
+Ignored when `daf` is a named list.}
 
-\item{config_file}{Optional YAML configuration file (for DAF mode)}
+\item{atlas}{Optional atlas DAF object for projection comparison}
 
-\item{port}{app port}
+\item{config_file}{Optional path to YAML configuration file}
 
-\item{host}{app host}
+\item{port}{App port}
 
-\item{launch.browser}{launch web browser after app start}
+\item{host}{App host}
 
-\item{profile}{enable profiling for debugging}
+\item{launch.browser}{Launch web browser after app start}
+
+\item{profile}{Enable profiling for debugging}
+
+\item{cache_in_daf}{Whether to store runtime cache in the DAF object}
 
 \item{...}{
   Arguments passed on to \code{\link[shiny:shinyApp]{shiny::shinyApp}}
@@ -60,12 +67,35 @@ for more information on bookmarking your app.}
   }}
 }
 \description{
-Load project cache and run the MCView application.
+Run the MCView application with DAF data.
 }
 \examples{
 \dontrun{
-MCView::run_app("PBMC")
-MCView::run_app(project = "PBMC", port = 5555, host = "127.0.0.1")
+# Single DAF object
+library(dafr)
+daf_obj <- dafr::files_daf("path/to/daf")
+run_app(daf_obj)
+run_app(daf_obj, name = "my_experiment")
+
+# Multiple DAF objects
+embryo_daf <- dafr::files_daf("path/to/embryo")
+adult_daf <- dafr::files_daf("path/to/adult")
+run_app(list(
+    embryo = embryo_daf,
+    adult = adult_daf
+))
+
+# With atlas for projection
+query_daf <- dafr::files_daf("path/to/query")
+atlas_daf <- dafr::files_daf("path/to/atlas")
+run_app(query_daf, atlas = atlas_daf)
+
+# From path (auto-loads DAF)
+run_app("path/to/daf")
+run_app("path/to/data.h5")
+
+# With external YAML configuration
+run_app(daf_obj, config_file = "config.yaml")
 }
 
 }

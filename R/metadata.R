@@ -1,227 +1,6 @@
-#' Update metadata for a dataset
-#'
-#'
-#' @param overwrite overwrite all existing metadata. If \code{FALSE} - would override only existing metadata fields.
-#'
-#'
-#' @inheritParams import_dataset
-#'
-#' @export
-update_metadata <- function(project,
-                            dataset,
-                            metadata = NULL,
-                            metadata_fields = NULL,
-                            anndata_file = NULL,
-                            overwrite = FALSE) {
-    cache_dir <- project_cache_dir(project)
-
-    if (!is.null(metadata_fields)) {
-        if (is.null(anndata_file)) {
-            cli_abort("You have to provide the {.code anndata_file} parameter with {.code metadata_fields}")
-        } else {
-            if (!fs::file_exists(anndata_file)) {
-                cli_abort("{anndata_file} doesn't exist. Maybe there is a typo?")
-            }
-
-            cli_alert_info("Reading {.file {anndata_file}}")
-            adata <- anndata::read_h5ad(anndata_file)
-        }
-    } else {
-        adata <- NULL
-    }
-
-    cli_alert_info("Processing metadata")
-
-    init_config(project = project)
-    load_all_data(cache_dir = cache_dir)
-
-    metacells <- get_metacell_ids(project, dataset)
-    metadata <- load_metadata(metadata, metadata_fields, metacells, adata)
-
-    prev_metadata_file <- fs::path(cache_dir, dataset, "metadata.tsv")
-    if (fs::file_exists(prev_metadata_file) && !overwrite) {
-        cli_alert_info("Merging with previous metadata")
-        prev_metadata <- fread(prev_metadata_file) %>%
-            mutate(metacell = as.character(metacell)) %>%
-            as_tibble()
-        metadata <- prev_metadata %>%
-            select(-any_of(colnames(metadata)[-1])) %>%
-            left_join(metadata, by = "metacell")
-    }
-
-
-    serialize_shiny_data(
-        metadata %>% select(metacell, everything()),
-        "metadata",
-        dataset = dataset,
-        cache_dir = cache_dir,
-        flat = TRUE
-    )
-
-    cli_alert_success("Successfully updated metadata of dataset {.field {dataset}} at {.path {project}} project")
-}
-
-#' Update metadata colors for a dataset
-#'
-#'
-#' @param overwrite overwrite all existing colors. If \code{FALSE} - would override only
-#' the colors of existing metadata fields.
-#'
-#'
-#' @inheritParams import_dataset
-#'
-#' @export
-update_metadata_colors <- function(project,
-                                   dataset,
-                                   metadata_colors,
-                                   overwrite = FALSE) {
-    cache_dir <- project_cache_dir(project)
-    prev_metadata_file <- fs::path(cache_dir, dataset, "metadata.tsv")
-    if (!fs::file_exists(prev_metadata_file)) {
-        cli_abort("No metadata found for project {.field {project}}. Please call {.code update_metadata} to add it and then run {.code update_metadata_colors} again.")
-    }
-    metadata <- tgutil::fread(prev_metadata_file) %>% as_tibble()
-
-    cli_alert_info("Processing metadata colors")
-    if (is.character(metadata_colors)) {
-        metadata_colors <- yaml::read_yaml(metadata_colors) %>% as_tibble()
-    }
-
-    new_metadata_colors <- parse_metadata_colors(metadata_colors, metadata)
-
-    prev_colors_file <- fs::path(cache_dir, dataset, "metadata_colors.qs")
-    if (fs::file_exists(prev_colors_file) && !overwrite) {
-        metadata_colors <- qs::qread(prev_colors_file)
-        for (f in names(metadata_colors)) {
-            metadata_colors[[f]] <- NULL
-        }
-        metadata_colors <- c(metadata_colors, new_metadata_colors)
-    } else {
-        metadata_colors <- new_metadata_colors
-    }
-
-    serialize_shiny_data(metadata_colors, "metadata_colors", dataset = dataset, cache_dir = cache_dir)
-}
-
-#' Import cell metadata to an MCView dataset
-#'
-#'
-#' @param project path to the project
-#' @param dataset name for the dataset, e.g. "PBMC". The name of the dataset can only contain alphanumeric characters, dots, dashes and underscores.
-#' @param cell_metadata data frame with a column named "cell_id" with
-#' the cell id and other metadata columns, or a name of a delimited file which
-#' contains such data frame. For activating the "Samples" tab, the data frame should have an additional
-#' column named "samp_id" with a sample identifier per cell (e.g., batch id, patient etc.).
-#' Optionally, a column named "metacell" can be added to the data frame, which will be used instead
-#' of the \code{cell_to_metacell} parameter.
-#' @param cell_to_metacell data frame with a column named "cell_id" with cell id and
-#' another column named "metacell" with the metacell the cell is part of, or a
-#' name of a delimited file which contains such data frame. If NULL, the metacell
-#' will be inferred from the 'metacell' column in \code{cell_metadata}.
-#' @param summarise_md summarise cell metadata to the metacell level.
-#' @param add_samples_tab add the 'Samples' tab to the config file if it doesn't exist
-#'
-#' @description
-#' Import metadata which is at the cell level to MCView. The metadata can be summarised to the metacell level
-#' by setting \code{summarise_md} to TRUE, in which case it could be shown at the "Genes" and "Markers" tabs.
-#' In order to view data at the samples level, an additional sample identifier should be given as a column named
-#' "samp_id" in the \code{cell_metadata} data frame.
-#'
-#' @inheritDotParams cell_metadata_to_metacell
-#'
-#' @export
-import_cell_metadata <- function(project, dataset, cell_metadata, cell_to_metacell = NULL, summarise_md = FALSE, add_samples_tab = TRUE, ...) {
-    if (is.character(cell_metadata)) {
-        cell_metadata <- tgutil::fread(cell_metadata) %>% as_tibble()
-    }
-
-    if (colnames(cell_metadata)[1] != "cell_id") {
-        cli_abort("First column of {.code cell_metadata} is not named {.field cell_id} (it is named {.field {colnames(cell_metadata)[1]}})")
-    }
-
-    if (is.character(cell_to_metacell)) {
-        cell_to_metacell <- tgutil::fread(cell_to_metacell) %>% as_tibble()
-    }
-
-    if (is.null(cell_to_metacell)) {
-        if (has_name(cell_metadata, "metacell")) {
-            cell_to_metacell <- cell_metadata %>% select(cell_id, metacell)
-        } else {
-            cli_abort("No {.code cell_to_metacell} was given and no {.field metacell} column was found in {.code cell_metadata}")
-        }
-    }
-
-    if (colnames(cell_to_metacell)[2] != "metacell") {
-        cli_abort("Second column of {.code cell_to_metacell} is not named {.field metacell} (it is named {.field {colnames(cell_to_metacell)[2]}})")
-    }
-
-    cache_dir <- project_cache_dir(project)
-    metacells <- get_metacell_ids(project, dataset)
-    non_existing_metacells <- unique(cell_to_metacell$metacell[!(cell_to_metacell$metacell %in% metacells)])
-    if (length(non_existing_metacells) > 0) {
-        mcs <- paste(non_existing_metacells, collapse = ",")
-        cli_alert_warning("The following metacells from {.field cell_to_metacell} do not exist in the dataset: {.file {mcs}}")
-    }
-
-    # make sure there are no duplicated cell ids
-    if (anyDuplicated(cell_metadata$cell_id) > 0) {
-        cli_abort("There are duplicated cell ids in {.field cell_metadata}. Please make sure each cell has a unique id.")
-    }
-
-    cell_metadata <- cell_metadata %>%
-        select(-any_of("metacell")) %>%
-        left_join(cell_to_metacell, by = "cell_id")
-
-    cell_metadata <- cell_metadata %>%
-        filter(metacell %in% metacells)
-
-    if (nrow(cell_metadata) == 0) {
-        cli_abort("No cells left after filtering non-existing metacells. Please check your {.field cell_to_metacell} data frame.")
-    }
-
-    if (has_name(cell_metadata, "samp_id")) {
-        if (has_name(cell_metadata, "cell_num")) {
-            cli_alert_warning("{.field cell_metadata} already contains a column named {.field cell_num}. It will be overwritten by number of cells per sample.}")
-        }
-        cell_metadata <- cell_metadata %>%
-            group_by(samp_id) %>%
-            mutate(cell_num = n()) %>%
-            ungroup()
-    }
-
-    serialize_shiny_data(cell_metadata, "cell_metadata", dataset = dataset, cache_dir = cache_dir, flat = TRUE)
-
-    if (summarise_md) {
-        md <- cell_metadata %>%
-            select(-any_of(colnames(cell_to_metacell)[-1])) %>%
-            select(cell_id, everything())
-
-        md <- cell_metadata_to_metacell(md, cell_to_metacell, ...)
-        update_metadata(project, dataset, md, overwrite = FALSE)
-    } else {
-        if (has_name(cell_metadata, "samp_id")) {
-            md <- cell_metadata_to_metacell(cell_metadata %>% select(cell_id, samp_id) %>% mutate(samp_id = forcats::fct_na_value_to_level(samp_id, "(Missing)")), cell_to_metacell, ...)
-            update_metadata(project, dataset, md, overwrite = FALSE)
-        }
-    }
-
-    if (add_samples_tab && has_name(cell_metadata, "samp_id")) {
-        add_tab("Samples", project)
-    }
-
-    cli_alert_success("Imported cell metadata")
-}
-
-add_tab <- function(tab, project) {
-    config_file <- project_config_file(project)
-    config <- yaml::read_yaml(config_file)
-    tabs <- config$tabs
-    if (!(tab %in% tabs)) {
-        config$tabs <- c(tabs, tab)
-    }
-    yaml::write_yaml(config, config_file)
-    cli_alert("Added the {.field {tab}} tab to the config file. To change the tab order or remove it - edit the {.field tabs} section at: {.file {config_file}}")
-}
+# ==============================================================================
+# Metadata Conversion Utilities
+# ==============================================================================
 
 #' Convert cell metadata to metacell metadata
 #'
@@ -239,7 +18,6 @@ add_tab <- function(tab, project) {
 #' @param anndata_file path to \code{h5ad} file which contains the output of metacell2 pipeline (metacells python package).
 #' @param metadata_fields names of fields in the anndata \code{object$obs} which contains metadata for each cell.
 #' @param rm_outliers do not calculate statistics for cells that are marked as outliers (\code{outiler=TRUE} in \code{object$obs}) (only relevant when running \code{cell_metadata_to_metacell_from_h5ad})
-#' @param scdb,matrix,mc scdb, matrix and mc objects from metacell1. See \code{import_dataset_metacell1} for more information.
 #'
 #'
 #' @return A data frame with a column named "metacell" and
@@ -255,8 +33,6 @@ add_tab <- function(tab, project) {
 #'
 #' \code{cell_metadata_to_metacell} converts cell metadata to metacell metadata from data frames. \cr
 #' \code{cell_metadata_to_metacell_from_h5ad} extracts metadata fields and cell_to_metacell from cells h5ad file and
-#' then runs \code{cell_metadata_to_metacell}. \cr
-#' \code{cell_metadata_to_metacell_from_metacell1} extracts metadata fields and cell_to_metacell from metacell1 scdb and
 #' then runs \code{cell_metadata_to_metacell}.
 #'
 #' @examples
@@ -385,32 +161,6 @@ cell_metadata_to_metacell <- function(cell_metadata, cell_to_metacell, func = me
 #' @describeIn cell_metadata_to_metacell
 #'
 #' @export
-cell_metadata_to_metacell_from_metacell1 <- function(scdb, matrix, mc, metadata_fields, func = mean, categorical = c()) {
-    library(metacell)
-    init_temp_scdb(scdb, matrix, mc, mc2d = mc, dataset = "temp")
-    mc <- scdb_mc(mc)
-    mat <- scdb_mat(matrix)
-
-    purrr::walk(metadata_fields, ~ {
-        if (!has_name(mat@cell_metadata, .x)) {
-            cli_abort("The field {.field {.x}} doesn't exist in {.field mat@cell_metadata}")
-        }
-    })
-
-    cell_metadata <- mat@cell_metadata[, metadata_fields, drop = FALSE] %>%
-        as.data.frame() %>%
-        rownames_to_column("cell_id") %>%
-        as_tibble()
-
-    cell_to_metacell <- enframe(mc@mc, "cell_id", "metacell") %>% as_tibble()
-
-    cell_metadata_to_metacell(cell_metadata = cell_metadata, cell_to_metacell = cell_to_metacell, func = func, categorical = categorical)
-}
-
-#'
-#' @describeIn cell_metadata_to_metacell
-#'
-#' @export
 cell_metadata_to_metacell_from_h5ad <- function(anndata_file, metadata_fields, func = mean, categorical = c(), rm_outliers = TRUE) {
     if (!fs::file_exists(anndata_file)) {
         cli_abort("{anndata_file} doesn't exist. Maybe there is a typo?")
@@ -434,7 +184,6 @@ cell_metadata_to_metacell_from_h5ad <- function(anndata_file, metadata_fields, f
             }
         })
     }
-
 
 
     df <- adata$obs %>%

@@ -120,15 +120,13 @@ render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, global
 
         df <- mc_mc_gene_scatter_df()
 
-        if (!is.null(input$hide_lateral) && input$hide_lateral) {
-            df <- df %>%
-                filter(!(gene %in% get_mc_data(dataset(), "lateral_genes")))
-        }
-
-        if (!is.null(input$hide_noisy) && input$hide_noisy) {
-            df <- df %>%
-                filter(!(gene %in% get_mc_data(dataset(), "noisy_genes")))
-        }
+        df <- filter_genes_by_flags(
+            df,
+            lateral_genes = get_mc_data(dataset(), "lateral_genes"),
+            noisy_genes = get_mc_data(dataset(), "noisy_genes"),
+            include_lateral = is.null(input$hide_lateral) || !input$hide_lateral,
+            include_noisy = is.null(input$hide_noisy) || !input$hide_noisy
+        )
 
         if (!is.null(input$show_only_fitted) && input$show_only_fitted) {
             req(metacell_types)
@@ -190,21 +188,19 @@ render_mc_mc_gene_diff_table <- function(input, output, session, ns, dataset, mc
             if (!is.null(input$mode) && input$mode == "MCs") {
                 req(input$metacell1)
                 req(input$metacell2)
-                req(input$metacell1 %in% colnames(get_mc_data(dataset(), "mc_mat")))
-                req(input$metacell2 %in% colnames(get_mc_data(dataset(), "mc_mat")))
+                req(input$metacell1 %in% get_metacell_ids(dataset()))
+                req(input$metacell2 %in% get_metacell_ids(dataset()))
             }
 
             df <- mc_mc_gene_scatter_df()
 
-            if (!is.null(input$hide_lateral) && input$hide_lateral) {
-                df <- df %>%
-                    filter(!(gene %in% get_mc_data(dataset(), "lateral_genes")))
-            }
-
-            if (!is.null(input$hide_noisy) && input$hide_noisy) {
-                df <- df %>%
-                    filter(!(gene %in% get_mc_data(dataset(), "noisy_genes")))
-            }
+            df <- filter_genes_by_flags(
+                df,
+                lateral_genes = get_mc_data(dataset(), "lateral_genes"),
+                noisy_genes = get_mc_data(dataset(), "noisy_genes"),
+                include_lateral = is.null(input$hide_lateral) || !input$hide_lateral,
+                include_noisy = is.null(input$hide_noisy) || !input$hide_noisy
+            )
 
             if (input$show_diff_expr_table) {
                 DT::datatable(

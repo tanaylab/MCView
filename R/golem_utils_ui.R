@@ -206,7 +206,6 @@ with_red_star <- function(text) {
 }
 
 
-
 #' Repeat tags$br
 #'
 #' @param times the number of br to return

@@ -5,12 +5,11 @@
 #' @import shiny
 #' @noRd
 app_server <- function(input, output, session) {
-    project <- mcv_get("project")
-    if (length(dataset_ls(project)) > 1) {
+    if (length(dataset_ls()) > 1) {
         dataset <- reactive(input$dataset)
     } else {
         dataset <- function() {
-            dataset_ls(project)[1]
+            dataset_ls()[1]
         }
     }
 
@@ -65,14 +64,13 @@ app_server <- function(input, output, session) {
         if (!has_samples(dataset())) {
             available_tabs <- available_tabs[available_tabs != "Samples"]
         }
-        if (is.null(get_mc_data(dataset(), "inner_fold_mat"))) {
+        # Check DAF matrix existence instead of loading full matrices
+        daf_obj <- get_dataset_daf(dataset())
+        if (is.null(daf_obj) || !dafr::has_matrix(daf_obj, "gene", "metacell", "inner_fold")) {
             available_tabs <- available_tabs[available_tabs != "Inner-fold"]
         }
-        if (is.null(get_mc_data(dataset(), "inner_stdev_mat"))) {
+        if (is.null(daf_obj) || !dafr::has_matrix(daf_obj, "gene", "metacell", "inner_stdev_log")) {
             available_tabs <- available_tabs[available_tabs != "Stdev-fold"]
-        }
-        if (is.null(get_mc_data(dataset(), "deviant_fold_mat"))) {
-            available_tabs <- available_tabs[available_tabs != "Outliers"]
         }
         if (is.null(get_mc_data(dataset(), "type_flow"))) {
             available_tabs <- available_tabs[available_tabs != "Flow"]
@@ -100,12 +98,17 @@ app_server <- function(input, output, session) {
                 mutate(gene = as.character(gene))
         }
 
-        # remove metacell color column if exists
-        initial_metacell_types$mc_col <- NULL
+        # Only proceed if we have valid data
+        if (!is.null(initial_metacell_types) && !is.null(initial_cell_type_colors)) {
+            # remove metacell color column if exists
+            if ("mc_col" %in% colnames(initial_metacell_types)) {
+                initial_metacell_types$mc_col <- NULL
+            }
 
-        # add cell type color from initial cell type annotation
-        initial_metacell_types <- initial_metacell_types %>%
-            left_join(initial_cell_type_colors %>% select(cell_type, mc_col = color), by = "cell_type")
+            # add cell type color from initial cell type annotation
+            initial_metacell_types <- initial_metacell_types %>%
+                left_join(initial_cell_type_colors %>% select(cell_type, mc_col = color), by = "cell_type")
+        }
 
         metacell_types(initial_metacell_types)
         cell_type_colors(initial_cell_type_colors)
@@ -138,17 +141,6 @@ app_server <- function(input, output, session) {
     download_data_modal_reactives(input, output, session, globals)
 
     if (!is.null(app_config("profile")) && app_config("profile")) {
-        if (!requireNamespace("profvis", quietly = TRUE)) {
-            stop("Please install profvis R package in order to use profiling")
-        }
-        callModule(profvis::profvis_server, "profiler")
-        # Rprof(strftime(Sys.time(), "%Y-%m-%d-%H-%M-%S.Rprof"),
-        #     interval = 0.01, line.profiling = TRUE,
-        #     gc.profiling = FALSE, memory.profiling = FALSE
-        # )
-
-        # onStop(function() {
-        #     Rprof(NULL)
-        # })
+        # Profiling UI disabled; keep profile flag for timing logs only.
     }
 }

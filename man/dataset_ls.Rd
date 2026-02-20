@@ -2,22 +2,19 @@
 % Please edit documentation in R/import.R
 \name{dataset_ls}
 \alias{dataset_ls}
-\title{List datasets in a project}
+\title{List available datasets}
 \usage{
-dataset_ls(project)
-}
-\arguments{
-\item{project}{path to the project directory}
+dataset_ls()
 }
 \value{
-names of the existing datasets in the project
+Character vector of dataset names
 }
 \description{
-List datasets in a project
+List available datasets
 }
 \examples{
 \dontrun{
-dataset_ls("PBMC")
+dataset_ls()
 }
 
 }

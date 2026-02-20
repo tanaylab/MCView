@@ -157,7 +157,9 @@ initial_scatters_point_size <- function(dataset, screen_width = NULL, screen_hei
     } else if (!is.null(config$scatters_point_size)) {
         return(config$scatters_point_size)
     }
-    n_metacells <- length(get_mc_data(dataset, "mc_sum", atlas = atlas))
+    # Use DAF axis length instead of loading full mc_sum vector
+    daf_obj <- get_daf_for_query(dataset, atlas)
+    n_metacells <- if (!is.null(daf_obj)) dafr::axis_length(daf_obj, "metacell") else 100
     screen_width <- screen_width %||% 1920
     screen_height <- screen_height %||% 1080
     desired_area <- screen_width * screen_height / (n_metacells * 2000) * weight

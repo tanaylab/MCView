@@ -1,51 +1,108 @@
 #' Run the MCView Application
 #'
-#' Load project cache and run the MCView application.
+#' Run the MCView application with DAF data.
 #'
-#'
-#' @param project Either a project path (existing behavior) or a DAF object
-#' @param dataset_name Name for the dataset when using DAF object (default: "daf_data")
-#' @param config_file Optional YAML configuration file (for DAF mode)
-#' @param port app port
-#' @param host app host
-#' @param launch.browser launch web browser after app start
-#' @param profile enable profiling for debugging
-#' @param ... A series of options to be used inside the app.
+#' @param daf A DAF object, a named list of DAF objects, or a path to a DAF directory/H5 file
+#' @param name Name for the dataset when using a single DAF object (default: "data").
+#'   Ignored when `daf` is a named list.
+#' @param atlas Optional atlas DAF object for projection comparison
+#' @param config_file Optional path to YAML configuration file
+#' @param port App port
+#' @param host App host
+#' @param launch.browser Launch web browser after app start
+#' @param profile Enable profiling for debugging
+#' @param cache_in_daf Whether to store runtime cache in the DAF object
+#' @param ... Additional options passed to shinyApp
 #'
 #' @examples
 #' \dontrun{
-#' MCView::run_app("PBMC")
-#' MCView::run_app(project = "PBMC", port = 5555, host = "127.0.0.1")
+#' # Single DAF object
+#' library(dafr)
+#' daf_obj <- dafr::files_daf("path/to/daf")
+#' run_app(daf_obj)
+#' run_app(daf_obj, name = "my_experiment")
+#'
+#' # Multiple DAF objects
+#' embryo_daf <- dafr::files_daf("path/to/embryo")
+#' adult_daf <- dafr::files_daf("path/to/adult")
+#' run_app(list(
+#'     embryo = embryo_daf,
+#'     adult = adult_daf
+#' ))
+#'
+#' # With atlas for projection
+#' query_daf <- dafr::files_daf("path/to/query")
+#' atlas_daf <- dafr::files_daf("path/to/atlas")
+#' run_app(query_daf, atlas = atlas_daf)
+#'
+#' # From path (auto-loads DAF)
+#' run_app("path/to/daf")
+#' run_app("path/to/data.h5")
+#'
+#' # With external YAML configuration
+#' run_app(daf_obj, config_file = "config.yaml")
 #' }
 #'
 #' @inheritDotParams shiny::shinyApp
 #'
 #' @export
-run_app <- function(project,
-                    dataset_name = "daf_data",
+run_app <- function(daf,
+                    name = "data",
+                    atlas = NULL,
                     config_file = NULL,
                     port = NULL,
                     host = NULL,
                     launch.browser = FALSE,
                     profile = FALSE,
+                    cache_in_daf = NULL,
                     ...) {
+    timed <- function(label, expr) {
+        if (!isTRUE(profile)) {
+            return(force(expr))
+        }
+        start <- proc.time()[["elapsed"]]
+        on.exit(
+            {
+                elapsed <- proc.time()[["elapsed"]] - start
+                cli::cli_alert_info("Timing {label}: {round(elapsed, digits = 2)}s")
+            },
+            add = TRUE
+        )
+        force(expr)
+    }
+
     # Initialize environment
     init_mcview_env()
 
-    if (is.character(project)) {
-        set_backend("project", path = project)
-        mcv_set("project", init_project_dir(project))
-        verify_version(mcv_get("project"))
-        init_config(project = mcv_get("project"), profile = profile)
-        load_all_data(cache_dir = project_cache_dir(mcv_get("project")))
-    } else if (inherits(project, "Daf")) {
-        stop("DAF mode not yet implemented")
-    } else {
-        cli_abort("project must be either a project path or a DAF object")
+    # Handle path input - convert to DAF object
+    if (is.character(daf)) {
+        daf <- load_daf_from_path(daf)
     }
 
-    init_defs()
-    config_shiny_cache()
+    # Initialize based on input type
+    if (inherits(daf, "Daf")) {
+        # Single DAF object
+        timed("init_single_daf_mode", init_single_daf_mode(daf, name, config_file, profile, cache_in_daf = cache_in_daf))
+    } else if (is.list(daf) && length(daf) > 0 && all(sapply(daf, function(x) inherits(x, "Daf")))) {
+        # Multiple DAF objects (must be named)
+        if (is.null(names(daf)) || any(names(daf) == "")) {
+            cli_abort("When providing multiple DAF objects, the list must be named")
+        }
+        timed("init_multi_daf_mode", init_multi_daf_mode(daf, config_file, profile, cache_in_daf = cache_in_daf))
+    } else {
+        cli_abort("daf must be a DAF object, a named list of DAF objects, or a path to DAF data")
+    }
+
+    # Initialize atlas if provided
+    if (!is.null(atlas)) {
+        if (is.character(atlas)) {
+            atlas <- load_daf_from_path(atlas)
+        }
+        init_atlas(atlas)
+    }
+
+    timed("init_defs", init_defs())
+    timed("config_shiny_cache", config_shiny_cache())
     future::plan(future::multicore)
 
     with_golem_options(
@@ -58,22 +115,47 @@ run_app <- function(project,
     )
 }
 
-config_shiny_cache <- function() {
-    config <- mcv_get("config")
-    project <- mcv_get("project")
-    if (!is.null(config$shiny_cache_max_size)) {
-        max_size <- config$shiny_cache_max_size
-    } else {
-        max_size <- 200e6
+#' Load DAF from file path
+#'
+#' @param path Path to DAF directory or H5 file
+#' @return DAF object
+#' @noRd
+load_daf_from_path <- function(path) {
+    if (!file.exists(path) && !dir.exists(path)) {
+        cli_abort("Path does not exist: {.path {path}}")
     }
 
-    if (!is.null(config$shiny_cache_dir)) {
-        if (is.logical(config$shiny_cache_dir) && config$shiny_cache_dir) {
-            shiny_cache_dir <- tempfile(paste0("shiny_cache_", basename(project)), tmpdir = tempdir())
-        } else {
-            shiny_cache_dir <- tempfile(paste0("shiny_cache_", basename(project)), tmpdir = config$shiny_cache_dir)
-        }
+    # Check if it's an H5 file
+    if (grepl("\\.h5$", path, ignore.case = TRUE)) {
+        cli_alert_info("Loading DAF from H5 file: {.path {path}}")
+        return(dafr::h5df(path, mode = "r"))
+    }
 
+    # Check if it's a directory (files_daf)
+    if (dir.exists(path)) {
+        # Check for daf.json marker file
+        if (file.exists(file.path(path, "daf.json"))) {
+            cli_alert_info("Loading DAF from directory: {.path {path}}")
+            return(dafr::files_daf(path, mode = "r"))
+        }
+        cli_abort("Directory {.path {path}} does not appear to be a valid DAF (missing daf.json)")
+    }
+
+    cli_abort("Could not determine DAF format for: {.path {path}}")
+}
+
+config_shiny_cache <- function() {
+    config <- mcv_get("config")
+    max_size <- config$shiny_cache_max_size %||% 200e6
+
+    if (!is.null(config$shiny_cache_dir)) {
+        # Generate cache dir name based on config title or random
+        cache_name <- gsub("[^a-zA-Z0-9]", "_", config$title %||% "mcview")
+        if (is.logical(config$shiny_cache_dir) && config$shiny_cache_dir) {
+            shiny_cache_dir <- tempfile(paste0("shiny_cache_", cache_name), tmpdir = tempdir())
+        } else {
+            shiny_cache_dir <- tempfile(paste0("shiny_cache_", cache_name), tmpdir = config$shiny_cache_dir)
+        }
         shinyOptions(cache = cachem::cache_disk(shiny_cache_dir, max_size = max_size))
     } else {
         shinyOptions(cache = cachem::cache_mem(max_size = max_size))

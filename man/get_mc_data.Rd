@@ -2,10 +2,20 @@
 % Please edit documentation in R/utils_cache.R
 \name{get_mc_data}
 \alias{get_mc_data}
-\title{Enhanced get_mc_data with backend dispatch}
+\title{Get metacell data from DAF}
 \usage{
 get_mc_data(dataset, var_name, atlas = FALSE)
 }
+\arguments{
+\item{dataset}{Dataset name}
+
+\item{var_name}{Variable name (e.g., "mc_mat", "mc_sum", "mc2d")}
+
+\item{atlas}{Whether to get atlas data}
+}
+\value{
+Data in MCView format, or NULL if not available
+}
 \description{
-Enhanced get_mc_data with backend dispatch
+Get metacell data from DAF
 }

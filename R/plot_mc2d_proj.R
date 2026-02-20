@@ -254,7 +254,8 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
             mc_proj_w <- mc_proj_w %>%
                 select(metacell = atlas, Weight = weight) %>%
                 mutate(query = "query")
-            metadata <- tibble(metacell = colnames(get_mc_data(dataset(), "mc_mat", atlas = TRUE))) %>%
+            atlas_daf <- get_atlas_daf()
+            metadata <- tibble(metacell = dafr::axis_entries(atlas_daf, "metacell")) %>%
                 left_join(mc_proj_w, by = "metacell") %>%
                 tidyr::replace_na(replace = list(Weight = 0, query = "other"))
 
@@ -446,14 +447,15 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
 }
 
 
-
 initial_proj_point_size <- function(dataset, screen_width = NULL, screen_height = NULL, weight = 1, atlas = FALSE) {
     if (!is.null(app_config("datasets")[[dataset]]$projection_point_size)) {
         return(app_config("datasets")[[dataset]]$projection_point_size * weight)
     } else if (!is.null(app_config("projection_point_size"))) {
         return(app_config("projection_point_size") * weight)
     }
-    n_metacells <- length(get_mc_data(dataset, "mc_sum", atlas = atlas))
+    # Use DAF axis length instead of loading full mc_sum vector
+    daf_obj <- get_daf_for_query(dataset, atlas)
+    n_metacells <- if (!is.null(daf_obj)) dafr::axis_length(daf_obj, "metacell") else 100
     screen_width <- screen_width %||% 1920
     screen_height <- screen_height %||% 1080
     desired_area <- (screen_width * screen_height) / (n_metacells * 100) * weight

@@ -74,9 +74,10 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
             ns <- session$ns
 
             output$num_metacells_atlas <- shinydashboard::renderValueBox({
-                mc_mat <- get_mc_data(dataset(), "mc_mat", atlas = TRUE)
-                req(mc_mat)
-                num_metacells <- ncol(mc_mat)
+                # Use DAF axis length instead of loading full atlas matrix
+                atlas_daf <- get_atlas_daf()
+                req(atlas_daf)
+                num_metacells <- dafr::axis_length(atlas_daf, "metacell")
                 shinydashboard::valueBox(
                     scales::comma(num_metacells),
                     "Number of atlas metacells",
@@ -85,10 +86,10 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
             })
             output$num_metacells_query <- qc_value_box("n_metacells", "Number of query metacells", dataset, color = "purple")
             output$num_metacells_similar <- shinydashboard::renderValueBox({
-                mc_mat <- get_mc_data(dataset(), "mc_mat")
-                req(mc_mat)
-
-                num_metacells <- ncol(mc_mat)
+                # Use DAF axis length instead of loading full matrix
+                daf_obj <- get_dataset_daf(dataset())
+                req(daf_obj)
+                num_metacells <- dafr::axis_length(daf_obj, "metacell")
                 req(num_metacells)
 
                 md <- get_mc_data(dataset(), "metadata")
@@ -112,15 +113,18 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
             })
 
             output$common_genes <- shinydashboard::renderValueBox({
-                query_mat <- get_mc_data(dataset(), "mc_mat")
-                atlas_mat <- get_mc_data(dataset(), "mc_mat", atlas = TRUE)
-                req(query_mat)
-                req(atlas_mat)
+                # Use DAF axis entries instead of loading full matrices
+                query_daf <- get_dataset_daf(dataset())
+                atlas_daf <- get_atlas_daf()
+                req(query_daf)
+                req(atlas_daf)
 
-                common_genes <- intersect(rownames(query_mat), rownames(atlas_mat))
+                query_genes <- dafr::axis_entries(query_daf, "gene")
+                atlas_genes <- dafr::axis_entries(atlas_daf, "gene")
+                common_genes <- intersect(query_genes, atlas_genes)
 
-                p_atlas <- scales::percent(length(common_genes) / nrow(atlas_mat))
-                p_query <- scales::percent(length(common_genes) / nrow(query_mat))
+                p_atlas <- scales::percent(length(common_genes) / length(atlas_genes))
+                p_query <- scales::percent(length(common_genes) / length(query_genes))
 
                 shinydashboard::valueBox(
                     scales::comma(length(common_genes)),
@@ -187,7 +191,6 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
         }
     )
 }
-
 
 
 gene_correction_factor_stat_box <- function(ns, id, dataset, title, output_id, width = 12, height = "35vh") {

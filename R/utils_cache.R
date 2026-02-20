@@ -1,130 +1,17 @@
-serialize_shiny_data <- function(object, name, dataset, cache_dir, df2mat = FALSE, preset = "fast", flat = FALSE, ...) {
-    dataset_dir <- fs::path(cache_dir, dataset)
-
-    if (!fs::dir_exists(dataset_dir)) {
-        fs::dir_create(dataset_dir)
-    }
-
-    if (df2mat) {
-        object <- as.data.frame(object) %>% rownames_to_column("__rowname__")
-    }
-
-    if (flat) {
-        fwrite(object, fs::path(dataset_dir, glue("{name}.tsv")), sep = "\t")
-    } else {
-        qs::qsave(object, fs::path(dataset_dir, glue("{name}.qs")), preset = preset, ...)
-    }
-
-    cli_alert_success_verbose("saved {.field {name}}")
-}
-
-load_shiny_data <- function(name, dataset, cache_dir, atlas = FALSE) {
-    if (atlas) {
-        cache_dir <- fs::path(cache_dir, dataset, "atlas")
-    } else {
-        cache_dir <- fs::path(cache_dir, dataset)
-    }
-
-    flat_file <- fs::path(cache_dir, glue("{name}.tsv"))
-    if (fs::file_exists(flat_file)) {
-        object <- fread(flat_file) %>% as_tibble()
-        if (has_name(object, "metacell")) {
-            object$metacell <- as.character(object$metacell)
-        }
-    } else {
-        object <- qs::qread(fs::path(cache_dir, glue("{name}.qs")))
-    }
-
-    if (is.data.frame(object) && rlang::has_name(object, "__rowname__")) {
-        object <- object %>%
-            remove_rownames() %>%
-            column_to_rownames("__rowname__") %>%
-            as.matrix()
-    }
-    return(object)
-}
-
-load_all_mc_data_atlas <- function(dataset, cache_dir) {
-    atlas_dir <- fs::path(cache_dir, dataset, "atlas")
-    if (fs::dir_exists(atlas_dir)) {
-        files <- list.files(atlas_dir, pattern = "*\\.(qs|tsv|csv)")
-        mc_data <- mcv_get("mc_data")
-        if (is.null(mc_data[[dataset]])) {
-            mc_data[[dataset]] <- list()
-        }
-
-        if (is.null(mc_data[[dataset]]$atlas)) {
-            mc_data[[dataset]]$atlas <- list()
-        }
-
-        for (fn in files) {
-            var_name <- basename(fn) %>%
-                sub("\\.qs$", "", .) %>%
-                sub("\\.tsv$", "", .)
-            obj <- load_shiny_data(var_name, dataset, cache_dir, atlas = TRUE)
-
-            mc_data[[dataset]]$atlas[[var_name]] <- obj
-        }
-        mcv_set("mc_data", mc_data)
-    }
-}
-
-load_all_mc_data <- function(dataset, cache_dir) {
-    atlas_dir <- fs::path(cache_dir, dataset, "atlas")
-    if (fs::dir_exists(atlas_dir)) {
-        load_all_mc_data_atlas(dataset, cache_dir)
-    }
-
-    files <- list.files(fs::path(cache_dir, dataset), pattern = "*\\.(qs|tsv|csv)")
-    mc_data <- mcv_get("mc_data")
-
-    if (is.null(mc_data[[dataset]])) {
-        mc_data[[dataset]] <- list()
-    }
-
-    for (fn in files) {
-        var_name <- basename(fn) %>%
-            sub("\\.qs$", "", .) %>%
-            sub("\\.tsv$", "", .)
-        obj <- load_shiny_data(var_name, dataset, cache_dir)
-
-        mc_data[[dataset]][[var_name]] <- obj
-    }
-    mcv_set("mc_data", mc_data)
-}
-
-verify_app_cache <- function(project, required_files = c("mc_mat.qs", "mc_sum.qs", "mc2d.qs", "metacell_types.tsv", "cell_type_colors.tsv"), datasets = NULL) {
-    cache_dir <- project_cache_dir(project)
-    if (is.null(datasets)) {
-        datasets <- dataset_ls(project)
-    }
-
-    for (dataset in datasets) {
-        dataset_dir <- fs::path(cache_dir, dataset)
-        for (file in required_files) {
-            if (!fs::file_exists(fs::path(dataset_dir, file))) {
-                cli_abort("The file {.file {file}} is missing in {.file {dataset_dir}}. Did you forget to import?")
-            }
-        }
-    }
-}
-
-load_all_data <- function(cache_dir, datasets = NULL) {
-    if (is.null(datasets)) {
-        datasets <- dataset_ls(mcv_get("project"))
-    }
-
-    mcv_set("mc_data", list())
-
-    purrr::walk(datasets, ~ load_all_mc_data(dataset = .x, cache_dir = cache_dir))
-}
+# ==============================================================================
+# DAF-Based Data Access Functions
+# ==============================================================================
 
 get_cell_type_data <- function(dataset, atlas = FALSE) {
-    mc_data <- mcv_get("mc_data")
-    if (atlas) {
-        cell_type_colors <- mc_data[[dataset]]$atlas[["cell_type_colors"]]
-    } else {
-        cell_type_colors <- mc_data[[dataset]][["cell_type_colors"]]
+    daf_obj <- get_daf_for_query(dataset, atlas)
+    if (is.null(daf_obj)) {
+        return(NULL)
+    }
+
+    cell_type_colors <- convert_daf_to_mcview(daf_obj, "cell_type_colors", atlas)
+
+    if (is.null(cell_type_colors)) {
+        return(NULL)
     }
 
     cell_type_colors <- cell_type_colors %>%
@@ -133,12 +20,61 @@ get_cell_type_data <- function(dataset, atlas = FALSE) {
     return(cell_type_colors)
 }
 
+ensure_metacell_types_fields <- function(metacell_types) {
+    if (is.null(metacell_types)) {
+        return(NULL)
+    }
+
+    metacell_types <- as_tibble(metacell_types)
+
+    if (!has_name(metacell_types, "metacell") && !is.null(rownames(metacell_types))) {
+        metacell_types <- metacell_types %>%
+            tibble::rownames_to_column("metacell")
+    }
+
+    if (!has_name(metacell_types, "top1_gene")) {
+        metacell_types$top1_gene <- NA_character_
+    }
+    if (!has_name(metacell_types, "top2_gene")) {
+        metacell_types$top2_gene <- NA_character_
+    }
+    if (!has_name(metacell_types, "top1_lfp")) {
+        metacell_types$top1_lfp <- NA_real_
+    }
+    if (!has_name(metacell_types, "top2_lfp")) {
+        metacell_types$top2_lfp <- NA_real_
+    }
+
+    if (!has_name(metacell_types, "mc_col")) {
+        if (has_name(metacell_types, "mc_col.x") && has_name(metacell_types, "mc_col.y")) {
+            metacell_types$mc_col <- ifelse(
+                is.na(metacell_types$mc_col.x),
+                metacell_types$mc_col.y,
+                metacell_types$mc_col.x
+            )
+        } else if (has_name(metacell_types, "mc_col.x")) {
+            metacell_types$mc_col <- metacell_types$mc_col.x
+        } else if (has_name(metacell_types, "mc_col.y")) {
+            metacell_types$mc_col <- metacell_types$mc_col.y
+        }
+    }
+
+    metacell_types <- metacell_types %>%
+        select(-any_of(c("mc_col.x", "mc_col.y")))
+
+    metacell_types
+}
+
 get_metacell_types_data <- function(dataset, atlas = FALSE) {
-    mc_data <- mcv_get("mc_data")
-    if (atlas) {
-        metacell_types <- mc_data[[dataset]]$atlas[["metacell_types"]]
-    } else {
-        metacell_types <- mc_data[[dataset]][["metacell_types"]]
+    daf_obj <- get_daf_for_query(dataset, atlas)
+    if (is.null(daf_obj)) {
+        return(NULL)
+    }
+
+    metacell_types <- convert_daf_to_mcview(daf_obj, "metacell_types", atlas)
+
+    if (is.null(metacell_types)) {
+        return(NULL)
     }
 
     if (!is.factor(metacell_types$cell_type)) {
@@ -153,6 +89,8 @@ get_metacell_types_data <- function(dataset, atlas = FALSE) {
     metacell_types <- metacell_types %>%
         left_join(cell_type_colors %>% select(cell_type, mc_col = color), by = "cell_type")
 
+    metacell_types <- ensure_metacell_types_fields(metacell_types)
+
     return(metacell_types)
 }
 
@@ -164,15 +102,15 @@ get_mc_color_key <- function(dataset) {
 }
 
 get_metadata <- function(dataset, atlas = FALSE) {
-    mc_data <- mcv_get("mc_data")
-    if (atlas) {
-        return(mc_data[[dataset]]$atlas[["metadata"]])
-    } else {
-        metadata <- mc_data[[dataset]][["metadata"]]
+    daf_obj <- get_daf_for_query(dataset, atlas)
+    if (is.null(daf_obj)) {
+        return(NULL)
     }
 
+    metadata <- convert_daf_to_mcview(daf_obj, "metadata", atlas)
+
     if (!is.null(metadata)) {
-        mc_qc_metadata <- mc_data[[dataset]][["mc_qc_metadata"]]
+        mc_qc_metadata <- convert_daf_to_mcview(daf_obj, "mc_qc_metadata", atlas)
         if (!is.null(mc_qc_metadata)) {
             same_colnames <- intersect(colnames(mc_qc_metadata), colnames(metadata))
             same_colnames <- same_colnames[same_colnames != "metacell"]
@@ -180,40 +118,25 @@ get_metadata <- function(dataset, atlas = FALSE) {
             mc_qc_metadata <- mc_qc_metadata %>%
                 select(-any_of(same_colnames))
 
-            if (!is.null(mc_qc_metadata)) {
+            if (!is.null(mc_qc_metadata) && ncol(mc_qc_metadata) > 1) {
                 metadata <- metadata %>%
                     left_join(mc_qc_metadata, by = "metacell")
             }
         }
     }
 
-
     return(metadata)
 }
 
-#' Enhanced get_mc_data with backend dispatch
+#' Get metacell data from DAF
+#'
+#' @param dataset Dataset name
+#' @param var_name Variable name (e.g., "mc_mat", "mc_sum", "mc2d")
+#' @param atlas Whether to get atlas data
+#' @return Data in MCView format, or NULL if not available
+#' @export
 get_mc_data <- function(dataset, var_name, atlas = FALSE) {
-    backend <- current_backend()
-
-    if (backend$kind == "daf") {
-        return(get_daf_mc_data(dataset, var_name, atlas))
-    } else {
-        return(get_cache_mc_data(dataset, var_name, atlas))
-    }
-}
-
-get_daf_mc_data <- function(dataset, var_name, atlas = FALSE) {
-    mc_data <- mcv_get("mc_data")
-    if (is.null(mc_data[[dataset]]) || mc_data[[dataset]]$type != "daf") {
-        return(NULL)
-    }
-
-    daf_obj <- mc_data[[dataset]]$daf_obj
-    convert_daf_to_mcview(daf_obj, var_name, atlas)
-}
-
-get_cache_mc_data <- function(dataset, var_name, atlas = FALSE) {
-    mc_data <- mcv_get("mc_data")
+    # Handle special cases that need post-processing
     if (var_name == "metacell_types") {
         return(get_metacell_types_data(dataset, atlas = atlas))
     } else if (var_name == "cell_type_colors") {
@@ -222,11 +145,12 @@ get_cache_mc_data <- function(dataset, var_name, atlas = FALSE) {
         return(get_metadata(dataset, atlas = atlas))
     }
 
-    if (atlas) {
-        return(mc_data[[dataset]]$atlas[[var_name]])
-    } else {
-        return(mc_data[[dataset]][[var_name]])
+    daf_obj <- get_daf_for_query(dataset, atlas)
+    if (is.null(daf_obj)) {
+        return(NULL)
     }
+
+    convert_daf_to_mcview(daf_obj, var_name, atlas)
 }
 
 
@@ -242,6 +166,11 @@ get_mc_config <- function(dataset, var_name) {
 }
 
 has_network <- function(dataset) {
+    # Check DAF axis instead of loading full graph data
+    daf_obj <- get_dataset_daf(dataset)
+    if (!is.null(daf_obj)) {
+        return(dafr::has_axis(daf_obj, "metacell_graph"))
+    }
     !is.null(get_mc_data(dataset, "mc_network"))
 }
 
@@ -254,10 +183,20 @@ has_metadata <- function(dataset, atlas = FALSE) {
 }
 
 has_cell_metadata <- function(dataset) {
+    # Check DAF axis instead of loading full cell metadata
+    daf_obj <- get_dataset_daf(dataset)
+    if (!is.null(daf_obj)) {
+        return(dafr::has_axis(daf_obj, "cell"))
+    }
     !is.null(get_mc_data(dataset, "cell_metadata"))
 }
 
 has_samples <- function(dataset) {
+    # Check DAF cell.samp_id vector existence instead of loading full cell metadata
+    daf_obj <- get_dataset_daf(dataset)
+    if (!is.null(daf_obj)) {
+        return(dafr::has_axis(daf_obj, "cell") && dafr::has_vector(daf_obj, "cell", "samp_id"))
+    }
     if (!has_cell_metadata(dataset)) {
         return(FALSE)
     }
@@ -266,20 +205,29 @@ has_samples <- function(dataset) {
 }
 
 has_projection <- function(dataset) {
+    # Check DAF vector existence instead of loading full query metadata
+    daf_obj <- get_dataset_daf(dataset)
+    if (!is.null(daf_obj)) {
+        return(dafr::has_vector(daf_obj, "metacell", "projected_type"))
+    }
     !is.null(get_mc_data(dataset, "query_md"))
 }
 
 has_corrected <- function(dataset) {
+    # Check DAF metadata instead of loading the full corrected matrix
+    daf_obj <- get_dataset_daf(dataset)
+    if (!is.null(daf_obj)) {
+        return(dafr::has_matrix(daf_obj, "metacell", "gene", "corrected_fraction"))
+    }
     !is.null(get_mc_data(dataset, "mc_mat_corrected"))
 }
 
 has_atlas <- function(dataset) {
-    mc_data <- mcv_get("mc_data")
-    !is.null(mc_data[[dataset]]$atlas)
+    !is.null(get_atlas_daf())
 }
 
-any_has_atlas <- function(project) {
-    any(purrr::map_lgl(dataset_ls(project), has_atlas))
+any_has_atlas <- function() {
+    has_atlas(dataset_names()[1])
 }
 
 calc_samp_mc_count <- function(dataset) {
@@ -356,6 +304,28 @@ get_samples_list <- function(dataset) {
 }
 
 dataset_metadata_fields <- function(dataset, atlas = FALSE) {
+    cache_key <- if (atlas) "metadata_fields_atlas" else "metadata_fields"
+    mc_data <- mcv_get("mc_data")
+    if (!is.null(mc_data[[dataset]][[cache_key]])) {
+        return(mc_data[[dataset]][[cache_key]])
+    }
+
+    daf_obj <- if (atlas) get_atlas_daf() else get_dataset_daf(dataset)
+    if (!is.null(daf_obj)) {
+        fields <- tryCatch(daf_obj["/ metacell ?"], error = function(e) NULL)
+        if (is.null(fields)) {
+            fields <- tryCatch(dafr::vectors_set(daf_obj, "metacell"), error = function(e) character(0))
+        }
+        core_fields <- c("type", "x", "y", "u", "v", "total_UMIs", "n_cell")
+        fields <- setdiff(fields, core_fields)
+        fields <- fields[!(fields %in% c("samp_id", "cell_id"))]
+        fields <- fields[!grepl("samp_id: ", fields)]
+        fields <- fields[!grepl("^mcview_cache_", fields)]
+        mc_data[[dataset]][[cache_key]] <- fields
+        mcv_set("mc_data", mc_data)
+        return(fields)
+    }
+
     metadata <- get_mc_data(dataset, "metadata", atlas = atlas)
     if (is.null(metadata)) {
         return(c())
@@ -364,14 +334,24 @@ dataset_metadata_fields <- function(dataset, atlas = FALSE) {
     fields <- fields[fields != "metacell"]
     fields <- fields[!(fields %in% c("samp_id", "cell_id"))]
     fields <- fields[!grepl("samp_id: ", fields)]
+    mc_data[[dataset]][[cache_key]] <- fields
+    mcv_set("mc_data", mc_data)
     return(fields)
 }
 
 dataset_metadata_fields_numeric <- function(dataset, atlas = FALSE) {
+    cache_key <- if (atlas) "metadata_fields_numeric_atlas" else "metadata_fields_numeric"
+    mc_data <- mcv_get("mc_data")
+    if (!is.null(mc_data[[dataset]][[cache_key]])) {
+        return(mc_data[[dataset]][[cache_key]])
+    }
     fields <- dataset_metadata_fields(dataset, atlas = atlas)
     df <- get_mc_data(dataset, "metadata", atlas = atlas)
     numeric_f <- purrr::map_lgl(fields, ~ is_numeric_field(df, .x))
-    return(fields[numeric_f])
+    fields <- fields[numeric_f]
+    mc_data[[dataset]][[cache_key]] <- fields
+    mcv_set("mc_data", mc_data)
+    return(fields)
 }
 
 dataset_cell_metadata_fields <- function(dataset, atlas = FALSE) {
@@ -424,19 +404,30 @@ is_numeric_field <- function(df, field) {
     return(FALSE)
 }
 
-get_metacell_ids <- function(project, dataset) {
-    colnames(load_shiny_data("mc_mat", dataset, project_cache_dir(project)))
+get_metacell_ids <- function(dataset) {
+    daf_obj <- get_dataset_daf(dataset)
+    if (is.null(daf_obj)) {
+        return(NULL)
+    }
+    dafr::axis_entries(daf_obj, "metacell")
 }
 
-has_gg_mc_top_cor <- function(project, dataset) {
+has_gg_mc_top_cor <- function(dataset) {
+    daf_obj <- get_dataset_daf(dataset)
+    if (!is.null(daf_obj)) {
+        return(dafr::has_axis(daf_obj, "gg_mc_top_cor") ||
+            dafr::has_axis(daf_obj, "mcview_cache_gg_mc_top_cor"))
+    }
     !is.null(get_mc_data(dataset, "gg_mc_top_cor"))
 }
 
 get_mc_sum <- function(dataset, atlas = FALSE) {
     mc_sum <- get_mc_data(dataset, "mc_sum", atlas = atlas)
-    mc_mat <- get_mc_data(dataset, "mc_mat", atlas = atlas)
-    names(mc_sum) <- colnames(mc_mat)
-
+    # Use DAF axis entries directly instead of loading the full matrix just for column names
+    daf_obj <- get_daf_for_query(dataset, atlas)
+    if (!is.null(daf_obj)) {
+        names(mc_sum) <- dafr::axis_entries(daf_obj, "metacell")
+    }
     return(mc_sum)
 }
 

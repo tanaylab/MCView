@@ -9,6 +9,9 @@ mcv_get(var_name)
 \arguments{
 \item{var_name}{Name of the variable}
 }
+\value{
+The value stored in the environment
+}
 \description{
 Get value from MCView environment
 }

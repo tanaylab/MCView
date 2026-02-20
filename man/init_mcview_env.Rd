@@ -6,6 +6,9 @@
 \usage{
 init_mcview_env()
 }
+\value{
+TRUE invisibly
+}
 \description{
 Initialize MCView environment with default values
 }

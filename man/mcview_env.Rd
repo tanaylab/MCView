@@ -5,7 +5,7 @@
 \alias{mcview_env}
 \title{MCView Global State Management}
 \format{
-An object of class \code{environment} of length 8.
+An object of class \code{environment} of length 6.
 }
 \usage{
 mcview_env
@@ -13,5 +13,16 @@ mcview_env
 \description{
 Centralized environment for all MCView global state to improve
 isolation, testing, and maintainability.
+}
+\details{
+MCView uses DAF (Data Access Framework) as its data backend.
+
+Dataset structure (mc_data[[dataset_name]]):
+  - base_daf: Original DAF object (read-only or writable)
+  - cache_daf: Cache DAF object (writable, for computed data)
+  - daf_obj: Complete DAF (cache + base chained via complete_daf)
+  - top_cor_genes: In-memory correlation cache
+  - cache_path: Path to cache directory (for files cache)
+  - needs_population: Whether cache needs to be populated
 }
 \keyword{datasets}

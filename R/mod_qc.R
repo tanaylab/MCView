@@ -113,7 +113,10 @@ mod_qc_server <- function(id, dataset, metacell_types, cell_type_colors, gene_mo
 qc_value_box <- function(field, title, dataset, color = "black") {
     shinydashboard::renderValueBox({
         if (field == "n_metacells") {
-            stat <- ncol(get_mc_data(dataset(), "mc_mat"))
+            # Use DAF axis length instead of loading full matrix
+            daf_obj <- get_dataset_daf(dataset())
+            req(daf_obj)
+            stat <- dafr::axis_length(daf_obj, "metacell")
         } else {
             qc_stats <- get_mc_data(dataset(), "qc_stats")
             req(qc_stats)
@@ -220,11 +223,7 @@ zero_fold_gene_plot <- function(dataset, input, globals) {
             xlab("log2(gene expression)") +
             ylab("log2(# of zero cells / expected)")
 
-        plotly::ggplotly(p) %>%
-            sanitize_for_WebGL() %>%
-            plotly::toWebGL() %>%
-            sanitize_plotly_buttons() %>%
-            sanitize_plotly_download(globals)
+        prepare_plotly_scatter(p, tooltip = NULL, globals = globals)
     }) %>% bindCache(dataset(), globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
 }
 

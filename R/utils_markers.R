@@ -16,7 +16,7 @@ calc_marker_genes <- function(mc_egc,
                               use_abs = TRUE) {
     mc_egc <- log2(mc_egc + 1e-5)
 
-    max_log_fractions_of_genes <- apply(mc_egc, 1, max)
+    max_log_fractions_of_genes <- matrixStats::rowMaxs(as.matrix(mc_egc))
 
     interesting_genes_mask <- (max_log_fractions_of_genes
     >= minimal_max_log_fraction)
@@ -25,7 +25,7 @@ calc_marker_genes <- function(mc_egc,
         cli_abort("No genes with at least one value above the {.field minimal_max_log_fraction} threshold ({.val {.value minimal_max_log_fraction}})")
     }
 
-    mc_fp <- sweep(mc_egc, 1, matrixStats::rowMedians(mc_egc, na.rm = TRUE))
+    mc_fp <- sweep(mc_egc, 1, matrixStats::rowMedians(as.matrix(mc_egc), na.rm = TRUE))
 
     mc_top_genes <- select_top_fold_genes_per_metacell(
         mc_fp[interesting_genes_mask, , drop = FALSE],
@@ -46,23 +46,33 @@ select_top_fold_genes_per_metacell <- function(fold_matrix, genes_per_metacell =
         cli_abort("No genes with at least one value above the {.field minimal_relative_log_fraction} threshold ({.val {.value minimal_relative_log_fraction}})")
     }
 
-    mc_top_genes <- apply(fold_matrix, 2, function(fp) {
-        if (use_abs) {
-            top_ind <- order(-abs(fp))[1:genes_per_metacell]
-        } else {
-            top_ind <- order(-fp)[1:genes_per_metacell]
-        }
+    fm <- as.matrix(fold_matrix)
+    gene_nms <- rownames(fold_matrix)
+    mc_nms <- colnames(fold_matrix)
+    n_mc <- ncol(fm)
 
-        return(tibble(gene = rownames(fold_matrix)[top_ind], rank = 1:length(top_ind), fp = fp[top_ind]))
-    }) %>%
-        purrr::imap_dfr(~ .x %>% mutate(metacell = .y)) %>%
-        arrange(metacell, rank) %>%
-        select(metacell, gene, rank, fp)
+    sort_mat <- if (use_abs) abs(fm) else fm
+    results <- vector("list", n_mc)
+    for (j in seq_len(n_mc)) {
+        col_vals <- sort_mat[, j]
+        top_ind <- order(-col_vals, na.last = TRUE)[seq_len(genes_per_metacell)]
+        results[[j]] <- tibble(
+            metacell = mc_nms[j],
+            gene = gene_nms[top_ind],
+            rank = seq_len(genes_per_metacell),
+            fp = fm[top_ind, j]
+        )
+    }
 
+    mc_top_genes <- do.call(rbind, results)
     return(mc_top_genes)
 }
 
 choose_markers <- function(marker_genes, max_markers, dataset = NULL) {
+    if (is.null(marker_genes)) {
+        return(character(0))
+    }
+
     if (has_name(marker_genes, "metacell")) {
         n_metacells <- length(unique(marker_genes$metacell))
         genes_per_metacell <- min(10, max(1, round(max_markers / n_metacells)))
@@ -113,11 +123,12 @@ filter_markers_mat <- function(gene_folds) {
 }
 
 get_top_marks <- function(feat, notify_var_genes = TRUE) {
-    g_ncover <- apply(feat > 1, 1, sum)
+    feat <- as.matrix(feat)
+    g_ncover <- rowSums(feat > 1)
     main_mark <- names(g_ncover)[which.max(g_ncover)]
     f <- feat[main_mark, , drop = FALSE] < 0.25
     if (sum(f) > 0.2 * ncol(feat)) {
-        g_score <- apply(feat[, f, drop = FALSE] > 1, 1, sum)
+        g_score <- rowSums(feat[, f, drop = FALSE] > 1)
     } else {
         g_score <- -apply(feat, 1, cor, feat[main_mark, ])
     }
@@ -134,6 +145,8 @@ get_top_marks <- function(feat, notify_var_genes = TRUE) {
 #' @noRd
 #' @return named vector with metacell order
 order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers = FALSE, force_cell_type = FALSE, metacell_types = NULL, order_each_cell_type = FALSE, epsilon = 0, notify_var_genes = FALSE, log_transform = TRUE, cached_dist = NULL, secondary_order = NULL) {
+    gene_folds <- as.matrix(gene_folds)
+
     if (filter_markers) {
         gene_folds <- filter_markers_mat(gene_folds)
     }
@@ -258,8 +271,13 @@ get_markers <- function(dataset) {
         return(marker_genes)
     }
 
+    # Calculate marker genes on the fly if not in DAF
     marker_genes <- calc_marker_genes(get_mc_egc(dataset), 20)
-    serialize_shiny_data(marker_genes, "marker_genes", dataset = dataset, cache_dir = cache_dir)
+
+    # Store in session memory cache
+    mc_data <- mcv_get("mc_data")
+    mc_data[[dataset]][["marker_genes"]] <- marker_genes
+    mcv_set("mc_data", mc_data)
 
     return(marker_genes)
 }
@@ -382,7 +400,7 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
         mat <- log2(mat)
     }
 
-    gene_ord <- order(apply(mat, 1, which.max))
+    gene_ord <- order(max.col(as.matrix(mat), ties.method = "first"))
     mat <- mat[gene_ord, , drop = FALSE]
 
     return(mat)
@@ -396,8 +414,9 @@ add_genes_to_marker_matrix <- function(mat, genes, dataset) {
 }
 
 get_marker_genes <- function(dataset, mode = "Markers") {
+    daf_obj <- get_dataset_daf(dataset)
     if (mode == "Inner") {
-        if (is.null(get_mc_data(dataset, "inner_fold_mat"))) {
+        if (is.null(daf_obj) || !dafr::has_matrix(daf_obj, "gene", "metacell", "inner_fold")) {
             if ("Inner-fold" %in% app_config("original_tabs")) {
                 showNotification(glue("Inner-fold matrix was not computed. Please compute it in python using the metacells package and rerun the import"), type = "error")
             }
@@ -405,7 +424,7 @@ get_marker_genes <- function(dataset, mode = "Markers") {
         }
         return(get_mc_data(dataset, "marker_genes_inner_fold"))
     } else if (mode == "Stdev") {
-        if (is.null(get_mc_data(dataset, "inner_stdev_mat"))) {
+        if (is.null(daf_obj) || !dafr::has_matrix(daf_obj, "gene", "metacell", "inner_stdev_log")) {
             if ("Stdev-fold" %in% app_config("original_tabs")) {
                 showNotification(glue("Inner-stdev matrix was not computed. Please compute it in python using the metacells package and rerun the import"), type = "error")
             }

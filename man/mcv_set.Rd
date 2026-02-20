@@ -11,6 +11,9 @@ mcv_set(var_name, value)
 
 \item{value}{Value to set}
 }
+\value{
+The value, invisibly
+}
 \description{
 Set value in MCView environment
 }

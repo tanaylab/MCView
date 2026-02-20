@@ -9,6 +9,23 @@
 #' @importFrom shiny NS tagList
 mod_about_ui <- function(id) {
     ns <- NS(id)
+    about_file <- mcv_get("about_file")
+    about_markdown <- mcv_get("about_markdown")
+    about_content <- NULL
+
+    if (!is.null(about_markdown)) {
+        about_markdown <- clean_about_markdown(about_markdown)
+        if (requireNamespace("markdown", quietly = TRUE)) {
+            about_html <- markdown::markdownToHTML(text = about_markdown, fragment.only = TRUE)
+            Encoding(about_html) <- "UTF-8"
+            about_content <- htmltools::HTML(about_html)
+        } else {
+            about_content <- shiny::tags$pre(about_markdown)
+        }
+    } else if (!is.null(about_file) && fs::file_exists(about_file)) {
+        about_content <- includeRMarkdown(about_file)
+    }
+
     tagList(
         fluidRow(
             generic_box(
@@ -21,7 +38,7 @@ mod_about_ui <- function(id) {
                 fluidRow(
                     column(
                         width = 6,
-                        # includeRMarkdown(mcv_get("about_file"))
+                        about_content
                     ),
                     column(
                         width = 6,

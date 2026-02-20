@@ -1,7 +1,7 @@
 metacell_names_reactive <- function(dataset) {
     reactive({
         req(dataset())
-        colnames(get_mc_data(dataset(), "mc_mat"))
+        get_metacell_ids(dataset())
     })
 }
 

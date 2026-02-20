@@ -9,6 +9,9 @@ mcv_exists(var_name)
 \arguments{
 \item{var_name}{Name of the variable}
 }
+\value{
+TRUE if variable exists
+}
 \description{
 Check if variable exists in MCView environment
 }
