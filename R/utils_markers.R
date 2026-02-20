@@ -14,9 +14,9 @@ calc_marker_genes <- function(mc_egc,
                               minimal_relative_log_fraction = 2,
                               fold_change_reg = 0.1,
                               use_abs = TRUE) {
-    mc_egc <- log2(mc_egc + 1e-5)
+    mc_egc <- as.matrix(log2(mc_egc + 1e-5))
 
-    max_log_fractions_of_genes <- matrixStats::rowMaxs(as.matrix(mc_egc))
+    max_log_fractions_of_genes <- matrixStats::rowMaxs(mc_egc)
 
     interesting_genes_mask <- (max_log_fractions_of_genes
     >= minimal_max_log_fraction)
@@ -25,7 +25,7 @@ calc_marker_genes <- function(mc_egc,
         cli_abort("No genes with at least one value above the {.field minimal_max_log_fraction} threshold ({.val {.value minimal_max_log_fraction}})")
     }
 
-    mc_fp <- sweep(mc_egc, 1, matrixStats::rowMedians(as.matrix(mc_egc), na.rm = TRUE))
+    mc_fp <- sweep(mc_egc, 1, matrixStats::rowMedians(mc_egc, na.rm = TRUE))
 
     mc_top_genes <- select_top_fold_genes_per_metacell(
         mc_fp[interesting_genes_mask, , drop = FALSE],
@@ -287,22 +287,22 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
     if (mode == "Inner") {
         mc_fp <- get_mc_data(dataset, "inner_fold_mat")
         req(mc_fp)
-        mc_fp <- as.matrix(mc_fp[Matrix::rowSums(mc_fp) > 0, ])
-        mc_fp <- mc_fp[intersect(markers, rownames(mc_fp)), , drop = FALSE]
+        valid_rows <- intersect(markers, rownames(mc_fp)[Matrix::rowSums(mc_fp) > 0])
+        mc_fp <- as.matrix(mc_fp[valid_rows, , drop = FALSE])
         epsilon <- 1e-5
         log_transform <- FALSE
     } else if (mode == "Stdev") {
         mc_fp <- get_mc_data(dataset, "inner_stdev_mat")
         req(mc_fp)
-        mc_fp <- as.matrix(mc_fp[Matrix::rowSums(mc_fp) > 0, ])
-        mc_fp <- mc_fp[intersect(markers, rownames(mc_fp)), , drop = FALSE]
+        valid_rows <- intersect(markers, rownames(mc_fp)[Matrix::rowSums(mc_fp) > 0])
+        mc_fp <- as.matrix(mc_fp[valid_rows, , drop = FALSE])
         epsilon <- 1e-5
         log_transform <- FALSE
     } else if (mode == "Proj") {
         mc_fp <- get_mc_data(dataset, "projected_fold")
         req(mc_fp)
-        mc_fp <- as.matrix(mc_fp[abs(Matrix::rowSums(mc_fp)) > 0, ])
-        mc_fp <- mc_fp[intersect(markers, rownames(mc_fp)), , drop = FALSE]
+        valid_rows <- intersect(markers, rownames(mc_fp)[abs(Matrix::rowSums(mc_fp)) > 0])
+        mc_fp <- as.matrix(mc_fp[valid_rows, , drop = FALSE])
         epsilon <- 1e-5
         log_transform <- FALSE
     } else if (mode == "Markers") {
@@ -335,8 +335,8 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
     } else if (mode == "Outliers") {
         mc_fp <- get_mc_data(dataset, "deviant_fold_mat")
         req(mc_fp)
-        mc_fp <- as.matrix(mc_fp[Matrix::rowSums(mc_fp) > 0, ])
-        mc_fp <- mc_fp[intersect(markers, rownames(mc_fp)), , drop = FALSE]
+        valid_rows <- intersect(markers, rownames(mc_fp)[Matrix::rowSums(mc_fp) > 0])
+        mc_fp <- as.matrix(mc_fp[valid_rows, , drop = FALSE])
         epsilon <- 1e-5
         log_transform <- FALSE
     } else {
