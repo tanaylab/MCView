@@ -1,0 +1,362 @@
+---
+title: "DAF Input Format for MCView"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{DAF Input Format for MCView}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Overview
+
+MCView reads data from DAF (Data Axes Format) objects. This document specifies
+**exactly** what your input DAF needs to contain for MCView to work.
+
+A DAF organizes data along named **axes** (e.g., `metacell`, `gene`, `type`).
+Each axis has **entries** (names) and can hold **vectors** (one value per entry)
+and **matrices** (values at axis intersections).
+
+## Quick Start
+
+The absolute minimum DAF for MCView requires:
+
+1. Three axes: `metacell`, `gene`, `type`
+2. One matrix: `UMIs` (metacell × gene)
+3. Three vectors: `total_UMIs`, `type` (on metacell), `color` (on type)
+4. 2D coordinates: either `x`+`y` or `u`+`v` (on metacell)
+
+Everything else is optional and enables additional tabs/features.
+
+## Required Components
+
+### Axes
+
+| Axis | Description | Example entries |
+|------|-------------|-----------------|
+| `metacell` | Metacell identifiers | `"M0"`, `"M1"`, ..., `"M2416"` |
+| `gene` | Gene identifiers | `"TP53"`, `"GAPDH"`, `"CD4"` |
+| `type` | Cell type identifiers | `"T-cell"`, `"B-cell"`, `"Monocyte"` |
+
+### Matrix: UMIs
+
+| Property | Value |
+|----------|-------|
+| Rows axis | `metacell` |
+| Columns axis | `gene` |
+| Name | `UMIs` |
+| Type | Numeric (non-negative integers) |
+| Storage | Sparse or dense |
+
+This is the raw UMI count matrix. MCView computes all derived quantities
+(EGC, fold-enrichment, etc.) from this matrix and `total_UMIs`.
+
+### Required Vectors
+
+| Axis | Name | Type | Description |
+|------|------|------|-------------|
+| `metacell` | `total_UMIs` | numeric | Total UMI count per metacell |
+| `metacell` | `type` | character | Cell type assignment (must match `type` axis entries) |
+| `type` | `color` | character | Hex color for each cell type (e.g., `"#FF0000"`) |
+
+### 2D Coordinates (at least one pair required)
+
+| Axis | Name | Type | Description |
+|------|------|------|-------------|
+| `metacell` | `x` | numeric | X coordinate for 2D projection |
+| `metacell` | `y` | numeric | Y coordinate for 2D projection |
+
+**Or** alternatively:
+
+| Axis | Name | Type | Description |
+|------|------|------|-------------|
+| `metacell` | `u` | numeric | U coordinate (alternative to x) |
+| `metacell` | `v` | numeric | V coordinate (alternative to y) |
+
+If both pairs exist, MCView uses `x`/`y`.
+
+## Optional Components
+
+### Gene Flags (vectors on `gene` axis)
+
+These boolean vectors enable gene filtering in the UI.
+
+| Name | Type | Description |
+|------|------|-------------|
+| `is_lateral` | logical | Lateral genes (excluded from certain analyses) |
+| `is_noisy` | logical | Noisy genes |
+| `is_marker` | logical | Marker genes (enables **Markers** tab auto-detection) |
+| `module` | character | Gene module assignment (enables **Gene modules** tab) |
+
+### Metacell Metadata (vectors on `metacell` axis)
+
+| Name | Type | Description |
+|------|------|-------------|
+| `n_cell` | integer | Number of cells per metacell |
+| `mc_col` | character | Per-metacell color override (hex) |
+| `top1_gene` | character | Top expressed gene (hover info) |
+| `top2_gene` | character | Second top expressed gene |
+| `top1_lfp` | numeric | Log fold-enrichment of top gene |
+| `top2_lfp` | numeric | Log fold-enrichment of second gene |
+| `mc_age` | numeric | Metacell time/age (enables time plots) |
+
+If `top1_gene`/`top2_gene`/`top1_lfp`/`top2_lfp` are missing, MCView computes
+them from the UMI matrix on first load. Precomputing saves startup time.
+
+### Inner-Fold and Stdev Matrices
+
+These enable the **Inner-fold** and **Stdev-fold** tabs respectively.
+
+| Rows | Columns | Name | Description |
+|------|---------|------|-------------|
+| `gene` | `metacell` | `inner_fold` | Inner fold values per gene-metacell |
+| `gene` | `metacell` | `inner_stdev_log` | Inner stdev log per gene-metacell |
+
+### QC Metadata (vectors on `metacell` axis)
+
+These enhance the **QC** tab.
+
+| Name | Type | Description |
+|------|------|-------------|
+| `max_inner_fold` | numeric | Maximum inner fold per metacell |
+| `max_inner_fold_no_lateral` | numeric | Max inner fold excluding lateral genes |
+| `max_inner_stdev_log` | numeric | Max inner stdev log per metacell |
+| `zero_fold` | numeric | Zero fold per metacell |
+
+### QC Scalars
+
+| Name | Type | Description |
+|------|------|-------------|
+| `qc_stats_n_outliers` | integer | Number of outlier cells |
+| `qc_stats_n_cells` | integer | Total number of cells |
+| `qc_stats_n_umis` | integer | Total UMI count |
+| `qc_stats_median_umis_per_metacell` | numeric | Median UMIs per metacell |
+| `qc_stats_median_cells_per_metacell` | numeric | Median cells per metacell |
+
+### Gene Correlations
+
+Precomputed gene-gene correlations across metacells. Stored as a custom axis
+with associated vectors. If missing, MCView computes correlations on-the-fly
+(which is slower for large datasets).
+
+**Axis:** `gg_mc_top_cor` (one entry per correlation pair)
+
+| Name | Type | Description |
+|------|------|-------------|
+| `gene1` | character | First gene in the correlation pair |
+| `gene2` | character | Second gene in the pair |
+| `cor` | numeric | Correlation value (-1 to 1) |
+| `type` | character | `"pos"` or `"neg"` |
+
+### Gene Zero-Fold Statistics
+
+**Axis:** `gene_zero_fold` (one entry per gene-metacell-type combination)
+
+| Name | Type | Description |
+|------|------|-------------|
+| `gene` | character | Gene name |
+| `metacell` | character | Metacell name |
+| `zero_fold` | numeric | Zero fold value |
+| `avg` | numeric | Average value |
+| `obs` | numeric | Observed value |
+| `exp` | numeric | Expected value |
+| `type` | character | Cell type |
+
+### Metacell Graph (for network visualization)
+
+**Axis:** `metacell_graph` (one entry per edge)
+
+| Name | Type | Description |
+|------|------|-------------|
+| `from` | character | Source metacell |
+| `to` | character | Target metacell |
+| `weight` | numeric | Edge weight |
+| `graph_name` | character | Graph identifier (default: `"metacell"`) |
+
+### Cell-Level Data (enables **Samples** tab)
+
+**Axis:** `cell` (one entry per cell)
+
+| Name | Type | Required for Samples | Description |
+|------|------|---------------------|-------------|
+| `metacell` | character | Yes | Metacell assignment per cell |
+| `samp_id` | character | Yes | Sample ID per cell |
+
+Additional cell-level vectors are auto-discovered and displayed.
+
+### Atlas Projection (enables **Atlas**, **Query**, **Projected-fold** tabs)
+
+These vectors/matrices on the query DAF enable atlas projection features.
+A separate atlas DAF must also be provided.
+
+**Vectors on `metacell`:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `projected_type` | character | Projected type from atlas |
+| `projected_correlation` | numeric | Correlation with atlas projection |
+| `similar` | logical | Whether similar to atlas |
+| `atlas_metacell` | character | Most similar atlas metacell |
+
+**Matrices:**
+
+| Rows | Columns | Name | Description |
+|------|---------|------|-------------|
+| `gene` | `metacell` | `projected_fold` | Projected fold from atlas |
+| `metacell` | `gene` | `projected_fraction` | Projected expression fraction |
+| `metacell` | `gene` | `corrected_fraction` | Corrected expression fraction |
+
+**Scalars:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `projection_weights_json` | character | JSON with query-atlas metacell mapping |
+| `query_cell_type_fracs_json` | character | JSON with query cell type fractions |
+
+## Configuration Scalars
+
+You can embed MCView configuration directly in the DAF:
+
+| Name | Type | Description |
+|------|------|-------------|
+| `mcview_title` | character | Application title |
+| `mcview_tabs` | character | Comma-separated list of tabs to show |
+| `mcview_excluded_tabs` | character | Comma-separated list of tabs to exclude |
+| `mcview_light_version` | logical | Use light version (fewer UI controls) |
+| `mcview_about_markdown` | character | About page content (markdown) |
+| `mcview_cache_in_daf` | logical | Cache computed data in DAF |
+| `metacells_algorithm` | character | Metacells algorithm version |
+
+Configuration priority (highest to lowest):
+
+1. YAML config file passed to `run_app()`
+2. DAF scalars (`mcview_*`)
+3. Auto-detection based on available data
+
+## Tab Availability
+
+MCView automatically enables tabs based on the data present in the DAF:
+
+| Tab | Requirements |
+|-----|-------------|
+| **Manifold** | Core requirements only |
+| **Genes** | Core requirements only |
+| **Diff. Expression** | Core requirements only |
+| **Cell types** | Core requirements only |
+| **Annotate** | Core requirements only |
+| **QC** | Core + QC metadata recommended |
+| **Markers** | `gene.is_marker` vector |
+| **Gene modules** | `gene.module` vector |
+| **Inner-fold** | `gene,metacell.inner_fold` matrix |
+| **Stdev-fold** | `gene,metacell.inner_stdev_log` matrix |
+| **Samples** | `cell` axis + `cell.metacell` + `cell.samp_id` |
+| **Flow** | Time annotation data in metacell metadata |
+| **Atlas** / **Query** / **Projected-fold** | Atlas projection data + separate atlas DAF |
+
+## Validation
+
+Use `validate_daf_for_mcview()` to check your DAF before launching:
+
+```{r, eval = FALSE}
+library(MCView)
+library(dafr)
+
+daf_obj <- dafr::files_daf("path/to/my_daf")
+
+# Quick check (required components only)
+validate_daf_for_mcview(daf_obj)
+
+# Detailed check with verbose output
+validate_daf_for_mcview(daf_obj, strict = TRUE, verbose = TRUE)
+
+# Check which tabs will be available
+validate_mcview_tabs(daf_obj, verbose = TRUE)
+```
+
+## Precomputable Data
+
+For best performance, precompute these fields in your pipeline:
+
+**High priority** (significant startup time savings):
+
+- Gene correlations (`gg_mc_top_cor` axis) -- avoids O(genes²) computation
+- Top genes per metacell (`top1_gene`, `top2_gene`, `top1_lfp`, `top2_lfp`)
+
+**Medium priority** (avoids repeated aggregation):
+
+- Gene statistics (`max_umis`, `mean_umis`, `sum_umis` on gene axis)
+
+Use `precompute_mcview_cache()` to add precomputed cache vectors to a writable
+DAF:
+
+```{r, eval = FALSE}
+daf_obj <- precompute_mcview_cache(daf_obj, verbose = TRUE)
+```
+
+## Usage Examples
+
+### Minimal DAF
+
+```{r, eval = FALSE}
+library(MCView)
+library(dafr)
+
+# Open existing DAF
+daf_obj <- dafr::files_daf("path/to/metacells.daf")
+
+# Launch MCView
+run_app(daf_obj)
+```
+
+### With configuration
+
+```{r, eval = FALSE}
+# Launch with custom name and YAML config
+run_app(daf_obj,
+  dataset_name = "my_experiment",
+  config_file = "mcview_config.yaml"
+)
+```
+
+### Multiple datasets
+
+```{r, eval = FALSE}
+daf1 <- dafr::files_daf("path/to/experiment1.daf")
+daf2 <- dafr::files_daf("path/to/experiment2.daf")
+
+run_app(list(
+  experiment1 = daf1,
+  experiment2 = daf2
+))
+```
+
+### With atlas projection
+
+```{r, eval = FALSE}
+query_daf <- dafr::files_daf("path/to/query.daf")
+atlas_daf <- dafr::files_daf("path/to/atlas.daf")
+
+run_app(query_daf, atlas = atlas_daf)
+```
+
+## Programmatic Contract Access
+
+MCView provides programmatic access to all contract definitions:
+
+```{r, eval = FALSE}
+# Get all contracts
+contracts <- mcview_all_contracts()
+
+# Get contract for a specific tab
+inner_fold_contract <- mcview_tab_contract("Inner-fold")
+print_contract(inner_fold_contract)
+
+# Generate full markdown documentation
+generate_contract_docs("mcview_contracts.md")
+```

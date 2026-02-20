@@ -58,6 +58,180 @@ escape_daf_value <- function(value) {
 }
 
 # ==============================================================================
+# Helper Functions for Reducing Code Duplication
+# ==============================================================================
+
+#' Query genes by a boolean flag vector
+#'
+#' Generic function to query genes where a boolean flag is TRUE.
+#' Replaces daf_query_marker_genes, daf_query_lateral_genes, daf_query_noisy_genes.
+#'
+#' @param daf_obj DAF object
+#' @param flag_name Name of the boolean flag vector (e.g., "is_marker", "is_lateral")
+#' @return Character vector of gene names where flag is TRUE
+#' @export
+daf_query_flagged_genes <- function(daf_obj, flag_name) {
+    if (!dafr::has_vector(daf_obj, "gene", flag_name)) {
+        return(character(0))
+    }
+    tryCatch(
+        {
+            query <- glue::glue("/ gene & {flag_name} : name")
+            result <- daf_obj[query]
+            return(result)
+        },
+        error = function(e) {
+            flags <- dafr::get_vector(daf_obj, "gene", flag_name)
+            gene_names <- dafr::axis_entries(daf_obj, "gene")
+            return(gene_names[flags])
+        }
+    )
+}
+
+#' Convert DAF flagged genes to character vector
+#'
+#' Generic function to get genes where a boolean flag is TRUE.
+#' Replaces convert_daf_lateral_genes, convert_daf_noisy_genes.
+#'
+#' @param daf_obj DAF object
+#' @param flag_name Name of the boolean flag vector
+#' @return Character vector of gene names where flag is TRUE
+#' @export
+convert_daf_flagged_genes <- function(daf_obj, flag_name) {
+    flags <- daf_vec(daf_obj, "gene", flag_name, required = FALSE)
+    if (is.null(flags)) {
+        return(character(0))
+    }
+    gene_names <- dafr::axis_entries(daf_obj, "gene")
+    gene_names[flags]
+}
+
+#' Add an optional vector to a tibble
+#'
+#' Helper to reduce repeated pattern of checking and adding optional vectors.
+#'
+#' @param tbl Tibble to add vector to
+#' @param daf_obj DAF object
+#' @param axis Axis name
+#' @param vec_name Vector name
+#' @param col_name Column name in result (defaults to vec_name)
+#' @return Modified tibble with vector added if it exists
+#' @export
+add_optional_vec <- function(tbl, daf_obj, axis, vec_name, col_name = vec_name) {
+    vec <- daf_vec(daf_obj, axis, vec_name, required = FALSE)
+    if (!is.null(vec)) {
+        tbl[[col_name]] <- vec
+    }
+    tbl
+}
+
+#' Add multiple optional vectors to a tibble
+#'
+#' Helper to add multiple optional vectors in one call.
+#'
+#' @param tbl Tibble to add vectors to
+#' @param daf_obj DAF object
+#' @param axis Axis name
+#' @param vec_names Character vector of vector names
+#' @return Modified tibble with existing vectors added
+#' @export
+add_optional_vecs <- function(tbl, daf_obj, axis, vec_names) {
+    for (vec_name in vec_names) {
+        tbl <- add_optional_vec(tbl, daf_obj, axis, vec_name)
+    }
+    tbl
+}
+
+#' Add optional vector with fallback name
+#'
+#' Tries primary name first, then fallback if primary is missing.
+#'
+#' @param tbl Tibble to add vector to
+#' @param daf_obj DAF object
+#' @param axis Axis name
+#' @param primary Primary vector name (also used as column name)
+#' @param fallback Fallback vector name to try if primary is missing
+#' @return Modified tibble with vector added if either name exists
+#' @export
+add_optional_vec_with_fallback <- function(tbl, daf_obj, axis, primary, fallback) {
+    vec <- daf_vec(daf_obj, axis, primary, required = FALSE)
+    if (is.null(vec)) {
+        vec <- daf_vec(daf_obj, axis, fallback, required = FALSE)
+    }
+    if (!is.null(vec)) {
+        tbl[[primary]] <- vec
+    }
+    tbl
+}
+
+#' Get DAF object for query (dataset or atlas)
+#'
+#' Consolidates the repeated pattern of selecting between dataset and atlas DAF.
+#'
+#' @param dataset Dataset name
+#' @param atlas Whether to use atlas data (default: FALSE)
+#' @return DAF object or NULL if not available
+#' @export
+get_daf_for_query <- function(dataset, atlas = FALSE) {
+    if (atlas) {
+        get_atlas_daf()
+    } else {
+        get_dataset_daf(dataset)
+    }
+}
+
+#' Filter genes by lateral and noisy flags
+#'
+#' Consolidates the repeated pattern of filtering a gene dataframe
+#' by lateral and noisy gene flags.
+#'
+#' @param df Data frame with a 'gene' column
+#' @param lateral_genes Vector of lateral gene names (or NULL)
+#' @param noisy_genes Vector of noisy gene names (or NULL)
+#' @param include_lateral Whether to include lateral genes (default: TRUE)
+#' @param include_noisy Whether to include noisy genes (default: TRUE)
+#' @param gene_col Name of the gene column (default: "gene")
+#' @return Filtered data frame
+#' @export
+filter_genes_by_flags <- function(df, lateral_genes = NULL, noisy_genes = NULL,
+                                  include_lateral = TRUE, include_noisy = TRUE,
+                                  gene_col = "gene") {
+    if (!include_lateral && !is.null(lateral_genes) && length(lateral_genes) > 0) {
+        df <- df[!(df[[gene_col]] %in% lateral_genes), , drop = FALSE]
+    }
+    if (!include_noisy && !is.null(noisy_genes) && length(noisy_genes) > 0) {
+        df <- df[!(df[[gene_col]] %in% noisy_genes), , drop = FALSE]
+    }
+    df
+}
+
+#' Compute EGC (expression per gene per cell) from DAF
+#'
+#' Retrieves UMI matrix and total UMIs, then normalizes to get EGC.
+#' Consolidates the repeated pattern of:
+#'   mc_mat <- daf_query_mc_mat(...)
+#'   mc_sum <- daf_query_mc_sum(...)
+#'   return(t(t(mc_mat) / mc_sum))
+#'
+#' @param daf_obj DAF object
+#' @param genes Optional vector of gene names to filter
+#' @param metacells Optional vector of metacell names to filter
+#' @param cache Whether to use caching (default: TRUE)
+#' @return EGC matrix (genes x metacells) with columns summing to 1
+#' @export
+compute_egc_from_daf <- function(daf_obj, genes = NULL, metacells = NULL, cache = TRUE) {
+    mc_mat <- daf_query_mc_mat(daf_obj, genes = genes, metacells = metacells, cache = cache)
+    mc_sum <- daf_query_mc_sum(daf_obj, metacells = metacells, cache = cache)
+
+    # Filter mc_sum to match metacells in matrix
+    if (!is.null(metacells)) {
+        mc_sum <- mc_sum[intersect(metacells, names(mc_sum))]
+    }
+
+    t(t(mc_mat) / mc_sum)
+}
+
+# ==============================================================================
 # Query-Based Data Access
 # ==============================================================================
 
@@ -74,51 +248,114 @@ escape_daf_value <- function(value) {
 #' @return Matrix slice with genes as rows and metacells as columns
 #' @export
 daf_query_mc_mat <- function(daf_obj, genes = NULL, metacells = NULL, cache = FALSE) {
-    if (!is.null(genes) && length(genes) == 1 && !is.null(genes[[1]]) && !is.na(genes[[1]])) {
-        gene <- as.character(genes[[1]])
-        query <- glue::glue("/ metacell / gene = {escape_daf_value(gene)} : UMIs")
-        vec <- tryCatch(daf_obj[query], error = function(e) NULL)
-        if (!is.null(vec) && length(vec) > 0) {
-            if (is.null(names(vec))) {
-                names(vec) <- dafr::axis_entries(daf_obj, "metacell")
-            }
-            if (!is.null(metacells)) {
-                metacells <- metacells[metacells %in% names(vec)]
-                vec <- vec[metacells]
-            }
-            mat <- Matrix::Matrix(as.numeric(vec), nrow = 1, sparse = TRUE)
-            rownames(mat) <- gene
-            colnames(mat) <- names(vec)
-            return(mat)
-        }
-    }
-
-    # Get the full UMIs matrix
-    # DAF stores as metacell x gene, we need gene x metacell
-    mc_mat <- dafr::get_matrix(daf_obj, "metacell", "gene", "UMIs")
-    mc_mat <- Matrix::t(mc_mat)
-
-    # Get axis entries for proper naming
-    gene_names <- dafr::axis_entries(daf_obj, "gene")
     metacell_names <- dafr::axis_entries(daf_obj, "metacell")
 
-    rownames(mc_mat) <- gene_names
-    colnames(mc_mat) <- metacell_names
-
-    # Filter by genes if specified
-    if (!is.null(genes)) {
-        valid_genes <- intersect(genes, gene_names)
-        if (length(valid_genes) > 0) {
-            mc_mat <- mc_mat[valid_genes, , drop = FALSE]
+    # For gene subsets, query per-gene vectors from DAF to avoid loading the full matrix
+    if (!is.null(genes) && length(genes) > 0) {
+        gene_names <- dafr::axis_entries(daf_obj, "gene")
+        valid_genes <- intersect(as.character(genes), gene_names)
+        if (length(valid_genes) == 0) {
+            mat <- Matrix::Matrix(0, nrow = 0, ncol = length(metacell_names), sparse = TRUE)
+            colnames(mat) <- metacell_names
+            return(mat)
         }
+
+        # Query each gene individually - avoids loading full gene x metacell matrix
+        vecs <- lapply(valid_genes, function(gene) {
+            query <- glue::glue("/ metacell / gene = {escape_daf_value(gene)} : UMIs")
+            tryCatch(daf_obj[query], error = function(e) NULL)
+        })
+
+        # Check if per-gene queries worked
+        if (!any(sapply(vecs, is.null))) {
+            # Build sparse matrix directly from per-gene vectors
+            n_genes <- length(valid_genes)
+            n_mcs <- length(metacell_names)
+            numeric_vecs <- lapply(vecs, as.numeric)
+            # Find non-zero entries for sparse triplet construction
+            # Use list accumulation to avoid O(n²) vector growth
+            i_list <- vector("list", n_genes)
+            j_list <- vector("list", n_genes)
+            x_list <- vector("list", n_genes)
+            for (g in seq_len(n_genes)) {
+                nz <- which(numeric_vecs[[g]] != 0)
+                if (length(nz) > 0) {
+                    i_list[[g]] <- rep(g, length(nz))
+                    j_list[[g]] <- nz
+                    x_list[[g]] <- numeric_vecs[[g]][nz]
+                }
+            }
+            i_idx <- unlist(i_list)
+            j_idx <- unlist(j_list)
+            x_vals <- unlist(x_list)
+            if (length(i_idx) > 0) {
+                mat <- Matrix::sparseMatrix(
+                    i = i_idx, j = j_idx, x = x_vals,
+                    dims = c(n_genes, n_mcs),
+                    dimnames = list(valid_genes, metacell_names)
+                )
+            } else {
+                mat <- Matrix::Matrix(0, nrow = n_genes, ncol = n_mcs, sparse = TRUE)
+                rownames(mat) <- valid_genes
+                colnames(mat) <- metacell_names
+            }
+            if (!is.null(metacells)) {
+                valid_mc <- intersect(metacells, metacell_names)
+                mat <- mat[, valid_mc, drop = FALSE]
+            }
+            return(mat)
+        }
+        # Fall through to full matrix if per-gene queries failed
     }
 
-    # Filter by metacells if specified
+    # For small metacell subsets (no gene filter), query per-metacell to avoid loading full matrix
+    if (is.null(genes) && !is.null(metacells) && length(metacells) <= 20) {
+        gene_names <- dafr::axis_entries(daf_obj, "gene")
+        valid_metacells <- intersect(as.character(metacells), metacell_names)
+        if (length(valid_metacells) > 0) {
+            vecs <- lapply(valid_metacells, function(mc) {
+                query <- glue::glue("/ gene / metacell = {escape_daf_value(mc)} : UMIs")
+                tryCatch(daf_obj[query], error = function(e) NULL)
+            })
+
+            if (!any(sapply(vecs, is.null))) {
+                mat <- do.call(cbind, lapply(vecs, as.numeric))
+                rownames(mat) <- gene_names
+                colnames(mat) <- valid_metacells
+                return(Matrix::Matrix(mat, sparse = TRUE))
+            }
+        }
+        # Fall through to full matrix if per-metacell queries failed
+    }
+
+    # Full matrix retrieval (needed when genes=NULL or per-gene queries failed)
+    # Request gene x metacell directly - DAF handles relayout internally
+    gene_names <- dafr::axis_entries(daf_obj, "gene")
+    mc_mat <- tryCatch(
+        {
+            m <- dafr::get_matrix(daf_obj, "gene", "metacell", "UMIs")
+            rownames(m) <- gene_names
+            colnames(m) <- metacell_names
+            m
+        },
+        error = function(e) {
+            # Fallback: load metacell x gene and transpose
+            m <- dafr::get_matrix(daf_obj, "metacell", "gene", "UMIs")
+            m <- Matrix::t(m)
+            rownames(m) <- gene_names
+            colnames(m) <- metacell_names
+            m
+        }
+    )
+
+    if (!is.null(genes)) {
+        valid_genes <- intersect(genes, gene_names)
+        mc_mat <- mc_mat[valid_genes, , drop = FALSE]
+    }
+
     if (!is.null(metacells)) {
         valid_metacells <- intersect(metacells, metacell_names)
-        if (length(valid_metacells) > 0) {
-            mc_mat <- mc_mat[, valid_metacells, drop = FALSE]
-        }
+        mc_mat <- mc_mat[, valid_metacells, drop = FALSE]
     }
 
     return(mc_mat)
@@ -143,9 +380,7 @@ daf_query_mc_sum <- function(daf_obj, metacells = NULL, cache = FALSE) {
     # Filter by metacells if specified
     if (!is.null(metacells)) {
         valid_metacells <- intersect(metacells, metacell_names)
-        if (length(valid_metacells) > 0) {
-            result <- result[valid_metacells]
-        }
+        result <- result[valid_metacells]
     }
 
     return(result)
@@ -170,9 +405,7 @@ daf_query_cell_types <- function(daf_obj, metacells = NULL, cache = FALSE) {
     # Filter by metacells if specified
     if (!is.null(metacells)) {
         valid_metacells <- intersect(metacells, metacell_names)
-        if (length(valid_metacells) > 0) {
-            result <- result[valid_metacells]
-        }
+        result <- result[valid_metacells]
     }
 
     return(result)
@@ -315,22 +548,7 @@ daf_query_gene_sum_umis <- function(daf_obj) {
 #' @return Character vector of marker gene names
 #' @export
 daf_query_marker_genes <- function(daf_obj) {
-    if (!dafr::has_vector(daf_obj, "gene", "is_marker")) {
-        return(character(0))
-    }
-    # Use DAF query to filter by is_marker
-    tryCatch(
-        {
-            result <- daf_obj["/ gene & is_marker : name"]
-            return(result)
-        },
-        error = function(e) {
-            # Fallback: get all and filter in R
-            is_marker <- dafr::get_vector(daf_obj, "gene", "is_marker")
-            gene_names <- dafr::axis_entries(daf_obj, "gene")
-            return(gene_names[is_marker])
-        }
-    )
+    daf_query_flagged_genes(daf_obj, "is_marker")
 }
 
 #' Get lateral genes using DAF query
@@ -341,20 +559,7 @@ daf_query_marker_genes <- function(daf_obj) {
 #' @return Character vector of lateral gene names
 #' @export
 daf_query_lateral_genes <- function(daf_obj) {
-    if (!dafr::has_vector(daf_obj, "gene", "is_lateral")) {
-        return(character(0))
-    }
-    tryCatch(
-        {
-            result <- daf_obj["/ gene & is_lateral : name"]
-            return(result)
-        },
-        error = function(e) {
-            is_lateral <- dafr::get_vector(daf_obj, "gene", "is_lateral")
-            gene_names <- dafr::axis_entries(daf_obj, "gene")
-            return(gene_names[is_lateral])
-        }
-    )
+    daf_query_flagged_genes(daf_obj, "is_lateral")
 }
 
 #' Get noisy genes using DAF query
@@ -365,20 +570,7 @@ daf_query_lateral_genes <- function(daf_obj) {
 #' @return Character vector of noisy gene names
 #' @export
 daf_query_noisy_genes <- function(daf_obj) {
-    if (!dafr::has_vector(daf_obj, "gene", "is_noisy")) {
-        return(character(0))
-    }
-    tryCatch(
-        {
-            result <- daf_obj["/ gene & is_noisy : name"]
-            return(result)
-        },
-        error = function(e) {
-            is_noisy <- dafr::get_vector(daf_obj, "gene", "is_noisy")
-            gene_names <- dafr::axis_entries(daf_obj, "gene")
-            return(gene_names[is_noisy])
-        }
-    )
+    daf_query_flagged_genes(daf_obj, "is_noisy")
 }
 
 #' Get UMIs aggregated by gene module using DAF query
@@ -464,6 +656,7 @@ convert_daf_to_mcview <- function(daf_obj, var_name, atlas = FALSE) {
         "gene_zero_fold" = convert_daf_gene_zero_fold(daf_obj),
         "metacell_graphs" = convert_daf_metacell_graphs(daf_obj),
         "qc_stats" = convert_daf_qc_stats(daf_obj),
+        "cell_metadata" = convert_daf_cell_metadata(daf_obj),
         # Projection-related conversions
         "projected_fold" = convert_daf_projected_fold(daf_obj),
         "mc_mat_corrected" = convert_daf_mc_mat_corrected(daf_obj),
@@ -500,7 +693,7 @@ convert_daf_mc_egc <- function(daf_obj) {
     median_total <- median(mc_sum)
     mc_egc <- sweep(mc_mat, 2, mc_sum, "/") * median_total
 
-    as.matrix(mc_egc)
+    mc_egc
 }
 
 convert_daf_mc2d <- function(daf_obj) {
@@ -594,28 +787,20 @@ convert_daf_metacell_types <- function(daf_obj) {
         )
 
         if (!is.null(mc_egc) && ncol(mc_egc) > 0) {
-            # Compute top 2 genes per metacell
-            top_genes <- lapply(metacell_names, function(mc) {
-                if (mc %in% colnames(mc_egc)) {
-                    expr <- mc_egc[, mc]
-                    top2_idx <- order(expr, decreasing = TRUE)[1:2]
-                    list(
-                        top1_gene = names(expr)[top2_idx[1]],
-                        top2_gene = names(expr)[top2_idx[2]],
-                        top1_lfp = log2(expr[top2_idx[1]]),
-                        top2_lfp = log2(expr[top2_idx[2]])
-                    )
-                } else {
-                    list(
-                        top1_gene = NA_character_, top2_gene = NA_character_,
-                        top1_lfp = NA_real_, top2_lfp = NA_real_
-                    )
-                }
-            })
-            mc_types$top1_gene <- sapply(top_genes, `[[`, "top1_gene")
-            mc_types$top2_gene <- sapply(top_genes, `[[`, "top2_gene")
-            mc_types$top1_lfp <- sapply(top_genes, `[[`, "top1_lfp")
-            mc_types$top2_lfp <- sapply(top_genes, `[[`, "top2_lfp")
+            # Vectorized top 2 genes per metacell using max.col
+            gene_names_egc <- rownames(mc_egc)
+            egc_t <- t(as.matrix(mc_egc))
+
+            # Top 1: find column index of max value per metacell
+            top1_idx <- max.col(egc_t, ties.method = "first")
+            mc_types$top1_gene <- gene_names_egc[top1_idx]
+            mc_types$top1_lfp <- log2(egc_t[cbind(seq_len(nrow(egc_t)), top1_idx)])
+
+            # Top 2: mask top1 values, find next max
+            egc_t[cbind(seq_len(nrow(egc_t)), top1_idx)] <- -Inf
+            top2_idx <- max.col(egc_t, ties.method = "first")
+            mc_types$top2_gene <- gene_names_egc[top2_idx]
+            mc_types$top2_lfp <- log2(egc_t[cbind(seq_len(nrow(egc_t)), top2_idx)])
         } else {
             # Fallback: add NA columns
             mc_types$top1_gene <- NA_character_
@@ -644,23 +829,11 @@ convert_daf_cell_type_colors <- function(daf_obj) {
 # ==============================================================================
 
 convert_daf_lateral_genes <- function(daf_obj) {
-    lateral_flags <- daf_vec(daf_obj, "gene", "is_lateral", required = FALSE)
-    if (is.null(lateral_flags)) {
-        return(character(0))
-    }
-
-    gene_names <- dafr::axis_entries(daf_obj, "gene")
-    gene_names[lateral_flags]
+    convert_daf_flagged_genes(daf_obj, "is_lateral")
 }
 
 convert_daf_noisy_genes <- function(daf_obj) {
-    noisy_flags <- daf_vec(daf_obj, "gene", "is_noisy", required = FALSE)
-    if (is.null(noisy_flags)) {
-        return(character(0))
-    }
-
-    gene_names <- dafr::axis_entries(daf_obj, "gene")
-    gene_names[noisy_flags]
+    convert_daf_flagged_genes(daf_obj, "is_noisy")
 }
 
 convert_daf_marker_genes <- function(daf_obj) {
@@ -740,141 +913,125 @@ convert_daf_metadata <- function(daf_obj) {
     return(result)
 }
 
-convert_daf_mc_qc_metadata <- function(daf_obj) {
-    metacell_names <- dafr::axis_entries(daf_obj, "metacell")
-
-    result <- tibble(metacell = metacell_names)
-
-    # Prefer existing QC vectors from DAF if present
-    umis <- daf_vec(daf_obj, "metacell", "umis", required = FALSE)
-    if (is.null(umis)) {
-        umis <- daf_vec(daf_obj, "metacell", "total_UMIs", required = FALSE)
-    }
-    if (!is.null(umis)) {
-        result$umis <- umis
+convert_daf_cell_metadata <- function(daf_obj) {
+    # Check if the DAF has a "cell" axis (cell-level data)
+    if (!dafr::has_axis(daf_obj, "cell")) {
+        return(NULL)
     }
 
-    cells <- daf_vec(daf_obj, "metacell", "cells", required = FALSE)
-    if (is.null(cells)) {
-        cells <- daf_vec(daf_obj, "metacell", "n_cell", required = FALSE)
-    }
-    if (!is.null(cells)) {
-        result$cells <- cells
+    cell_names <- dafr::axis_entries(daf_obj, "cell")
+
+    # Read the required cell.metacell vector
+    mc_vec <- daf_vec(daf_obj, "cell", "metacell", required = FALSE)
+    if (is.null(mc_vec)) {
+        return(NULL)
     }
 
-    max_inner_fold <- daf_vec(daf_obj, "metacell", "max_inner_fold", required = FALSE)
-    if (!is.null(max_inner_fold)) {
-        result$max_inner_fold <- max_inner_fold
+    # Read the required cell.samp_id vector
+    samp_id_vec <- daf_vec(daf_obj, "cell", "samp_id", required = FALSE)
+    if (is.null(samp_id_vec)) {
+        return(NULL)
     }
 
-    max_inner_fold_no_lateral <- daf_vec(daf_obj, "metacell", "max_inner_fold_no_lateral", required = FALSE)
-    if (!is.null(max_inner_fold_no_lateral)) {
-        result$max_inner_fold_no_lateral <- max_inner_fold_no_lateral
-    }
+    # Build the base tibble with cell identifier, metacell, and samp_id
+    result <- tibble(
+        cell_id = cell_names,
+        metacell = as.character(mc_vec),
+        samp_id = as.character(samp_id_vec)
+    )
 
-    max_inner_stdev_log <- daf_vec(daf_obj, "metacell", "max_inner_stdev_log", required = FALSE)
-    if (!is.null(max_inner_stdev_log)) {
-        result$max_inner_stdev_log <- max_inner_stdev_log
-    }
+    # Discover and add any additional cell-level vectors
+    cell_props <- tryCatch(
+        {
+            daf_obj["/ cell ?"]
+        },
+        error = function(e) {
+            return(character(0))
+        }
+    )
 
-    zero_fold <- daf_vec(daf_obj, "metacell", "zero_fold", required = FALSE)
-    if (!is.null(zero_fold)) {
-        result$zero_fold <- zero_fold
-    }
+    # Fields already handled above
+    handled_fields <- c("metacell", "samp_id")
 
-    # Try to compute max_inner_fold from matrix if available
-    inner_fold_mat <- daf_mat(daf_obj, "gene", "metacell", "inner_fold", required = FALSE)
-    if (!is.null(inner_fold_mat) && is.null(result$max_inner_fold)) {
-        result$max_inner_fold <- apply(inner_fold_mat, 2, max, na.rm = TRUE)
-    }
+    extra_fields <- setdiff(cell_props, handled_fields)
 
-    # Add other QC vectors if present
-    qc_fields <- c("rare_gene_module", "is_rare")
-    for (field in qc_fields) {
-        vec <- daf_vec(daf_obj, "metacell", field, required = FALSE)
+    for (field in extra_fields) {
+        vec <- daf_vec(daf_obj, "cell", field, required = FALSE)
         if (!is.null(vec)) {
             result[[field]] <- vec
         }
-    }
-
-    if (ncol(result) == 1) {
-        return(NULL)
     }
 
     return(result)
 }
 
-convert_daf_gene_qc <- function(daf_obj) {
-    # Gene QC metadata
-    gene_names <- dafr::axis_entries(daf_obj, "gene")
+convert_daf_mc_qc_metadata <- function(daf_obj) {
+    metacell_names <- dafr::axis_entries(daf_obj, "metacell")
+    result <- tibble(metacell = metacell_names)
 
-    result <- tibble(gene = gene_names)
+    # Handle fields with fallback names
+    result <- add_optional_vec_with_fallback(result, daf_obj, "metacell", "umis", "total_UMIs")
+    result <- add_optional_vec_with_fallback(result, daf_obj, "metacell", "cells", "n_cell")
 
-    # Add max expression if available
-    max_expr <- daf_vec(daf_obj, "gene", "max_expr", required = FALSE)
-    if (is.null(max_expr)) {
-        max_expr <- daf_vec(daf_obj, "gene", "mcview_cache_gene_max_umis", required = FALSE)
-    }
-    if (!is.null(max_expr)) {
-        result$max_expr <- max_expr
-    }
+    # Add standard QC vectors
+    result <- add_optional_vecs(result, daf_obj, "metacell", c(
+        "max_inner_fold", "max_inner_fold_no_lateral",
+        "max_inner_stdev_log", "zero_fold", "rare_gene_module", "is_rare"
+    ))
 
-    # Add gene type if available
-    gene_type <- daf_vec(daf_obj, "gene", "type", required = FALSE)
-    if (!is.null(gene_type)) {
-        result$type <- gene_type
-    }
-
-    # Add is_marker if available
-    is_marker <- daf_vec(daf_obj, "gene", "is_marker", required = FALSE)
-    if (!is.null(is_marker)) {
-        result$is_marker <- is_marker
-    }
-
-    # Add significant_inner_folds_count if available
-    sig_count <- daf_vec(daf_obj, "gene", "significant_inner_folds_count", required = FALSE)
-    if (!is.null(sig_count)) {
-        result$significant_inner_folds_count <- sig_count
-    }
-
-    # Compute max expression if inner_fold matrix available
-    inner_fold_mat <- daf_mat(daf_obj, "gene", "metacell", "inner_fold", required = FALSE)
-    if (!is.null(inner_fold_mat)) {
-        max_inner_fold <- apply(inner_fold_mat, 1, max, na.rm = TRUE)
-        result$max_inner_fold <- max_inner_fold
-    }
-
-    # Add other gene QC vectors if present
-    qc_fields <- c("is_lateral", "is_noisy", "module", "correction_factor")
-    for (field in qc_fields) {
-        vec <- daf_vec(daf_obj, "gene", field, required = FALSE)
-        if (!is.null(vec)) {
-            result[[field]] <- vec
-        }
-    }
-
-    # Include fitted gene metadata if present
-    gene_props <- tryCatch(
-        {
-            daf_obj["/ gene ?"]
-        },
-        error = function(e) {
-            character(0)
-        }
-    )
-    fitted_fields <- grep("^fitted_gene_of", gene_props, value = TRUE)
-    for (field in fitted_fields) {
-        vec <- daf_vec(daf_obj, "gene", field, required = FALSE)
-        if (!is.null(vec)) {
-            result[[field]] <- vec
+    # Compute max_inner_fold per metacell using DAF aggregation if not present
+    if (is.null(result$max_inner_fold) && dafr::has_matrix(daf_obj, "gene", "metacell", "inner_fold")) {
+        max_if <- tryCatch(
+            daf_obj["/ gene / metacell : inner_fold %> Max"],
+            error = function(e) NULL
+        )
+        if (!is.null(max_if)) {
+            result$max_inner_fold <- as.numeric(max_if)
         }
     }
 
     if (ncol(result) == 1) {
         return(NULL)
     }
+    result
+}
 
-    return(result)
+convert_daf_gene_qc <- function(daf_obj) {
+    gene_names <- dafr::axis_entries(daf_obj, "gene")
+    result <- tibble(gene = gene_names)
+
+    # Handle max_expr with fallback
+    result <- add_optional_vec_with_fallback(result, daf_obj, "gene", "max_expr", "mcview_cache_gene_max_umis")
+
+    # Add standard gene QC vectors
+    result <- add_optional_vecs(result, daf_obj, "gene", c(
+        "type", "is_marker", "significant_inner_folds_count",
+        "is_lateral", "is_noisy", "module", "correction_factor"
+    ))
+
+    # Try precomputed vector first, then DAF aggregation, then full matrix fallback
+    max_if <- daf_vec(daf_obj, "gene", "max_inner_fold", required = FALSE)
+    if (!is.null(max_if)) {
+        result$max_inner_fold <- max_if
+    } else if (dafr::has_matrix(daf_obj, "gene", "metacell", "inner_fold")) {
+        max_if <- tryCatch(
+            daf_obj["/ metacell / gene : inner_fold %> Max"],
+            error = function(e) NULL
+        )
+        if (!is.null(max_if)) {
+            result$max_inner_fold <- as.numeric(max_if)
+        }
+    }
+
+    # Include fitted gene metadata if present
+    gene_props <- tryCatch(daf_obj["/ gene ?"], error = function(e) character(0))
+    fitted_fields <- grep("^fitted_gene_of", gene_props, value = TRUE)
+    result <- add_optional_vecs(result, daf_obj, "gene", fitted_fields)
+
+    if (ncol(result) == 1) {
+        return(NULL)
+    }
+    result
 }
 
 # ==============================================================================
@@ -1061,13 +1218,16 @@ convert_daf_proj_weights <- function(daf_obj) {
         return(NULL)
     }
 
-    tryCatch({
-        proj_weights <- jsonlite::fromJSON(proj_weights_json)
-        as_tibble(proj_weights)
-    }, error = function(e) {
-        cli_warn("Failed to parse projection weights JSON: {e$message}")
-        NULL
-    })
+    tryCatch(
+        {
+            proj_weights <- jsonlite::fromJSON(proj_weights_json)
+            as_tibble(proj_weights)
+        },
+        error = function(e) {
+            cli_warn("Failed to parse projection weights JSON: {e$message}")
+            NULL
+        }
+    )
 }
 
 convert_daf_query_cell_type_fracs <- function(daf_obj) {
@@ -1077,11 +1237,14 @@ convert_daf_query_cell_type_fracs <- function(daf_obj) {
         return(NULL)
     }
 
-    tryCatch({
-        fracs <- jsonlite::fromJSON(fracs_json)
-        as_tibble(fracs)
-    }, error = function(e) {
-        cli_warn("Failed to parse query cell type fractions JSON: {e$message}")
-        NULL
-    })
+    tryCatch(
+        {
+            fracs <- jsonlite::fromJSON(fracs_json)
+            as_tibble(fracs)
+        },
+        error = function(e) {
+            cli_warn("Failed to parse query cell type fractions JSON: {e$message}")
+            NULL
+        }
+    )
 }
