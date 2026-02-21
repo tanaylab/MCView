@@ -1,46 +1,3 @@
-verify_config_file <- function(config) {
-    required_fields <- c(
-        "title",
-        "tabs"
-    )
-
-    for (field in required_fields) {
-        if (!(field %in% names(config))) {
-            cli_abort("The field {.field {field}} does not exist in the config file.")
-        }
-    }
-
-    # TODO: verify datasets config
-
-    invisible(TRUE)
-}
-
-
-#' Initialize application config file
-#'
-#' @param project path of the project to initialize
-#'
-#' @noRd
-init_config <- function(project, profile = FALSE) {
-    config_file <- project_config_file(project)
-    mcv_set("project", project)
-    mcv_set("about_file", fs::path_abs(project_about_file(project)))
-    mcv_set("cache_dir", project_cache_dir(project))
-
-    config <- yaml::read_yaml(config_file)
-    verify_config_file(config)
-    if (is.null(config$light_version)) {
-        config$light_version <- FALSE
-    }
-
-    if (file.exists(project_metacells_algorithm_file(project))) {
-        metacells_version <- readLines(project_metacells_algorithm_file(project))
-        config$metacells_version <- metacells_version
-    }
-    config$profile <- profile
-    mcv_set("config", config)
-}
-
 init_defs <- function() {
     mcv_set("egc_epsilon", 1e-5)
     options(spinner.type = 6)
@@ -67,13 +24,9 @@ init_defs <- function() {
 get_all_tab_names <- function() {
     tab_defs <- mcv_get("tab_defs")
     if (is.null(tab_defs)) {
-        # Fallback if tab_defs not yet initialized
-        return(c(
-            "About", "QC", "Projection QC", "Manifold", "Genes", "Markers",
-            "Diff. Expression", "Gene modules", "Cell types", "Annotate",
-            "Inner-fold", "Stdev-fold", "Outliers", "Projected-fold",
-            "Flow", "Samples", "Query", "Atlas"
-        ))
+        # Fallback if tab_defs not yet initialized.
+        # MCVIEW_TAB_NAMES covers contract-backed tabs; add UI-only tabs too.
+        return(unique(c(MCVIEW_TAB_NAMES, "Projected-fold", "Query")))
     }
     names(tab_defs)
 }
@@ -193,11 +146,6 @@ init_tab_defs <- function() {
             title = "Stdev-fold",
             module_name = "stdev_fold",
             icon = "cloud-sun-rain"
-        ),
-        "Outliers" = list(
-            title = "Outliers",
-            module_name = "outliers",
-            icon = "user-astronaut"
         ),
         "Projected-fold" = list(
             title = "Projected-fold",
@@ -409,7 +357,7 @@ extract_cache_config <- function(config = NULL, daf_obj = NULL, dataset_name = N
                 cache_config$precompute_on_startup <- isTRUE(normalize_cache_flag(yaml_cache$precompute_on_startup))
             }
             if (!is.null(yaml_cache$invalidation) && is.list(yaml_cache$invalidation)) {
-                cache_config$invalidation <- modifyList(cache_config$invalidation, yaml_cache$invalidation)
+                cache_config$invalidation <- utils::modifyList(cache_config$invalidation, yaml_cache$invalidation)
             }
 
             # Per-dataset overrides
@@ -452,11 +400,10 @@ extract_cache_config <- function(config = NULL, daf_obj = NULL, dataset_name = N
 #' @return Cache configuration list
 #' @export
 create_cache_config <- function(
-  enabled = TRUE,
-  type = "files",
-  cache_dir = ".mcview_cache",
-  precompute_on_startup = TRUE
-) {
+    enabled = TRUE,
+    type = "files",
+    cache_dir = ".mcview_cache",
+    precompute_on_startup = TRUE) {
     list(
         enabled = enabled,
         type = type,

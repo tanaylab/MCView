@@ -536,218 +536,6 @@ daf_storage_path <- function(daf_obj) {
     NULL
 }
 
-resolve_cache_daf_root <- function(config, daf_obj = NULL) {
-    cache_root <- config$cache_daf_root %||% NULL
-    if (is.null(cache_root) && !is.null(daf_obj)) {
-        cache_root <- daf_scalar(daf_obj, "mcview_cache_daf_root", default = NULL)
-    }
-    if (is.null(cache_root) || !nzchar(cache_root)) {
-        return(NULL)
-    }
-    normalizePath(cache_root, mustWork = FALSE)
-}
-
-resolve_cache_daf_path <- function(cache_root, dataset_name) {
-    if (is.null(cache_root) || is.null(dataset_name) || !nzchar(dataset_name)) {
-        return(NULL)
-    }
-    fs::path(cache_root, dataset_name)
-}
-
-ensure_cache_daf <- function(base_daf, cache_path) {
-    if (is.null(cache_path) || !nzchar(cache_path)) {
-        return(NULL)
-    }
-
-    cache_path <- normalizePath(cache_path, mustWork = FALSE)
-    cache_daf <- NULL
-    if (dir.exists(cache_path) && file.exists(fs::path(cache_path, "daf.json"))) {
-        cache_daf <- tryCatch(dafr::files_daf(cache_path, mode = "r+"), error = function(e) NULL)
-    } else {
-        fs::dir_create(cache_path, recurse = TRUE)
-        cache_daf <- tryCatch(dafr::files_daf(cache_path, mode = "w+"), error = function(e) NULL)
-    }
-
-    if (is.null(cache_daf)) {
-        return(NULL)
-    }
-
-    if (!dafr::has_scalar(cache_daf, "base_daf_repository")) {
-        base_path <- daf_storage_path(base_daf)
-        if (!is.null(base_path) && nzchar(base_path)) {
-            rel_path <- tryCatch(fs::path_rel(base_path, start = cache_path), error = function(e) NULL)
-            base_ref <- if (!is.null(rel_path) && nzchar(rel_path)) rel_path else base_path
-            tryCatch(dafr::set_scalar(cache_daf, "base_daf_repository", base_ref), error = function(e) NULL)
-        }
-    }
-
-    cache_daf
-}
-
-sync_mcview_cache <- function(base_daf, target_daf, prefix = "mcview_cache_") {
-    if (is.null(base_daf) || is.null(target_daf)) {
-        return(invisible(FALSE))
-    }
-
-    ensure_axis <- function(axis_name) {
-        if (!dafr::has_axis(target_daf, axis_name)) {
-            entries <- tryCatch(dafr::axis_entries(base_daf, axis_name), error = function(e) NULL)
-            if (!is.null(entries)) {
-                dafr::add_axis(target_daf, axis_name, entries)
-            }
-        }
-    }
-
-    scalars <- tryCatch(dafr::scalars_set(base_daf), error = function(e) character())
-    cached_scalars <- scalars[startsWith(scalars, prefix)]
-    for (scalar_name in cached_scalars) {
-        value <- daf_scalar(base_daf, scalar_name, default = NULL)
-        if (!is.null(value)) {
-            dafr::set_scalar(target_daf, scalar_name, value, overwrite = TRUE)
-        }
-    }
-
-    axes <- tryCatch(dafr::axes_set(base_daf), error = function(e) character())
-    cache_axes <- axes[startsWith(axes, prefix)]
-    regular_axes <- setdiff(axes, cache_axes)
-
-    for (axis_name in regular_axes) {
-        vectors <- tryCatch(dafr::vectors_set(base_daf, axis_name), error = function(e) character())
-        cached_vectors <- vectors[startsWith(vectors, prefix)]
-        for (vec_name in cached_vectors) {
-            vec <- tryCatch(dafr::get_vector(base_daf, axis_name, vec_name), error = function(e) NULL)
-            if (!is.null(vec)) {
-                ensure_axis(axis_name)
-                dafr::set_vector(target_daf, axis_name, vec_name, vec, overwrite = TRUE)
-            }
-        }
-    }
-
-    for (axis_name in cache_axes) {
-        ensure_axis(axis_name)
-        vectors <- tryCatch(dafr::vectors_set(base_daf, axis_name), error = function(e) character())
-        for (vec_name in vectors) {
-            vec <- tryCatch(dafr::get_vector(base_daf, axis_name, vec_name), error = function(e) NULL)
-            if (!is.null(vec)) {
-                dafr::set_vector(target_daf, axis_name, vec_name, vec, overwrite = TRUE)
-            }
-        }
-    }
-
-    invisible(TRUE)
-}
-
-#' Prepare MCView cache data for a DAF object
-#'
-#' @param daf_obj DAF object
-#' @param dataset_name Dataset name for auxiliary cache directory (optional)
-#' @param cache_daf_root Root directory for auxiliary cache DAFs (optional)
-#' @param force If TRUE, recompute cached data even if present
-#' @param copy_existing If TRUE, copy existing mcview_cache_* data into the auxiliary cache
-#'
-#' @return DAF object (possibly a write chain) with cache enabled
-#' @export
-prepare_daf_cache <- function(daf_obj,
-                              dataset_name = NULL,
-                              cache_daf_root = NULL,
-                              force = FALSE,
-                              copy_existing = TRUE) {
-    if (is.null(daf_obj)) {
-        return(daf_obj)
-    }
-
-    if (daf_is_writable(daf_obj) && is.null(cache_daf_root)) {
-        precompute_daf_cache(daf_obj, force = force)
-        return(daf_obj)
-    }
-
-    cache_root <- resolve_cache_daf_root(list(cache_daf_root = cache_daf_root), daf_obj)
-    cache_path <- resolve_cache_daf_path(cache_root, dataset_name)
-    if (is.null(cache_path)) {
-        precompute_daf_cache(daf_obj, force = force)
-        return(daf_obj)
-    }
-
-    cache_daf <- ensure_cache_daf(daf_obj, cache_path)
-    if (is.null(cache_daf)) {
-        precompute_daf_cache(daf_obj, force = force)
-        return(daf_obj)
-    }
-
-    chain <- tryCatch(
-        dafr::chain_writer(list(dafr::read_only(daf_obj), cache_daf)),
-        error = function(e) NULL
-    )
-    if (is.null(chain)) {
-        precompute_daf_cache(daf_obj, force = force)
-        return(daf_obj)
-    }
-
-    if (isTRUE(copy_existing)) {
-        sync_mcview_cache(daf_obj, cache_daf)
-    }
-    precompute_daf_cache(chain, force = force)
-    chain
-}
-
-reopen_daf_writeable <- function(daf_obj) {
-    path <- daf_storage_path(daf_obj)
-    if (is.null(path)) {
-        return(NULL)
-    }
-    if (dir.exists(path)) {
-        if (file.access(path, 2) != 0) {
-            return(NULL)
-        }
-        return(tryCatch(dafr::files_daf(path, mode = "r+"), error = function(e) NULL))
-    }
-    if (file.exists(path)) {
-        if (file.access(path, 2) != 0) {
-            return(NULL)
-        }
-        return(tryCatch(dafr::h5df(path, mode = "r+"), error = function(e) NULL))
-    }
-    NULL
-}
-
-maybe_enable_daf_cache <- function(daf_obj,
-                                   cache_in_daf,
-                                   dataset_name = NULL,
-                                   cache_daf_root = NULL) {
-    cache_flag <- normalize_cache_flag(cache_in_daf)
-    if (!isTRUE(cache_flag)) {
-        return(list(daf_obj = daf_obj, cache_in_daf = FALSE))
-    }
-    if (daf_is_writable(daf_obj)) {
-        return(list(daf_obj = daf_obj, cache_in_daf = TRUE))
-    }
-
-    cache_path <- resolve_cache_daf_path(cache_daf_root, dataset_name)
-    if (!is.null(cache_path)) {
-        cache_daf <- ensure_cache_daf(daf_obj, cache_path)
-        if (!is.null(cache_daf)) {
-            chain <- tryCatch(
-                dafr::chain_writer(list(dafr::read_only(daf_obj), cache_daf)),
-                error = function(e) NULL
-            )
-            if (!is.null(chain)) {
-                label <- if (!is.null(dataset_name)) glue::glue(" for {dataset_name}") else ""
-                cli::cli_alert_info("Using auxiliary DAF cache{label} at {.path {cache_path}}")
-                return(list(daf_obj = chain, cache_in_daf = TRUE))
-            }
-        }
-    }
-
-    reopened <- reopen_daf_writeable(daf_obj)
-    if (is.null(reopened)) {
-        label <- if (!is.null(dataset_name)) glue::glue(" for {dataset_name}") else ""
-        cli::cli_alert_warning("cache_in_daf requested{label}, but DAF is read-only; skipping DAF cache.")
-        return(list(daf_obj = daf_obj, cache_in_daf = FALSE))
-    }
-
-    list(daf_obj = reopened, cache_in_daf = TRUE)
-}
-
 cache_in_daf_enabled <- function(config = mcv_get("config")) {
     isTRUE(config$cache_in_daf)
 }
@@ -893,21 +681,22 @@ precompute_daf_metacell_top_genes <- function(daf_obj, egc_epsilon = 1e-5, force
     }
 
     metacell_names <- dafr::axis_entries(daf_obj, "metacell")
-    top_genes <- lapply(metacell_names, function(mc) {
-        expr <- mc_egc[, mc]
-        top2_idx <- order(expr, decreasing = TRUE)[1:2]
-        list(
-            top1_gene = names(expr)[top2_idx[1]],
-            top2_gene = names(expr)[top2_idx[2]],
-            top1_lfp = log2(expr[top2_idx[1]] + egc_epsilon),
-            top2_lfp = log2(expr[top2_idx[2]] + egc_epsilon)
-        )
-    })
+    gene_names <- rownames(mc_egc)
 
-    top1_gene <- sapply(top_genes, `[[`, "top1_gene")
-    top2_gene <- sapply(top_genes, `[[`, "top2_gene")
-    top1_lfp <- sapply(top_genes, `[[`, "top1_lfp")
-    top2_lfp <- sapply(top_genes, `[[`, "top2_lfp")
+    # Vectorized top gene computation using max.col on transposed matrix
+    # mc_egc is gene x metacell, transpose to metacell x gene for max.col
+    egc_t <- t(as.matrix(mc_egc))
+
+    # Top 1: find column index of max value per metacell
+    top1_idx <- max.col(egc_t, ties.method = "first")
+    top1_gene <- gene_names[top1_idx]
+    top1_lfp <- log2(egc_t[cbind(seq_len(nrow(egc_t)), top1_idx)] + egc_epsilon)
+
+    # Top 2: mask top1 values, find next max
+    egc_t[cbind(seq_len(nrow(egc_t)), top1_idx)] <- -Inf
+    top2_idx <- max.col(egc_t, ties.method = "first")
+    top2_gene <- gene_names[top2_idx]
+    top2_lfp <- log2(egc_t[cbind(seq_len(nrow(egc_t)), top2_idx)] + egc_epsilon)
 
     if (any(is.na(top1_gene)) || any(is.na(top2_gene)) ||
         any(is.na(top1_lfp)) || any(is.na(top2_lfp))) {
@@ -1024,13 +813,12 @@ precompute_daf_cache <- function(daf_obj,
 #' }
 #' @export
 populate_mcview_cache <- function(
-  daf_path,
-  cache_dir = ".mcview_cache",
-  cache_type = "files",
-  what = NULL,
-  force = FALSE,
-  verbose = TRUE
-) {
+    daf_path,
+    cache_dir = ".mcview_cache",
+    cache_type = "files",
+    what = NULL,
+    force = FALSE,
+    verbose = TRUE) {
     # Initialize dafr if needed
     if (!requireNamespace("dafr", quietly = TRUE)) {
         cli::cli_abort("dafr package is required for cache population")

@@ -421,3 +421,220 @@ test_that("populate_dataset_cache works with memory cache", {
     # Should complete without error
     expect_true(is.logical(result))
 })
+
+# ==============================================================================
+# Helper Function Tests (for refactored code)
+# ==============================================================================
+
+test_that("daf_query_flagged_genes returns marker genes", {
+    daf <- setup_test_daf()
+    daf_obj <- get_dataset_daf("test_data")
+
+    markers <- daf_query_flagged_genes(daf_obj, "is_marker")
+
+    # Should return character vector
+    expect_type(markers, "character")
+})
+
+test_that("daf_query_flagged_genes returns lateral genes", {
+    daf <- setup_test_daf()
+    daf_obj <- get_dataset_daf("test_data")
+
+    lateral <- daf_query_flagged_genes(daf_obj, "is_lateral")
+
+    # Should return character vector
+    expect_type(lateral, "character")
+})
+
+test_that("daf_query_flagged_genes returns empty for missing flag", {
+    daf <- setup_test_daf()
+    daf_obj <- get_dataset_daf("test_data")
+
+    result <- daf_query_flagged_genes(daf_obj, "nonexistent_flag")
+
+    expect_equal(result, character(0))
+})
+
+test_that("convert_daf_flagged_genes returns genes with TRUE flag", {
+    daf <- setup_test_daf()
+    daf_obj <- get_dataset_daf("test_data")
+
+    lateral <- convert_daf_flagged_genes(daf_obj, "is_lateral")
+
+    # Should return character vector
+    expect_type(lateral, "character")
+})
+
+test_that("convert_daf_flagged_genes returns empty for missing flag", {
+    daf <- setup_test_daf()
+    daf_obj <- get_dataset_daf("test_data")
+
+    result <- convert_daf_flagged_genes(daf_obj, "nonexistent_flag")
+
+    expect_equal(result, character(0))
+})
+
+test_that("add_optional_vec adds vector when present", {
+    daf <- setup_test_daf()
+    daf_obj <- get_dataset_daf("test_data")
+
+    result <- tibble(metacell = dafr::axis_entries(daf_obj, "metacell"))
+    result <- add_optional_vec(result, daf_obj, "metacell", "type")
+
+    expect_true("type" %in% names(result))
+})
+
+test_that("add_optional_vec skips missing vector", {
+    daf <- setup_test_daf()
+    daf_obj <- get_dataset_daf("test_data")
+
+    result <- tibble(metacell = dafr::axis_entries(daf_obj, "metacell"))
+    result <- add_optional_vec(result, daf_obj, "metacell", "nonexistent_field")
+
+    expect_false("nonexistent_field" %in% names(result))
+})
+
+test_that("add_optional_vecs adds multiple vectors", {
+    daf <- setup_test_daf()
+    daf_obj <- get_dataset_daf("test_data")
+
+    result <- tibble(metacell = dafr::axis_entries(daf_obj, "metacell"))
+    result <- add_optional_vecs(result, daf_obj, "metacell", c("type", "total_UMIs", "nonexistent"))
+
+    expect_true("type" %in% names(result))
+    expect_true("total_UMIs" %in% names(result))
+    expect_false("nonexistent" %in% names(result))
+})
+
+test_that("add_optional_vec_with_fallback uses primary when present", {
+    daf <- setup_test_daf()
+    daf_obj <- get_dataset_daf("test_data")
+
+    result <- tibble(metacell = dafr::axis_entries(daf_obj, "metacell"))
+    result <- add_optional_vec_with_fallback(result, daf_obj, "metacell", "total_UMIs", "nonexistent")
+
+    expect_true("total_UMIs" %in% names(result))
+})
+
+test_that("add_optional_vec_with_fallback uses fallback when primary missing", {
+    daf <- setup_test_daf()
+    daf_obj <- get_dataset_daf("test_data")
+
+    result <- tibble(metacell = dafr::axis_entries(daf_obj, "metacell"))
+    # Use nonexistent as primary, total_UMIs as fallback
+    result <- add_optional_vec_with_fallback(result, daf_obj, "metacell", "nonexistent", "total_UMIs")
+
+    # Column should be named after primary even though value came from fallback
+    expect_true("nonexistent" %in% names(result))
+})
+
+# ==============================================================================
+# DAF Object Accessor Helper Tests
+# ==============================================================================
+
+test_that("get_daf_for_query returns dataset DAF when atlas=FALSE", {
+    daf <- setup_test_daf()
+
+    result <- get_daf_for_query("test_data", atlas = FALSE)
+
+    expect_true(!is.null(result))
+    expect_true(inherits(result, "Daf"))
+})
+
+test_that("get_daf_for_query returns NULL for missing dataset", {
+    init_mcview_env()
+
+    result <- get_daf_for_query("nonexistent_dataset", atlas = FALSE)
+
+    expect_null(result)
+})
+
+# ==============================================================================
+# EGC Normalization Helper Tests
+# ==============================================================================
+
+test_that("compute_egc_from_daf returns normalized matrix", {
+    daf <- setup_test_daf()
+    daf_obj <- get_dataset_daf("test_data")
+
+    egc <- compute_egc_from_daf(daf_obj)
+
+    expect_true(is.matrix(egc) || inherits(egc, "Matrix"))
+    expect_gt(nrow(egc), 0)
+    expect_gt(ncol(egc), 0)
+    # Check columns sum to approximately 1 (normalized)
+    col_sums <- colSums(egc)
+    expect_true(all(abs(col_sums - 1) < 1e-6))
+})
+
+test_that("compute_egc_from_daf filters by genes", {
+    daf <- setup_test_daf()
+    daf_obj <- get_dataset_daf("test_data")
+
+    genes_to_get <- c("Cd79a", "Xkr4")
+    egc <- compute_egc_from_daf(daf_obj, genes = genes_to_get)
+
+    expect_true(all(rownames(egc) %in% genes_to_get))
+})
+
+test_that("compute_egc_from_daf filters by metacells", {
+    daf <- setup_test_daf()
+    daf_obj <- get_dataset_daf("test_data")
+
+    mc2d <- get_mc_data("test_data", "mc2d")
+    test_metacells <- head(mc2d$mc_id, 5)
+
+    egc <- compute_egc_from_daf(daf_obj, metacells = test_metacells)
+
+    expect_equal(ncol(egc), length(test_metacells))
+})
+
+# ==============================================================================
+# Gene Filtering Helper Tests
+# ==============================================================================
+
+test_that("filter_genes_by_flags removes lateral genes when requested", {
+    daf <- setup_test_daf()
+
+    df <- tibble(gene = c("Cd79a", "Xkr4", "Sox17"))
+
+    # Mock lateral_genes
+    lateral_genes <- c("Sox17")
+    result <- filter_genes_by_flags(df,
+        lateral_genes = lateral_genes,
+        noisy_genes = NULL,
+        include_lateral = FALSE, include_noisy = TRUE
+    )
+
+    expect_false("Sox17" %in% result$gene)
+    expect_true("Cd79a" %in% result$gene)
+})
+
+test_that("filter_genes_by_flags keeps all genes when include flags are TRUE", {
+    daf <- setup_test_daf()
+
+    df <- tibble(gene = c("Cd79a", "Xkr4", "Sox17"))
+
+    result <- filter_genes_by_flags(df,
+        lateral_genes = c("Sox17"),
+        noisy_genes = c("Xkr4"),
+        include_lateral = TRUE, include_noisy = TRUE
+    )
+
+    expect_equal(nrow(result), 3)
+})
+
+test_that("filter_genes_by_flags removes noisy genes when requested", {
+    daf <- setup_test_daf()
+
+    df <- tibble(gene = c("Cd79a", "Xkr4", "Sox17"))
+
+    result <- filter_genes_by_flags(df,
+        lateral_genes = NULL,
+        noisy_genes = c("Xkr4"),
+        include_lateral = TRUE, include_noisy = FALSE
+    )
+
+    expect_false("Xkr4" %in% result$gene)
+    expect_true("Cd79a" %in% result$gene)
+})

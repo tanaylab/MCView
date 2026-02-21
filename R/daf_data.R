@@ -232,6 +232,53 @@ compute_egc_from_daf <- function(daf_obj, genes = NULL, metacells = NULL, cache 
 }
 
 # ==============================================================================
+# Query-Based Data Access - Shared Helpers
+# ==============================================================================
+
+#' Query a named vector from a DAF axis
+#'
+#' Shared helper for the common pattern: get_vector + set names + optional filter.
+#' Used by daf_query_mc_sum, daf_query_cell_types, etc.
+#'
+#' @param daf_obj DAF object
+#' @param axis Axis name (e.g. "metacell")
+#' @param property Vector property name (e.g. "total_UMIs", "type")
+#' @param filter Optional character vector of axis entry names to keep
+#' @param cache Whether to cache the query result (currently unused, kept for API compatibility)
+#'
+#' @return Named vector with axis entries as names, optionally filtered
+#' @noRd
+daf_query_named_vector <- function(daf_obj, axis, property, filter = NULL, cache = FALSE) {
+    result <- dafr::get_vector(daf_obj, axis, property)
+    axis_names <- dafr::axis_entries(daf_obj, axis)
+    names(result) <- axis_names
+
+    if (!is.null(filter)) {
+        valid_entries <- intersect(filter, axis_names)
+        result <- result[valid_entries]
+    }
+
+    return(result)
+}
+
+#' Query a gene-level aggregation of UMIs via DAF
+#'
+#' Shared helper for the common pattern: aggregate UMIs over metacells per gene.
+#' Used by daf_query_gene_max_umis, daf_query_gene_mean_umis, daf_query_gene_sum_umis.
+#'
+#' @param daf_obj DAF object
+#' @param agg_op DAF aggregation operator string (e.g. "Max", "Mean", "Sum")
+#'
+#' @return Named vector with gene names
+#' @noRd
+daf_query_gene_agg <- function(daf_obj, agg_op) {
+    query <- paste0("/ metacell / gene : UMIs %> ", agg_op)
+    result <- daf_obj[query]
+    names(result) <- dafr::axis_entries(daf_obj, "gene")
+    return(result)
+}
+
+# ==============================================================================
 # Query-Based Data Access
 # ==============================================================================
 
@@ -370,20 +417,7 @@ daf_query_mc_mat <- function(daf_obj, genes = NULL, metacells = NULL, cache = FA
 #' @return Named vector of total UMIs per metacell
 #' @export
 daf_query_mc_sum <- function(daf_obj, metacells = NULL, cache = FALSE) {
-    # Get full total_UMIs vector
-    result <- dafr::get_vector(daf_obj, "metacell", "total_UMIs")
-
-    # Get axis entries for naming
-    metacell_names <- dafr::axis_entries(daf_obj, "metacell")
-    names(result) <- metacell_names
-
-    # Filter by metacells if specified
-    if (!is.null(metacells)) {
-        valid_metacells <- intersect(metacells, metacell_names)
-        result <- result[valid_metacells]
-    }
-
-    return(result)
+    daf_query_named_vector(daf_obj, "metacell", "total_UMIs", filter = metacells, cache = cache)
 }
 
 #' Retrieve cell type assignments via DAF
@@ -395,20 +429,7 @@ daf_query_mc_sum <- function(daf_obj, metacells = NULL, cache = FALSE) {
 #' @return Named vector of cell types per metacell
 #' @export
 daf_query_cell_types <- function(daf_obj, metacells = NULL, cache = FALSE) {
-    # Get full type vector
-    result <- dafr::get_vector(daf_obj, "metacell", "type")
-
-    # Get axis entries for naming
-    metacell_names <- dafr::axis_entries(daf_obj, "metacell")
-    names(result) <- metacell_names
-
-    # Filter by metacells if specified
-    if (!is.null(metacells)) {
-        valid_metacells <- intersect(metacells, metacell_names)
-        result <- result[valid_metacells]
-    }
-
-    return(result)
+    daf_query_named_vector(daf_obj, "metacell", "type", filter = metacells, cache = cache)
 }
 
 #' Retrieve 2D coordinates via DAF
@@ -513,9 +534,7 @@ daf_query_cell_type_sum <- function(daf_obj, cell_types = NULL) {
 #' @return Named vector of max UMIs per gene
 #' @export
 daf_query_gene_max_umis <- function(daf_obj) {
-    result <- daf_obj["/ metacell / gene : UMIs %> Max"]
-    names(result) <- dafr::axis_entries(daf_obj, "gene")
-    return(result)
+    daf_query_gene_agg(daf_obj, "Max")
 }
 
 #' Get mean UMIs per gene using DAF query
@@ -524,9 +543,7 @@ daf_query_gene_max_umis <- function(daf_obj) {
 #' @return Named vector of mean UMIs per gene
 #' @export
 daf_query_gene_mean_umis <- function(daf_obj) {
-    result <- daf_obj["/ metacell / gene : UMIs %> Mean"]
-    names(result) <- dafr::axis_entries(daf_obj, "gene")
-    return(result)
+    daf_query_gene_agg(daf_obj, "Mean")
 }
 
 #' Get sum UMIs per gene using DAF query
@@ -535,9 +552,7 @@ daf_query_gene_mean_umis <- function(daf_obj) {
 #' @return Named vector of sum UMIs per gene
 #' @export
 daf_query_gene_sum_umis <- function(daf_obj) {
-    result <- daf_obj["/ metacell / gene : UMIs %> Sum"]
-    names(result) <- dafr::axis_entries(daf_obj, "gene")
-    return(result)
+    daf_query_gene_agg(daf_obj, "Sum")
 }
 
 #' Get marker genes using DAF query
@@ -794,13 +809,13 @@ convert_daf_metacell_types <- function(daf_obj) {
             # Top 1: find column index of max value per metacell
             top1_idx <- max.col(egc_t, ties.method = "first")
             mc_types$top1_gene <- gene_names_egc[top1_idx]
-            mc_types$top1_lfp <- log2(egc_t[cbind(seq_len(nrow(egc_t)), top1_idx)])
+            mc_types$top1_lfp <- log2(egc_t[cbind(seq_len(nrow(egc_t)), top1_idx)] + 1e-5)
 
             # Top 2: mask top1 values, find next max
             egc_t[cbind(seq_len(nrow(egc_t)), top1_idx)] <- -Inf
             top2_idx <- max.col(egc_t, ties.method = "first")
             mc_types$top2_gene <- gene_names_egc[top2_idx]
-            mc_types$top2_lfp <- log2(egc_t[cbind(seq_len(nrow(egc_t)), top2_idx)])
+            mc_types$top2_lfp <- log2(egc_t[cbind(seq_len(nrow(egc_t)), top2_idx)] + 1e-5)
         } else {
             # Fallback: add NA columns
             mc_types$top1_gene <- NA_character_
@@ -1138,24 +1153,37 @@ convert_daf_qc_stats <- function(daf_obj) {
 # Projection/Atlas Conversions
 # ==============================================================================
 
+#' Convert a fraction matrix (metacell x gene) to UMI-scale (gene x metacell)
+#'
+#' Shared helper for the common pattern: load fraction matrix, transpose,
+#' multiply by total_UMIs, and label axes. Used by convert_daf_mc_mat_corrected
+#' and convert_daf_projected_mat.
+#'
+#' @param daf_obj DAF object
+#' @param property_name Name of the metacell-gene fraction property
+#'
+#' @return Gene x metacell matrix scaled to UMIs, or NULL if property missing
+#' @noRd
+convert_daf_fraction_to_umi <- function(daf_obj, property_name) {
+    frac_mat <- daf_mat(daf_obj, "metacell", "gene", property_name, required = FALSE)
+    if (is.null(frac_mat)) {
+        return(NULL)
+    }
+
+    mc_sum <- daf_vec(daf_obj, "metacell", "total_UMIs")
+    umi_mat <- Matrix::t(frac_mat) * mc_sum
+    rownames(umi_mat) <- dafr::axis_entries(daf_obj, "gene")
+    colnames(umi_mat) <- dafr::axis_entries(daf_obj, "metacell")
+
+    return(umi_mat)
+}
+
 convert_daf_projected_fold <- function(daf_obj) {
     daf_mat(daf_obj, "gene", "metacell", "projected_fold", required = FALSE)
 }
 
 convert_daf_mc_mat_corrected <- function(daf_obj) {
-    # Corrected fraction matrix (from atlas projection)
-    corrected <- daf_mat(daf_obj, "metacell", "gene", "corrected_fraction", required = FALSE)
-    if (is.null(corrected)) {
-        return(NULL)
-    }
-
-    # Transpose to gene x metacell and convert to UMIs
-    mc_sum <- daf_vec(daf_obj, "metacell", "total_UMIs")
-    mc_mat_corrected <- Matrix::t(corrected) * mc_sum
-    rownames(mc_mat_corrected) <- dafr::axis_entries(daf_obj, "gene")
-    colnames(mc_mat_corrected) <- dafr::axis_entries(daf_obj, "metacell")
-
-    return(mc_mat_corrected)
+    convert_daf_fraction_to_umi(daf_obj, "corrected_fraction")
 }
 
 convert_daf_query_metadata <- function(daf_obj) {
@@ -1196,19 +1224,7 @@ convert_daf_query_metadata <- function(daf_obj) {
 }
 
 convert_daf_projected_mat <- function(daf_obj) {
-    # Projected (expected) fraction matrix (from atlas projection)
-    projected <- daf_mat(daf_obj, "metacell", "gene", "projected_fraction", required = FALSE)
-    if (is.null(projected)) {
-        return(NULL)
-    }
-
-    # Transpose to gene x metacell and convert to UMIs
-    mc_sum <- daf_vec(daf_obj, "metacell", "total_UMIs")
-    projected_mat <- Matrix::t(projected) * mc_sum
-    rownames(projected_mat) <- dafr::axis_entries(daf_obj, "gene")
-    colnames(projected_mat) <- dafr::axis_entries(daf_obj, "metacell")
-
-    return(projected_mat)
+    convert_daf_fraction_to_umi(daf_obj, "projected_fraction")
 }
 
 convert_daf_proj_weights <- function(daf_obj) {

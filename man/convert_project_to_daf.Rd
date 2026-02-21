@@ -22,6 +22,8 @@ convert_project_to_daf(
 
 \item{datasets}{Optional vector of dataset names to convert (default: all)}
 
+\item{precompute_cache}{Whether to precompute cache after conversion}
+
 \item{cache_daf_root}{Optional path to write auxiliary DAF caches (default: project/cache_daf)}
 }
 \description{

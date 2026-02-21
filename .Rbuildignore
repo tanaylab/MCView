@@ -27,3 +27,6 @@ $run_dev.*
 ^publish_docker_image.sh$
 ^example$
 ^.*\.Rprof$
+^\.a5c$
+^\.claude$
+^\.lintr$

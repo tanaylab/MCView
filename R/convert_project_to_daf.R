@@ -8,6 +8,7 @@
 #' @param output Path to output directory for DAF data
 #' @param format DAF format: "files" for directory-based, "h5" for HDF5
 #' @param datasets Optional vector of dataset names to convert (default: all)
+#' @param precompute_cache Whether to precompute cache after conversion
 #' @param cache_daf_root Optional path to write auxiliary DAF caches (default: project/cache_daf)
 #'
 #' @export
@@ -286,13 +287,13 @@ read_cache_file <- function(cache_dir, name) {
     # Try .tsv format
     tsv_path <- fs::path(cache_dir, paste0(name, ".tsv"))
     if (fs::file_exists(tsv_path)) {
-        return(data.table::fread(tsv_path) %>% tibble::as_tibble())
+        return(data.table::fread(tsv_path, data.table = FALSE) %>% tibble::as_tibble())
     }
 
     # Try .csv format
     csv_path <- fs::path(cache_dir, paste0(name, ".csv"))
     if (fs::file_exists(csv_path)) {
-        return(data.table::fread(csv_path) %>% tibble::as_tibble())
+        return(data.table::fread(csv_path, data.table = FALSE) %>% tibble::as_tibble())
     }
 
     return(NULL)
@@ -474,69 +475,80 @@ sanitize_daf_name <- function(name) {
     gsub("[/\\\\:*?\"<>|]", "_", name)
 }
 
+#' Coerce a vector to a DAF-compatible type
+#'
+#' Converts factors to character, and ensures numeric/logical/character types
+#' are explicit. Returns NULL for list columns.
+#'
+#' @param vec A vector from a data frame column
+#' @return Coerced vector, or NULL if the column type is unsupported (e.g. list)
+#' @noRd
+coerce_vec_for_daf <- function(vec) {
+    if (is.list(vec)) {
+        return(NULL)
+    }
+    if (is.factor(vec)) {
+        return(as.character(vec))
+    }
+    if (is.numeric(vec)) {
+        return(as.numeric(vec))
+    }
+    if (is.logical(vec)) {
+        return(as.logical(vec))
+    }
+    as.character(vec)
+}
+
+#' Set DAF vectors from a data frame
+#'
+#' Iterates over columns of a data frame, performing type coercion and writing
+#' each as a vector on the given axis. Skips columns that already exist in the
+#' DAF, columns containing NAs, and list columns.
+#'
+#' @param daf DAF object (writable)
+#' @param axis Axis name (e.g. "metacell", "gene")
+#' @param df Data frame whose columns will become vectors
+#' @param id_col Name of the ID column to skip (e.g. "metacell", "gene")
+#' @param skip_existing If TRUE, skip columns that already exist as vectors on the axis
+#'
+#' @return The DAF object (invisibly), potentially modified
+#' @noRd
+set_daf_vectors_from_df <- function(daf, axis, df, id_col, skip_existing = TRUE) {
+    for (col in setdiff(names(df), id_col)) {
+        safe_col <- sanitize_daf_name(col)
+
+        if (skip_existing && dafr::has_vector(daf, axis, safe_col)) {
+            next
+        }
+
+        vec <- coerce_vec_for_daf(df[[col]])
+        if (is.null(vec)) {
+            next
+        }
+
+        if (!any(is.na(vec))) {
+            daf <- dafr::set_vector(daf, axis, safe_col, vec)
+        }
+    }
+
+    invisible(daf)
+}
+
 #' Add metadata vectors to DAF
 #' @noRd
 add_metadata_vectors <- function(daf, cache_dir, metacell_names) {
     # Read metadata
     metadata <- read_cache_file(cache_dir, "metadata")
     if (!is.null(metadata) && is.data.frame(metadata) && nrow(metadata) > 0) {
-        # Order to match metacell axis
         metadata <- metadata[match(metacell_names, as.character(metadata$metacell)), ]
-
-        # Add each column as a vector (skip if already exists or contains NAs)
-        for (col in setdiff(names(metadata), "metacell")) {
-            # Sanitize column name for DAF storage
-            safe_col <- sanitize_daf_name(col)
-
-            # Skip if vector already exists (e.g., x,y coordinates from mc2d)
-            if (dafr::has_vector(daf, "metacell", safe_col)) {
-                next
-            }
-            vec <- metadata[[col]]
-            if (!any(is.na(vec))) {
-                # Convert factors to character, keep numerics as-is
-                if (is.factor(vec)) {
-                    vec <- as.character(vec)
-                } else if (is.numeric(vec)) {
-                    vec <- as.numeric(vec)
-                } else if (is.logical(vec)) {
-                    vec <- as.logical(vec)
-                } else {
-                    vec <- as.character(vec)
-                }
-                daf <- dafr::set_vector(daf, "metacell", safe_col, vec)
-            }
-        }
+        daf <- set_daf_vectors_from_df(daf, "metacell", metadata, "metacell")
     }
 
     # Read QC metadata
     mc_qc <- read_cache_file(cache_dir, "mc_qc_metadata")
     if (!is.null(mc_qc) && is.data.frame(mc_qc) && nrow(mc_qc) > 0) {
         mc_qc <- mc_qc[match(metacell_names, as.character(mc_qc$metacell)), ]
-
-        for (col in setdiff(names(mc_qc), "metacell")) {
-            # Sanitize column name for DAF storage
-            safe_col <- sanitize_daf_name(col)
-
-            # Skip if already added from metadata
-            if (!dafr::has_vector(daf, "metacell", safe_col)) {
-                vec <- mc_qc[[col]]
-                # Skip if contains NAs - DAF doesn't allow them
-                if (!any(is.na(vec))) {
-                    # Convert factors to character, keep numerics as-is
-                    if (is.factor(vec)) {
-                        vec <- as.character(vec)
-                    } else if (is.numeric(vec)) {
-                        vec <- as.numeric(vec)
-                    } else if (is.logical(vec)) {
-                        vec <- as.logical(vec)
-                    } else {
-                        vec <- as.character(vec)
-                    }
-                    daf <- dafr::set_vector(daf, "metacell", safe_col, vec)
-                }
-            }
-        }
+        daf <- set_daf_vectors_from_df(daf, "metacell", mc_qc, "metacell")
     }
 
     invisible(daf)
@@ -548,30 +560,7 @@ add_gene_qc_vectors <- function(daf, cache_dir, gene_names) {
     gene_qc <- read_cache_file(cache_dir, "gene_qc")
     if (!is.null(gene_qc) && is.data.frame(gene_qc) && nrow(gene_qc) > 0) {
         gene_qc <- gene_qc[match(gene_names, as.character(gene_qc$gene)), ]
-        for (col in setdiff(names(gene_qc), "gene")) {
-            # Sanitize column name for DAF storage
-            safe_col <- sanitize_daf_name(col)
-
-            if (dafr::has_vector(daf, "gene", safe_col)) {
-                next
-            }
-            vec <- gene_qc[[col]]
-            if (is.list(vec)) {
-                next
-            }
-            if (!any(is.na(vec))) {
-                if (is.factor(vec)) {
-                    vec <- as.character(vec)
-                } else if (is.numeric(vec)) {
-                    vec <- as.numeric(vec)
-                } else if (is.logical(vec)) {
-                    vec <- as.logical(vec)
-                } else {
-                    vec <- as.character(vec)
-                }
-                daf <- dafr::set_vector(daf, "gene", safe_col, vec)
-            }
-        }
+        daf <- set_daf_vectors_from_df(daf, "gene", gene_qc, "gene")
     }
 
     invisible(daf)

@@ -134,7 +134,7 @@ cell_metadata_to_metacell <- function(cell_metadata, cell_to_metacell, func = me
         cli_alert_info(glue("Numerical variables: {vars}", vars = paste(numerical_vars, collapse = ", ")))
 
         cell_metadata <- cell_metadata %>%
-            mutate_at(numerical_vars, as.numeric)
+            mutate(across(all_of(numerical_vars), as.numeric))
         purrr::walk(numerical_vars, ~ {
             if (all(is.na(cell_metadata[[.x]]))) {
                 cli_abort("The cell_metadata variable {.field {.x}} is all NA. Is it numeric? Convert categorical variables to numeric by adding it to the {.code categorical} parameter")
@@ -144,7 +144,7 @@ cell_metadata_to_metacell <- function(cell_metadata, cell_to_metacell, func = me
         metadata_numeric <- cell_metadata %>%
             select(-cell_id) %>%
             group_by(metacell) %>%
-            summarise_at(vars(numerical_vars), func) %>%
+            summarise(across(all_of(numerical_vars), func)) %>%
             ungroup()
 
         metadata <- metadata %>%

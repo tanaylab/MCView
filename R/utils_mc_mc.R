@@ -5,8 +5,9 @@ metacell_from_coords_proj <- function(dataset, x, y, mc2d = NULL) {
     df <- mc2d_to_df(mc2d) %>% left_join(metacell_types, by = "metacell")
 
     metacell <- df %>%
-        mutate(diff1 = x - !!x, diff2 = y - !!y) %>%
-        arrange(abs(diff1), abs(diff2)) %>%
+        mutate(diff1 = x - .env$x, diff2 = y - .env$y) %>%
+        mutate(dist = diff1^2 + diff2^2) %>%
+        arrange(dist) %>%
         slice(1) %>%
         pull(metacell)
 

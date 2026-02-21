@@ -103,7 +103,7 @@ mod_atlas_server <- function(id, dataset, metacell_types, cell_type_colors, gene
                 get_mc_data(dataset(), "metacell_types", atlas = TRUE)
             })
 
-            atlas_gene_modules <- gene_modules <- reactive({
+            atlas_gene_modules <- reactive({
                 mods <- get_mc_data(dataset(), "gene_modules", atlas = TRUE)
                 if (is.null(mods)) {
                     mods <- tibble(gene = character(0), module = factor())

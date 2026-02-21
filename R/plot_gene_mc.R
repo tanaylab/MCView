@@ -151,11 +151,10 @@ connect_gene_plots <- function(input, output, session, ns, source) {
 }
 
 initial_scatters_point_size <- function(dataset, screen_width = NULL, screen_height = NULL, weight = 2, atlas = FALSE) {
-    config <- mcv_get("config")
-    if (!is.null(config$datasets[[dataset]]$scatters_point_size)) {
-        return(config$datasets[[dataset]]$scatters_point_size)
-    } else if (!is.null(config$scatters_point_size)) {
-        return(config$scatters_point_size)
+    if (!is.null(app_config("datasets")[[dataset]]$scatters_point_size)) {
+        return(app_config("datasets")[[dataset]]$scatters_point_size)
+    } else if (!is.null(app_config("scatters_point_size"))) {
+        return(app_config("scatters_point_size"))
     }
     # Use DAF axis length instead of loading full mc_sum vector
     daf_obj <- get_daf_for_query(dataset, atlas)
@@ -169,21 +168,19 @@ initial_scatters_point_size <- function(dataset, screen_width = NULL, screen_hei
 }
 
 initial_scatters_stroke <- function(dataset) {
-    config <- mcv_get("config")
-    if (!is.null(config$datasets[[dataset]]$scatters_stroke)) {
-        return(config$datasets[[dataset]]$scatters_stroke)
-    } else if (!is.null(config$scatters_stroke)) {
-        return(config$scatters_stroke)
+    if (!is.null(app_config("datasets")[[dataset]]$scatters_stroke)) {
+        return(app_config("datasets")[[dataset]]$scatters_stroke)
+    } else if (!is.null(app_config("scatters_stroke"))) {
+        return(app_config("scatters_stroke"))
     }
     return(0.2)
 }
 
 default_scatters_log_labels <- function(dataset) {
-    config <- mcv_get("config")
-    if (!is.null(config$datasets[[dataset]]$scatters_log_labels)) {
-        return(config$datasets[[dataset]]$scatters_log_labels)
-    } else if (!is.null(config$scatters_log_labels)) {
-        return(config$scatters_log_labels)
+    if (!is.null(app_config("datasets")[[dataset]]$scatters_log_labels)) {
+        return(app_config("datasets")[[dataset]]$scatters_log_labels)
+    } else if (!is.null(app_config("scatters_log_labels"))) {
+        return(app_config("scatters_log_labels"))
     }
     return(FALSE)
 }

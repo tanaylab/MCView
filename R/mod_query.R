@@ -51,7 +51,7 @@ mod_query_ui <- function(id) {
             generic_column(
                 width = 7,
                 generic_box(
-                    id = ns("metacell_projection"),
+                    id = ns("type_projections_box"),
                     title = "Type Projections",
                     status = "primary",
                     solidHeader = TRUE,
@@ -626,26 +626,23 @@ group_selectors_mod_query <- function(input, output, session, dataset, ns, group
         group(unique(c(group(), metacells)))
     })
 
-    observeEvent(plotly::event_data("plotly_selected", source = "proj_mc_plot_proj_tab"), {
-        el <- plotly::event_data("plotly_selected", source = "proj_mc_plot_proj_tab")
-
-        selected_metacells <- unique(el$customdata)
-        req(input$mode == "Group")
-
-
-        if (is.null(group())) {
-            group(selected_metacells)
-        } else {
-            group(unique(c(group(), selected_metacells)))
-        }
+    purrr::walk(c("proj_mc_plot_proj_tab", "obs_proj_plot"), function(source) {
+        observe_group_selection(source, input, group)
     })
+}
 
-    observeEvent(plotly::event_data("plotly_selected", source = "obs_proj_plot"), {
-        el <- plotly::event_data("plotly_selected", source = "obs_proj_plot")
+#' Observe plotly selection events and add selected metacells to a group
+#'
+#' @param source plotly source name
+#' @param input shiny input object
+#' @param group reactiveVal holding the current group
+#' @noRd
+observe_group_selection <- function(source, input, group) {
+    observeEvent(plotly::event_data("plotly_selected", source = source), {
+        el <- plotly::event_data("plotly_selected", source = source)
 
         selected_metacells <- unique(el$customdata)
         req(input$mode == "Group")
-
 
         if (is.null(group())) {
             group(selected_metacells)

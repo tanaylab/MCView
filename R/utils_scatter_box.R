@@ -162,19 +162,16 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
             corrected = input$use_corrected %||% FALSE,
             log_labels = input$log_labels %||% FALSE
         ) %>%
-            plotly::ggplotly(tooltip = "tooltip_text", source = plotly_source) %>%
-            sanitize_for_WebGL() %>%
-            plotly::toWebGL() %>%
-            sanitize_plotly_buttons(buttons = plotly_buttons) %>%
-            sanitize_plotly_download(globals)
+            prepare_plotly_scatter(
+                source = plotly_source,
+                buttons = plotly_buttons,
+                globals = globals,
+                hide_legend = is.null(input$show_legend_scatter) || !input$show_legend_scatter
+            )
 
         if (!is.null(dragmode)) {
             fig <- fig %>%
                 plotly::layout(dragmode = dragmode)
-        }
-
-        if (is.null(input$show_legend_scatter) || !input$show_legend_scatter) {
-            fig <- plotly::hide_legend(fig)
         }
 
         if (input$color_by_type %in% c("Gene", "Gene module") || (input$color_by_type == "Metadata" && is_numeric_field(metadata, input$color_by_var))) {

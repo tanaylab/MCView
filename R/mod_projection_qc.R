@@ -57,11 +57,7 @@ mod_projection_qc_ui <- function(id) {
 #' @importFrom shiny NS tagList
 mod_projection_qc_sidebar_ui <- function(id) {
     ns <- NS(id)
-    tagList(
-        list(
-            div()
-        )
-    )
+    tagList()
 }
 
 #' QC Server Function
@@ -221,9 +217,6 @@ gene_correction_factor_scatter_plot <- function(dataset, input, globals) {
         if (is.null(gene_qc) || is.null(gene_qc$correction_factor)) {
             return(plotly_text_plot("Please recompute the metacells\nusing the latest version\nin order to see this plot."))
         }
-        req(gene_qc)
-
-        req(gene_qc$correction_factor)
 
         p <- gene_qc %>%
             filter(correction_factor != 0, correction_factor != 1) %>%

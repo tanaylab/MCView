@@ -2,14 +2,13 @@
 # Dataset Management Functions
 # ==============================================================================
 
-#' Remove a dataset from a project
+#' Remove a dataset
 #'
-#' @param project path to the project directory
 #' @param dataset name of the dataset to remove
 #'
 #' @examples
 #' \dontrun{
-#' dataset_rm("PBMC", "PBMC163k")
+#' dataset_rm("PBMC163k")
 #' }
 #'
 #' @export
@@ -88,4 +87,3 @@ calc_gg_mc_top_cor <- function(egc, k = 30, egc_epsilon = 1e-5) {
 
     return(gg_mc_top_cor)
 }
-

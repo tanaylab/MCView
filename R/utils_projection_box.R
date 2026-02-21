@@ -97,6 +97,11 @@ projection_box <- function(ns,
     )
 }
 
+# Check if color projection mode is a gene-like mode (Gene, Gene A, Gene B, or Gene module)
+is_gene_color_mode <- function(color_proj) {
+    color_proj %in% c("Gene", "Gene A", "Gene B", "Gene module")
+}
+
 projection_selectors <- function(ns, dataset, output, input, gene_modules, globals, session, weight = 1, atlas = FALSE) {
     observe({
         shinyWidgets::updateVirtualSelect(
@@ -133,7 +138,7 @@ projection_selectors <- function(ns, dataset, output, input, gene_modules, globa
 
 
     output$proj_stat_ui <- renderUI({
-        req(input$color_proj == "Gene" || input$color_proj == "Gene A" || input$color_proj == "Gene B" || input$color_proj == "Gene module")
+        req(is_gene_color_mode(input$color_proj))
         selectInput(ns("proj_stat"), label = "Statistic", choices = c("Expression" = "expression", "Enrichment" = "enrichment"), selected = "Expression", multiple = FALSE, selectize = FALSE)
     })
 
@@ -148,13 +153,13 @@ projection_selectors <- function(ns, dataset, output, input, gene_modules, globa
 
     # Expression range
     output$set_range_ui <- renderUI({
-        req(input$color_proj == "Gene" || input$color_proj == "Gene A" || input$color_proj == "Gene B" || input$color_proj == "Gene module")
+        req(is_gene_color_mode(input$color_proj))
         req(input$proj_stat == "expression")
         checkboxInput(ns("set_range"), "Manual range", value = FALSE)
     })
 
     output$expr_range_ui <- renderUI({
-        req(input$color_proj == "Gene" || input$color_proj == "Gene A" || input$color_proj == "Gene B" || input$color_proj == "Gene module")
+        req(is_gene_color_mode(input$color_proj))
         req(input$proj_stat == "expression")
         req(input$set_range)
         shinyWidgets::numericRangeInput(ns("expr_range"), "Expression range", c(-18, -5), width = "80%", separator = " to ")
@@ -162,7 +167,7 @@ projection_selectors <- function(ns, dataset, output, input, gene_modules, globa
 
     # Enrichment range
     output$enrich_range_ui <- renderUI({
-        req(input$color_proj == "Gene" || input$color_proj == "Gene A" || input$color_proj == "Gene B" || input$color_proj == "Gene module")
+        req(is_gene_color_mode(input$color_proj))
         req(input$proj_stat == "enrichment")
         shinyWidgets::numericRangeInput(ns("lfp"), "Enrichment range", c(-3, 3), width = "80%", separator = " to ")
     })

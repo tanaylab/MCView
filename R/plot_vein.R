@@ -63,8 +63,6 @@ add_alpha <- function(col, alpha) {
 
 
 get_sig_edge <- function(x1, x2, x2t, y1, y2, y2t, flow, col1, col2, col_alpha = 0.8) {
-    x1 <- x1
-    y1 <- y1
     dx <- x2t - x1
     dy <- y2t - y1
 
@@ -80,8 +78,10 @@ get_sig_edge <- function(x1, x2, x2t, y1, y2, y2t, flow, col1, col2, col_alpha =
 
     beta0 <- stats::plogis(0, loc = 0.5, scale = 0.2)
     beta_f <- stats::plogis(1, loc = 0.5, scale = 0.2) - stats::plogis(0, loc = 0.5, scale = 0.2)
-    polygons <- list()
-    for (r in seq(0, 0.98, res)) {
+    r_seq <- seq(0, 0.98, res)
+    polygons <- vector("list", length(r_seq))
+    for (idx in seq_along(r_seq)) {
+        r <- r_seq[idx]
         beta <- (stats::plogis(r, loc = 0.5, scale = 0.2) - beta0) / beta_f
         beta5 <- (stats::plogis(r + res, loc = 0.5, scale = 0.2) - beta0) / beta_f
 
@@ -100,13 +100,12 @@ get_sig_edge <- function(x1, x2, x2t, y1, y2, y2t, flow, col1, col2, col_alpha =
         rgb_g <- col2["green"] * r_col + col1["green"] * (1 - r_col)
         rgb_b <- col2["blue"] * r_col + col1["blue"] * (1 - r_col)
         col <- grDevices::rgb(rgb_r / 256, rgb_g / 256, rgb_b / 256, col_alpha)
-        poly_list <- list(
+        polygons[[idx]] <- list(
             mat = matrix(c(sx1, sx2, sx2t, sx1t, sy1, sy2, sy2t, sy1t), nrow = 2, byrow = TRUE),
             col = col,
             border = NA,
             lwd = 1
         )
-        polygons <- append(polygons, list(poly_list))
     }
 
     return(polygons)
@@ -205,7 +204,9 @@ plot_vein <- function(dataset,
     smoo_y <- list()
 
     get_polygons <- function() {
-        polygons <- list()
+        # Use list collector to avoid O(n^2) append() growth
+        poly_chunks <- list()
+        chunk_idx <- 0L
 
         # plotting the veins, using loess smoothing on the frequencies
         for (c in adj_cols) {
@@ -219,6 +220,10 @@ plot_vein <- function(dataset,
             if (plot_gene) {
                 col_alpha <- 0.8
                 i <- 1
+                # Pre-allocate for the inner lamda loop polygons
+                n_time_steps <- length(t1:(t2 - 1))
+                lamda_polys <- vector("list", n_time_steps * 100)
+                lamda_idx <- 0L
                 for (t in t1:(t2 - 1)) {
                     if (t == t1) {
                         col1 <- egc_to_col(src_g_tt[[t]][c, c])
@@ -236,42 +241,44 @@ plot_vein <- function(dataset,
                         rgb_b <- col2["blue"] * lamda + col1["blue"] * (1 - lamda)
                         col <- grDevices::rgb(rgb_r / 256, rgb_g / 256, rgb_b / 256, col_alpha)
 
-                        poly_list <- list(
+                        lamda_idx <- lamda_idx + 1L
+                        lamda_polys[[lamda_idx]] <- list(
                             mat = matrix(c(ys$x[i], ys$x[i + 1], ys$x[i + 1], ys$x[i], base + lo[i], base + lo[i + 1], base - lo[i + 1], base - lo[i]), nrow = 2, byrow = TRUE),
                             col = col,
                             border = NA,
                             lwd = 1
                         )
-                        polygons <- append(polygons, list(poly_list))
                         i <- i + 1
                     }
                 }
+                chunk_idx <- chunk_idx + 1L
+                poly_chunks[[chunk_idx]] <- lamda_polys[seq_len(lamda_idx)]
 
-                poly_list <- list(
+                chunk_idx <- chunk_idx + 1L
+                poly_chunks[[chunk_idx]] <- list(list(
                     mat = matrix(c(ys$x, rev(ys$x), base + c(lo, rev(-lo))), nrow = 2, byrow = TRUE),
                     col = NA,
                     border = c,
                     lwd = vein_lwd
-                )
-                polygons <- append(polygons, list(poly_list))
+                ))
             } else {
                 if (!is.null(foc_type)) {
                     calpha <- add_alpha(c, 0.8)
-                    poly_list <- list(
+                    chunk_idx <- chunk_idx + 1L
+                    poly_chunks[[chunk_idx]] <- list(list(
                         mat = matrix(c(ys$x, rev(ys$x), base + c(lo, rev(-lo))), nrow = 2, byrow = TRUE),
                         col = ifelse(c == foc_color, c, calpha),
                         border = NA,
                         lwd = 1
-                    )
-                    polygons <- append(polygons, list(poly_list))
+                    ))
                 } else {
-                    poly_list <- list(
+                    chunk_idx <- chunk_idx + 1L
+                    poly_chunks[[chunk_idx]] <- list(list(
                         mat = matrix(c(ys$x, rev(ys$x), base + c(lo, rev(-lo))), nrow = 2, byrow = TRUE),
                         col = c,
                         border = NA,
                         lwd = 1
-                    )
-                    polygons <- append(polygons, list(poly_list))
+                    ))
                 }
             }
         }
@@ -295,7 +302,7 @@ plot_vein <- function(dataset,
                                 col1 <- foc_color
                                 col2 <- col_i
                             }
-                            poly_list <- get_sig_edge(
+                            edge_polys <- get_sig_edge(
                                 x1 = t, x2 = t + 1, x2t = t + 1 - 2 * fl - 0.05,
                                 y1 = base_foc + cum_y,
                                 y2 = base_y[col_i] + smoo_y[[col_i]][as.character(t + 1)],
@@ -303,7 +310,8 @@ plot_vein <- function(dataset,
                                 flow = fl,
                                 col1 = col1, col2 = col2
                             )
-                            polygons <- append(polygons, poly_list)
+                            chunk_idx <- chunk_idx + 1L
+                            poly_chunks[[chunk_idx]] <- edge_polys
                             cum_y <- cum_y + fl
                         }
                     }
@@ -321,7 +329,7 @@ plot_vein <- function(dataset,
                                 col1 <- foc_color
                                 col2 <- col_i
                             }
-                            poly_list <- get_sig_edge(
+                            edge_polys <- get_sig_edge(
                                 x1 = t, x2t = t + 1, x2 = t + 1 - 2 * fl - 0.05,
                                 y1 = base_foc + cum_y - fl,
                                 y2t = base_y[col_i] - smoo_y[[col_i]][as.character(t + 1)],
@@ -329,7 +337,8 @@ plot_vein <- function(dataset,
                                 flow = fl,
                                 col1 = col1, col2 = col2
                             )
-                            polygons <- append(polygons, poly_list)
+                            chunk_idx <- chunk_idx + 1L
+                            poly_chunks[[chunk_idx]] <- edge_polys
                             cum_y <- cum_y - fl
                         }
                     }
@@ -337,7 +346,8 @@ plot_vein <- function(dataset,
             }
         }
 
-        return(polygons)
+        # Flatten all chunks into a single list of polygons
+        unlist(poly_chunks, recursive = FALSE)
     }
 
     # Plot

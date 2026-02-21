@@ -159,7 +159,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                     input_ok <- FALSE
                 }
 
-                metacells <- get_metacell_ids(project, dataset())
+                metacells <- get_metacell_ids(dataset())
 
                 unknown_metacells <- new_metacell_types$metacell[!(new_metacell_types$metacell %in% metacells)]
                 if (length(unknown_metacells) > 0) {
@@ -306,7 +306,6 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
 
             observeEvent(input$update_annotation, {
                 new_metacell_types <- metacell_types()
-                changed <- FALSE
 
                 req(input$update_option)
                 req(input$selected_cell_type_update_all)
@@ -329,11 +328,8 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 )
                 selected_metacell_types(new_selected_annot)
                 last_chosen_cell_type(input$selected_cell_type_update_all)
-                changed <- TRUE
 
-                if (changed) {
-                    metacell_types(new_metacell_types)
-                }
+                metacell_types(new_metacell_types)
 
                 req(input$reset_on_apply)
                 if (input$reset_on_apply) {
@@ -705,127 +701,20 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
             # Add observers for the up and down buttons
             observeEvent(input$move_cell_type_up, {
                 req(input$cell_type_table_rows_selected)
-
-                # Get the selected rows
-                selected_rows <- sort(input$cell_type_table_rows_selected)
-
-                # Can't move up if the first selected row is already at the top
-                if (min(selected_rows) > 1) {
-                    new_data <- cell_type_colors()
-
-                    # Find the minimum order value of the selection
-                    min_order <- min(new_data$order[selected_rows])
-
-                    # Find the row with order value just before min_order
-                    row_above <- which(new_data$order == (min_order - 1))
-
-                    # If there are consecutive selected rows, we only need to swap with the row above the top selection
-                    if (length(row_above) == 1) {
-                        # Get all selected cell types
-                        selected_cell_types <- new_data$cell_type[selected_rows]
-
-                        # Get the cell type that needs to move down
-                        above_cell_type <- new_data$cell_type[row_above]
-
-                        # Create a temporary order column to preserve relative positions
-                        new_data <- new_data %>%
-                            mutate(temp_order = order)
-
-                        # Move the above cell type down below all selected rows
-                        new_data$temp_order[row_above] <- min_order + length(selected_rows) - 1
-
-                        # Move all selected rows up by 1
-                        new_data$temp_order[selected_rows] <- new_data$temp_order[selected_rows] - 1
-
-                        # Update the order column and sort
-                        new_data <- new_data %>%
-                            mutate(order = rank(temp_order, ties.method = "first")) %>%
-                            select(-temp_order) %>%
-                            arrange(order)
-
-                        # Update the data
-                        cell_type_colors(new_data)
-
-                        # Find the new indices of the selected cell types
-                        new_indices <- which(new_data$cell_type %in% selected_cell_types)
-
-                        # Update the selection to follow the moved rows
-                        shinyjs::delay(100, {
-                            DT::selectRows(DT::dataTableProxy("cell_type_table"), new_indices)
-                        })
-                    }
-                }
+                move_cell_type(cell_type_colors, sort(input$cell_type_table_rows_selected), direction = -1)
             })
 
             observeEvent(input$move_cell_type_down, {
                 req(input$cell_type_table_rows_selected)
-
-                # Get the selected rows
-                selected_rows <- sort(input$cell_type_table_rows_selected)
-
-                new_data <- cell_type_colors()
-                total_rows <- nrow(new_data)
-
-                # Can't move down if the last selected row is already at the bottom
-                if (max(selected_rows) < total_rows) {
-                    # Find the maximum order value of the selection
-                    max_order <- max(new_data$order[selected_rows])
-
-                    # Find the row with order value just after max_order
-                    row_below <- which(new_data$order == (max_order + 1))
-
-                    # If there are consecutive selected rows, we only need to swap with the row below the bottom selection
-                    if (length(row_below) == 1) {
-                        # Get all selected cell types
-                        selected_cell_types <- new_data$cell_type[selected_rows]
-
-                        # Get the cell type that needs to move up
-                        below_cell_type <- new_data$cell_type[row_below]
-
-                        # Create a temporary order column to preserve relative positions
-                        new_data <- new_data %>%
-                            mutate(temp_order = order)
-
-                        # Move the below cell type up above all selected rows
-                        new_data$temp_order[row_below] <- max_order - length(selected_rows) + 1
-
-                        # Move all selected rows down by 1
-                        new_data$temp_order[selected_rows] <- new_data$temp_order[selected_rows] + 1
-
-                        # Update the order column and sort
-                        new_data <- new_data %>%
-                            mutate(order = rank(temp_order, ties.method = "first")) %>%
-                            select(-temp_order) %>%
-                            arrange(order)
-
-                        # Update the data
-                        cell_type_colors(new_data)
-
-                        # Find the new indices of the selected cell types
-                        new_indices <- which(new_data$cell_type %in% selected_cell_types)
-
-                        # Update the selection to follow the moved rows
-                        shinyjs::delay(100, {
-                            DT::selectRows(DT::dataTableProxy("cell_type_table"), new_indices)
-                        })
-                    }
-                }
+                move_cell_type(cell_type_colors, sort(input$cell_type_table_rows_selected), direction = 1)
             })
 
-            # Select metacell when clicking on it
-            observe_mc_click_event("proj_annot_plot", input, session, cell_type_colors, metacell_types, selected_metacell_types)
-            observe_mc_click_event("gene_gene_plot_annot", input, session, cell_type_colors, metacell_types, selected_metacell_types)
-            observe_mc_click_event("gene_time_mc_plot1_annot", input, session, cell_type_colors, metacell_types, selected_metacell_types)
-            observe_mc_click_event("gene_time_mc_plot2_annot", input, session, cell_type_colors, metacell_types, selected_metacell_types)
-
-            # Select multiple metacells
-            observer_mc_select_event("proj_annot_plot", input, cell_type_colors, metacell_types, selected_metacell_types)
-            observer_mc_select_event("gene_gene_plot_annot", input, cell_type_colors, metacell_types, selected_metacell_types)
-            observer_mc_select_event("gene_time_mc_plot1_annot", input, cell_type_colors, metacell_types, selected_metacell_types)
-            observer_mc_select_event("gene_time_mc_plot2_annot", input, cell_type_colors, metacell_types, selected_metacell_types)
+            # Select metacell when clicking on it, and select multiple metacells
+            mc_plot_sources <- c("proj_annot_plot", "gene_gene_plot_annot", "gene_time_mc_plot1_annot", "gene_time_mc_plot2_annot")
+            purrr::walk(mc_plot_sources, ~ observe_mc_click_event(.x, input, session, cell_type_colors, metacell_types, selected_metacell_types))
+            purrr::walk(mc_plot_sources, ~ observer_mc_select_event(.x, input, cell_type_colors, metacell_types, selected_metacell_types))
 
             projection_selectors(ns, dataset, output, input, gene_modules, globals, session, weight = 0.6)
-            scatter_selectors(ns, dataset, output, globals)
 
             # Projection plots
             output$plot_gene_proj_2d <- render_2d_plotly(
@@ -857,6 +746,60 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
     )
 }
 
+
+#' Move selected cell types up or down in the ordering
+#'
+#' @param cell_type_colors reactive value holding cell type colors data frame
+#' @param selected_rows sorted vector of selected row indices
+#' @param direction -1 for up, +1 for down
+#' @noRd
+move_cell_type <- function(cell_type_colors, selected_rows, direction) {
+    new_data <- cell_type_colors()
+    total_rows <- nrow(new_data)
+
+    # Check boundary: can't move up past top or down past bottom
+    if (direction == -1 && min(selected_rows) <= 1) {
+        return(invisible(NULL))
+    }
+    if (direction == 1 && max(selected_rows) >= total_rows) {
+        return(invisible(NULL))
+    }
+
+    # Find the edge order value and the adjacent row to swap with
+    if (direction == -1) {
+        edge_order <- min(new_data$order[selected_rows])
+    } else {
+        edge_order <- max(new_data$order[selected_rows])
+    }
+    neighbor_row <- which(new_data$order == (edge_order + direction))
+
+    if (length(neighbor_row) != 1) {
+        return(invisible(NULL))
+    }
+
+    selected_cell_types_names <- new_data$cell_type[selected_rows]
+
+    new_data <- new_data %>%
+        mutate(temp_order = order)
+
+    # Move the neighbor to the opposite side of the selection
+    new_data$temp_order[neighbor_row] <- edge_order - direction * (length(selected_rows) - 1)
+
+    # Shift all selected rows in the direction
+    new_data$temp_order[selected_rows] <- new_data$temp_order[selected_rows] + direction
+
+    new_data <- new_data %>%
+        mutate(order = rank(temp_order, ties.method = "first")) %>%
+        select(-temp_order) %>%
+        arrange(order)
+
+    cell_type_colors(new_data)
+
+    new_indices <- which(new_data$cell_type %in% selected_cell_types_names)
+    shinyjs::delay(100, {
+        DT::selectRows(DT::dataTableProxy("cell_type_table"), new_indices)
+    })
+}
 
 observe_mc_click_event <- function(source, input, session, cell_type_colors, metacell_types, selected_metacell_types) {
     observeEvent(plotly::event_data("plotly_click", source = source), {

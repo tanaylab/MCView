@@ -24,6 +24,10 @@ add_mcview_config(
 \item{light_version}{Whether to use light version}
 
 \item{excluded_tabs}{Character vector of excluded tabs}
+
+\item{cache_in_daf}{Whether to store cache in the DAF}
+
+\item{cache_daf_root}{Root path for cache DAF storage}
 }
 \description{
 Add MCView configuration to DAF object

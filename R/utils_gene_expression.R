@@ -1,3 +1,9 @@
+# Convert EGC matrix to fold-change (footprint) by normalizing to row medians
+egc_to_fp <- function(mc_egc, epsilon = 1e-5) {
+    mc_egc_norm <- mc_egc + epsilon
+    mc_egc_norm / matrixStats::rowMedians(as.matrix(mc_egc_norm), na.rm = TRUE)
+}
+
 #' Get expression per gene per cell (EGC) matrix
 #'
 #' @param dataset Dataset name
@@ -7,36 +13,17 @@
 #' @return EGC matrix (genes x metacells)
 #' @export
 get_mc_egc <- function(dataset, genes = NULL, atlas = FALSE, metacells = NULL) {
-    # Get DAF object
-    if (atlas) {
-        daf_obj <- get_atlas_daf()
-    } else {
-        daf_obj <- get_dataset_daf(dataset)
-    }
-
+    daf_obj <- get_daf_for_query(dataset, atlas)
     if (is.null(daf_obj)) {
         return(NULL)
     }
 
-    # Use query-based matrix access for efficiency
-    mc_mat <- daf_query_mc_mat(daf_obj, genes = genes, metacells = metacells, cache = TRUE)
-    mc_sum <- daf_query_mc_sum(daf_obj, metacells = metacells, cache = TRUE)
-
-    # Filter mc_sum to match metacells in matrix
-    if (!is.null(metacells)) {
-        mc_sum <- mc_sum[intersect(metacells, names(mc_sum))]
-    }
-
-    return(t(t(mc_mat) / mc_sum))
+    compute_egc_from_daf(daf_obj, genes = genes, metacells = metacells)
 }
 
 get_mc_fp <- function(dataset, genes = NULL, atlas = FALSE, metacells = NULL) {
     mc_egc <- get_mc_egc(dataset, genes = genes, atlas = atlas, metacells = metacells)
-
-    mc_egc_norm <- mc_egc + 1e-5
-    mc_fp <- mc_egc_norm / apply(mc_egc_norm, 1, median, na.rm = TRUE)
-
-    return(mc_fp)
+    return(egc_to_fp(mc_egc))
 }
 
 #' Get gene modules EGC matrix
@@ -48,13 +35,7 @@ get_mc_fp <- function(dataset, genes = NULL, atlas = FALSE, metacells = NULL) {
 #' @return EGC matrix aggregated by gene modules
 #' @export
 get_mc_gene_modules_egc <- function(dataset, modules = NULL, gene_modules = NULL, atlas = FALSE) {
-    # Get DAF object
-    if (atlas) {
-        daf_obj <- get_atlas_daf()
-    } else {
-        daf_obj <- get_dataset_daf(dataset)
-    }
-
+    daf_obj <- get_daf_for_query(dataset, atlas)
     if (is.null(daf_obj)) {
         return(NULL)
     }
@@ -111,11 +92,7 @@ get_gene_module_egc <- function(module, dataset, gene_modules = NULL, atlas = FA
 
 get_mc_gene_modules_fp <- function(dataset, modules = NULL, gene_modules = NULL, atlas = FALSE) {
     mc_egc <- get_mc_gene_modules_egc(dataset, modules = modules, gene_modules = gene_modules, atlas = atlas)
-
-    mc_egc_norm <- mc_egc + 1e-5
-    mc_fp <- mc_egc_norm / apply(mc_egc_norm, 1, median, na.rm = TRUE)
-
-    return(mc_fp)
+    return(egc_to_fp(mc_egc))
 }
 
 filter_mat_by_cell_types <- function(mat, cell_types, metacell_types) {
@@ -138,31 +115,41 @@ filter_mat_by_cell_types <- function(mat, cell_types, metacell_types) {
 #' @return Named vector of EGC values per metacell
 #' @export
 get_gene_egc <- function(gene, dataset, projected = FALSE, atlas = FALSE, corrected = FALSE) {
-    # Get DAF object
-    if (atlas) {
-        daf_obj <- get_atlas_daf()
-    } else {
-        daf_obj <- get_dataset_daf(dataset)
+    if (projected && corrected) {
+        stop("projected and corrected cannot both be TRUE")
     }
 
+    daf_obj <- get_daf_for_query(dataset, atlas)
     if (is.null(daf_obj)) {
         return(NULL)
     }
 
-    # TODO: Handle projected and corrected modes when DAF supports it
-    # For now, use standard UMIs matrix
-    mc_mat <- daf_query_mc_mat(daf_obj, genes = gene, cache = TRUE)
-    mc_sum <- daf_query_mc_sum(daf_obj, cache = TRUE)
+    if (projected || corrected) {
+        mat_name <- if (projected) "projected_mat" else "mc_mat_corrected"
+        mc_mat <- get_mc_data(dataset, mat_name, atlas = atlas)
+        if (is.null(mc_mat) || is.null(rownames(mc_mat)) || !(gene %in% rownames(mc_mat))) {
+            return(NULL)
+        }
 
-    # Return as vector (single gene)
-    if (nrow(mc_mat) == 0) {
-        return(NULL)
+        mc_sum <- daf_query_mc_sum(daf_obj, cache = TRUE)
+        common_metacells <- intersect(colnames(mc_mat), names(mc_sum))
+        if (length(common_metacells) == 0) {
+            return(NULL)
+        }
+
+        gene_mat <- mc_mat[gene, common_metacells, drop = FALSE]
+        gene_vec <- as.numeric(gene_mat[1, ])
+        names(gene_vec) <- common_metacells
+        return(gene_vec / mc_sum[common_metacells])
     }
 
-    result <- mc_mat[1, ] / mc_sum
-    names(result) <- names(mc_sum)
+    egc <- compute_egc_from_daf(daf_obj, genes = gene)
 
-    return(result)
+    # Return as vector (single gene)
+    if (nrow(egc) == 0) {
+        return(NULL)
+    }
+    egc[1, ]
 }
 
 get_gene_fp <- function(gene, dataset, atlas = FALSE) {
@@ -182,23 +169,12 @@ get_gene_fp <- function(gene, dataset, atlas = FALSE) {
 #' @return EGC matrix (genes x metacells)
 #' @export
 get_metacells_egc <- function(metacells, dataset, projected = FALSE, atlas = FALSE, corrected = FALSE) {
-    # Get DAF object
-    if (atlas) {
-        daf_obj <- get_atlas_daf()
-    } else {
-        daf_obj <- get_dataset_daf(dataset)
-    }
-
+    daf_obj <- get_daf_for_query(dataset, atlas)
     if (is.null(daf_obj)) {
         return(NULL)
     }
 
-    # Use query-based matrix access for specific metacells
-    mc_mat <- daf_query_mc_mat(daf_obj, metacells = metacells, cache = TRUE)
-    mc_sum <- daf_query_mc_sum(daf_obj, metacells = metacells, cache = TRUE)
-
-    mc_egc <- t(t(mc_mat) / mc_sum)
-    return(mc_egc)
+    compute_egc_from_daf(daf_obj, metacells = metacells)
 }
 
 #' Get UMI matrix aggregated by cell types
@@ -212,21 +188,12 @@ get_metacells_egc <- function(metacells, dataset, projected = FALSE, atlas = FAL
 #' @return UMI matrix (genes x cell_types)
 #' @export
 get_cell_types_mat <- function(cell_types, metacell_types, dataset, projected = FALSE, atlas = FALSE, corrected = FALSE) {
-    # Get DAF object
-    if (atlas) {
-        daf_obj <- get_atlas_daf()
-    } else {
-        daf_obj <- get_dataset_daf(dataset)
-    }
-
+    daf_obj <- get_daf_for_query(dataset, atlas)
     if (is.null(daf_obj)) {
         return(NULL)
     }
 
-    # Use DAF query for efficient cell type aggregation
-    ct_mat <- daf_query_cell_type_umis(daf_obj, cell_types = cell_types)
-
-    return(ct_mat)
+    daf_query_cell_type_umis(daf_obj, cell_types = cell_types)
 }
 
 get_cell_types_egc <- function(cell_types, metacell_types, dataset, mat = NULL, projected = FALSE, atlas = FALSE, corrected = FALSE) {
@@ -286,14 +253,14 @@ get_samples_mat <- function(cell_types, metacell_types, dataset) {
 }
 
 get_samples_egc <- function(cell_types, metacell_types, dataset) {
-    mc_egc <- get_mc_egc(dataset)
-
     mc_types <- metacell_types %>%
         filter(cell_type %in% cell_types) %>%
         select(metacell, cell_type) %>%
         deframe()
 
-    mc_egc <- mc_egc[, names(mc_types)]
+    # Only load EGC for the needed metacells instead of the full matrix
+    mc_egc <- get_mc_egc(dataset, metacells = names(mc_types))
+
     samp_mc_frac <- get_samp_mc_frac(dataset)[, names(mc_types)]
     samp_mc_frac <- samp_mc_frac / rowSums(samp_mc_frac)
 

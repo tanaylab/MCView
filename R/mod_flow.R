@@ -67,11 +67,6 @@ mod_flow_ui <- function(id) {
                     collapsible = TRUE,
                     closable = FALSE,
                     width = 12,
-                    # sidebar = shinydashboardPlus::boxSidebar(
-                    #     startOpen = FALSE,
-                    #     width = 100,
-                    #     id = ns("flow_box_sidebar")
-                    # ),
                     shinycssloaders::withSpinner(
                         plotOutput(ns("plot_metacell_flow"), height = 600)
                     )

@@ -450,6 +450,4 @@ get_marker_genes <- function(dataset, mode = "Markers") {
     } else {
         return(get_markers(dataset))
     }
-
-    return(get_markers(dataset))
 }

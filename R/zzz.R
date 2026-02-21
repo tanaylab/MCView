@@ -134,7 +134,7 @@ globalVariables(unique(c(
     # mod_about_ui:
     "about_file",
     # mod_annotate_server : <anonymous>:
-    "color", "metacell",
+    "color", "metacell", "temp_order",
     # mod_annotate_server : <anonymous> : <anonymous>:
     "color", "metacell", "top1_gene", "top1_lfp", "top2_gene", "top2_lfp",
     # mod_cell_type_server : <anonymous>:
@@ -227,6 +227,8 @@ globalVariables(unique(c(
     "avg", "Expected", "Expression", "FC", "gene", "Gene", "metacell", "Metacell", "obs", "Observed", "type", "Type", "zero_fold",
     # zero_fold_table:
     "avg", "Expected", "Expression", "FC", "gene", "metacell", "obs", "type", "zero_fold",
-    ":=", "sec_ord", "metacell_names", "scdb_mctnetwork", "scdb_mc", "mctnetwork_get_flow_mat",
-    "ord_mean"
+    ":=", "sec_ord", "metacell_names",
+    "ord_mean",
+    # mctnetwork_mc_rank_from_color_ord (metacell v1 legacy):
+    "scdb_mctnetwork", "scdb_mc", "mctnetwork_get_flow_mat"
 )))

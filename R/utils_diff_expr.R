@@ -4,8 +4,6 @@ calc_diff_expr <- function(mat, egc, columns, diff_thresh = 1.5, pval_thresh = 0
 
     df$diff <- log2(df[, columns[1]]) - log2(df[, columns[2]])
 
-    df$pval <- NA
-
     f <- rownames(df)[abs(df$diff) >= diff_thresh]
 
     m <- mat[f, columns, drop = FALSE]

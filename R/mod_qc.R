@@ -51,11 +51,7 @@ mod_qc_ui <- function(id) {
 #' @importFrom shiny NS tagList
 mod_qc_sidebar_ui <- function(id) {
     ns <- NS(id)
-    tagList(
-        list(
-            div()
-        )
-    )
+    tagList()
 }
 
 #' QC Server Function
@@ -281,8 +277,6 @@ gene_inner_fold_scatter_plot <- function(dataset, input, globals) {
         if (is.null(gene_inner_fold_df) || is.null(gene_inner_fold_df$significant_inner_folds_count)) {
             return(plotly_text_plot("Please recompute the metacells\nusing the latest version\nin order to see this plot."))
         }
-        req(gene_inner_fold_df)
-        req(gene_inner_fold_df$significant_inner_folds_count)
 
         p <- gene_inner_fold_df %>%
             mutate(max_expr = log2(max_expr + 1e-5)) %>%

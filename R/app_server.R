@@ -18,15 +18,19 @@ app_server <- function(input, output, session) {
     observe({
         globals$screen_width <- input$screen_width
         globals$screen_height <- input$screen_height
-        globals$clipboard <- character(0)
-        globals$active_tabs <- app_config("tabs")
+    })
+
+    observe({
         globals$mc2d <- get_mc_data(dataset(), "mc2d")
         globals$anchor_genes <- get_mc_data(dataset(), "umap_anchors")
-        globals$plotly_scale <- 1
-        globals$plotly_format <- "svg"
-        globals$plotly_width <- NULL
-        globals$plotly_height <- NULL
     })
+
+    globals$clipboard <- character(0)
+    globals$active_tabs <- app_config("tabs")
+    globals$plotly_scale <- 1
+    globals$plotly_format <- "svg"
+    globals$plotly_width <- NULL
+    globals$plotly_height <- NULL
 
     observe({
         globals$plotly_format <- input$plotly_format

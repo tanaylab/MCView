@@ -7,8 +7,26 @@
 #   - RequiredInput: Must exist before loading
 #   - OptionalInput: Used if present, but not required
 #
-# Note: dafr currently doesn't expose Daf.jl's Contracts module,
-# so we implement validation in pure R.
+# Note: dafr now exposes contract validation. We keep the MCView contract
+# definitions here and convert them to dafr contracts for verification.
+
+# ==============================================================================
+# Canonical Tab Names
+# ==============================================================================
+
+#' Canonical ordered list of MCView tab names
+#'
+#' Single source of truth for tab names used in contracts, validation,
+#' and auto-detection. Tab definitions in app_config.R may include
+#' additional UI-only tabs (e.g. "Projected-fold", "Query") that do
+#' not have contracts.
+#'
+#' @noRd
+MCVIEW_TAB_NAMES <- c(
+    "About", "Manifold", "Genes", "Diff. Expression", "Cell types",
+    "QC", "Markers", "Gene modules", "Inner-fold", "Stdev-fold",
+    "Projection QC", "Atlas", "Annotate", "Samples", "Flow"
+)
 
 # ==============================================================================
 # Contract Type Definitions
@@ -59,6 +77,87 @@ scalar_spec <- function(name, expectation, type, description) {
         type = type,
         description = description
     )
+}
+
+# ==============================================================================
+# Contract Conversion Helpers
+# ==============================================================================
+
+#' Map MCView contract expectation to dafr expectation
+#' @noRd
+mcview_expectation_to_dafr <- function(expectation) {
+    switch(
+        expectation,
+        "required" = dafr::RequiredInput,
+        "optional" = dafr::OptionalInput,
+        stop("Unknown contract expectation: ", expectation, call. = FALSE)
+    )
+}
+
+#' Convert an MCView contract to a dafr contract
+#' @noRd
+mcview_contract_to_dafr <- function(contract) {
+    axes <- list()
+    if (!is.null(contract$axes)) {
+        for (axis_name in names(contract$axes)) {
+            spec <- contract$axes[[axis_name]]
+            axes <- c(
+                axes,
+                list(dafr::axis_contract(
+                    axis_name,
+                    mcview_expectation_to_dafr(spec$expectation),
+                    spec$description
+                ))
+            )
+        }
+    }
+
+    data <- list()
+    all_vectors <- c(contract$vectors %||% list(), contract$graph_vectors %||% list())
+    for (spec in all_vectors) {
+        data <- c(
+            data,
+            list(dafr::vector_contract(
+                spec$axis,
+                spec$name,
+                mcview_expectation_to_dafr(spec$expectation),
+                spec$type,
+                spec$description
+            ))
+        )
+    }
+
+    if (!is.null(contract$matrices)) {
+        for (spec in contract$matrices) {
+            data <- c(
+                data,
+                list(dafr::matrix_contract(
+                    spec$rows_axis,
+                    spec$cols_axis,
+                    spec$name,
+                    mcview_expectation_to_dafr(spec$expectation),
+                    spec$type,
+                    spec$description
+                ))
+            )
+        }
+    }
+
+    if (!is.null(contract$scalars)) {
+        for (spec in contract$scalars) {
+            data <- c(
+                data,
+                list(dafr::scalar_contract(
+                    spec$name,
+                    mcview_expectation_to_dafr(spec$expectation),
+                    spec$type,
+                    spec$description
+                ))
+            )
+        }
+    }
+
+    dafr::create_contract(axes = axes, data = data, is_relaxed = TRUE)
 }
 
 # ==============================================================================
@@ -798,33 +897,32 @@ precompute_mcview_cache <- function(daf_obj, verbose = TRUE) {
     mc_mat <- dafr::get_matrix(daf_obj, "metacell", "gene", "UMIs")
     mc_sum <- dafr::get_vector(daf_obj, "metacell", "total_UMIs")
 
-    # Compute fraction matrix (EGC)
+    # Compute fraction matrix (EGC) - stays sparse since zeros remain zeros
     egc <- sweep(mc_mat, 1, mc_sum, "/")
 
     # Global gene means
     gene_means <- colMeans(egc)
     gene_means[gene_means == 0] <- 1e-10
 
-    # Log fold-enrichment
+    # Log fold-enrichment (dense after adding 1e-5)
     lfp <- log2(sweep(egc, 2, gene_means, "/") + 1e-5)
+    lfp <- as.matrix(lfp) # Ensure dense for max.col
 
-    # Top genes per metacell
+    # Top genes per metacell - vectorized using max.col
     metacell_names <- rownames(mc_mat)
     gene_names <- colnames(mc_mat)
+    n_mc <- length(metacell_names)
 
-    top1_gene <- character(length(metacell_names))
-    top2_gene <- character(length(metacell_names))
-    top1_lfp <- numeric(length(metacell_names))
-    top2_lfp <- numeric(length(metacell_names))
+    # Top 1: find column index of max value per row
+    top1_idx <- max.col(lfp, ties.method = "first")
+    top1_gene <- gene_names[top1_idx]
+    top1_lfp <- lfp[cbind(seq_len(n_mc), top1_idx)]
 
-    for (i in seq_along(metacell_names)) {
-        mc_lfp <- lfp[i, ]
-        ord <- order(mc_lfp, decreasing = TRUE)
-        top1_gene[i] <- gene_names[ord[1]]
-        top2_gene[i] <- gene_names[ord[2]]
-        top1_lfp[i] <- mc_lfp[ord[1]]
-        top2_lfp[i] <- mc_lfp[ord[2]]
-    }
+    # Top 2: mask top1 values, find next max
+    lfp[cbind(seq_len(n_mc), top1_idx)] <- -Inf
+    top2_idx <- max.col(lfp, ties.method = "first")
+    top2_gene <- gene_names[top2_idx]
+    top2_lfp <- lfp[cbind(seq_len(n_mc), top2_idx)]
 
     # Store in DAF
     daf_obj <- dafr::set_vector(daf_obj, "metacell", "mcview_cache_top1_gene", top1_gene)
@@ -832,8 +930,9 @@ precompute_mcview_cache <- function(daf_obj, verbose = TRUE) {
     daf_obj <- dafr::set_vector(daf_obj, "metacell", "mcview_cache_top1_lfp", top1_lfp)
     daf_obj <- dafr::set_vector(daf_obj, "metacell", "mcview_cache_top2_lfp", top2_lfp)
 
-    # Gene statistics
-    max_expr <- apply(egc, 2, max)
+    # Gene statistics - use vectorized ops on sparse EGC
+    max_expr <- matrixStats::colMaxs(as.matrix(egc))
+    names(max_expr) <- gene_names
     total_expr <- colSums(egc)
     daf_obj <- dafr::set_vector(daf_obj, "gene", "mcview_cache_max_expr", max_expr)
     daf_obj <- dafr::set_vector(daf_obj, "gene", "mcview_cache_total_expr", total_expr)
@@ -935,25 +1034,29 @@ validate_mcview_contract <- function(daf_obj,
         return(result)
     }
 
-    # Validate axes
+    daf_contract <- mcview_contract_to_dafr(contract)
+    computation <- if (!is.null(contract$name)) contract$name else "MCView"
+    contract_daf <- dafr::contractor(paste0("MCView.", computation), daf_contract, daf_obj)
+
+    verify_result <- dafr::verify_contract(contract_daf$daf, contract_daf$contract)
+    if (!verify_result$valid) {
+        result$valid <- FALSE
+        result$errors <- c(result$errors, verify_result$errors)
+    }
+    if (length(verify_result$warnings) > 0) {
+        result$warnings <- c(result$warnings, verify_result$warnings)
+    }
+
     if (!is.null(contract$axes)) {
         for (axis_name in names(contract$axes)) {
             spec <- contract$axes[[axis_name]]
             has_it <- dafr::has_axis(daf_obj, axis_name)
 
-            if (spec$expectation == CONTRACT_REQUIRED && !has_it) {
-                result$valid <- FALSE
-                result$errors <- c(
-                    result$errors,
-                    glue::glue("Missing required axis: {axis_name}")
+            if (spec$expectation == CONTRACT_OPTIONAL && !has_it && strict) {
+                result$warnings <- c(
+                    result$warnings,
+                    glue::glue("Missing optional axis: {axis_name}")
                 )
-            } else if (spec$expectation == CONTRACT_OPTIONAL && !has_it) {
-                if (strict) {
-                    result$warnings <- c(
-                        result$warnings,
-                        glue::glue("Missing optional axis: {axis_name}")
-                    )
-                }
             } else if (has_it && verbose) {
                 n <- dafr::axis_length(daf_obj, axis_name)
                 result$info <- c(
@@ -964,7 +1067,6 @@ validate_mcview_contract <- function(daf_obj,
         }
     }
 
-    # Validate vectors
     all_vectors <- c(
         contract$vectors %||% list(),
         contract$graph_vectors %||% list()
@@ -974,19 +1076,11 @@ validate_mcview_contract <- function(daf_obj,
         has_it <- dafr::has_axis(daf_obj, spec$axis) &&
             dafr::has_vector(daf_obj, spec$axis, spec$name)
 
-        if (spec$expectation == CONTRACT_REQUIRED && !has_it) {
-            result$valid <- FALSE
-            result$errors <- c(
-                result$errors,
-                glue::glue("Missing required vector: {spec$axis}.{spec$name}")
+        if (spec$expectation == CONTRACT_OPTIONAL && !has_it && strict) {
+            result$warnings <- c(
+                result$warnings,
+                glue::glue("Missing optional vector: {spec$axis}.{spec$name}")
             )
-        } else if (spec$expectation == CONTRACT_OPTIONAL && !has_it) {
-            if (strict) {
-                result$warnings <- c(
-                    result$warnings,
-                    glue::glue("Missing optional vector: {spec$axis}.{spec$name}")
-                )
-            }
         } else if (has_it && verbose) {
             result$info <- c(
                 result$info,
@@ -995,26 +1089,17 @@ validate_mcview_contract <- function(daf_obj,
         }
     }
 
-    # Validate matrices
     if (!is.null(contract$matrices)) {
         for (spec in contract$matrices) {
             has_it <- dafr::has_axis(daf_obj, spec$rows_axis) &&
                 dafr::has_axis(daf_obj, spec$cols_axis) &&
                 dafr::has_matrix(daf_obj, spec$rows_axis, spec$cols_axis, spec$name)
 
-            if (spec$expectation == CONTRACT_REQUIRED && !has_it) {
-                result$valid <- FALSE
-                result$errors <- c(
-                    result$errors,
-                    glue::glue("Missing required matrix: {spec$rows_axis},{spec$cols_axis}.{spec$name}")
+            if (spec$expectation == CONTRACT_OPTIONAL && !has_it && strict) {
+                result$warnings <- c(
+                    result$warnings,
+                    glue::glue("Missing optional matrix: {spec$rows_axis},{spec$cols_axis}.{spec$name}")
                 )
-            } else if (spec$expectation == CONTRACT_OPTIONAL && !has_it) {
-                if (strict) {
-                    result$warnings <- c(
-                        result$warnings,
-                        glue::glue("Missing optional matrix: {spec$rows_axis},{spec$cols_axis}.{spec$name}")
-                    )
-                }
             } else if (has_it && verbose) {
                 result$info <- c(
                     result$info,
@@ -1024,24 +1109,15 @@ validate_mcview_contract <- function(daf_obj,
         }
     }
 
-    # Validate scalars
     if (!is.null(contract$scalars)) {
         for (spec in contract$scalars) {
             has_it <- dafr::has_scalar(daf_obj, spec$name)
 
-            if (spec$expectation == CONTRACT_REQUIRED && !has_it) {
-                result$valid <- FALSE
-                result$errors <- c(
-                    result$errors,
-                    glue::glue("Missing required scalar: {spec$name}")
+            if (spec$expectation == CONTRACT_OPTIONAL && !has_it && strict) {
+                result$warnings <- c(
+                    result$warnings,
+                    glue::glue("Missing optional scalar: {spec$name}")
                 )
-            } else if (spec$expectation == CONTRACT_OPTIONAL && !has_it) {
-                if (strict) {
-                    result$warnings <- c(
-                        result$warnings,
-                        glue::glue("Missing optional scalar: {spec$name}")
-                    )
-                }
             } else if (has_it && verbose) {
                 result$info <- c(
                     result$info,
@@ -1082,11 +1158,7 @@ validate_mcview_contract <- function(daf_obj,
 #' @return Named list with tab names as keys and validation results as values
 #' @export
 validate_mcview_tabs <- function(daf_obj, verbose = FALSE) {
-    tabs <- c(
-        "About", "Manifold", "Genes", "Diff. Expression", "Cell types",
-        "QC", "Markers", "Gene modules", "Inner-fold", "Stdev-fold",
-        "Projection QC", "Atlas", "Annotate"
-    )
+    tabs <- MCVIEW_TAB_NAMES
 
     results <- list()
 

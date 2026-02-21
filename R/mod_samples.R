@@ -250,7 +250,7 @@ mod_samples_server <- function(id, dataset, metacell_types, cell_type_colors, ge
                 req(sum(samp_frac[input$samp1, ], na.rm = TRUE) > 0)
                 req(sum(samp_frac[input$samp2, ], na.rm = TRUE) > 0)
                 calc_samp_samp_gene_df(dataset(), input$samp1, input$samp2, metacell_types(), cell_types = input$selected_cell_types)
-            }) %>% bindCache(dataset(), input$selected_cell_type, input$samp1, input$samp2, metacell_types())
+            }) %>% bindCache(dataset(), input$selected_cell_types, input$samp1, input$samp2, metacell_types())
 
             output$plot_samp_samp_gene_scatter <- render_mc_mc_gene_plotly(input, output, session, ns, dataset, globals, gene_modules, samp_samp_scatter_df, metacell_names, cell_type_colors, mode = "Samples")
 

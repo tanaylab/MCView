@@ -7,5 +7,6 @@
 mcview_atlas_contract()
 }
 \description{
-Contract for Atlas tab
+The query DAF should contain projection metadata, while the atlas DAF
+(loaded via init_atlas) contains the reference data.
 }

@@ -1,9 +1,56 @@
+#' Add graph edges to a plotly mc2d projection figure
+#'
+#' @param fig A plotly figure object
+#' @param graph A data frame with graph edge coordinates (x_mc1, y_mc1, x_mc2, y_mc2)
+#' @param graph_color Color for graph edges
+#' @param graph_width Width multiplier for graph edges
+#' @return The plotly figure with edges added
+#' @noRd
+mc2d_add_graph_edges <- function(fig, graph, graph_color = "black", graph_width = 0.1) {
+    if (nrow(graph) > 0) {
+        edges_x <- c(rbind(graph$x_mc1, graph$x_mc2, NA))
+        edges_y <- c(rbind(graph$y_mc1, graph$y_mc2, NA))
+
+        fig <- fig %>%
+            plotly::add_trace(
+                x = edges_x,
+                y = edges_y,
+                type = "scatter",
+                mode = "lines",
+                line = list(
+                    color = graph_color,
+                    width = graph_width * 5
+                ),
+                showlegend = FALSE
+            )
+    }
+    return(fig)
+}
+
 #' Plot 2d projection of mc2d colored by gene
 #'
 #' @param dataset name of metacell object
 #'
 #' @noRd
-mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_size(dataset), min_d = min_edge_length(dataset), stroke = initial_proj_stroke(dataset), graph_color = "black", graph_width = 0.1, id = NULL, max_lfp = NULL, min_lfp = NULL, max_expr = NULL, min_expr = NULL, stat = "expression", atlas = FALSE, gene_name = NULL, graph_name = NULL, mc2d = NULL, selected_cell_types = NULL, metacell_types = NULL) {
+mc2d_plot_gene_ggp <- function(dataset,
+                               gene,
+                               point_size = initial_proj_point_size(dataset),
+                               min_d = min_edge_length(dataset),
+                               stroke = initial_proj_stroke(dataset),
+                               graph_color = "black",
+                               graph_width = 0.1,
+                               id = NULL,
+                               max_lfp = NULL,
+                               min_lfp = NULL,
+                               max_expr = NULL,
+                               min_expr = NULL,
+                               stat = "expression",
+                               atlas = FALSE,
+                               gene_name = NULL,
+                               graph_name = NULL,
+                               mc2d = NULL,
+                               selected_cell_types = NULL,
+                               metacell_types = NULL) {
     mc2d <- mc2d %||% get_mc_data(dataset, "mc2d", atlas = atlas)
     metacell_types <- get_mc_data(dataset, "metacell_types", atlas = atlas)
     min_lfp <- min_lfp %||% -3
@@ -36,7 +83,7 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
     min_expr <- min_expr %||% min(mc2d_df$expression, na.rm = TRUE)
     max_expr <- max_expr %||% max(mc2d_df$expression, na.rm = TRUE)
 
-    if (has_name(df, "mc_age")) {
+    if (has_name(mc2d_df, "mc_age")) {
         mc2d_df <- mc2d_df %>% rename(`Age` = mc_age)
     }
 
@@ -67,7 +114,7 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
                 glue("{gene} enrichment: {round(log2(mc_fp[metacell_names]), digits=2)}"),
                 glue("Cell type: {`Cell type`}"),
                 glue("Top genes: {`Top genes`}"),
-                ifelse(has_name(df, "Age"), glue("Metacell age (E[t]): {round(Age, digits=2)}"), ""),
+                ifelse(has_name(mc2d_df, "Age"), glue("Metacell age (E[t]): {round(Age, digits=2)}"), ""),
                 sep = "\n"
             )
         )
@@ -116,23 +163,7 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
 
     fig <- plotly::plot_ly() %>% add_scatter_layer()
 
-    if (nrow(graph) > 0) {
-        edges_x <- c(rbind(graph$x_mc1, graph$x_mc2, NA))
-        edges_y <- c(rbind(graph$y_mc1, graph$y_mc2, NA))
-
-        fig <- fig %>%
-            plotly::add_trace(
-                x = edges_x,
-                y = edges_y,
-                type = "scatter",
-                mode = "lines",
-                line = list(
-                    color = graph_color,
-                    width = graph_width * 5
-                ),
-                showlegend = FALSE
-            )
-    }
+    fig <- fig %>% mc2d_add_graph_edges(graph, graph_color, graph_width)
 
     fig <- fig %>% add_scatter_layer(showlegend = TRUE)
 
@@ -438,9 +469,6 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
         #     arrange_2d_proj_tooltip()
         fig <- fig %>%
             rm_plotly_grid()
-
-        fig <- fig %>%
-            sanitize_plotly_download(globals)
 
         return(fig)
     })

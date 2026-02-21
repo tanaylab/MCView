@@ -6,7 +6,6 @@ sanitize_metacell_types <- function(metacell_types, cell_type_colors, dataset) {
             bad_cell_types <- unique(metacell_types$cell_type[bad_inds]) %>% paste(collapse = ", ")
             showNotification(glue("The following cell types are invalid: {bad_cell_types}"), type = "warning", duration = 10)
             metacell_types$cell_type[bad_inds] <- NA
-            metacell_types$cell_type[bad_inds] <- NA
         }
     }
 

@@ -119,47 +119,8 @@ select_top_fold_genes <- function(mat, n_genes = 1000,
     return(cand_genes)
 }
 
-downsample_mat_rows <- function(m, n_downsamp = NULL, inflate = FALSE) {
-    row_sums <- rowSums(m, na.rm = TRUE)
-    n_downsamp <- n_downsamp %||% min(row_sums)
-
-    f <- row_sums > n_downsamp
-    n_obs <- ncol(m)
-
-    m_ds <- apply(m[f, , drop = FALSE], 1, function(x) {
-        tabulate(sample(rep(1:length(x), times = round(x)), replace = FALSE, size = n_downsamp), n_obs)
-    }) %>% t()
-
-    if (inflate) {
-        m_ds <- rbind(
-            m_ds,
-            m[!f, , drop = FALSE] * (n_downsamp / row_sums[!f])
-        )
-    }
-
-    return(m_ds)
-}
-
 get_module_genes <- function(module, gene_modules) {
     gene_modules %>%
         filter(module == !!module) %>%
         pull(gene)
 }
-
-##' @param n_boot number of bootstrap iterations
-# bootstrap_clusters <- function(m, n_downsamp, k, n_boot){
-#     N_genes <- nrow(m)
-#     tot_coclust <- matrix(0, nrow = N_genes, ncol = N_genes, dimnames = list(cand_genes, cand_genes))
-#     doMC::registerDoMC(parallel::detectCores() / 2)
-
-#     bootstrap_res <- plyr::llply(1:n_boot, function(i) {
-#         cli_alert_info("Bootstrap: {.val {i}}")
-#         m_ds <- downsample_mat_rows(m, n_downsamp = n_downsamp, inflate = TRUE)
-#         km <- tglkmeans::TGL_kmeans(m_ds, k = k, id_column = FALSE, verbose = verbose, seed = seed)
-#         isclust_ci <- diag(max(km$cluster))[, km$cluster]
-#         coclust_ij <- t(isclust_ci) %*% isclust_ci
-#         tot_coclust <- tot_coclust + coclust_ij
-#     }, .parallel = TRUE)
-
-
-# }

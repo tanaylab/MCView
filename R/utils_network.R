@@ -72,25 +72,5 @@ mctnetwork_mc_rank_from_color_ord <- function(mct_id, mc_colors, colors_ordered 
 
     mc_rank1 <- mc_rank
 
-    # cluster flow graph
-    # rank clusters by mean rank
-    # rank mc by membership + time
-    if (0) {
-        for (i in 1:20) {
-            rank_fore <- mc_flow_fore %*% mc_rank1
-            rank_back <- mc_flow_back %*% mc_rank1
-
-            dfore <- rank_fore - mc_rank1
-            dback <- rank_back - mc_rank1
-
-            f <- sign(dfore) == sign(dback)
-            f[is.na(f)] <- F
-            dlt <- sign(dfore) * pmin(abs(dfore), abs(dback))
-            dlt[!f] <- 0
-            mc_rank1 <- rank(mc_rank1 + dlt * 0.5)
-            names(mc_rank1) <- as.character(1:length(mc_rank))
-        }
-    }
-
     return(mc_rank1)
 }

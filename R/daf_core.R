@@ -193,7 +193,7 @@ validate_daf_for_mcview <- function(daf_obj, strict = FALSE, verbose = FALSE) {
     result <- validate_mcview_contract(
         daf_obj,
         contract = mcview_core_contract(),
-        strict = FALSE,
+        strict = strict,
         verbose = verbose
     )
 
@@ -214,24 +214,6 @@ validate_daf_for_mcview <- function(daf_obj, strict = FALSE, verbose = FALSE) {
     }
 
     if (verbose) cli_alert_success("DAF object validation passed")
-    invisible(TRUE)
-}
-
-#' Legacy validation function (deprecated, use validate_mcview_contract)
-#' @noRd
-validate_daf_structure <- function(daf_obj, verbose = FALSE) {
-    # Delegate to contract-based validation
-    result <- validate_mcview_contract(
-        daf_obj,
-        contract = mcview_core_contract(),
-        strict = FALSE,
-        verbose = verbose
-    )
-
-    if (!result$valid) {
-        cli_abort(c("DAF validation failed:", result$errors))
-    }
-
     invisible(TRUE)
 }
 
@@ -282,7 +264,7 @@ extract_config_for_daf <- function(daf_obj, dataset_name, config_file = NULL) {
             cli_abort("Config file {config_file} not found")
         }
         yaml_config <- yaml::read_yaml(config_file)
-        config <- modifyList(config, yaml_config)
+        config <- utils::modifyList(config, yaml_config)
         if (!is.null(config$cache_in_daf)) {
             config$cache_in_daf <- normalize_cache_flag(config$cache_in_daf)
         }
@@ -373,29 +355,10 @@ detect_available_tabs <- function(daf_obj) {
     # Get tabs that are available
     available_tabs <- names(tab_results)[sapply(tab_results, function(x) x$available)]
 
-    # Ensure proper ordering
-    all_tabs <- c(
-        "About", "Manifold", "Genes", "Diff. Expression", "Cell types",
-        "QC", "Markers", "Gene modules", "Inner-fold", "Stdev-fold",
-        "Projection QC", "Atlas", "Annotate"
-    )
-
-    # Return in order, only those that are available
-    tabs <- all_tabs[all_tabs %in% available_tabs]
+    # Return in canonical order, only those that are available
+    tabs <- MCVIEW_TAB_NAMES[MCVIEW_TAB_NAMES %in% available_tabs]
 
     return(tabs)
-}
-
-#' Get list of all possible tab names
-#'
-#' @return Character vector of all tab names
-#' @export
-get_all_tab_names <- function() {
-    c(
-        "About", "Manifold", "Genes", "Diff. Expression", "Cell types",
-        "QC", "Markers", "Gene modules", "Inner-fold", "Stdev-fold",
-        "Projection QC", "Atlas", "Annotate"
-    )
 }
 
 # ==============================================================================
@@ -409,6 +372,8 @@ get_all_tab_names <- function() {
 #' @param tabs Character vector of tabs or comma-separated string
 #' @param light_version Whether to use light version
 #' @param excluded_tabs Character vector of excluded tabs
+#' @param cache_in_daf Whether to store cache in the DAF
+#' @param cache_daf_root Root path for cache DAF storage
 #' @export
 add_mcview_config <- function(daf_obj,
                               title = NULL,

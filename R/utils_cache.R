@@ -223,6 +223,7 @@ has_corrected <- function(dataset) {
 }
 
 has_atlas <- function(dataset) {
+    # 'dataset' is unused but kept for API consistency with other has_* functions
     !is.null(get_atlas_daf())
 }
 
@@ -250,7 +251,6 @@ get_samp_mc_count <- function(dataset) {
 }
 
 calc_samp_mc_frac <- function(dataset) {
-    metadata <- get_mc_data(dataset, "cell_metadata")
     samp_mc_count <- get_samp_mc_count(dataset)
     samp_mc_frac <- samp_mc_count / rowSums(samp_mc_count)
     mc_data <- mcv_get("mc_data")
@@ -267,7 +267,7 @@ calc_samp_metadata <- function(dataset) {
     metadata <- get_mc_data(dataset, "cell_metadata") %>% select(-any_of(c("metacell", "cell_id", "outlier")))
     samp_columns <- metadata %>%
         group_by(samp_id) %>%
-        summarise_all(n_distinct)
+        summarise(across(everything(), n_distinct))
     samp_columns <- colnames(samp_columns)[purrr::map_lgl(colnames(samp_columns), ~ all(samp_columns[[.x]] == 1))]
     samp_md <- metadata %>%
         select(samp_id, samp_columns) %>%
@@ -303,6 +303,13 @@ get_samples_list <- function(dataset) {
     get_mc_data(dataset, "samp_list") %||% calc_samples_list(dataset)
 }
 
+# Remove standard identity fields from metadata field names
+filter_metadata_field_names <- function(fields) {
+    fields <- fields[!(fields %in% c("samp_id", "cell_id"))]
+    fields <- fields[!grepl("samp_id: ", fields)]
+    fields
+}
+
 dataset_metadata_fields <- function(dataset, atlas = FALSE) {
     cache_key <- if (atlas) "metadata_fields_atlas" else "metadata_fields"
     mc_data <- mcv_get("mc_data")
@@ -318,8 +325,7 @@ dataset_metadata_fields <- function(dataset, atlas = FALSE) {
         }
         core_fields <- c("type", "x", "y", "u", "v", "total_UMIs", "n_cell")
         fields <- setdiff(fields, core_fields)
-        fields <- fields[!(fields %in% c("samp_id", "cell_id"))]
-        fields <- fields[!grepl("samp_id: ", fields)]
+        fields <- filter_metadata_field_names(fields)
         fields <- fields[!grepl("^mcview_cache_", fields)]
         mc_data[[dataset]][[cache_key]] <- fields
         mcv_set("mc_data", mc_data)
@@ -332,8 +338,7 @@ dataset_metadata_fields <- function(dataset, atlas = FALSE) {
     }
     fields <- colnames(metadata)
     fields <- fields[fields != "metacell"]
-    fields <- fields[!(fields %in% c("samp_id", "cell_id"))]
-    fields <- fields[!grepl("samp_id: ", fields)]
+    fields <- filter_metadata_field_names(fields)
     mc_data[[dataset]][[cache_key]] <- fields
     mcv_set("mc_data", mc_data)
     return(fields)
@@ -360,10 +365,7 @@ dataset_cell_metadata_fields <- function(dataset, atlas = FALSE) {
         return(c())
     }
     fields <- colnames(metadata)
-    fields <- fields[!(fields %in% c("samp_id", "cell_id"))]
-    fields <- fields[!grepl("samp_id: ", fields)]
-
-    return(fields)
+    return(filter_metadata_field_names(fields))
 }
 
 dataset_cell_metadata_fields_numeric <- function(dataset, atlas = FALSE) {
@@ -374,10 +376,9 @@ dataset_cell_metadata_fields_numeric <- function(dataset, atlas = FALSE) {
 }
 
 dataset_cell_metadata_fields_categorical <- function(dataset, atlas = FALSE) {
-    fields <- dataset_cell_metadata_fields(dataset, atlas = atlas)
-    df <- get_mc_data(dataset, "cell_metadata")
-    numeric_f <- purrr::map_lgl(fields, ~ is_numeric_field(df, .x))
-    return(fields[!numeric_f])
+    all_fields <- dataset_cell_metadata_fields(dataset, atlas = atlas)
+    numeric_fields <- dataset_cell_metadata_fields_numeric(dataset, atlas = atlas)
+    return(setdiff(all_fields, numeric_fields))
 }
 
 is_numeric_field <- function(df, field) {

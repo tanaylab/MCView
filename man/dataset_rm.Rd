@@ -2,21 +2,19 @@
 % Please edit documentation in R/import.R
 \name{dataset_rm}
 \alias{dataset_rm}
-\title{Remove a dataset from a project}
+\title{Remove a dataset}
 \usage{
 dataset_rm(dataset)
 }
 \arguments{
 \item{dataset}{name of the dataset to remove}
-
-\item{project}{path to the project directory}
 }
 \description{
-Remove a dataset from a project
+Remove a dataset
 }
 \examples{
 \dontrun{
-dataset_rm("PBMC", "PBMC163k")
+dataset_rm("PBMC163k")
 }
 
 }

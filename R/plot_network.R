@@ -58,7 +58,7 @@ plot_propagation_net_metacell <- function(dataset,
     m1 <- as.numeric(nn$mc1)
     m2 <- as.numeric(nn$mc2)
 
-    head(mc_propagate[[1]]) # This line is there in order to load the required 'Matrix' package
+    requireNamespace("Matrix", quietly = TRUE)
 
     max_m <- ncol(mc_propagate[[1]])
     prop_flow <- rep(0, nrow(nn))

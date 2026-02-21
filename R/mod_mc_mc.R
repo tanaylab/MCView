@@ -291,6 +291,7 @@ metacell_selectors <- function(input, output, session, dataset, ns, metacell_nam
     output$metacell2_select <- renderUI({
         req(dataset())
         req(input$mode)
+        config <- mcv_get("config")
         if (input$mode == "MCs") {
             req(metacell_colors())
             req(metacell_names())
@@ -346,7 +347,7 @@ metacell_selectors <- function(input, output, session, dataset, ns, metacell_nam
             }
         } else if (input$mode == "Groups") {
             if (input$proj_select_main == "Group A") {
-                if (is.null(groupA)) {
+                if (is.null(groupA())) {
                     groupA(metacell)
                 } else {
                     groupA(unique(c(groupA(), metacell)))
@@ -354,7 +355,7 @@ metacell_selectors <- function(input, output, session, dataset, ns, metacell_nam
             }
 
             if (input$proj_select_main == "Group B") {
-                if (is.null(groupB)) {
+                if (is.null(groupB())) {
                     groupB(metacell)
                 } else {
                     groupB(unique(c(groupB(), metacell)))
@@ -531,7 +532,7 @@ group_selectors <- function(input, output, session, dataset, ns, groupA, groupB,
             if (is.null(groupB())) {
                 groupB(selected_metacells)
             } else {
-                groupB(c(unique(groupB(), selected_metacells)))
+                groupB(unique(c(groupB(), selected_metacells)))
             }
         }
     })

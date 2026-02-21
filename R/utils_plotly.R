@@ -64,6 +64,48 @@ sanitize_plotly_download <- function(p, globals) {
     )
 }
 
+#' Prepare a ggplot for plotly with WebGL and standard sanitization
+#'
+#' Consolidates the repeated pipeline of:
+#'   plotly::ggplotly() %>% sanitize_for_WebGL() %>% toWebGL() %>%
+#'   sanitize_plotly_buttons() %>% sanitize_plotly_download()
+#'
+#' @param p ggplot object
+#' @param tooltip Tooltip text column name (default: "tooltip_text"), or NULL
+#' @param source Plotly source name for event handling
+#' @param buttons Buttons to remove from mode bar
+#' @param globals Globals object with plotly format settings
+#' @param hide_legend Whether to hide the legend (default: FALSE)
+#' @return Sanitized plotly object
+#' @export
+prepare_plotly_scatter <- function(p, tooltip = "tooltip_text", source = NULL,
+                                   buttons = c(
+                                       "select2d", "lasso2d", "hoverClosestCartesian",
+                                       "hoverCompareCartesian", "toggleSpikelines"
+                                   ),
+                                   globals = NULL, hide_legend = FALSE) {
+    if (is.null(tooltip)) {
+        fig <- plotly::ggplotly(p, source = source)
+    } else {
+        fig <- plotly::ggplotly(p, tooltip = tooltip, source = source)
+    }
+
+    if (hide_legend) {
+        fig <- fig %>% plotly::hide_legend()
+    }
+
+    fig <- fig %>%
+        sanitize_for_WebGL() %>%
+        plotly::toWebGL() %>%
+        sanitize_plotly_buttons(buttons = buttons)
+
+    if (!is.null(globals)) {
+        fig <- fig %>% sanitize_plotly_download(globals)
+    }
+
+    fig
+}
+
 plotly_text_plot <- function(text) {
     p <- ggplot() +
         annotate("text",

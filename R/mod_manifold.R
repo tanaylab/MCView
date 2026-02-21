@@ -248,7 +248,7 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
             observeEvent(input$load_projection, {
                 req(input$load_projection)
                 req(input$load_projection$datapath)
-                mc2d <- layout_and_graph_to_mc2d(input$load_projection$datapath, globals$mc2d$graph %>% rename(from = mc1, to = mc2), metacells = get_metacell_ids(project, dataset()), warn_function = function(msg) {
+                mc2d <- layout_and_graph_to_mc2d(input$load_projection$datapath, globals$mc2d$graph %>% rename(from = mc1, to = mc2), metacells = get_metacell_ids(dataset()), warn_function = function(msg) {
                     showNotification(msg, type = "error")
                 }, error_function = function(msg) {
                     showNotification(msg, type = "error")
@@ -272,7 +272,7 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
             observeEvent(input$load_graph, {
                 req(input$load_graph)
                 req(input$load_graph$datapath)
-                mc2d <- layout_and_graph_to_mc2d(mc2d_to_df(globals$mc2d), input$load_graph$datapath, metacells = get_metacell_ids(project, dataset()), warn_function = function(msg) {
+                mc2d <- layout_and_graph_to_mc2d(mc2d_to_df(globals$mc2d), input$load_graph$datapath, metacells = get_metacell_ids(dataset()), warn_function = function(msg) {
                     showNotification(msg, type = "error")
                 }, error_function = function(msg) {
                     showNotification(msg, type = "error")

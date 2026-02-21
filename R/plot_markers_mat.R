@@ -31,7 +31,7 @@ plot_markers_mat <- function(mat,
                              gene_colors = NULL,
                              col_names = FALSE,
                              interleave = TRUE,
-                             vertial_gridlines = FALSE,
+                             vertical_gridlines = FALSE,
                              separate_gtable = FALSE) {
     min_lfp <- min_lfp %||% -3
     max_lfp <- max_lfp %||% 3
@@ -61,7 +61,7 @@ plot_markers_mat <- function(mat,
             theme(axis.text.y = ggtext::element_markdown(color = gene_colors))
     }
 
-    if (vertial_gridlines) {
+    if (vertical_gridlines) {
         p_mat <- p_mat + geom_hline(yintercept = 1:nrow(mat) - 0.5, color = "gray", size = 0.1)
     }
 

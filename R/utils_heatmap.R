@@ -208,7 +208,7 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
         req(input$load_genes)
         req(input$load_genes$datapath)
         req(input$load_genes$datapath != "")
-        new_markers <- utils::read.csv(input$load_genes$datapath, header = FALSE, stringsAsFactors = FALSE)[, 1]
+        new_markers <- data.table::fread(input$load_genes$datapath, header = FALSE, data.table = FALSE)[, 1]
         new_markers <- new_markers[new_markers %in% gene_names(dataset())]
         if (length(new_markers) == 0) {
             showNotification("No valid genes were loaded", type = "warning")
@@ -266,16 +266,13 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
         }
 
         req(input$max_gene_num)
-        if (!is.null(input$include_lateral) && !input$include_lateral) {
-            lateral_genes <- get_mc_data(dataset(), "lateral_genes")
-            markers_df <- markers_df %>%
-                filter(!(gene %in% lateral_genes))
-        }
-        if (!is.null(input$include_noisy) && !input$include_noisy) {
-            noisy_genes <- get_mc_data(dataset(), "noisy_genes")
-            markers_df <- markers_df %>%
-                filter(!(gene %in% noisy_genes))
-        }
+        markers_df <- filter_genes_by_flags(
+            markers_df,
+            lateral_genes = get_mc_data(dataset(), "lateral_genes"),
+            noisy_genes = get_mc_data(dataset(), "noisy_genes"),
+            include_lateral = is.null(input$include_lateral) || input$include_lateral,
+            include_noisy = is.null(input$include_noisy) || input$include_noisy
+        )
         if (!is.null(input$show_only_fitted) && input$show_only_fitted) {
             gene_metadata <- get_mc_data(dataset(), "gene_metadata")
 
@@ -662,7 +659,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                         col_names = ncol(m) <= 100,
                         top_cell_type_bar = ncol(m) <= 100,
                         interleave = nrow(m) > 80,
-                        vertial_gridlines = mode %in% c("Inner", "Proj", "Stdev"),
+                        vertical_gridlines = mode %in% c("Inner", "Proj", "Stdev"),
                         separate_gtable = TRUE
                     )
 
@@ -799,9 +796,9 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
 #'
 #' @param x An object of class "gt_custom"
 #'
-#' @export print.gt_custom
+#' @method print gt_custom
 #' @export
-print.gt_custom <- function(x) {
+print.gt_custom <- function(x, ...) {
     build <- ggplot_build(x$p)
 
     grid::grid.newpage()

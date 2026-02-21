@@ -48,7 +48,7 @@ mc2d_plot_metadata_ggp <- function(dataset,
         }
     }
 
-    if (has_name(df, "mc_age")) {
+    if (has_name(mc2d_df, "mc_age")) {
         mc2d_df <- mc2d_df %>% rename(`Age` = mc_age)
     }
 
@@ -113,7 +113,7 @@ mc2d_plot_metadata_ggp_categorical <- function(mc2d_df,
     }
 
     if (is.null(colors)) {
-        colors <- colors %||% get_metadata_colors(dataset, md, metadata = metadata)
+        colors <- get_metadata_colors(dataset, md, metadata = metadata)
     }
 
     mc2d_df <- mc2d_df %>%
@@ -148,23 +148,7 @@ mc2d_plot_metadata_ggp_categorical <- function(mc2d_df,
     }
     fig <- plotly::plot_ly() %>% add_scatter_layer()
 
-    if (nrow(graph) > 0) {
-        edges_x <- c(rbind(graph$x_mc1, graph$x_mc2, NA))
-        edges_y <- c(rbind(graph$y_mc1, graph$y_mc2, NA))
-
-        fig <- fig %>%
-            plotly::add_trace(
-                x = edges_x,
-                y = edges_y,
-                type = "scatter",
-                mode = "lines",
-                line = list(
-                    color = graph_color,
-                    width = graph_width * 5
-                ),
-                showlegend = FALSE
-            )
-    }
+    fig <- fig %>% mc2d_add_graph_edges(graph, graph_color, graph_width)
 
     fig <- fig %>%
         add_scatter_layer(showlegend = TRUE)
@@ -255,23 +239,7 @@ mc2d_plot_metadata_ggp_numeric <- function(mc2d_df,
     }
     fig <- plotly::plot_ly() %>% add_scatter_layer()
 
-    if (nrow(graph) > 0) {
-        edges_x <- c(rbind(graph$x_mc1, graph$x_mc2, NA))
-        edges_y <- c(rbind(graph$y_mc1, graph$y_mc2, NA))
-
-        fig <- fig %>%
-            plotly::add_trace(
-                x = edges_x,
-                y = edges_y,
-                type = "scatter",
-                mode = "lines",
-                line = list(
-                    color = graph_color,
-                    width = graph_width * 5
-                ),
-                showlegend = FALSE
-            )
-    }
+    fig <- fig %>% mc2d_add_graph_edges(graph, graph_color, graph_width)
 
     fig <- fig %>%
         add_scatter_layer(showlegend = TRUE)
@@ -333,8 +301,6 @@ plot_mc_scatter <- function(dataset,
     if (!is.null(metadata)) {
         metadata <- metadata %>% mutate(metacell = as.character(metacell))
     }
-    metadata_colors <- get_mc_data(dataset, "metadata_colors", atlas = atlas)
-
     df <- metacell_types %>%
         mutate(
             `Top genes` = glue("{top1_gene} ({round(top1_lfp, digits=2)}), {top2_gene} ({round(top2_lfp, digits=2)})")
@@ -583,7 +549,6 @@ plot_sample_scatter <- function(dataset,
                                 expr_colors = c("#053061", "#2166AC", "#4393C3", "#92C5DE", "#D1E5F0", "#F7F7F7", "#FDDBC7", "#F4A582", "#D6604D", "#B2182B", "#67001F"),
                                 plot_text = TRUE) {
     metadata <- get_mc_data(dataset, "cell_metadata")
-    metadata_colors <- get_mc_data(dataset, "metadata_colors")
 
     req(metadata)
     req(metadata$samp_id)
@@ -719,7 +684,7 @@ plot_sample_scatter <- function(dataset,
             min_expr <- min(df$expression, na.rm = TRUE)
             max_expr <- max(df$expression, na.rm = TRUE)
             if (min_expr == max_expr) {
-                min_val <- min_val - 1e-5
+                min_expr <- min_expr - 1e-5
             }
 
             color_breaks <- seq(min_expr, max_expr, length.out = length(expr_colors))

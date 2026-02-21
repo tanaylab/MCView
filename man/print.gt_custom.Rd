@@ -7,7 +7,7 @@ we are overriding the print function, similiar to the one at shiny/render-plot.R
 https://github.com/rstudio/shiny/blob/main/R/render-plot.R
 in order to provide a separate ggplot_build and gtable objects}
 \usage{
-\method{print}{gt_custom}(x)
+\method{print}{gt_custom}(x, ...)
 }
 \arguments{
 \item{x}{An object of class "gt_custom"}
