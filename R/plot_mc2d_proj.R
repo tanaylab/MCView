@@ -168,30 +168,401 @@ mc2d_plot_gene_ggp <- function(dataset,
     fig <- fig %>% add_scatter_layer(showlegend = TRUE)
 
 
-    fig <- fig %>%
-        plotly::layout(
-            xaxis = list(
-                showgrid = FALSE,
-                zeroline = FALSE,
-                visible = FALSE
-            ),
-            yaxis = list(
-                showgrid = FALSE,
-                zeroline = FALSE,
-                visible = FALSE
-            ),
-            margin = list(
-                l = 0,
-                r = 0,
-                b = 0,
-                t = 0,
-                pad = 0
-            )
-        ) %>%
-        plotly::colorbar(title = legend_title)
+    fig <- fig %>% mc2d_plotly_proj_layout(legend_title = legend_title, use_colorbar = TRUE)
 
     return(fig)
 }
+
+# ---------------------------------------------------------------------------
+# Module-scope handler functions for render_2d_plotly dispatch
+# ---------------------------------------------------------------------------
+
+#' Create a gene projection figure for render_2d_plotly.
+#'
+#' Wraps mc2d_plot_gene_ggp with the standard Shiny input bindings.
+#'
+#' @noRd
+render_2d_gene_fig <- function(gene, input, dataset, atlas, mc2d,
+                               metacell_types, selected_cell_types,
+                               proj_stat, gene_name = NULL) {
+    req(proj_stat)
+    if (proj_stat == "enrichment") {
+        req(input$lfp)
+    }
+    if (!is.null(input$set_range) && input$set_range) {
+        min_expr <- input$expr_range[1]
+        max_expr <- input$expr_range[2]
+    } else {
+        min_expr <- NULL
+        max_expr <- NULL
+    }
+
+    fig <- mc2d_plot_gene_ggp(
+        dataset(),
+        gene,
+        min_lfp = input$lfp[1],
+        max_lfp = input$lfp[2],
+        min_expr = min_expr,
+        max_expr = max_expr,
+        point_size = input$point_size,
+        min_d = input$min_edge_size,
+        stat = proj_stat,
+        atlas = atlas,
+        stroke = input$stroke,
+        gene_name = gene_name,
+        graph_name = input$graph_name,
+        mc2d = mc2d,
+        metacell_types = metacell_types(),
+        selected_cell_types = selected_cell_types
+    )
+
+    fig <- fig %>% rm_plotly_grid()
+    return(fig)
+}
+
+#' Create a metadata projection figure for render_2d_plotly.
+#'
+#' Wraps mc2d_plot_metadata_ggp with the standard Shiny input bindings.
+#'
+#' @noRd
+render_2d_metadata_fig <- function(md, input, dataset, atlas, mc2d,
+                                   metacell_types, selected_cell_types,
+                                   metadata = NULL, colors = NULL,
+                                   color_breaks = NULL) {
+    fig <- mc2d_plot_metadata_ggp(
+        dataset(),
+        md,
+        point_size = input$point_size,
+        min_d = input$min_edge_size,
+        metacell_types = metacell_types(),
+        atlas = atlas,
+        metadata = metadata,
+        colors = colors,
+        stroke = input$stroke,
+        color_breaks = color_breaks,
+        graph_name = input$graph_name,
+        mc2d = mc2d,
+        selected_cell_types = selected_cell_types
+    )
+
+    return(fig)
+}
+
+# -- Individual color-mode handlers -------------------------------------------
+
+#' @noRd
+handle_2d_cell_type <- function(input, dataset, atlas, mc2d, metacell_types,
+                                cell_type_colors, selected_cell_types) {
+    req(metacell_types())
+    req(cell_type_colors())
+    mc2d_plot_metadata_ggp(
+        dataset(),
+        "Cell type",
+        point_size = input$point_size,
+        min_d = input$min_edge_size,
+        metacell_types = metacell_types(),
+        atlas = atlas,
+        metadata = metacell_types() %>% rename(`Cell type` = cell_type),
+        colors = get_cell_type_colors(dataset, cell_type_colors = cell_type_colors(), atlas = atlas),
+        stroke = input$stroke,
+        graph_name = input$graph_name,
+        mc2d = mc2d,
+        selected_cell_types = selected_cell_types
+    )
+}
+
+#' @noRd
+handle_2d_gene_a <- function(input, dataset, atlas, mc2d, metacell_types,
+                             selected_cell_types, proj_stat) {
+    req(input$gene1)
+    render_2d_gene_fig(input$gene1, input, dataset, atlas, mc2d,
+        metacell_types, selected_cell_types, proj_stat)
+}
+
+#' @noRd
+handle_2d_gene_b <- function(input, dataset, atlas, mc2d, metacell_types,
+                             selected_cell_types, proj_stat) {
+    req(input$gene2)
+    render_2d_gene_fig(input$gene2, input, dataset, atlas, mc2d,
+        metacell_types, selected_cell_types, proj_stat)
+}
+
+#' @noRd
+handle_2d_metadata <- function(input, dataset, atlas, mc2d, metacell_types,
+                               selected_cell_types, globals,
+                               color_proj_metadata) {
+    req(color_proj_metadata)
+    metadata <- get_mc_data(dataset(), "metadata")
+    if (is.null(metadata)) {
+        metadata <- metacell_types() %>% select(metacell)
+    }
+    metadata <- metadata %>%
+        mutate(Clipboard = ifelse(metacell %in% globals$clipboard, "selected", "not selected"))
+    render_2d_metadata_fig(color_proj_metadata, input, dataset, atlas, mc2d,
+        metacell_types, selected_cell_types, metadata = metadata)
+}
+
+#' @noRd
+handle_2d_gene <- function(input, dataset, atlas, mc2d, metacell_types,
+                           selected_cell_types, proj_stat, color_proj_gene) {
+    req(color_proj_gene)
+    render_2d_gene_fig(color_proj_gene, input, dataset, atlas, mc2d,
+        metacell_types, selected_cell_types, proj_stat)
+}
+
+#' @noRd
+handle_2d_gene_module <- function(input, dataset, atlas, mc2d, metacell_types,
+                                  selected_cell_types, proj_stat,
+                                  gene_modules, color_proj_gene_module) {
+    req(color_proj_gene_module)
+    genes <- get_module_genes(color_proj_gene_module, gene_modules())
+    render_2d_gene_fig(genes, input, dataset, atlas, mc2d,
+        metacell_types, selected_cell_types, proj_stat,
+        gene_name = color_proj_gene_module)
+}
+
+#' @noRd
+handle_2d_sample <- function(input, dataset, atlas, mc2d, metacell_types,
+                             selected_cell_types) {
+    req(input$samp1)
+    render_2d_metadata_fig(paste0("samp_id: ", input$samp1), input, dataset,
+        atlas, mc2d, metacell_types, selected_cell_types)
+}
+
+#' @noRd
+handle_2d_similarity <- function(input, dataset, atlas, mc2d, metacell_types,
+                                 selected_cell_types) {
+    render_2d_metadata_fig("similar", input, dataset, atlas, mc2d,
+        metacell_types, selected_cell_types,
+        colors = c("similar" = "white", "dissimilar" = "darkred"))
+}
+
+#' @noRd
+handle_2d_query_proj <- function(input, dataset, atlas, mc2d, metacell_types,
+                                 selected_cell_types, cell_type_colors,
+                                 query_types) {
+    type <- input$color_proj
+    req(input$color_by_scale)
+    all_mc_w <- get_mc_data(dataset(), "proj_weights")
+    req(all_mc_w)
+
+    if (type == "Query cell type") {
+        req(input$selected_cell_types)
+        req(query_types)
+        metacells <- query_types() %>%
+            filter(cell_type %in% input$selected_cell_types) %>%
+            pull(metacell)
+        mc_proj_w <- all_mc_w %>%
+            filter(query %in% metacells)
+    } else {
+        req(input$selected_metacell)
+        mc_proj_w <- all_mc_w %>%
+            filter(query == input$selected_metacell)
+    }
+
+    mc_proj_w <- mc_proj_w %>%
+        select(metacell = atlas, Weight = weight) %>%
+        mutate(query = "query")
+    atlas_daf <- get_atlas_daf()
+    metadata <- tibble(metacell = dafr::axis_entries(atlas_daf, "metacell")) %>%
+        left_join(mc_proj_w, by = "metacell") %>%
+        tidyr::replace_na(replace = list(Weight = 0, query = "other"))
+
+    req(input$query_threshold)
+    if (input$color_by_scale == "Discrete") {
+        metadata <- metadata %>%
+            mutate(query = ifelse(Weight <= input$query_threshold, "other", query))
+        fig <- render_2d_metadata_fig("query", input, dataset, atlas, mc2d,
+            metacell_types, selected_cell_types,
+            metadata = metadata, colors = c("query" = "darkred", "other" = "white"))
+    } else if (input$color_by_scale == "Continuous") {
+        fig <- render_2d_metadata_fig("Weight", input, dataset, atlas, mc2d,
+            metacell_types, selected_cell_types,
+            metadata = metadata,
+            colors = c("white", viridis::viridis_pal()(6)),
+            color_breaks = c(0, seq(input$query_threshold, 1, length.out = 6)))
+    } else {
+        metadata <- metadata %>%
+            mutate(query = ifelse(Weight <= input$query_threshold, "other", query)) %>%
+            left_join(metacell_types() %>% select(metacell, cell_type), by = "metacell") %>%
+            mutate(query = ifelse(query != "other", cell_type, query))
+        fig <- render_2d_metadata_fig("query", input, dataset, atlas, mc2d,
+            metacell_types, selected_cell_types,
+            metadata = metadata,
+            colors = c("other" = "white", get_cell_type_colors(dataset(), cell_type_colors())))
+    }
+
+    return(fig)
+}
+
+#' @noRd
+handle_2d_query_metadata <- function(input, dataset, atlas, mc2d,
+                                     metacell_types, selected_cell_types) {
+    req(input$color_proj_query_metadata)
+    render_2d_metadata_fig(input$color_proj_query_metadata, input, dataset,
+        atlas, mc2d, metacell_types, selected_cell_types)
+}
+
+#' @noRd
+handle_2d_atlas_metadata <- function(input, dataset, atlas, mc2d,
+                                     metacell_types, selected_cell_types) {
+    req(input$color_proj_atlas_metadata)
+    atlas_metadata <- get_mc_data(dataset(), "metadata", atlas = TRUE)
+    proj_w <- get_mc_data(dataset(), "proj_weights")
+    req(proj_w)
+    metadata <- proj_w %>%
+        mutate(atlas = as.character(atlas)) %>%
+        left_join(
+            atlas_metadata %>%
+                select(atlas = metacell, !!input$color_proj_atlas_metadata) %>%
+                mutate(atlas = as.character(atlas)),
+            by = "atlas"
+        ) %>%
+        group_by(query) %>%
+        summarise(!!input$color_proj_atlas_metadata := sum(weight * !!sym(input$color_proj_atlas_metadata))) %>%
+        rename(metacell = query)
+    render_2d_metadata_fig(input$color_proj_atlas_metadata, input, dataset,
+        atlas, mc2d, metacell_types, selected_cell_types,
+        metadata = metadata)
+}
+
+#' @noRd
+handle_2d_selected <- function(input, dataset, atlas, mc2d, metacell_types,
+                               selected_cell_types, groupA, groupB, group,
+                               selected_metacell_types) {
+    if (!is.null(input$mode) && input$mode == "Groups") {
+        req(groupA)
+        req(groupB)
+        selected_metacells1 <- groupA()
+        selected_metacells2 <- groupB()
+        metadata <- metacell_types() %>%
+            select(metacell) %>%
+            mutate(grp = case_when(
+                metacell %in% selected_metacells1 ~ "Group A",
+                metacell %in% selected_metacells2 ~ "Group B",
+                TRUE ~ "other"
+            ))
+        return(render_2d_metadata_fig("grp", input, dataset, atlas, mc2d,
+            metacell_types, selected_cell_types,
+            metadata = metadata,
+            colors = c("Group A" = "red", "Group B" = "blue", "other" = "gray")))
+    }
+
+    if (!is.null(selected_metacell_types)) {
+        selected_metacells <- selected_metacell_types()$metacell
+    } else {
+        req(input$mode)
+        if (input$mode == "MC") {
+            req(input$metacell1)
+            selected_metacells <- input$metacell1
+        } else if (input$mode == "Type") {
+            req(input$metacell1)
+            selected_metacells <- metacell_types() %>%
+                filter(cell_type %in% input$metacell1) %>%
+                pull(metacell)
+        } else if (input$mode == "Group") {
+            selected_metacells <- group()
+        } else {
+            req(FALSE)
+        }
+    }
+    metadata <- metacell_types() %>%
+        select(metacell) %>%
+        mutate(grp = ifelse(metacell %in% selected_metacells, "selected", "other"))
+    render_2d_metadata_fig("grp", input, dataset, atlas, mc2d,
+        metacell_types, selected_cell_types,
+        metadata = metadata,
+        colors = c("selected" = "red", "other" = "gray"))
+}
+
+#' Dispatch to the appropriate handler for a given color_proj value.
+#'
+#' @return A plotly figure.
+#' @noRd
+dispatch_2d_color_proj <- function(color_proj, input, dataset, atlas, mc2d,
+                                   metacell_types, cell_type_colors,
+                                   gene_modules, globals, selected_cell_types,
+                                   proj_stat, color_proj_gene,
+                                   color_proj_metadata, color_proj_gene_module,
+                                   query_types, group, groupA, groupB,
+                                   selected_metacell_types) {
+    switch(color_proj,
+        "Cell type" = handle_2d_cell_type(input, dataset, atlas, mc2d,
+            metacell_types, cell_type_colors, selected_cell_types),
+        "Gene A" = handle_2d_gene_a(input, dataset, atlas, mc2d,
+            metacell_types, selected_cell_types, proj_stat),
+        "Gene B" = handle_2d_gene_b(input, dataset, atlas, mc2d,
+            metacell_types, selected_cell_types, proj_stat),
+        "Metadata" = handle_2d_metadata(input, dataset, atlas, mc2d,
+            metacell_types, selected_cell_types, globals, color_proj_metadata),
+        "Gene" = handle_2d_gene(input, dataset, atlas, mc2d,
+            metacell_types, selected_cell_types, proj_stat, color_proj_gene),
+        "Gene module" = handle_2d_gene_module(input, dataset, atlas, mc2d,
+            metacell_types, selected_cell_types, proj_stat, gene_modules,
+            color_proj_gene_module),
+        "Sample" = handle_2d_sample(input, dataset, atlas, mc2d,
+            metacell_types, selected_cell_types),
+        "Similarity" = handle_2d_similarity(input, dataset, atlas, mc2d,
+            metacell_types, selected_cell_types),
+        "Query cell type" = ,
+        "Query metacell" = handle_2d_query_proj(input, dataset, atlas, mc2d,
+            metacell_types, selected_cell_types, cell_type_colors,
+            query_types),
+        "Query Metadata" = handle_2d_query_metadata(input, dataset, atlas,
+            mc2d, metacell_types, selected_cell_types),
+        "Atlas Metadata" = handle_2d_atlas_metadata(input, dataset, atlas,
+            mc2d, metacell_types, selected_cell_types),
+        "Selected" = handle_2d_selected(input, dataset, atlas, mc2d,
+            metacell_types, selected_cell_types, groupA, groupB, group,
+            selected_metacell_types)
+    )
+}
+
+#' Apply common post-processing to a 2d projection plotly figure.
+#'
+#' Handles event registration, source assignment, drag mode, toolbar buttons,
+#' legend orientation, WebGL conversion, and grid cleanup.
+#'
+#' @noRd
+finalize_2d_plotly <- function(fig, input, globals, source, buttons, dragmode) {
+    fig <- fig %>% plotly::event_register("plotly_restyle")
+    fig$x$source <- source
+
+    if (!is.null(dragmode)) {
+        fig <- fig %>% plotly::layout(dragmode = dragmode)
+    } else if (!is.null(input$mode) && input$mode %in% c("Groups", "Group")) {
+        fig <- fig %>% plotly::layout(dragmode = "select")
+        buttons <- buttons[!(buttons %in% c("select2d", "lasso2d"))]
+    }
+
+    fig <- fig %>%
+        sanitize_plotly_buttons(buttons = buttons) %>%
+        sanitize_plotly_download(globals)
+
+    if (!is.null(input$legend_orientation)) {
+        if (input$legend_orientation == "Horizontal") {
+            orientation <- "h"
+        } else if (input$legend_orientation == "Vertical") {
+            orientation <- "v"
+        }
+        fig <- fig %>% plotly::layout(legend = list(orientation = orientation))
+    }
+
+    if (!is.null(input$show_legend_projection) && !input$show_legend_projection) {
+        fig <- plotly::hide_legend(fig)
+    }
+
+    fig <- fig %>%
+        sanitize_for_WebGL() %>%
+        plotly::toWebGL() %>%
+        rm_plotly_grid()
+
+    return(fig)
+}
+
+# ---------------------------------------------------------------------------
+# Main orchestrator
+# ---------------------------------------------------------------------------
 
 render_2d_plotly <- function(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, source, buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL, refresh_on_gene_change = FALSE, atlas = FALSE, query_types = NULL, group = NULL, groupA = NULL, groupB = NULL, selected_metacell_types = NULL, selected_cell_types = NULL) {
     plotly::renderPlotly({
@@ -206,108 +577,7 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
             mc2d <- globals$mc2d %||% get_mc_data(dataset, "mc2d")
         }
 
-        plot_2d_gene <- function(gene, gene_name = NULL) {
-            req(proj_stat)
-            if (proj_stat == "enrichment") {
-                req(input$lfp)
-            }
-            if (!is.null(input$set_range) && input$set_range) {
-                min_expr <- input$expr_range[1]
-                max_expr <- input$expr_range[2]
-            } else {
-                min_expr <- NULL
-                max_expr <- NULL
-            }
-
-            fig <- mc2d_plot_gene_ggp(
-                dataset(),
-                gene,
-                min_lfp = input$lfp[1],
-                max_lfp = input$lfp[2],
-                min_expr = min_expr,
-                max_expr = max_expr,
-                point_size = input$point_size,
-                min_d = input$min_edge_size,
-                stat = proj_stat,
-                atlas = atlas,
-                stroke = input$stroke,
-                gene_name = gene_name,
-                graph_name = input$graph_name,
-                mc2d = mc2d,
-                metacell_types = metacell_types(),
-                selected_cell_types = selected_cell_types
-            )
-
-            fig <- fig %>% rm_plotly_grid()
-
-            return(fig)
-        }
-
-        plot_2d_metadata <- function(md, metadata = NULL, colors = NULL, color_breaks = NULL) {
-            fig <- mc2d_plot_metadata_ggp(
-                dataset(),
-                md,
-                point_size = input$point_size,
-                min_d = input$min_edge_size,
-                metacell_types = metacell_types(),
-                atlas = atlas,
-                metadata = metadata,
-                colors = colors,
-                stroke = input$stroke,
-                color_breaks = color_breaks,
-                graph_name = input$graph_name,
-                mc2d = mc2d,
-                selected_cell_types = selected_cell_types
-            )
-
-            return(fig)
-        }
-
-        plot_2d_atlas_proj <- function(type) {
-            req(input$color_by_scale)
-            all_mc_w <- get_mc_data(dataset(), "proj_weights")
-            req(all_mc_w)
-
-            if (type == "Query cell type") {
-                req(input$selected_cell_types)
-                req(query_types)
-                metacells <- query_types() %>%
-                    filter(cell_type %in% input$selected_cell_types) %>%
-                    pull(metacell)
-                mc_proj_w <- all_mc_w %>%
-                    filter(query %in% metacells)
-            } else {
-                req(input$selected_metacell)
-                mc_proj_w <- all_mc_w %>%
-                    filter(query == input$selected_metacell)
-            }
-
-            mc_proj_w <- mc_proj_w %>%
-                select(metacell = atlas, Weight = weight) %>%
-                mutate(query = "query")
-            atlas_daf <- get_atlas_daf()
-            metadata <- tibble(metacell = dafr::axis_entries(atlas_daf, "metacell")) %>%
-                left_join(mc_proj_w, by = "metacell") %>%
-                tidyr::replace_na(replace = list(Weight = 0, query = "other"))
-
-            req(input$query_threshold)
-            if (input$color_by_scale == "Discrete") {
-                metadata <- metadata %>%
-                    mutate(query = ifelse(Weight <= input$query_threshold, "other", query))
-                fig <- plot_2d_metadata("query", stroke = input$stroke, metadata = metadata, colors = c("query" = "darkred", "other" = "white"))
-            } else if (input$color_by_scale == "Continuous") {
-                fig <- plot_2d_metadata("Weight", metadata = metadata, stroke = input$stroke, colors = c("white", viridis::viridis_pal()(6)), color_breaks = c(0, seq(input$query_threshold, 1, length.out = 6)))
-            } else {
-                metadata <- metadata %>%
-                    mutate(query = ifelse(Weight <= input$query_threshold, "other", query)) %>%
-                    left_join(metacell_types() %>% select(metacell, cell_type), by = "metacell") %>%
-                    mutate(query = ifelse(query != "other", cell_type, query))
-                fig <- plot_2d_metadata("query", metadata = metadata, stroke = input$stroke, colors = c("other" = "white", get_cell_type_colors(dataset(), cell_type_colors())))
-            }
-
-            return(fig)
-        }
-
+        # Resolve color mode and variable names (handle Scatter Axis remapping)
         color_proj <- input$color_proj
         color_proj_gene <- input$color_proj_gene
         color_proj_metadata <- input$color_proj_metadata
@@ -324,151 +594,17 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
             req(axis_vars_ok(dataset(), input, "metadata", gene_modules, atlas = atlas))
         }
 
+        # Dispatch to the appropriate handler
+        fig <- dispatch_2d_color_proj(
+            color_proj, input, dataset, atlas, mc2d,
+            metacell_types, cell_type_colors, gene_modules, globals,
+            selected_cell_types, proj_stat, color_proj_gene,
+            color_proj_metadata, color_proj_gene_module,
+            query_types, group, groupA, groupB, selected_metacell_types
+        )
 
-        if (color_proj == "Cell type") {
-            req(metacell_types())
-            req(cell_type_colors())
-            fig <- mc2d_plot_metadata_ggp(
-                dataset(),
-                "Cell type",
-                point_size = input$point_size,
-                min_d = input$min_edge_size,
-                metacell_types = metacell_types(),
-                atlas = atlas,
-                metadata = metacell_types() %>% rename(`Cell type` = cell_type),
-                colors = get_cell_type_colors(dataset, cell_type_colors = cell_type_colors(), atlas = atlas),
-                stroke = input$stroke,
-                graph_name = input$graph_name,
-                mc2d = mc2d,
-                selected_cell_types = selected_cell_types
-            )
-        } else if (color_proj == "Gene A") {
-            req(input$gene1)
-            fig <- plot_2d_gene(input$gene1)
-        } else if (color_proj == "Gene B") {
-            req(input$gene2)
-            fig <- plot_2d_gene(input$gene2)
-        } else if (color_proj == "Metadata") {
-            req(color_proj_metadata)
-            metadata <- get_mc_data(dataset(), "metadata")
-            if (is.null(metadata)) {
-                metadata <- metacell_types() %>% select(metacell)
-            }
-            metadata <- metadata %>%
-                mutate(Clipboard = ifelse(metacell %in% globals$clipboard, "selected", "not selected"))
-            fig <- plot_2d_metadata(color_proj_metadata, metadata = metadata)
-        } else if (color_proj == "Gene") {
-            req(color_proj_gene)
-            fig <- plot_2d_gene(color_proj_gene)
-        } else if (color_proj == "Gene module") {
-            req(color_proj_gene_module)
-            genes <- get_module_genes(color_proj_gene_module, gene_modules())
-            fig <- plot_2d_gene(genes, gene_name = color_proj_gene_module)
-        } else if (color_proj == "Sample") {
-            req(input$samp1)
-            fig <- plot_2d_metadata(paste0("samp_id: ", input$samp1))
-        } else if (color_proj == "Similarity") {
-            fig <- plot_2d_metadata("similar", colors = c("similar" = "white", "dissimilar" = "darkred"))
-        } else if (input$color_proj %in% c("Query cell type", "Query metacell")) {
-            fig <- plot_2d_atlas_proj(input$color_proj)
-        } else if (color_proj == "Query Metadata") {
-            req(input$color_proj_query_metadata)
-            fig <- plot_2d_metadata(input$color_proj_query_metadata)
-        } else if (color_proj == "Atlas Metadata") {
-            req(input$color_proj_atlas_metadata)
-            atlas_metadata <- get_mc_data(dataset(), "metadata", atlas = TRUE)
-            proj_w <- get_mc_data(dataset(), "proj_weights")
-            req(proj_w)
-            metadata <- proj_w %>%
-                mutate(atlas = as.character(atlas)) %>%
-                left_join(
-                    atlas_metadata %>%
-                        select(atlas = metacell, !!input$color_proj_atlas_metadata) %>%
-                        mutate(atlas = as.character(atlas)),
-                    by = "atlas"
-                ) %>%
-                group_by(query) %>%
-                summarise(!!input$color_proj_atlas_metadata := sum(weight * !!sym(input$color_proj_atlas_metadata))) %>%
-                rename(metacell = query)
-            fig <- plot_2d_metadata(input$color_proj_atlas_metadata, metadata = metadata)
-        } else if (color_proj == "Selected") {
-            if (!is.null(input$mode) && input$mode == "Groups") {
-                req(groupA)
-                req(groupB)
-                selected_metacells1 <- groupA()
-                selected_metacells2 <- groupB()
-                metadata <- metacell_types() %>%
-                    select(metacell) %>%
-                    mutate(grp = case_when(
-                        metacell %in% selected_metacells1 ~ "Group A",
-                        metacell %in% selected_metacells2 ~ "Group B",
-                        TRUE ~ "other"
-                    ))
-                fig <- plot_2d_metadata("grp", metadata = metadata, colors = c("Group A" = "red", "Group B" = "blue", "other" = "gray"))
-            } else {
-                if (!is.null(selected_metacell_types)) {
-                    selected_metacells <- selected_metacell_types()$metacell
-                } else {
-                    req(input$mode)
-                    if (input$mode == "MC") {
-                        req(input$metacell1)
-                        selected_metacells <- input$metacell1
-                    } else if (input$mode == "Type") {
-                        req(input$metacell1)
-                        selected_metacells <- metacell_types() %>%
-                            filter(cell_type %in% input$metacell1) %>%
-                            pull(metacell)
-                    } else if (input$mode == "Group") {
-                        selected_metacells <- group()
-                    } else {
-                        req(FALSE)
-                    }
-                }
-                metadata <- metacell_types() %>%
-                    select(metacell) %>%
-                    mutate(grp = ifelse(metacell %in% selected_metacells, "selected",
-                        "other"
-                    ))
-                fig <- plot_2d_metadata("grp", metadata = metadata, colors = c("selected" = "red", "other" = "gray"))
-            }
-        }
-
-        fig <- fig %>% plotly::event_register("plotly_restyle")
-
-        fig$x$source <- source
-
-        if (!is.null(dragmode)) {
-            fig <- fig %>% plotly::layout(dragmode = dragmode)
-        } else if (!is.null(input$mode) && input$mode %in% c("Groups", "Group")) {
-            fig <- fig %>% plotly::layout(dragmode = "select")
-            buttons <- buttons[!(buttons %in% c("select2d", "lasso2d"))]
-        }
-
-        fig <- fig %>%
-            sanitize_plotly_buttons(buttons = buttons) %>%
-            sanitize_plotly_download(globals)
-
-        if (!is.null(input$legend_orientation)) {
-            if (input$legend_orientation == "Horizontal") {
-                orientation <- "h"
-            } else if (input$legend_orientation == "Vertical") {
-                orientation <- "v"
-            }
-            fig <- fig %>% plotly::layout(legend = list(orientation = orientation))
-        }
-
-        if (!is.null(input$show_legend_projection) && !input$show_legend_projection) {
-            fig <- plotly::hide_legend(fig)
-        }
-
-        fig <- fig %>%
-            sanitize_for_WebGL()
-        fig <- fig %>%
-            plotly::toWebGL()
-        # fig <- fig %>%
-        #     arrange_2d_proj_tooltip()
-        fig <- fig %>%
-            rm_plotly_grid()
+        # Apply common post-processing
+        fig <- finalize_2d_plotly(fig, input, globals, source, buttons, dragmode)
 
         return(fig)
     })

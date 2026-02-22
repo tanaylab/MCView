@@ -1,179 +1,3 @@
-heatmap_box <- function(id,
-                        title = "Heatmap",
-                        fold_change_range = c(-3, 3),
-                        midpoint = 0,
-                        low_color = "blue",
-                        mid_color = "white",
-                        high_color = "red",
-                        highlight_color = "#fba236",
-                        gene_select_label = "Select on double-click (gene)",
-                        gene_select_choices = c("X axis", "Y axis"),
-                        legend_width = 2,
-                        height = "80vh") {
-    ns <- NS(id)
-    div(
-        generic_box(
-            id = ns("heatmap_box"),
-            title = span(
-                title,
-                actionButton(
-                    ns("show_help"),
-                    icon = icon("question-circle"),
-                    label = "",
-                    class = "btn-link",
-                    style = "padding: 0 0 0 0; color: white; font-size: 16px; background: transparent; border: none;"
-                )
-            ),
-            status = "primary",
-            solidHeader = TRUE,
-            collapsible = TRUE,
-            closable = FALSE,
-            width = 12,
-            height = height,
-            sidebar = shinydashboardPlus::boxSidebar(
-                startOpen = FALSE,
-                width = 25,
-                id = ns("heatmap_sidebar"),
-                checkboxInput(ns("filter_by_clipboard"), "Filter by clipboard", value = FALSE),
-                shinyWidgets::numericRangeInput(ns("lfp_range"), "Fold change range", fold_change_range, width = "80%", separator = " to "),
-                numericInput(ns("midpoint"), "Midpoint", midpoint),
-                colourpicker::colourInput(ns("low_color"), "Low color", low_color),
-                colourpicker::colourInput(ns("high_color"), "High color", high_color),
-                colourpicker::colourInput(ns("mid_color"), "Mid color", mid_color),
-                checkboxInput(ns("plot_legend"), "Show legend", value = TRUE),
-                checkboxInput(ns("plot_cell_type_legend"), "Show cell type legend", value = TRUE),
-                checkboxInput(ns("plot_genes_legend"), "Show genes legend", value = mcv_get("config")$show_heatmap_genes_legend %||% TRUE),
-                colourpicker::colourInput(ns("highlight_color"), "Gene highlight color", highlight_color),
-                numericInput(ns("legend_width"), "Legend width", min = 1, max = 11, step = 1, value = legend_width),
-                shinyWidgets::prettyRadioButtons(
-                    inputId = ns("gene_select"),
-                    label = gene_select_label,
-                    choices = gene_select_choices,
-                    inline = TRUE,
-                    status = "danger",
-                    fill = TRUE
-                ),
-                shinyWidgets::prettyRadioButtons(
-                    inputId = ns("metacell_select"),
-                    label = "Select on double-click (metacell)",
-                    choices = c("Metacell A", "Metacell B"),
-                    inline = TRUE,
-                    status = "danger",
-                    fill = TRUE
-                )
-            ),
-            uiOutput(ns("plotting_area"))
-        ),
-        style = "position:relative",
-        uiOutput(ns("hover_info"), style = "pointer-events: none")
-    )
-}
-
-heatmap_sidebar <- function(id, ..., show_fitted_filter = FALSE) {
-    ns <- NS(id)
-    show_only_fitted_ui <- NULL
-    config <- mcv_get("config")
-    if (config$light_version) {
-        max_gene_num_ui <- NULL
-        remove_genes_ui <- NULL
-        add_genes_ui <- NULL
-        update_genes_ui <- NULL
-        load_genes_ui <- NULL
-        use_de_genes_ui <- NULL
-        include_lateral_ui <- NULL
-        include_noisy_ui <- NULL
-        highlight_genes_ui <- NULL
-        include_metadata_ui <- NULL
-    } else {
-        max_gene_num_ui <- numericInput(ns("max_gene_num"), "Maximal number of genes", value = 100)
-        highlight_genes_ui <- shinyWidgets::actionGroupButtons(
-            inputIds = c(ns("highlight_genes"), ns("clear_highlights")),
-            labels = c("Highlight selected genes", "Clear highlights"),
-            status = c("primary", "default"),
-            size = "sm"
-        )
-        remove_genes_ui <- shinyWidgets::actionGroupButtons(ns("remove_genes"), labels = "Remove selected genes", size = "sm")
-        add_genes_ui <- uiOutput(ns("add_genes_ui"))
-        update_genes_ui <- shinyWidgets::actionGroupButtons(ns("update_genes"), labels = "Update genes", size = "sm")
-        use_de_genes_ui <- shinyWidgets::actionGroupButtons(ns("use_de_genes"), labels = "Use DE genes", size = "sm")
-        include_lateral_ui <- shinyWidgets::awesomeCheckbox(
-            inputId = ns("include_lateral"),
-            label = "Include lateral",
-            value = TRUE
-        )
-        include_noisy_ui <- shinyWidgets::awesomeCheckbox(
-            inputId = ns("include_noisy"),
-            label = "Include noisy",
-            value = TRUE
-        )
-        if (show_fitted_filter) {
-            show_only_fitted_ui <- shinyWidgets::awesomeCheckbox(
-                inputId = ns("show_only_fitted"),
-                label = "Show only fitted",
-                value = FALSE
-            )
-        }
-        load_genes_ui <- fileInput(ns("load_genes"), label = NULL, buttonLabel = "Load genes", multiple = FALSE, accept = c(
-            "text/csv",
-            "text/comma-separated-values,text/plain",
-            "text/tab-separated-values",
-            ".csv",
-            ".tsv"
-        ))
-        include_metadata_ui <- shinyWidgets::awesomeCheckbox(
-            inputId = ns("include_metadata"),
-            label = "Include metadata",
-            value = FALSE
-        )
-    }
-
-    list(
-        uiOutput(ns("reset_zoom_ui")),
-        shinyWidgets::radioGroupButtons(
-            inputId = ns("brush_action"),
-            label = "Brush action:",
-            choices = c("Zoom", "Select"),
-            selected = "Zoom",
-            size = "sm",
-            justified = TRUE
-        ),
-        uiOutput(ns("mat_value_ui")),
-        uiOutput(ns("copy_metacells_ui")),
-        tags$hr(),
-        uiOutput(ns("cell_type_list")),
-        uiOutput(ns("metadata_list")),
-        checkboxInput(ns("force_cell_type"), "Force cell type", value = TRUE),
-        shinyWidgets::virtualSelectInput(ns("metadata_order_cell_type_var"), "Order cell types by", choices = NULL, selected = NULL, multiple = FALSE, search = TRUE),
-        shinyWidgets::virtualSelectInput(ns("metadata_order_var"), "Order by", choices = NULL, selected = NULL, multiple = FALSE, search = TRUE),
-        tags$hr(),
-        ...,
-        highlight_genes_ui,
-        selectInput(
-            ns("selected_marker_genes"),
-            "Genes",
-            choices = NULL,
-            selected = NULL,
-            multiple = TRUE,
-            size = 30,
-            selectize = FALSE
-        ),
-        remove_genes_ui,
-        update_genes_ui,
-        max_gene_num_ui,
-        add_genes_ui,
-        use_de_genes_ui,
-        show_only_fitted_ui,
-        include_lateral_ui,
-        include_noisy_ui,
-        tags$hr(),
-        load_genes_ui,
-        downloadButton(ns("download_genes"), "Save genes", align = "center", style = "margin: 5px 5px 5px 15px; "),
-        tags$hr(),
-        include_metadata_ui,
-        downloadButton(ns("download_matrix"), "Download matrix", align = "center", style = "margin: 5px 5px 5px 15px; ")
-    )
-}
-
 heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metacell_types, cell_type_colors, globals, markers, lfp_range, mode, metacell_filter, mat) {
     observe({
         choices <- markers()
@@ -397,54 +221,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                 return(m)
             }) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), markers(), gene_modules(), input$selected_cell_types, input$force_cell_type, genes(), input$show_genes, clipboard_changed(), mode, input$metadata_order_var, input$metadata_order_cell_type_var, metacell_filter(), input$mat_value)
 
-            output$download_matrix <- downloadHandler(
-                filename = function() {
-                    paste("markers_matrix-", Sys.Date(), ".csv", sep = "")
-                },
-                content = function(file) {
-                    m <- mat()[rev(1:nrow(mat())), , drop = FALSE]
-                    if (length(metacell_filter()) > 0) {
-                        m <- m[, intersect(colnames(m), metacell_filter()), drop = FALSE]
-                    }
-                    if (input$include_metadata) {
-                        metadata <- get_markers_metadata(dataset, input, metacell_types, globals)
-                        metadata_m <- metadata %>%
-                            as.data.frame() %>%
-                            column_to_rownames("metacell") %>%
-                            t() %>%
-                            as.matrix()
-                        ct_m <- metacell_types() %>%
-                            select(metacell, cell_type) %>%
-                            deframe()
-                        ct_m <- ct_m[colnames(m)]
-                        metadata_m <- rbind(t(as.matrix(ct_m)), metadata_m)
-                        rownames(metadata_m)[1] <- "Cell type"
-                        m <- rbind(m, metadata_m)
-                    }
-                    fwrite(
-                        m %>%
-                            as.data.frame() %>%
-                            rownames_to_column("gene"),
-                        file,
-                        row.names = FALSE
-                    )
-                }
-            )
-
-            output$download_genes <- downloadHandler(
-                filename = function() {
-                    paste("markers-", Sys.Date(), ".csv", sep = "")
-                },
-                content = function(file) {
-                    fwrite(
-                        data.frame(gene = markers()),
-                        file,
-                        row.names = FALSE,
-                        col.names = FALSE
-                    )
-                }
-            )
-
+            heatmap_download_handlers(output, mat, markers, metacell_filter, dataset, input, metacell_types, globals)
 
             heatmap_matrix_reactives(ns, input, output, session, dataset, metacell_types, cell_type_colors, globals, markers, lfp_range, mode, metacell_filter, mat)
 
@@ -705,142 +482,172 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                 globals$selected_query_metacell <- metacell
             })
 
-            output$hover_info <- renderUI({
-                m <- mat()
-                req(m)
-                req(input$heatmap_hover)
-                req(metacell_types())
-                req(cell_type_colors())
-
-                hover <- input$heatmap_hover
-                m <- filter_heatmap_by_metacell(m, metacell_filter())
-                gene <- get_gene_by_heatmap_coord(m, hover$y)
-                metacell <- get_metacell_by_heatmap_coord(m, hover$x)
-                value <- m[gene, metacell]
-
-                req(metacell)
-                req(gene)
-
-                # taken from https://gitlab.com/-/snippets/16220
-                left_px <- hover$coords_css$x
-                top_px <- hover$coords_css$y
-
-                mcell_stats <- metacell_types() %>%
-                    filter(metacell == !!metacell)
-
-                style <- glue(
-                    "position:absolute; z-index:100; left: {left_px + 2}px; top: {top_px + 2}px;"
-                )
-
-                top_genes <- mcell_stats %>%
-                    glue::glue_data("{top1_gene} ({round(top1_lfp, digits=2)}), {top2_gene} ({round(top2_lfp, digits=2)})")
-
-                if (mode == "Outliers") {
-                    mcell_tooltip <- paste(
-                        glue("Gene: {gene_name}", gene_name = gene_label(gene, dataset(), gene_modules())),
-                        glue("Cell: {metacell}"),
-                        glue("Value: {round(value, digits=2)}"),
-                        glue("Most similar metacell: {mcell_stats$most_similar_metacell}"),
-                        glue("Cell type: {mcell_stats$cell_type}"),
-                        glue("Top genes: {top_genes}"),
-                        ifelse(has_name(mcell_stats, "mc_age"), glue("Metacell age (E[t]): {round(mcell_stats$mc_age, digits=2)}"), ""),
-                        sep = "<br/>"
-                    )
-                } else {
-                    gene_prefix <- "Gene"
-                    if (mode == "Gene modules" && !(gene %in% genes())) {
-                        gene_prefix <- "Gene module"
-                    }
-
-                    gene_name <- gene_label(gene, dataset(), gene_modules())
-                    if (mode == "Gene modules") {
-                        gene_name <- gene
-                    }
-
-                    mcell_tooltip <- paste(
-                        glue("{gene_prefix}: {gene_name}"),
-                        glue("Metacell: {metacell}"),
-                        glue("Value: {round(value, digits=2)}"),
-                        glue("Cell type: {mcell_stats$cell_type}"),
-                        glue("Top genes: {top_genes}"),
-                        ifelse(has_name(mcell_stats, "mc_age"), glue("Metacell age (E[t]): {round(mcell_stats$mc_age, digits=2)}"), ""),
-                        sep = "<br/>"
-                    )
-
-                    metadata <- get_markers_metadata(dataset, input, metacell_types, globals)
-                    if (!is.null(metadata)) {
-                        mc_md <- metadata %>%
-                            filter(metacell == !!metacell) %>%
-                            select(-metacell)
-                        md_tooltip <- purrr::map_chr(colnames(mc_md), ~
-                            glue("{.x}: {mc_md[[.x]][1]}")) %>%
-                            paste(collapse = "<br/>")
-                        mcell_tooltip <- paste(mcell_tooltip, md_tooltip)
-                    }
-                }
-
-                wellPanel(
-                    style = style,
-                    p(HTML(mcell_tooltip))
-                )
-            })
+            heatmap_tooltip_handler(output, mat, metacell_filter, metacell_types, cell_type_colors, dataset, input, globals, mode, gene_modules, genes)
         }
     )
 }
 
 
-#' Print method for "gt_custom" class
-#' we are overriding the print function, similiar to the one at shiny/render-plot.R:
-#' https://github.com/rstudio/shiny/blob/main/R/render-plot.R
-#' in order to provide a separate ggplot_build and gtable objects
+#' Build the hover tooltip UI for the heatmap
 #'
-#' @param x An object of class "gt_custom"
+#' Extracted from heatmap_reactives to reduce function complexity.
+#' Renders the hover_info output that displays gene/metacell details on hover.
 #'
-#' @method print gt_custom
-#' @export
-print.gt_custom <- function(x, ...) {
-    build <- ggplot_build(x$p)
+#' @param output Shiny output object
+#' @param mat Reactive expression returning the heatmap matrix
+#' @param metacell_filter Reactive value for metacell filtering
+#' @param metacell_types Reactive expression returning metacell type annotations
+#' @param cell_type_colors Reactive expression returning cell type color mappings
+#' @param dataset Reactive expression returning the current dataset
+#' @param input Shiny input object
+#' @param globals Reactive values for global state
+#' @param mode Character string indicating heatmap mode
+#' @param gene_modules Reactive expression returning gene module data
+#' @param genes Reactive expression returning selected genes (can be NULL)
+#' @noRd
+heatmap_tooltip_handler <- function(output, mat, metacell_filter, metacell_types, cell_type_colors, dataset, input, globals, mode, gene_modules, genes) {
+    output$hover_info <- renderUI({
+        m <- mat()
+        req(m)
+        req(input$heatmap_hover)
+        req(metacell_types())
+        req(cell_type_colors())
 
-    grid::grid.newpage()
-    grid::grid.draw(x$gtable)
+        hover <- input$heatmap_hover
+        m <- filter_heatmap_by_metacell(m, metacell_filter())
+        gene <- get_gene_by_heatmap_coord(m, hover$y)
+        metacell <- get_metacell_by_heatmap_coord(m, hover$x)
+        value <- m[gene, metacell]
 
-    structure(list(
-        build = build,
-        gtable = x$gtable
-    ), class = "ggplot_build_gtable")
-}
+        req(metacell)
+        req(gene)
 
-filter_heatmap_by_metacell <- function(m, f) {
-    if (!is.null(f) && length(f) > 0) {
-        f <- f[f %in% colnames(m)]
-        m <- m[, colnames(m) %in% f, drop = FALSE]
-    }
-    return(m)
-}
+        # taken from https://gitlab.com/-/snippets/16220
+        left_px <- hover$coords_css$x
+        top_px <- hover$coords_css$y
 
-get_gene_by_heatmap_coord <- function(m, coord) {
-    y_coord <- round(coord)
-    req(y_coord > 0 & y_coord <= nrow(m))
-    return(rownames(m)[y_coord])
-}
+        mcell_stats <- metacell_types() %>%
+            filter(metacell == !!metacell)
 
-get_metacell_by_heatmap_coord <- function(m, coord) {
-    x_coord <- round(coord)
-    req(x_coord > 0 & x_coord <= ncol(m))
-    return(colnames(m)[x_coord])
-}
+        style <- glue(
+            "position:absolute; z-index:100; left: {left_px + 2}px; top: {top_px + 2}px;"
+        )
 
-get_markers_metadata <- function(dataset, input, metacell_types, globals) {
-    if (!is.null(input$selected_md)) {
-        metadata <- get_mc_data(dataset(), "metadata")
-        if (is.null(metadata)) {
-            metadata <- metacell_types() %>% select(metacell)
+        top_genes <- mcell_stats %>%
+            glue::glue_data("{top1_gene} ({round(top1_lfp, digits=2)}), {top2_gene} ({round(top2_lfp, digits=2)})")
+
+        if (mode == "Outliers") {
+            mcell_tooltip <- paste(
+                glue("Gene: {gene_name}", gene_name = gene_label(gene, dataset(), gene_modules())),
+                glue("Cell: {metacell}"),
+                glue("Value: {round(value, digits=2)}"),
+                glue("Most similar metacell: {mcell_stats$most_similar_metacell}"),
+                glue("Cell type: {mcell_stats$cell_type}"),
+                glue("Top genes: {top_genes}"),
+                ifelse(has_name(mcell_stats, "mc_age"), glue("Metacell age (E[t]): {round(mcell_stats$mc_age, digits=2)}"), ""),
+                sep = "<br/>"
+            )
+        } else {
+            gene_prefix <- "Gene"
+            if (mode == "Gene modules" && !(gene %in% genes())) {
+                gene_prefix <- "Gene module"
+            }
+
+            gene_name <- gene_label(gene, dataset(), gene_modules())
+            if (mode == "Gene modules") {
+                gene_name <- gene
+            }
+
+            mcell_tooltip <- paste(
+                glue("{gene_prefix}: {gene_name}"),
+                glue("Metacell: {metacell}"),
+                glue("Value: {round(value, digits=2)}"),
+                glue("Cell type: {mcell_stats$cell_type}"),
+                glue("Top genes: {top_genes}"),
+                ifelse(has_name(mcell_stats, "mc_age"), glue("Metacell age (E[t]): {round(mcell_stats$mc_age, digits=2)}"), ""),
+                sep = "<br/>"
+            )
+
+            metadata <- get_markers_metadata(dataset, input, metacell_types, globals)
+            if (!is.null(metadata)) {
+                mc_md <- metadata %>%
+                    filter(metacell == !!metacell) %>%
+                    select(-metacell)
+                md_tooltip <- purrr::map_chr(colnames(mc_md), ~
+                    glue("{.x}: {mc_md[[.x]][1]}")) %>%
+                    paste(collapse = "<br/>")
+                mcell_tooltip <- paste(mcell_tooltip, md_tooltip)
+            }
         }
-        metadata <- metadata %>%
-            mutate(Clipboard = ifelse(metacell %in% globals$clipboard, "selected", "not selected")) %>%
-            select(metacell, one_of(input$selected_md))
-    } else {
-        metadata <- NULL
-    }
-    return(metadata)
+
+        wellPanel(
+            style = style,
+            p(HTML(mcell_tooltip))
+        )
+    })
+}
+
+
+#' Set up download handlers for the heatmap
+#'
+#' Extracted from heatmap_reactives to reduce function complexity.
+#' Creates download handlers for the marker matrix and gene list.
+#'
+#' @param output Shiny output object
+#' @param mat Reactive expression returning the heatmap matrix
+#' @param markers Reactive value containing the current marker genes
+#' @param metacell_filter Reactive value for metacell filtering
+#' @param dataset Reactive expression returning the current dataset
+#' @param input Shiny input object
+#' @param metacell_types Reactive expression returning metacell type annotations
+#' @param globals Reactive values for global state
+#' @noRd
+heatmap_download_handlers <- function(output, mat, markers, metacell_filter, dataset, input, metacell_types, globals) {
+    output$download_matrix <- downloadHandler(
+        filename = function() {
+            paste("markers_matrix-", Sys.Date(), ".csv", sep = "")
+        },
+        content = function(file) {
+            m <- mat()[rev(1:nrow(mat())), , drop = FALSE]
+            if (length(metacell_filter()) > 0) {
+                m <- m[, intersect(colnames(m), metacell_filter()), drop = FALSE]
+            }
+            if (input$include_metadata) {
+                metadata <- get_markers_metadata(dataset, input, metacell_types, globals)
+                metadata_m <- metadata %>%
+                    as.data.frame() %>%
+                    column_to_rownames("metacell") %>%
+                    t() %>%
+                    as.matrix()
+                ct_m <- metacell_types() %>%
+                    select(metacell, cell_type) %>%
+                    deframe()
+                ct_m <- ct_m[colnames(m)]
+                metadata_m <- rbind(t(as.matrix(ct_m)), metadata_m)
+                rownames(metadata_m)[1] <- "Cell type"
+                m <- rbind(m, metadata_m)
+            }
+            fwrite(
+                m %>%
+                    as.data.frame() %>%
+                    rownames_to_column("gene"),
+                file,
+                row.names = FALSE
+            )
+        }
+    )
+
+    output$download_genes <- downloadHandler(
+        filename = function() {
+            paste("markers-", Sys.Date(), ".csv", sep = "")
+        },
+        content = function(file) {
+            fwrite(
+                data.frame(gene = markers()),
+                file,
+                row.names = FALSE,
+                col.names = FALSE
+            )
+        }
+    )
 }

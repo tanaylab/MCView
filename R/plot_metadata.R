@@ -1,3 +1,176 @@
+# ---------------------------------------------------------------------------
+# Shared helpers for scatter plot functions
+# ---------------------------------------------------------------------------
+
+#' Apply gene-expression log2 axis scale to a ggplot (x or y).
+#' @noRd
+apply_gene_axis_scale <- function(p,
+                                  axis = c("x", "y"),
+                                  var_name,
+                                  egc_values,
+                                  xylims,
+                                  limits = NULL,
+                                  log_labels = FALSE,
+                                  corrected = FALSE,
+                                  tolerance = 1e-10,
+                                  rotate_x = TRUE) {
+    axis <- match.arg(axis)
+    limits <- limits %||% c(min(egc_values), max(egc_values))
+
+    idx_max <- min(which(xylims >= limits[2] - tolerance))
+    idx_min <- max(which(xylims <= limits[1] + tolerance))
+
+    lab <- glue("{var_name} Expression")
+
+    if (log_labels) {
+        labels <- log2(xylims[idx_min:idx_max])
+        lab <- glue("{lab} (log2)")
+    } else {
+        labels <- scales::scientific(xylims[idx_min:idx_max])
+    }
+
+    if (corrected) {
+        lab <- glue("{lab} (corrected)")
+    }
+
+    scale_fn <- if (axis == "x") scale_x_continuous else scale_y_continuous
+    lab_fn   <- if (axis == "x") xlab else ylab
+
+    p <- p +
+        scale_fn(
+            limits = c(xylims[idx_min], xylims[idx_max]),
+            trans  = "log2",
+            breaks = xylims[idx_min:idx_max],
+            labels = labels
+        ) +
+        lab_fn(lab)
+
+    if (axis == "x" && rotate_x) {
+        p <- p + theme(axis.text.x = element_text(angle = 30, vjust = 0.5, hjust = 1))
+    }
+
+    return(p)
+}
+
+
+#' Apply color/fill geom_point + scale layers to a scatter ggplot.
+#' Dispatches on NULL (cell-type), categorical, or continuous color_var.
+#' @noRd
+apply_scatter_color_layer <- function(p,
+                                      color_var,
+                                      categorical_md,
+                                      point_size,
+                                      stroke,
+                                      col_to_ct = NULL,
+                                      md_colors = NULL,
+                                      fill_name = "") {
+    if (is.null(color_var)) {
+        p <- p +
+            geom_point(size = point_size, shape = 21, stroke = stroke, color = "black") +
+            scale_fill_manual(fill_name, values = col_to_ct) +
+            guides(color = "none")
+    } else if (categorical_md) {
+        p <- p +
+            geom_point(size = point_size, shape = 21, stroke = stroke, color = "black") +
+            scale_fill_manual(name = color_var, values = md_colors) +
+            guides(color = "none")
+    } else {
+        p <- p +
+            geom_point(size = point_size) +
+            geom_point(size = point_size, shape = 21, stroke = stroke, color = "black") +
+            guides(fill = "none")
+
+        p <- p +
+            scale_color_gradientn(name = color_var, colors = md_colors$colors, values = scales::rescale(md_colors$breaks)) +
+            scale_fill_identity()
+    }
+
+    return(p)
+}
+
+
+#' Resolve color for gene expression: log2 palette + color/color_values/color_str columns.
+#' Returns list(df, md_colors).
+#' @noRd
+resolve_gene_color <- function(df,
+                               egc_values,
+                               id_col,
+                               color_name,
+                               expr_colors,
+                               color_str_suffix = "",
+                               guard_equal_range = FALSE) {
+    df <- df %>%
+        mutate(expression = log2(egc_values[df[[id_col]]]))
+    min_expr <- min(df$expression, na.rm = TRUE)
+    max_expr <- max(df$expression, na.rm = TRUE)
+    if (guard_equal_range && min_expr == max_expr) {
+        min_expr <- min_expr - 1e-5
+    }
+
+    color_breaks <- seq(min_expr, max_expr, length.out = length(expr_colors))
+    md_colors <- list(colors = expr_colors, breaks = color_breaks)
+    palette <- circlize::colorRamp2(colors = expr_colors, breaks = color_breaks)
+    df$color <- palette(df$expression)
+    df$color_values <- df$expression
+
+    template <- paste0("{color_name}: {color_values}", color_str_suffix)
+    df <- df %>%
+        mutate(color_str = glue(template,
+            color_values = round(expression, digits = 3)
+        ))
+
+    return(list(df = df, md_colors = md_colors))
+}
+
+
+#' Resolve color for numeric metadata: colorRamp2 palette + color/color_values/color_str columns.
+#' @noRd
+resolve_numeric_md_color <- function(df, color_var, color_name, md_colors, color_str_suffix = "") {
+    palette <- circlize::colorRamp2(colors = md_colors$colors, breaks = md_colors$breaks)
+    df$color <- palette(df[[color_var]])
+    df$color_values <- df[[color_var]]
+    template <- paste0("{color_name}: {color_values}", color_str_suffix)
+    df <- df %>%
+        mutate(color_str = glue(template,
+            color_values = round(!!sym(color_var), digits = 3)
+        ))
+    return(df)
+}
+
+
+# ---------------------------------------------------------------------------
+# mc2d metadata projection plots (plotly-based, not part of scatter unification)
+# ---------------------------------------------------------------------------
+
+#' Apply the standard plotly layout for mc2d projection plots.
+#'
+#' This sets hidden axes and zero margins, which is shared across categorical,
+#' numeric, and gene-expression projection plots.
+#'
+#' @param fig A plotly figure
+#' @param legend_title Optional legend title. When provided as a list
+#'   (e.g. `list(text = "...")`) it is passed to \code{legend}; when a scalar
+#'   string it is passed to \code{plotly::colorbar}.
+#' @param use_colorbar If TRUE, add a colorbar with \code{legend_title} instead
+#'   of a discrete legend title.
+#' @return The plotly figure with layout applied.
+#' @noRd
+mc2d_plotly_proj_layout <- function(fig, legend_title = NULL, use_colorbar = FALSE) {
+    layout_args <- list(
+        xaxis = list(showgrid = FALSE, zeroline = FALSE, visible = FALSE),
+        yaxis = list(showgrid = FALSE, zeroline = FALSE, visible = FALSE),
+        margin = list(l = 0, r = 0, b = 0, t = 0, pad = 0)
+    )
+    if (!is.null(legend_title) && !use_colorbar) {
+        layout_args$legend <- list(title = list(text = legend_title))
+    }
+    fig <- do.call(plotly::layout, c(list(p = fig), layout_args))
+    if (!is.null(legend_title) && use_colorbar) {
+        fig <- fig %>% plotly::colorbar(title = legend_title)
+    }
+    return(fig)
+}
+
 #' Plot 2d projection of mc2d colored by metadata
 #'
 #' @param dataset name of metacell object
@@ -153,27 +326,7 @@ mc2d_plot_metadata_ggp_categorical <- function(mc2d_df,
     fig <- fig %>%
         add_scatter_layer(showlegend = TRUE)
 
-    fig <- fig %>%
-        plotly::layout(
-            xaxis = list(
-                showgrid = FALSE,
-                zeroline = FALSE,
-                visible = FALSE
-            ),
-            yaxis = list(
-                showgrid = FALSE,
-                zeroline = FALSE,
-                visible = FALSE
-            ),
-            margin = list(
-                l = 0,
-                r = 0,
-                b = 0,
-                t = 0,
-                pad = 0
-            ),
-            legend = list(title = list(text = legend_title))
-        )
+    fig <- fig %>% mc2d_plotly_proj_layout(legend_title = legend_title)
 
     return(fig)
 }
@@ -244,27 +397,7 @@ mc2d_plot_metadata_ggp_numeric <- function(mc2d_df,
     fig <- fig %>%
         add_scatter_layer(showlegend = TRUE)
 
-    fig <- fig %>%
-        plotly::layout(
-            xaxis = list(
-                showgrid = FALSE,
-                zeroline = FALSE,
-                visible = FALSE
-            ),
-            yaxis = list(
-                showgrid = FALSE,
-                zeroline = FALSE,
-                visible = FALSE
-            ),
-            margin = list(
-                l = 0,
-                r = 0,
-                b = 0,
-                t = 0,
-                pad = 0
-            )
-        ) %>%
-        plotly::colorbar(title = legend_title)
+    fig <- fig %>% mc2d_plotly_proj_layout(legend_title = legend_title, use_colorbar = TRUE)
 
     return(fig)
 }
@@ -350,7 +483,9 @@ plot_mc_scatter <- function(dataset,
 
     # set color variable
     color_name <- color_var
+    col_to_ct <- NULL
     categorical_md <- FALSE
+    md_colors <- NULL
     if (is.null(color_var)) {
         if (atlas) {
             col_to_ct <- get_cell_type_colors(dataset, NULL, atlas = TRUE)
@@ -369,11 +504,7 @@ plot_mc_scatter <- function(dataset,
             left_join(metadata %>% select(metacell, !!color_var), by = "metacell")
         md_colors <- get_metadata_colors(dataset, color_var, colors = colors, color_breaks = color_breaks, metadata = metadata)
         if (is_numeric_field(metadata, color_var)) {
-            palette <- circlize::colorRamp2(colors = md_colors$colors, breaks = md_colors$breaks)
-            df$color <- palette(df[[color_var]])
-            df$color_values <- df[[color_var]]
-            df <- df %>%
-                mutate(color_str = glue("{color_name}: {color_values}\nCell type: {`Cell type`}", color_values = round(!!sym(color_var), digits = 3)))
+            df <- resolve_numeric_md_color(df, color_var, color_name, md_colors, color_str_suffix = "\nCell type: {`Cell type`}")
         } else {
             df <- df %>%
                 mutate(color = !!sym(color_var), color_values = !!sym(color_var)) %>%
@@ -386,19 +517,9 @@ plot_mc_scatter <- function(dataset,
         } else {
             egc_color <- get_gene_egc(color_var, dataset, atlas = atlas, corrected = corrected) + mcv_get("egc_epsilon")
         }
-        df <- df %>%
-            mutate(expression = log2(egc_color[df$metacell]))
-        min_expr <- min(df$expression, na.rm = TRUE)
-        max_expr <- max(df$expression, na.rm = TRUE)
-
-        color_breaks <- seq(min_expr, max_expr, length.out = length(expr_colors))
-        md_colors <- list(colors = expr_colors, breaks = color_breaks)
-        palette <- circlize::colorRamp2(colors = expr_colors, breaks = color_breaks)
-        df$color <- palette(df$expression)
-        df$color_values <- df$expression
-
-        df <- df %>%
-            mutate(color_str = glue("{color_name}: {color_values}\nCell type: {`Cell type`}\n", color_values = round(expression, digits = 3)))
+        res <- resolve_gene_color(df, egc_color, "metacell", color_name, expr_colors, color_str_suffix = "\nCell type: {`Cell type`}\n")
+        df <- res$df
+        md_colors <- res$md_colors
     }
 
     # set tooltip
@@ -419,7 +540,6 @@ plot_mc_scatter <- function(dataset,
         correlation <- cor(df[[x_var]], df[[y_var]], method = correlation_type, use = "pairwise.complete.obs")
         correlation_text <- glue("Correlation: {round(correlation, 3)} ({correlation_type})")
     }
-
 
     p <- ggplot(
         data = df,
@@ -444,27 +564,7 @@ plot_mc_scatter <- function(dataset,
         p <- p + labs(title = correlation_text)
     }
 
-    # set color plotting
-    if (is.null(color_var)) {
-        p <- p +
-            geom_point(size = point_size, shape = 21, stroke = stroke, color = "black") +
-            scale_fill_manual("", values = col_to_ct) +
-            guides(color = "none")
-    } else if (categorical_md) {
-        p <- p +
-            geom_point(size = point_size, shape = 21, stroke = stroke, color = "black") +
-            scale_fill_manual(name = color_var, values = md_colors) +
-            guides(color = "none")
-    } else {
-        p <- p +
-            geom_point(size = point_size) +
-            geom_point(size = point_size, shape = 21, stroke = stroke, color = "black") +
-            guides(fill = "none")
-
-        p <- p +
-            scale_color_gradientn(name = color_var, colors = md_colors$colors, values = scales::rescale(md_colors$breaks)) +
-            scale_fill_identity()
-    }
+    p <- apply_scatter_color_layer(p, color_var, categorical_md, point_size, stroke, col_to_ct = col_to_ct, md_colors = md_colors, fill_name = "")
 
     if (fixed_limits && x_type %in% c("Gene", "Gene module") && y_type %in% c("Gene", "Gene module")) {
         x_limits <- x_limits %||% c(min(egc_x), max(egc_x))
@@ -483,47 +583,13 @@ plot_mc_scatter <- function(dataset,
 
     if (x_type %in% c("Gene", "Gene module")) {
         x_limits <- x_limits %||% c(min(egc_x), max(egc_x))
-        xmax <- min(c(1:length(xylims))[xylims >= x_limits[2] - 1e-10])
-        xmin <- max(c(1:length(xylims))[xylims <= x_limits[1] + 1e-10])
-        lab <- glue("{x_var} Expression")
-
-        if (log_labels) {
-            labels <- log2(xylims[xmin:xmax])
-            lab <- glue("{lab} (log2)")
-        } else {
-            labels <- scales::scientific(xylims[xmin:xmax])
-        }
-
-        if (corrected) {
-            lab <- glue("{lab} (corrected)")
-        }
-        p <- p +
-            scale_x_continuous(limits = c(xylims[xmin], xylims[xmax]), trans = "log2", breaks = xylims[xmin:xmax], labels = labels) +
-            xlab(lab) +
-            theme(axis.text.x = element_text(angle = 30, vjust = 0.5, hjust = 1))
+        p <- apply_gene_axis_scale(p, "x", x_var, egc_x, xylims, limits = x_limits, log_labels = log_labels, corrected = corrected)
     }
 
     if (y_type %in% c("Gene", "Gene module")) {
         y_limits <- y_limits %||% c(min(egc_y), max(egc_y))
-        ymax <- min(c(1:length(xylims))[xylims >= y_limits[2] - 1e-10])
-        ymin <- max(c(1:length(xylims))[xylims <= y_limits[1] + 1e-10])
-        lab <- glue("{y_var} Expression")
-        if (log_labels) {
-            labels <- log2(xylims[ymin:ymax])
-            lab <- glue("{lab} (log2)")
-        } else {
-            labels <- scales::scientific(xylims[ymin:ymax])
-        }
-
-        if (corrected) {
-            lab <- glue("{lab} (corrected)")
-        }
-
-        p <- p +
-            scale_y_continuous(limits = c(xylims[ymin], xylims[ymax]), trans = "log2", breaks = xylims[ymin:ymax], labels = labels) +
-            ylab(lab)
+        p <- apply_gene_axis_scale(p, "y", y_var, egc_y, xylims, limits = y_limits, log_labels = log_labels, corrected = corrected, rotate_x = FALSE)
     }
-
 
     if (plot_text) {
         p <- p + geom_text(size = 1, color = "black")
@@ -565,7 +631,6 @@ plot_sample_scatter <- function(dataset,
 
     df <- metadata %>%
         distinct(samp_id, .keep_all = TRUE)
-
 
     if (any(c(x_type, y_type, color_type) == "Cell type")) {
         cell_type_fracs <- metadata %>%
@@ -644,10 +709,10 @@ plot_sample_scatter <- function(dataset,
             mutate(y_str = glue("{y_name}: {y_values}", y_values = scales::percent(!!sym(y_var))))
     }
 
-
     # set color variable
     color_name <- color_var
     color_var_type <- "cont"
+    md_colors <- NULL
     if (!is.null(color_var) && color_var != "None") {
         if (color_type == "Metadata") {
             req(color_var %in% colnames(metadata))
@@ -657,11 +722,7 @@ plot_sample_scatter <- function(dataset,
 
             if (is_numeric_field(df, color_var)) {
                 md_colors <- get_metadata_colors(dataset, color_var, colors = colors, color_breaks = color_breaks, metadata = metadata)
-                palette <- circlize::colorRamp2(colors = md_colors$colors, breaks = md_colors$breaks)
-                df$color <- palette(df[[color_var]])
-                df$color_values <- df[[color_var]]
-                df <- df %>%
-                    mutate(color_str = glue("{color_name}: {color_values}", color_values = round(!!sym(color_var), digits = 3)))
+                df <- resolve_numeric_md_color(df, color_var, color_name, md_colors)
             } else {
                 metadata_colors <- get_mc_data(dataset, "metadata_colors")
                 if (is.null(metadata_colors[[color_var]])) {
@@ -679,20 +740,10 @@ plot_sample_scatter <- function(dataset,
         } else if (color_type == "Gene") {
             req(color_var %in% gene_names(dataset))
             egc_color <- get_samples_gene_egc(color_var, dataset, selected_mc) + mcv_get("egc_epsilon")
-            df <- df %>%
-                mutate(expression = log2(egc_color[df$samp_id]))
-            min_expr <- min(df$expression, na.rm = TRUE)
-            max_expr <- max(df$expression, na.rm = TRUE)
-            if (min_expr == max_expr) {
-                min_expr <- min_expr - 1e-5
-            }
-
-            color_breaks <- seq(min_expr, max_expr, length.out = length(expr_colors))
-            md_colors <- list(colors = expr_colors, breaks = color_breaks)
-            palette <- circlize::colorRamp2(colors = expr_colors, breaks = color_breaks)
-            df$color <- palette(df$expression)
-            df$color_values <- df$expression
-
+            res <- resolve_gene_color(df, egc_color, "samp_id", color_name, expr_colors, color_str_suffix = "\n", guard_equal_range = TRUE)
+            df <- res$df
+            md_colors <- res$md_colors
+            # Override color_str to match original format with " (log2): " prefix
             df <- df %>%
                 mutate(color_str = glue("{color_name} (log2): {color_values}\n", color_values = round(expression, digits = 3)))
         } else {
@@ -706,10 +757,8 @@ plot_sample_scatter <- function(dataset,
                 left_join(color_var_df %>% select(samp_id, !!color_var), by = "samp_id")
 
             md_colors <- get_metadata_colors(dataset, color_var, colors = colors, color_breaks = color_breaks, metadata = df)
-            palette <- circlize::colorRamp2(colors = md_colors$colors, breaks = md_colors$breaks)
-            df$color <- palette(df[[color_var]])
-            df$color_values <- df[[color_var]]
-
+            df <- resolve_numeric_md_color(df, color_var, color_name, md_colors)
+            # Override color_str for percent formatting
             df <- df %>%
                 mutate(color_str = glue("{color_name}: {color_values}", color_values = scales::percent(!!sym(color_var))))
         }
@@ -717,7 +766,6 @@ plot_sample_scatter <- function(dataset,
         df <- df %>%
             mutate(color_str = "")
     }
-
 
     # set tooltip
     df <- df %>%
@@ -727,54 +775,17 @@ plot_sample_scatter <- function(dataset,
             )
         )
 
-
-    # set color plotting
-    if (!is.null(color_var) && color_var != "None") {
-        if (color_var_type == "cont") {
-            p <- ggplot(
-                data = df,
-                aes(
-                    x = !!sym(x_var),
-                    y = !!sym(y_var),
-                    fill = color,
-                    color = color_values,
-                    label = samp_id,
-                    customdata = samp_id,
-                    tooltip_text = Sample
-                )
-            ) +
-                geom_point(size = point_size) +
-                geom_point(size = point_size, shape = 21, stroke = stroke, color = "black") +
-                guides(fill = "none")
-            p <- p +
-                scale_color_gradientn(name = color_var, colors = md_colors$colors, values = scales::rescale(md_colors$breaks)) +
-                scale_fill_identity()
-        } else {
-            p <- ggplot(
-                data = df,
-                aes(
-                    x = !!sym(x_var),
-                    y = !!sym(y_var),
-                    fill = !!sym(color_var),
-                    label = samp_id,
-                    customdata = samp_id,
-                    tooltip_text = Sample
-                )
-            ) +
-                geom_point(size = point_size) +
-                scale_fill_manual(values = colors)
-        }
+    # build ggplot + color layers
+    base_aes <- aes(x = !!sym(x_var), y = !!sym(y_var), label = samp_id, customdata = samp_id, tooltip_text = Sample)
+    if (!is.null(color_var) && color_var != "None" && color_var_type == "cont") {
+        p <- ggplot(data = df, mapping = utils::modifyList(base_aes, aes(fill = color, color = color_values)))
+        p <- apply_scatter_color_layer(p, color_var, FALSE, point_size, stroke, md_colors = md_colors)
+    } else if (!is.null(color_var) && color_var != "None" && color_var_type == "discrete") {
+        p <- ggplot(data = df, mapping = utils::modifyList(base_aes, aes(fill = !!sym(color_var)))) +
+            geom_point(size = point_size) +
+            scale_fill_manual(values = colors)
     } else {
-        p <- ggplot(
-            data = df,
-            aes(
-                x = !!sym(x_var),
-                y = !!sym(y_var),
-                label = samp_id,
-                customdata = samp_id,
-                tooltip_text = Sample
-            )
-        ) +
+        p <- ggplot(data = df, mapping = base_aes) +
             geom_point(size = point_size, color = "black")
     }
 
@@ -786,28 +797,18 @@ plot_sample_scatter <- function(dataset,
     xylims <- mcv_get("expr_breaks")
 
     if (x_type %in% c("Gene", "Gene module")) {
-        xmax <- min(c(1:length(xylims))[xylims >= max(egc_x)])
-        xmin <- max(c(1:length(xylims))[xylims <= min(egc_x)])
-        p <- p +
-            scale_x_continuous(limits = c(xylims[xmin], xylims[xmax]), trans = "log2", breaks = xylims[xmin:xmax], labels = scales::scientific(xylims[xmin:xmax])) +
-            xlab(glue("{x_var} Expression")) +
-            theme(axis.text.x = element_text(angle = 30, vjust = 0.5, hjust = 1))
+        p <- apply_gene_axis_scale(p, "x", x_var, egc_x, xylims, log_labels = FALSE, corrected = FALSE, tolerance = 0)
     } else if (x_type == "Cell type") {
         p <- p +
             scale_x_continuous(labels = scales::percent)
     }
 
     if (y_type %in% c("Gene", "Gene module")) {
-        ymax <- min(c(1:length(xylims))[xylims >= max(egc_y)])
-        ymin <- max(c(1:length(xylims))[xylims <= min(egc_y)])
-        p <- p +
-            scale_y_continuous(limits = c(xylims[ymin], xylims[ymax]), trans = "log2", breaks = xylims[ymin:ymax], labels = scales::scientific(xylims[ymin:ymax])) +
-            ylab(glue("{y_var} Expression"))
+        p <- apply_gene_axis_scale(p, "y", y_var, egc_y, xylims, log_labels = FALSE, corrected = FALSE, tolerance = 0, rotate_x = FALSE)
     } else if (y_type == "Cell type") {
         p <- p +
             scale_y_continuous(labels = scales::percent)
     }
-
 
     if (plot_text) {
         p <- p + geom_text(size = 1, color = "black")
@@ -881,6 +882,8 @@ plot_obs_proj_scatter <- function(dataset,
     }
 
     categorical_md <- FALSE
+    col_to_ct <- NULL
+    md_colors <- NULL
     color_name <- color_var
     if (is.null(color_var)) {
         df <- df %>%
@@ -922,27 +925,13 @@ plot_obs_proj_scatter <- function(dataset,
                 mutate(color = !!sym(color_var), color_values = !!sym(color_var)) %>%
                 mutate(color_str = glue("{color_name}: {color_values}"))
         } else {
-            palette <- circlize::colorRamp2(colors = md_colors$colors, breaks = md_colors$breaks)
-            df$color <- palette(df[[color_var]])
-            df$color_values <- df[[color_var]]
-            df <- df %>%
-                mutate(color_str = glue("{color_name}: {color_values}\nCell type: {`Cell type`}", color_values = round(!!sym(color_var), digits = 3)))
+            df <- resolve_numeric_md_color(df, color_var, color_name, md_colors, color_str_suffix = "\nCell type: {`Cell type`}")
         }
     } else if (color_type == "Gene") {
         egc_color <- get_gene_egc(color_var, dataset) + mcv_get("egc_epsilon")
-        df <- df %>%
-            mutate(expression = log2(egc_color[df$metacell]))
-        min_expr <- min(df$expression, na.rm = TRUE)
-        max_expr <- max(df$expression, na.rm = TRUE)
-
-        color_breaks <- seq(min_expr, max_expr, length.out = length(expr_colors))
-        md_colors <- list(colors = expr_colors, breaks = color_breaks)
-        palette <- circlize::colorRamp2(colors = expr_colors, breaks = color_breaks)
-        df$color <- palette(df$expression)
-        df$color_values <- df$expression
-
-        df <- df %>%
-            mutate(color_str = glue("{color_name}: {color_values}\nCell type: {`Cell type`}\n", color_values = round(expression, digits = 3)))
+        res <- resolve_gene_color(df, egc_color, "metacell", color_name, expr_colors, color_str_suffix = "\nCell type: {`Cell type`}\n")
+        df <- res$df
+        md_colors <- res$md_colors
     }
 
     # set tooltip
@@ -980,40 +969,15 @@ plot_obs_proj_scatter <- function(dataset,
     # set color plotting
     if (is.null(color_var)) {
         col_to_ct <- get_cell_type_colors(dataset, cell_type_colors)
-        p <- p +
-            geom_point(size = point_size, shape = 21, stroke = stroke, color = "black") +
-            scale_fill_manual(values = col_to_ct) +
-            guides(color = "none")
-    } else if (categorical_md) {
-        p <- p +
-            geom_point(size = point_size, shape = 21, stroke = stroke, color = "black") +
-            scale_fill_manual(name = color_var, values = md_colors) +
-            guides(color = "none")
-    } else {
-        p <- p +
-            geom_point(size = point_size) +
-            geom_point(size = point_size, shape = 21, stroke = stroke, color = "black") +
-            guides(fill = "none")
-
-        p <- p +
-            scale_color_gradientn(name = color_var, colors = md_colors$colors, values = scales::rescale(md_colors$breaks)) +
-            scale_fill_identity()
     }
+    p <- apply_scatter_color_layer(p, color_var, categorical_md, point_size, stroke, col_to_ct = col_to_ct, md_colors = md_colors)
 
     # arrange axis for gene expression
     xylims <- mcv_get("expr_breaks")
 
     if (axis_type %in% c("Gene", "Gene module")) {
-        xmax <- min(c(1:length(xylims))[xylims >= max(egc_obs) - 1e-10])
-        xmin <- max(c(1:length(xylims))[xylims <= min(egc_obs) + 1e-10])
-        ymax <- min(c(1:length(xylims))[xylims >= max(egc_proj) - 1e-10])
-        ymin <- max(c(1:length(xylims))[xylims <= min(egc_proj) + 1e-10])
-        p <- p +
-            scale_x_continuous(limits = c(xylims[xmin], xylims[xmax]), trans = "log2", breaks = xylims[xmin:xmax], labels = scales::scientific(xylims[xmin:xmax])) +
-            xlab(glue("{x_var} Expression")) +
-            scale_y_continuous(limits = c(xylims[ymin], xylims[ymax]), trans = "log2", breaks = xylims[ymin:ymax], labels = scales::scientific(xylims[ymin:ymax])) +
-            ylab(glue("{y_var} Expression")) +
-            theme(axis.text.x = element_text(angle = 30, vjust = 0.5, hjust = 1))
+        p <- apply_gene_axis_scale(p, "x", x_var, egc_obs, xylims)
+        p <- apply_gene_axis_scale(p, "y", y_var, egc_proj, xylims, rotate_x = FALSE)
     }
 
     if (plot_text) {

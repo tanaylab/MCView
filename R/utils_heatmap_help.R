@@ -99,3 +99,59 @@ create_heatmap_help_modal <- function(mode = "Markers") {
         fade = TRUE
     )
 }
+
+#' Print method for "gt_custom" class
+#' we are overriding the print function, similiar to the one at shiny/render-plot.R:
+#' https://github.com/rstudio/shiny/blob/main/R/render-plot.R
+#' in order to provide a separate ggplot_build and gtable objects
+#'
+#' @param x An object of class "gt_custom"
+#'
+#' @method print gt_custom
+#' @export
+print.gt_custom <- function(x, ...) {
+    build <- ggplot_build(x$p)
+
+    grid::grid.newpage()
+    grid::grid.draw(x$gtable)
+
+    structure(list(
+        build = build,
+        gtable = x$gtable
+    ), class = "ggplot_build_gtable")
+}
+
+filter_heatmap_by_metacell <- function(m, f) {
+    if (!is.null(f) && length(f) > 0) {
+        f <- f[f %in% colnames(m)]
+        m <- m[, colnames(m) %in% f, drop = FALSE]
+    }
+    return(m)
+}
+
+get_gene_by_heatmap_coord <- function(m, coord) {
+    y_coord <- round(coord)
+    req(y_coord > 0 & y_coord <= nrow(m))
+    return(rownames(m)[y_coord])
+}
+
+get_metacell_by_heatmap_coord <- function(m, coord) {
+    x_coord <- round(coord)
+    req(x_coord > 0 & x_coord <= ncol(m))
+    return(colnames(m)[x_coord])
+}
+
+get_markers_metadata <- function(dataset, input, metacell_types, globals) {
+    if (!is.null(input$selected_md)) {
+        metadata <- get_mc_data(dataset(), "metadata")
+        if (is.null(metadata)) {
+            metadata <- metacell_types() %>% select(metacell)
+        }
+        metadata <- metadata %>%
+            mutate(Clipboard = ifelse(metacell %in% globals$clipboard, "selected", "not selected")) %>%
+            select(metacell, one_of(input$selected_md))
+    } else {
+        metadata <- NULL
+    }
+    return(metadata)
+}

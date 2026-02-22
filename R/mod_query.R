@@ -542,89 +542,18 @@ select_metacell_plotly_event_projection <- function(source, input, session, meta
             updateSelectInput(session, "metacell1", selected = cell_type)
             showNotification(glue("Selected Cell type: {cell_type}"))
         } else if (input$mode == "Group") {
-            if (is.null(group())) {
-                group(metacell)
-            } else {
-                group(unique(c(group(), metacell)))
-            }
+            add_to_group(group, metacell)
         }
     })
 }
 
 group_selectors_mod_query <- function(input, output, session, dataset, ns, group, metacell_types, cell_type_colors, globals) {
-    output$group_box <- renderUI({
-        req(input$mode == "Group")
-        generic_box(
-            id = ns("group_box_1"),
-            title = "Group metacells",
-            status = "primary",
-            solidHeader = TRUE,
-            collapsible = TRUE,
-            closable = FALSE,
-            width = 12,
-            actionButton(ns("reset_group"), "Reset"),
-            actionButton(ns("remove_group_metacells"), "Remove"),
-            actionButton(ns("paste_group_metacells"), "Paste"),
-            shinycssloaders::withSpinner(
-                DT::dataTableOutput(ns("group_table"))
-            )
-        )
-    })
-
-    output$group_table <- DT::renderDataTable(
-        {
-            req(metacell_types())
-            req(cell_type_colors())
-            req(group())
-            DT::datatable(
-                tibble(metacell = group()) %>%
-                    left_join(metacell_types() %>% select(metacell, cell_type), by = "metacell"),
-                escape = FALSE,
-                rownames = FALSE,
-                colnames = "",
-                filter = "none",
-                options = list(
-                    dom = "t",
-                    paging = FALSE,
-                    language = list(emptyTable = "Please select metacells"),
-                    columnDefs = list(list(visible = FALSE, targets = c(1)))
-                )
-            ) %>%
-                DT::formatStyle(
-                    "metacell", "cell_type",
-                    backgroundColor = DT::styleEqual(
-                        cell_type_colors()$cell_type,
-                        col2hex(cell_type_colors()$color)
-                    )
-                )
-        },
-        server = FALSE
-    )
-
-    observeEvent(input$add_metacell_to_group, {
-        if (is.null(group())) {
-            group(input$metacell)
-        } else {
-            group(unique(c(group(), input$metacell)))
-        }
-    })
-
-    observeEvent(input$reset_group, {
-        group(NULL)
-    })
-
-    observeEvent(input$remove_group_metacells, {
-        rows <- input$group_table_rows_selected
-        req(rows)
-        req(length(rows) > 0)
-
-        group(group()[-rows])
-    })
-
-    observeEvent(input$paste_group_metacells, {
-        metacells <- globals$clipboard
-        group(unique(c(group(), metacells)))
-    })
+    render_group_box(output, "group_box", ns, "Group", "group_table",
+                     "reset_group", "remove_group_metacells", "paste_group_metacells",
+                     "Group", input)
+    render_group_table(output, "group_table", group, metacell_types, cell_type_colors)
+    setup_group_observers(input, group, "add_metacell_to_group", "remove_group_metacells",
+                          "paste_group_metacells", "reset_group", "group_table", "metacell", globals)
 
     purrr::walk(c("proj_mc_plot_proj_tab", "obs_proj_plot"), function(source) {
         observe_group_selection(source, input, group)
@@ -644,10 +573,6 @@ observe_group_selection <- function(source, input, group) {
         selected_metacells <- unique(el$customdata)
         req(input$mode == "Group")
 
-        if (is.null(group())) {
-            group(selected_metacells)
-        } else {
-            group(unique(c(group(), selected_metacells)))
-        }
+        add_to_group(group, selected_metacells)
     })
 }

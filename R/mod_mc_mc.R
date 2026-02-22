@@ -347,172 +347,32 @@ metacell_selectors <- function(input, output, session, dataset, ns, metacell_nam
             }
         } else if (input$mode == "Groups") {
             if (input$proj_select_main == "Group A") {
-                if (is.null(groupA())) {
-                    groupA(metacell)
-                } else {
-                    groupA(unique(c(groupA(), metacell)))
-                }
+                add_to_group(groupA, metacell)
             }
 
             if (input$proj_select_main == "Group B") {
-                if (is.null(groupB())) {
-                    groupB(metacell)
-                } else {
-                    groupB(unique(c(groupB(), metacell)))
-                }
+                add_to_group(groupB, metacell)
             }
         }
     })
 }
 
 group_selectors <- function(input, output, session, dataset, ns, groupA, groupB, metacell_types, cell_type_colors, globals) {
-    output$groupA_box <- renderUI({
-        req(input$mode == "Groups")
-        generic_box(
-            id = ns("groupA_box_1"),
-            title = "Group A metacells",
-            status = "primary",
-            solidHeader = TRUE,
-            collapsible = TRUE,
-            closable = FALSE,
-            width = 12,
-            actionButton(ns("reset_groupA"), "Reset"),
-            actionButton(ns("remove_groupA_metacells"), "Remove"),
-            actionButton(ns("paste_groupA_metacells"), "Paste"),
-            shinycssloaders::withSpinner(
-                DT::dataTableOutput(ns("groupA_table"))
-            )
-        )
-    })
+    # Group A box and table
+    render_group_box(output, "groupA_box", ns, "Group A", "groupA_table",
+                     "reset_groupA", "remove_groupA_metacells", "paste_groupA_metacells",
+                     "Groups", input)
+    render_group_table(output, "groupA_table", groupA, metacell_types, cell_type_colors)
+    setup_group_observers(input, groupA, "add_metacell_to_groupA", "remove_groupA_metacells",
+                          "paste_groupA_metacells", "reset_groupA", "groupA_table", "metacell", globals)
 
-    output$groupB_box <- renderUI({
-        req(input$mode == "Groups")
-        generic_box(
-            id = ns("groupB_box_1"),
-            title = "Group B metacells",
-            status = "primary",
-            solidHeader = TRUE,
-            collapsible = TRUE,
-            closable = FALSE,
-            width = 12,
-            actionButton(ns("reset_groupB"), "Reset"),
-            actionButton(ns("remove_groupB_metacells"), "Remove"),
-            actionButton(ns("paste_groupB_metacells"), "Paste"),
-            shinycssloaders::withSpinner(
-                DT::dataTableOutput(ns("groupB_table"))
-            )
-        )
-    })
-
-    output$groupA_table <- DT::renderDataTable(
-        {
-            req(metacell_types())
-            req(cell_type_colors())
-            req(groupA())
-            DT::datatable(
-                tibble(metacell = groupA()) %>%
-                    left_join(metacell_types() %>% select(metacell, cell_type), by = "metacell"),
-                escape = FALSE,
-                rownames = FALSE,
-                colnames = "",
-                filter = "none",
-                options = list(
-                    dom = "t",
-                    paging = FALSE,
-                    language = list(emptyTable = "Please select metacells"),
-                    columnDefs = list(list(visible = FALSE, targets = c(1)))
-                )
-            ) %>%
-                DT::formatStyle(
-                    "metacell", "cell_type",
-                    backgroundColor = DT::styleEqual(
-                        cell_type_colors()$cell_type,
-                        col2hex(cell_type_colors()$color)
-                    )
-                )
-        },
-        server = FALSE
-    )
-
-    output$groupB_table <- DT::renderDataTable(
-        {
-            req(metacell_types())
-            req(cell_type_colors())
-            req(groupB())
-            DT::datatable(
-                tibble(metacell = groupB()) %>%
-                    left_join(metacell_types() %>% select(metacell, cell_type), by = "metacell"),
-                escape = FALSE,
-                rownames = FALSE,
-                colnames = "",
-                filter = "none",
-                options = list(
-                    dom = "t",
-                    paging = FALSE,
-                    language = list(emptyTable = "Please select metacells"),
-                    columnDefs = list(list(visible = FALSE, targets = c(1)))
-                )
-            ) %>%
-                DT::formatStyle(
-                    "metacell", "cell_type",
-                    backgroundColor = DT::styleEqual(
-                        cell_type_colors()$cell_type,
-                        col2hex(cell_type_colors()$color)
-                    )
-                )
-        },
-        server = FALSE
-    )
-
-    observeEvent(input$add_metacell_to_groupA, {
-        if (is.null(groupA())) {
-            groupA(input$metacell)
-        } else {
-            groupA(unique(c(groupA(), input$metacell)))
-        }
-    })
-
-    observeEvent(input$add_metacell_to_groupB, {
-        if (is.null(groupB())) {
-            groupB(input$metacell)
-        } else {
-            groupB(unique(c(groupB(), input$metacell)))
-        }
-    })
-
-    observeEvent(input$remove_groupA_metacells, {
-        rows <- input$groupA_table_rows_selected
-        req(rows)
-        req(length(rows) > 0)
-
-        groupA(groupA()[-rows])
-    })
-
-    observeEvent(input$remove_groupB_metacells, {
-        rows <- input$groupB_table_rows_selected
-        req(rows)
-        req(length(rows) > 0)
-
-        groupB(groupB()[-rows])
-    })
-
-    observeEvent(input$paste_groupA_metacells, {
-        metacells <- globals$clipboard
-        groupA(unique(c(groupA(), metacells)))
-    })
-
-    observeEvent(input$paste_groupB_metacells, {
-        metacells <- globals$clipboard
-        groupB(unique(c(groupB(), metacells)))
-    })
-
-    observeEvent(input$reset_groupA, {
-        groupA(NULL)
-    })
-
-    observeEvent(input$reset_groupB, {
-        groupB(NULL)
-    })
+    # Group B box and table
+    render_group_box(output, "groupB_box", ns, "Group B", "groupB_table",
+                     "reset_groupB", "remove_groupB_metacells", "paste_groupB_metacells",
+                     "Groups", input)
+    render_group_table(output, "groupB_table", groupB, metacell_types, cell_type_colors)
+    setup_group_observers(input, groupB, "add_metacell_to_groupB", "remove_groupB_metacells",
+                          "paste_groupB_metacells", "reset_groupB", "groupB_table", "metacell", globals)
 
     observeEvent(plotly::event_data("plotly_selected", source = "proj_mc_plot"), {
         el <- plotly::event_data("plotly_selected", source = "proj_mc_plot")
@@ -521,19 +381,11 @@ group_selectors <- function(input, output, session, dataset, ns, groupA, groupB,
         req(input$mode == "Groups")
 
         if (input$proj_select_main == "Group A") {
-            if (is.null(groupA())) {
-                groupA(selected_metacells)
-            } else {
-                groupA(unique(c(groupA(), selected_metacells)))
-            }
+            add_to_group(groupA, selected_metacells)
         }
 
         if (input$proj_select_main == "Group B") {
-            if (is.null(groupB())) {
-                groupB(selected_metacells)
-            } else {
-                groupB(unique(c(groupB(), selected_metacells)))
-            }
+            add_to_group(groupB, selected_metacells)
         }
     })
 }
