@@ -404,8 +404,12 @@ calc_gene_gene_correlations <- function(dataset, genes, cell_type_filter = NULL,
         expr_data <- expr_data[, metacell_filter, drop = FALSE]
     }
 
-    # Calculate all pairwise correlations between genes
-    cor_matrix <- cor(t(expr_data), use = "pairwise.complete.obs")
+    # Calculate all pairwise correlations between genes (BLAS-accelerated)
+    t_expr <- t(expr_data)
+    cor_matrix <- tryCatch(
+        .Call("tgs_cross_cor_blas", t_expr, t_expr, TRUE, FALSE, FALSE, 0, new.env(parent = parent.frame())),
+        error = function(e) tgs_cor(t_expr, pairwise.complete.obs = TRUE, spearman = FALSE)
+    )
 
     # Convert to long format, excluding self-correlations
     results <- expand.grid(
@@ -468,9 +472,13 @@ plot_correlation_heatmap <- function(correlation_results, input_genes, dataset,
         return(invisible(NULL))
     }
 
-    # Calculate correlation matrix (densify for cor())
+    # Calculate correlation matrix (BLAS-accelerated)
     expr_subset <- as.matrix(mc_egc[genes_in_data, , drop = FALSE])
-    cor_matrix <- cor(t(expr_subset), use = "pairwise.complete.obs")
+    t_expr <- t(expr_subset)
+    cor_matrix <- tryCatch(
+        .Call("tgs_cross_cor_blas", t_expr, t_expr, TRUE, FALSE, FALSE, 0, new.env(parent = parent.frame())),
+        error = function(e) tgs_cor(t_expr, pairwise.complete.obs = TRUE, spearman = FALSE)
+    )
 
     cor_matrix_display <- cor_matrix
 

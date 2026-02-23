@@ -13,6 +13,29 @@ mod_gene_correlation_ui <- function(id) {
     ns <- NS(id)
 
     tagList(
+        # Setup clipboard functionality
+        if (requireNamespace("rclipboard", quietly = TRUE)) {
+            rclipboard::rclipboardSetup()
+        } else {
+            tags$head(tags$script(
+                "function copyToClipboard(text) {
+                    if (navigator.clipboard) {
+                        navigator.clipboard.writeText(text).then(function() {
+                            console.log('Copied to clipboard');
+                        }).catch(function(err) {
+                            console.error('Failed to copy: ', err);
+                        });
+                    } else {
+                        var textArea = document.createElement('textarea');
+                        textArea.value = text;
+                        document.body.appendChild(textArea);
+                        textArea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textArea);
+                    }
+                }"
+            ))
+        },
         fluidRow(
             # Left panel: Input and controls
             generic_column(
@@ -87,8 +110,8 @@ mod_gene_correlation_ui <- function(id) {
                                 inputId = ns("analysis_type"),
                                 label = "Analysis Type:",
                                 choices = list(
-                                    "Find correlated genes" = "find_genes",
-                                    "Calculate gene-gene correlation" = "gene_gene_cor"
+                                    "Find correlated" = "find_genes",
+                                    "Gene-gene cor." = "gene_gene_cor"
                                 ),
                                 selected = "find_genes",
                                 justified = TRUE
@@ -288,13 +311,21 @@ mod_gene_correlation_ui <- function(id) {
                                 )
                             ),
                             generic_column(
-                                width = 6,
+                                width = 3,
+                                div(
+                                    title = "Copy all correlated gene names to the system clipboard.",
+                                    style = "cursor: help;",
+                                    uiOutput(ns("copy_genes_button"))
+                                )
+                            ),
+                            generic_column(
+                                width = 3,
                                 div(
                                     title = "Download a plain text file with all correlated gene names (one per line).",
                                     style = "cursor: help;",
-                                    downloadButton(ns("download_gene_list"), "Download Gene List",
+                                    downloadButton(ns("download_gene_list"), "Download Genes",
                                         icon = icon("download"),
-                                        style = "width: 100%; background-color: #17a2b8; color: white; border: none;"
+                                        style = "width: 100%; background-color: #6c757d; color: white; border: none;"
                                     )
                                 )
                             )
@@ -703,6 +734,19 @@ mod_gene_correlation_server <- function(id, dataset, metacell_types, cell_type_c
 
                 unique(all_genes$gene2)
             })
+
+            # Copy genes to clipboard button
+            output$copy_genes_button <- clipboard_copy_button_ui(
+                ns, "copy_all_genes", filtered_gene_list,
+                label = "Copy Genes",
+                style = "width: 100%; background-color: #17a2b8; color: white; border: none;",
+                tooltip = "Copy all found genes to clipboard"
+            )
+
+            clipboard_copy_button_server(
+                input, "copy_all_genes", filtered_gene_list, globals,
+                message_template = "Copied {count} genes to clipboard"
+            )
 
             # Download gene list as plain text
             output$download_gene_list <- downloadHandler(
