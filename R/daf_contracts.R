@@ -24,8 +24,8 @@
 #' @noRd
 MCVIEW_TAB_NAMES <- c(
     "About", "Manifold", "Genes", "Diff. Expression", "Cell types",
-    "QC", "Markers", "Gene modules", "Inner-fold", "Stdev-fold",
-    "Projection QC", "Atlas", "Annotate", "Samples", "Flow"
+    "QC", "Markers", "Gene modules", "Gene correlation", "Inner-fold",
+    "Stdev-fold", "Projection QC", "Atlas", "Annotate", "Samples", "Flow"
 )
 
 # ==============================================================================
@@ -728,6 +728,10 @@ mcview_config_contract <- function() {
             scalar_spec(
                 "metacells_algorithm", CONTRACT_OPTIONAL, "character",
                 "Metacells algorithm version"
+            ),
+            scalar_spec(
+                "mcview_available_tabs", CONTRACT_OPTIONAL, "character",
+                "Pre-stored comma-separated list of available tabs (skips tab detection)"
             )
         )
     )
@@ -989,6 +993,7 @@ mcview_tab_contract <- function(tab_name) {
         "QC" = mcview_qc_contract(),
         "Markers" = mcview_markers_contract(),
         "Gene modules" = mcview_gene_modules_contract(),
+        "Gene correlation" = mcview_gene_correlations_contract(),
         "Inner-fold" = mcview_inner_fold_contract(),
         "Stdev-fold" = mcview_stdev_fold_contract(),
         "Projection QC" = mcview_projection_qc_contract(),

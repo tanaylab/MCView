@@ -272,12 +272,27 @@ extract_config_for_daf <- function(daf_obj, dataset_name, config_file = NULL) {
     }
 
     # Priority 2: DAF scalars (override auto-detection but not YAML)
-    daf_title <- daf_scalar(daf_obj, "mcview_title", default = NULL)
-    daf_tabs <- daf_scalar(daf_obj, "mcview_tabs", default = NULL)
-    daf_light <- daf_scalar(daf_obj, "mcview_light_version", default = NULL)
-    daf_excluded <- daf_scalar(daf_obj, "mcview_excluded_tabs", default = NULL)
-    daf_cache <- daf_scalar(daf_obj, "mcview_cache_in_daf", default = NULL)
-    daf_cache_root <- daf_scalar(daf_obj, "mcview_cache_daf_root", default = NULL)
+    # Batch: get the set of all available scalars in one call, then only
+    # fetch the ones that exist. This avoids ~16 individual has_scalar +
+    # get_scalar roundtrips (each going through Julia).
+    available_scalars <- dafr::scalars_set(daf_obj)
+
+    # Helper: fetch a scalar only if it exists in the pre-queried set
+    get_if_exists <- function(name) {
+        if (name %in% available_scalars) {
+            dafr::get_scalar(daf_obj, name)
+        } else {
+            NULL
+        }
+    }
+
+    # Fetch all config scalars that exist (only those present, skip the rest)
+    daf_title <- get_if_exists("mcview_title")
+    daf_tabs <- get_if_exists("mcview_tabs")
+    daf_light <- get_if_exists("mcview_light_version")
+    daf_excluded <- get_if_exists("mcview_excluded_tabs")
+    daf_cache <- get_if_exists("mcview_cache_in_daf")
+    daf_cache_root <- get_if_exists("mcview_cache_daf_root")
 
     # Apply DAF scalars if not overridden by YAML
     if (is.null(config$title) && !is.null(daf_title)) {
@@ -324,14 +339,14 @@ extract_config_for_daf <- function(daf_obj, dataset_name, config_file = NULL) {
         config$cache_in_daf <- FALSE
     }
 
-    # Add metacells version if available
-    metacells_version <- daf_scalar(daf_obj, "metacells_algorithm", default = NULL)
+    # Add metacells version if available (uses the already-fetched scalar set)
+    metacells_version <- get_if_exists("metacells_algorithm")
     if (!is.null(metacells_version)) {
         config$metacells_version <- metacells_version
     }
 
     # Store about markdown if provided in DAF
-    about_markdown <- daf_scalar(daf_obj, "mcview_about_markdown", default = NULL)
+    about_markdown <- get_if_exists("mcview_about_markdown")
     if (!is.null(about_markdown)) {
         mcv_set("about_markdown", about_markdown)
     }
@@ -341,24 +356,180 @@ extract_config_for_daf <- function(daf_obj, dataset_name, config_file = NULL) {
 
 #' Auto-detect available tabs based on DAF content
 #'
-#' Uses the contract-based validation system to determine which tabs
-#' have sufficient data to be displayed.
+#' Uses a fast batch-query approach: queries all available axes, vectors,
+#' matrices, and scalars from the DAF once, then checks tab requirements
+#' in pure R without per-tab Julia roundtrips.
+#'
+#' If the DAF contains a pre-stored `mcview_available_tabs` scalar (a
+#' comma-separated list of tab names), that value is used directly and
+#' all validation is skipped.
 #'
 #' @param daf_obj DAF object
 #'
 #' @return Character vector of available tab names
 #' @export
 detect_available_tabs <- function(daf_obj) {
-    # Use contract-based tab validation
-    tab_results <- validate_mcview_tabs(daf_obj, verbose = FALSE)
+    # Fast path: check for pre-stored available tabs scalar
+    if (dafr::has_scalar(daf_obj, "mcview_available_tabs")) {
+        stored_tabs <- dafr::get_scalar(daf_obj, "mcview_available_tabs")
+        tabs <- trimws(strsplit(stored_tabs, ",")[[1]])
+        # Filter to canonical names only
+        tabs <- tabs[tabs %in% MCVIEW_TAB_NAMES]
+        if (length(tabs) > 0) {
+            return(tabs)
+        }
+        # If stored value was empty/invalid, fall through to detection
+    }
 
-    # Get tabs that are available
-    available_tabs <- names(tab_results)[sapply(tab_results, function(x) x$available)]
+    # Batch-query all DAF metadata in a few calls (instead of ~300 individual calls)
+    available_axes <- dafr::axes_set(daf_obj)
+    available_scalars <- dafr::scalars_set(daf_obj)
 
-    # Return in canonical order, only those that are available
-    tabs <- MCVIEW_TAB_NAMES[MCVIEW_TAB_NAMES %in% available_tabs]
+    # Query vectors and matrices only for axes that exist
+    available_vectors <- list()
+    for (axis in available_axes) {
+        vecs <- tryCatch(dafr::vectors_set(daf_obj, axis), error = function(e) character(0))
+        available_vectors[[axis]] <- vecs
+    }
+
+    available_matrices <- list()
+    for (rows_axis in available_axes) {
+        for (cols_axis in available_axes) {
+            if (rows_axis != cols_axis) {
+                mats <- tryCatch(
+                    dafr::matrices_set(daf_obj, rows_axis, cols_axis),
+                    error = function(e) character(0)
+                )
+                if (length(mats) > 0) {
+                    key <- paste0(rows_axis, ",", cols_axis)
+                    available_matrices[[key]] <- mats
+                }
+            }
+        }
+    }
+
+    # Helper: check if a vector exists in the cached metadata
+    has_vec <- function(axis, name) {
+        axis %in% available_axes && name %in% available_vectors[[axis]]
+    }
+
+    # Helper: check if a matrix exists in the cached metadata
+    has_mat <- function(rows_axis, cols_axis, name) {
+        key <- paste0(rows_axis, ",", cols_axis)
+        key %in% names(available_matrices) && name %in% available_matrices[[key]]
+    }
+
+    # Helper: check if an axis exists
+    has_ax <- function(axis) {
+        axis %in% available_axes
+    }
+
+    # Helper: check if a scalar exists
+    has_sc <- function(name) {
+        name %in% available_scalars
+    }
+
+    # Validate core contract first (required for all tabs)
+    core_ok <- has_ax("metacell") && has_ax("gene") && has_ax("type") &&
+        has_vec("metacell", "total_UMIs") &&
+        has_vec("metacell", "type") &&
+        has_vec("type", "color") &&
+        (has_mat("metacell", "gene", "UMIs") || has_mat("gene", "metacell", "UMIs")) &&
+        ((has_vec("metacell", "x") && has_vec("metacell", "y")) ||
+            (has_vec("metacell", "u") && has_vec("metacell", "v")))
+
+    if (!core_ok) {
+        return(character(0))
+    }
+
+    # Check each tab's requirements against cached metadata.
+    # A tab is available if all its REQUIRED fields exist.
+    # Optional fields do not affect availability.
+    tabs <- character(0)
+
+    # About - always available if core passes
+    tabs <- c(tabs, "About")
+
+    # Manifold - core is sufficient (graph is optional)
+    tabs <- c(tabs, "Manifold")
+
+    # Genes - core is sufficient (top genes, lateral, noisy are optional)
+    tabs <- c(tabs, "Genes")
+
+    # Diff. Expression - core is sufficient (lateral, noisy are optional)
+    tabs <- c(tabs, "Diff. Expression")
+
+    # Cell types - core is sufficient (n_cell is optional)
+    tabs <- c(tabs, "Cell types")
+
+    # QC - core is sufficient (all QC-specific fields are optional)
+    tabs <- c(tabs, "QC")
+
+    # Markers - requires gene.is_marker
+    if (has_vec("gene", "is_marker")) {
+        tabs <- c(tabs, "Markers")
+    }
+
+    # Gene modules - requires gene.module
+    if (has_vec("gene", "module")) {
+        tabs <- c(tabs, "Gene modules")
+    }
+
+    # Inner-fold - requires gene,metacell.inner_fold matrix
+    if (has_mat("gene", "metacell", "inner_fold")) {
+        tabs <- c(tabs, "Inner-fold")
+    }
+
+    # Stdev-fold - requires gene,metacell.inner_stdev_log matrix
+    if (has_mat("gene", "metacell", "inner_stdev_log")) {
+        tabs <- c(tabs, "Stdev-fold")
+    }
+
+    # Projection QC - all fields are optional, so available if core passes
+    tabs <- c(tabs, "Projection QC")
+
+    # Atlas - all fields are optional, available if core passes
+    tabs <- c(tabs, "Atlas")
+
+    # Annotate - always available if core passes
+    tabs <- c(tabs, "Annotate")
+
+    # Samples - requires cell axis + cell.metacell + cell.samp_id
+    if (has_ax("cell") && has_vec("cell", "metacell") && has_vec("cell", "samp_id")) {
+        tabs <- c(tabs, "Samples")
+    }
+
+    # Gene correlation - requires gg_mc_top_cor axis
+    if (has_ax("gg_mc_top_cor")) {
+        tabs <- c(tabs, "Gene correlation")
+    }
+
+    # Flow - requires metacell.time (custom rule)
+    if (has_vec("metacell", "time")) {
+        tabs <- c(tabs, "Flow")
+    }
+
+    # Return in canonical order
+    tabs <- MCVIEW_TAB_NAMES[MCVIEW_TAB_NAMES %in% tabs]
 
     return(tabs)
+}
+
+#' Pre-store available tabs in a DAF
+#'
+#' Runs detect_available_tabs() and stores the result as a scalar
+#' in the DAF. On subsequent startups, detect_available_tabs() will
+#' find this scalar and skip all tab validation entirely.
+#'
+#' @param daf_obj DAF object (must be writable)
+#' @return Character vector of available tabs (invisibly)
+#' @export
+store_available_tabs <- function(daf_obj) {
+    tabs <- detect_available_tabs(daf_obj)
+    tabs_str <- paste(tabs, collapse = ",")
+    dafr::set_scalar(daf_obj, "mcview_available_tabs", tabs_str)
+    cli_alert_success("Stored {length(tabs)} available tabs in DAF: {tabs_str}")
+    invisible(tabs)
 }
 
 # ==============================================================================

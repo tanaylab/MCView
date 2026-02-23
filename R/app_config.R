@@ -18,6 +18,54 @@ init_defs <- function() {
     mcv_set("expr_breaks", c(1e-5, 2e-5, 4e-5, 1e-4, 2e-4, 4e-4, 1e-3, 2e-3, 4e-3, 1e-2, 2e-2, 4e-2, 1e-1, 2e-1, 4e-1, 1))
 }
 
+#' Compute optimal default genes (expensive)
+#'
+#' Loads the full EGC matrix and finds the two genes with highest
+#' expression range (max - min across metacells), excluding lateral
+#' and noisy genes. This is the original init_selected_genes() logic
+#' but extracted so it can be called lazily.
+#'
+#' @return Character vector of length 2 with gene names
+#' @noRd
+compute_optimal_default_genes <- function() {
+    mc_egc <- get_mc_egc(dataset_ls()[1])
+    if (has_atlas(dataset_ls()[1])) {
+        mc_egc_atlas <- get_mc_egc(dataset_ls()[1], atlas = TRUE)
+        mc_egc <- mc_egc[intersect(rownames(mc_egc), rownames(mc_egc_atlas)), ]
+    }
+
+    f <- rep(TRUE, nrow(mc_egc))
+    lateral_genes <- get_mc_data(dataset_ls()[1], "lateral_genes")
+    if (!is.null(lateral_genes)) {
+        f <- f & !(rownames(mc_egc) %in% lateral_genes)
+    }
+    noisy_genes <- get_mc_data(dataset_ls()[1], "noisy_genes")
+    if (!is.null(noisy_genes)) {
+        f <- f & !(rownames(mc_egc) %in% noisy_genes)
+    }
+    mc_egc <- mc_egc[f, ]
+
+    minmax <- matrixStats::rowMaxs(mc_egc, na.rm = TRUE) - matrixStats::rowMins(mc_egc, na.rm = TRUE)
+    names(minmax) <- rownames(mc_egc)
+    genes <- names(head(sort(minmax, decreasing = TRUE), n = 2))
+
+    # Cache for future use
+    config <- mcv_get("config")
+    cache_enabled <- isTRUE(config$cache_in_daf)
+    if (cache_enabled) {
+        tryCatch(
+            {
+                daf_obj <- get_dataset_daf(dataset_ls()[1])
+                dafr::set_scalar(daf_obj, "mcview_cache_default_gene1", genes[1])
+                dafr::set_scalar(daf_obj, "mcview_cache_default_gene2", genes[2])
+            },
+            error = function(e) NULL
+        )
+    }
+
+    genes
+}
+
 #' Get all possible tab names from tab definitions
 #'
 #' @return Character vector of all tab names
@@ -33,55 +81,73 @@ get_all_tab_names <- function() {
 
 init_selected_genes <- function() {
     config <- mcv_get("config")
-    # if selected genes are not set - choose them from the first dataset
-    if (is.null(config$selected_gene1) || is.null(config$selected_gene2)) {
-        cache_enabled <- isTRUE(config$cache_in_daf)
-        if (cache_enabled) {
-            daf_obj <- get_dataset_daf(dataset_ls()[1])
-            cached_gene1 <- daf_scalar(daf_obj, "mcview_cache_default_gene1", default = NULL)
-            cached_gene2 <- daf_scalar(daf_obj, "mcview_cache_default_gene2", default = NULL)
-            if (!is.null(cached_gene1) && !is.null(cached_gene2)) {
-                genes <- c(cached_gene1, cached_gene2)
-            }
+
+    # If config explicitly provides selected genes, use them directly (no computation)
+    if (!is.null(config$selected_gene1) && !is.null(config$selected_gene2)) {
+        mcv_set("default_gene1", config$selected_gene1)
+        mcv_set("default_gene2", config$selected_gene2)
+        return(invisible(NULL))
+    }
+
+    # Try fast sources: cached scalars in DAF, then gene axis fallback
+    genes <- NULL
+
+    # Source 1: Check DAF cache scalars (single roundtrip each)
+    daf_obj <- get_dataset_daf(dataset_ls()[1])
+    if (!is.null(daf_obj)) {
+        cached_gene1 <- daf_scalar(daf_obj, "mcview_cache_default_gene1", default = NULL)
+        cached_gene2 <- daf_scalar(daf_obj, "mcview_cache_default_gene2", default = NULL)
+        if (!is.null(cached_gene1) && !is.null(cached_gene2)) {
+            genes <- c(cached_gene1, cached_gene2)
         }
+    }
 
-        if (!exists("genes", inherits = FALSE)) {
-            mc_egc <- get_mc_egc(dataset_ls()[1])
-            if (has_atlas(dataset_ls()[1])) {
-                mc_egc_atlas <- get_mc_egc(dataset_ls()[1], atlas = TRUE)
-                mc_egc <- mc_egc[intersect(rownames(mc_egc), rownames(mc_egc_atlas)), ]
-            }
-
-            f <- rep(TRUE, nrow(mc_egc))
-            lateral_genes <- get_mc_data(dataset_ls()[1], "lateral_genes")
-            if (!is.null(lateral_genes)) {
-                f <- f & !(rownames(mc_egc) %in% lateral_genes)
-            }
-            noisy_genes <- get_mc_data(dataset_ls()[1], "noisy_genes")
-            if (!is.null(noisy_genes)) {
-                f <- f & !(rownames(mc_egc) %in% noisy_genes)
-            }
-            mc_egc <- mc_egc[f, ]
-
-            minmax <- matrixStats::rowMaxs(mc_egc, na.rm = TRUE) - matrixStats::rowMins(mc_egc, na.rm = TRUE)
-            names(minmax) <- rownames(mc_egc)
-            genes <- names(head(sort(minmax, decreasing = TRUE), n = 2))
-
-            if (cache_enabled) {
-                tryCatch(
-                    {
-                        daf_obj <- get_dataset_daf(dataset_ls()[1])
-                        dafr::set_scalar(daf_obj, "mcview_cache_default_gene1", genes[1])
-                        dafr::set_scalar(daf_obj, "mcview_cache_default_gene2", genes[2])
-                    },
-                    error = function(e) NULL
-                )
-            }
+    # Source 2: Use first 2 genes from the gene axis (very fast, no matrix load)
+    if (is.null(genes) && !is.null(daf_obj)) {
+        gene_axis <- dafr::axis_entries(daf_obj, "gene")
+        if (length(gene_axis) >= 2) {
+            genes <- gene_axis[1:2]
+            # Mark that we should compute optimal genes lazily
+            mcv_set("default_genes_need_optimization", TRUE)
         }
     }
 
     mcv_set("default_gene1", config$selected_gene1 %||% genes[1])
     mcv_set("default_gene2", config$selected_gene2 %||% genes[2])
+}
+
+#' Get default gene with lazy optimization
+#'
+#' Returns the current default gene. On first call where optimization
+#' is pending, triggers async computation of optimal genes via
+#' compute_optimal_default_genes() and updates the defaults.
+#'
+#' @param which Which gene (1 or 2)
+#' @return Gene name string
+#' @noRd
+get_default_gene <- function(which = 1) {
+    var_name <- paste0("default_gene", which)
+    gene <- mcv_get(var_name)
+
+    # If genes need optimization, compute them now (one-time cost on first access)
+    if (isTRUE(mcv_get("default_genes_need_optimization"))) {
+        mcv_set("default_genes_need_optimization", FALSE)
+        tryCatch(
+            {
+                optimal_genes <- compute_optimal_default_genes()
+                if (length(optimal_genes) >= 2) {
+                    mcv_set("default_gene1", optimal_genes[1])
+                    mcv_set("default_gene2", optimal_genes[2])
+                    gene <- mcv_get(var_name)
+                }
+            },
+            error = function(e) {
+                cli::cli_alert_warning("Could not compute optimal default genes: {e$message}")
+            }
+        )
+    }
+
+    gene
 }
 
 
@@ -171,6 +237,11 @@ init_tab_defs <- function() {
             title = "Atlas",
             module_name = "atlas",
             icon = "atlas"
+        ),
+        "Gene correlation" = list(
+            title = "Gene correlation",
+            module_name = "gene_correlation",
+            icon = "exchange-alt"
         )
     )
     mcv_set("tab_defs", tab_defs)
@@ -205,6 +276,13 @@ init_tab_defs <- function() {
     }
 
     if (!is.null(cur_config$light_version) && cur_config$light_version) {
+        # exclude Gene correlation tab in light version
+        if (is.null(cur_config$excluded_tabs)) {
+            cur_config$excluded_tabs <- c("Gene correlation")
+        } else {
+            cur_config$excluded_tabs <- unique(c(cur_config$excluded_tabs, "Gene correlation"))
+        }
+
         # make the About tab first if exists
         if ("About" %in% cur_config$tabs) {
             cur_config$tabs <- c("About", cur_config$tabs[cur_config$tabs != "About"])
@@ -215,7 +293,7 @@ init_tab_defs <- function() {
 }
 
 order_tabs <- function(tabs) {
-    tabs_order <- c("QC", "Projection QC", "Manifold", "Genes", "Query", "Atlas", "Markers", "Gene modules", "Projected-fold", "Diff. Expression", "Samples", "Cell types", "Annotate")
+    tabs_order <- c("QC", "Projection QC", "Manifold", "Genes", "Query", "Atlas", "Markers", "Gene modules", "Gene correlation", "Projected-fold", "Diff. Expression", "Samples", "Cell types", "Annotate")
 
     # order the tabs according to the order in tabs_order. Tabs that are not in tabs_order will be added at the end
     new_tabs <- c(tabs_order[tabs_order %in% tabs], tabs[!(tabs %in% tabs_order)])
@@ -305,15 +383,22 @@ extract_cache_config <- function(config = NULL, daf_obj = NULL, dataset_name = N
     cache_config <- defaults
 
     # Priority 3: DAF scalars (lowest priority for cache-specific settings)
+    # Batch: get the set of all available scalars in one call to avoid
+    # individual has_scalar roundtrips for each cache config scalar.
     if (!is.null(daf_obj)) {
-        daf_cache_enabled <- daf_scalar(daf_obj, "mcview_cache_enabled", default = NULL)
-        daf_cache_type <- daf_scalar(daf_obj, "mcview_cache_type", default = NULL)
-        daf_cache_dir <- daf_scalar(daf_obj, "mcview_cache_dir", default = NULL)
-        daf_cache_precompute <- daf_scalar(daf_obj, "mcview_cache_precompute", default = NULL)
+        avail_scalars <- dafr::scalars_set(daf_obj)
+        get_cache_scalar <- function(name) {
+            if (name %in% avail_scalars) dafr::get_scalar(daf_obj, name) else NULL
+        }
+
+        daf_cache_enabled <- get_cache_scalar("mcview_cache_enabled")
+        daf_cache_type <- get_cache_scalar("mcview_cache_type")
+        daf_cache_dir <- get_cache_scalar("mcview_cache_dir")
+        daf_cache_precompute <- get_cache_scalar("mcview_cache_precompute")
 
         # Also support legacy scalars
-        daf_cache_in_daf <- daf_scalar(daf_obj, "mcview_cache_in_daf", default = NULL)
-        daf_cache_daf_root <- daf_scalar(daf_obj, "mcview_cache_daf_root", default = NULL)
+        daf_cache_in_daf <- get_cache_scalar("mcview_cache_in_daf")
+        daf_cache_daf_root <- get_cache_scalar("mcview_cache_daf_root")
 
         if (!is.null(daf_cache_enabled)) {
             cache_config$enabled <- isTRUE(normalize_cache_flag(daf_cache_enabled))
