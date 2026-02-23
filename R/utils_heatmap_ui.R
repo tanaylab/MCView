@@ -11,6 +11,8 @@ heatmap_box <- function(id,
                         legend_width = 2,
                         height = "80vh") {
     ns <- NS(id)
+    tagList(
+    rclipboard::rclipboardSetup(),
     div(
         generic_box(
             id = ns("heatmap_box"),
@@ -66,6 +68,7 @@ heatmap_box <- function(id,
         ),
         style = "position:relative",
         uiOutput(ns("hover_info"), style = "pointer-events: none")
+    )
     )
 }
 
@@ -172,6 +175,7 @@ heatmap_sidebar <- function(id, ..., show_fitted_filter = FALSE) {
         tags$hr(),
         load_genes_ui,
         downloadButton(ns("download_genes"), "Save genes", align = "center", style = "margin: 5px 5px 5px 15px; "),
+        uiOutput(ns("copy_genes_button")),
         tags$hr(),
         include_metadata_ui,
         downloadButton(ns("download_matrix"), "Download matrix", align = "center", style = "margin: 5px 5px 5px 15px; ")

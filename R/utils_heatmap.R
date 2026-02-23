@@ -756,4 +756,17 @@ heatmap_download_handlers <- function(output, mat, markers, metacell_filter, dat
             )
         }
     )
+
+    # Render copy genes button using utility function
+    output$copy_genes_button <- clipboard_copy_button_ui(
+        ns, "copy_genes_to_clipboard", markers,
+        label = "Copy genes to clipboard",
+        style = "margin: 5px 5px 5px 15px; background-color: #17a2b8; color: white; border: none;",
+        tooltip = "Copy all genes to system clipboard"
+    )
+
+    clipboard_copy_button_server(
+        input, "copy_genes_to_clipboard", markers, globals,
+        message_template = "Copied {count} genes to clipboard"
+    )
 }
