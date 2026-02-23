@@ -171,7 +171,9 @@ render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, global
             sanitize_for_WebGL() %>%
             plotly::toWebGL() %>%
             sanitize_plotly_buttons(buttons = plotly_buttons) %>%
-            sanitize_plotly_download(globals)
+            sanitize_plotly_download(globals) %>%
+            plotly::event_register("plotly_click") %>%
+            plotly::event_register("plotly_selected")
 
         if (!is.null(dragmode)) {
             fig <- fig %>%

@@ -55,3 +55,33 @@
 #' @importFrom utils tail
 ## usethis namespace: end
 NULL
+
+#' Package unload hook for orderly Julia shutdown
+#'
+#' Attempts cleanup of MCView state and Julia resources when the
+#' package is unloaded, reducing the chance of segfaults from
+#' Julia's jl_atexit_hook running during R's GC-at-exit phase.
+#'
+#' @param libpath Library path (unused, required by R)
+#' @noRd
+.onUnload <- function(libpath) {
+    # Clean up MCView environment first
+    tryCatch(
+        cleanup_mcview_env(),
+        error = function(e) {
+            # Suppress errors during unload
+        }
+    )
+
+    # Attempt Julia GC to reduce finalizer pressure
+    tryCatch(
+        {
+            if (requireNamespace("JuliaCall", quietly = TRUE)) {
+                JuliaCall::julia_eval("GC.gc()")
+            }
+        },
+        error = function(e) {
+            # Julia may not be initialized or already shut down
+        }
+    )
+}

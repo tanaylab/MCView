@@ -28,3 +28,5 @@ atlas_proj/*
 example/
 *.Rprof
 dev/
+..Rcheck/
+.a5c/

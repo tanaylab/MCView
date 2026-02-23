@@ -18,6 +18,9 @@ metacell_from_coords_proj <- function(dataset, x, y, mc2d = NULL) {
 get_top_var_genes <- function(dataset, metacell) {
     metacell <- as.character(metacell)
     mc_egc_t <- calc_mc_egc_t(dataset, metacell)
+    if (is.null(mc_egc_t) || nrow(mc_egc_t) == 0) {
+        return(NULL)
+    }
     vec <- log2(mc_egc_t + 3e-4)
     diff <- matrixStats::rowMaxs(vec, na.rm = TRUE) - matrixStats::rowMins(vec, na.rm = TRUE)
     names(diff) <- rownames(mc_egc_t)

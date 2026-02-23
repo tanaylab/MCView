@@ -63,6 +63,67 @@ mcv_exists <- function(var_name) {
     exists(var_name, envir = mcview_env, inherits = FALSE)
 }
 
+#' Clean up MCView environment for orderly shutdown
+#'
+#' Iterates over all datasets, clears in-memory caches (top_cor_genes),
+#' and resets the mcview_env to a clean state. All errors are suppressed
+#' since this runs during shutdown when partial teardown is expected.
+#'
+#' @return TRUE invisibly
+#' @export
+cleanup_mcview_env <- function() {
+    # Clear per-dataset in-memory caches and DAF internal caches
+    mc_data <- mcv_get("mc_data")
+    if (!is.null(mc_data)) {
+        for (ds_name in names(mc_data)) {
+            tryCatch(
+                {
+                    # Clear in-memory correlation cache
+                    if (!is.null(mc_data[[ds_name]][["top_cor_genes"]])) {
+                        mc_data[[ds_name]][["top_cor_genes"]] <- list()
+                    }
+                    # Empty DAF internal caches (releases Julia-side memory)
+                    for (daf_field in c("daf_obj", "cache_daf", "base_daf")) {
+                        daf_ref <- mc_data[[ds_name]][[daf_field]]
+                        if (!is.null(daf_ref) && inherits(daf_ref, "Daf")) {
+                            tryCatch(
+                                dafr::empty_cache(daf_ref),
+                                error = function(e) NULL
+                            )
+                        }
+                    }
+                    # Null out DAF references to allow GC
+                    mc_data[[ds_name]][["daf_obj"]] <- NULL
+                    mc_data[[ds_name]][["cache_daf"]] <- NULL
+                    mc_data[[ds_name]][["base_daf"]] <- NULL
+                },
+                error = function(e) {
+                    # Suppress errors during cleanup
+                }
+            )
+        }
+    }
+
+    # Clear atlas DAF cache
+    atlas <- mcv_get("atlas")
+    if (!is.null(atlas) && inherits(atlas, "Daf")) {
+        tryCatch(
+            dafr::empty_cache(atlas),
+            error = function(e) NULL
+        )
+    }
+
+    # Reset the environment to clean state
+    tryCatch(
+        init_mcview_env(),
+        error = function(e) {
+            # Suppress errors during cleanup
+        }
+    )
+
+    invisible(TRUE)
+}
+
 #' Get DAF object for a dataset
 #'
 #' Returns the complete DAF (cache + base chained), which provides

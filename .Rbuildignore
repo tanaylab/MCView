@@ -30,3 +30,4 @@ $run_dev.*
 ^\.a5c$
 ^\.claude$
 ^\.lintr$
+^..Rcheck$

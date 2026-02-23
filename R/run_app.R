@@ -43,6 +43,13 @@
 #' run_app(daf_obj, config_file = "config.yaml")
 #' }
 #'
+#' @section Signal handling note:
+#' When Julia is embedded (via dafr/JuliaCall), Julia's signal handler can
+#' interfere with R's interrupt handling. The app registers onStop() and
+#' .onUnload() hooks for orderly shutdown, which significantly reduces
+#' segfaults. However, Ctrl+C may still be unreliable while Julia is
+#' actively processing a query.
+#'
 #' @inheritDotParams shiny::shinyApp
 #'
 #' @export
@@ -103,7 +110,14 @@ run_app <- function(daf,
 
     timed("init_defs", init_defs())
     timed("config_shiny_cache", config_shiny_cache())
-    future::plan(future::multicore)
+    # Use multisession instead of multicore to avoid forking a process
+    # with embedded Julia (fork is unsupported and causes segfaults)
+    future::plan(future::multisession)
+
+    # Register onStop hook for orderly shutdown
+    shiny::onStop(function() {
+        mcview_on_stop()
+    })
 
     with_golem_options(
         app = shinyApp(
@@ -142,6 +156,50 @@ load_daf_from_path <- function(path) {
     }
 
     cli_abort("Could not determine DAF format for: {.path {path}}")
+}
+
+#' Orderly shutdown callback for MCView
+#'
+#' Called by shiny::onStop() when the app is shutting down.
+#' Resets the future plan, cleans up MCView state, and attempts
+#' Julia cleanup to avoid segfaults from jl_atexit_hook during GC.
+#'
+#' @noRd
+mcview_on_stop <- function() {
+    cli::cli_alert_info("MCView shutting down...")
+
+    # Reset future plan to sequential to avoid orphaned worker processes
+    tryCatch(
+        future::plan(future::sequential),
+        error = function(e) {
+            # Suppress errors during shutdown
+        }
+    )
+
+    # Clean up MCView environment (DAF caches, in-memory state)
+    tryCatch(
+        cleanup_mcview_env(),
+        error = function(e) {
+            # Suppress errors during shutdown
+        }
+    )
+
+    # Attempt Julia GC to reduce finalizer pressure at exit
+    tryCatch(
+        {
+            if (requireNamespace("JuliaCall", quietly = TRUE)) {
+                # Trigger Julia GC while the process is still intact,
+                # reducing the chance of segfaults from jl_atexit_hook
+                # running during R's GC-at-exit phase
+                JuliaCall::julia_eval("GC.gc()")
+            }
+        },
+        error = function(e) {
+            # Julia may not be initialized or already shut down; suppress errors
+        }
+    )
+
+    cli::cli_alert_success("MCView shutdown complete")
 }
 
 config_shiny_cache <- function() {

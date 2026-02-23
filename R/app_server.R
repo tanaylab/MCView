@@ -147,4 +147,19 @@ app_server <- function(input, output, session) {
     if (!is.null(app_config("profile")) && app_config("profile")) {
         # Profiling UI disabled; keep profile flag for timing logs only.
     }
+
+    # Per-session cleanup: release resources when a browser tab closes
+    session$onSessionEnded(function() {
+        tryCatch(
+            {
+                cli::cli_alert_info("Shiny session ended, cleaning up session resources")
+                # Trigger R garbage collection to release any session-held
+                # DAF object references promptly rather than deferring to exit
+                gc(verbose = FALSE)
+            },
+            error = function(e) {
+                # Suppress errors during session cleanup
+            }
+        )
+    })
 }

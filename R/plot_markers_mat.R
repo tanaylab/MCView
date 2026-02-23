@@ -42,6 +42,7 @@ plot_markers_mat <- function(mat,
         col_names <- colnames(mat)
     }
 
+    mat <- as.matrix(mat)
     p_mat <- tgutil::tgplot_heatmap(
         clip_vals(mat, min_lfp, max_lfp),
         col_names = col_names,

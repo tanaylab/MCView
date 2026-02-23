@@ -525,7 +525,11 @@ dispatch_2d_color_proj <- function(color_proj, input, dataset, atlas, mc2d,
 #'
 #' @noRd
 finalize_2d_plotly <- function(fig, input, globals, source, buttons, dragmode) {
-    fig <- fig %>% plotly::event_register("plotly_restyle")
+    fig <- fig %>%
+        plotly::event_register("plotly_restyle") %>%
+        plotly::event_register("plotly_click") %>%
+        plotly::event_register("plotly_selected") %>%
+        plotly::event_register("plotly_deselect")
     fig$x$source <- source
 
     if (!is.null(dragmode)) {

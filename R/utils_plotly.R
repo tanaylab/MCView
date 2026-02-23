@@ -103,7 +103,8 @@ prepare_plotly_scatter <- function(p, tooltip = "tooltip_text", source = NULL,
         fig <- fig %>% sanitize_plotly_download(globals)
     }
 
-    fig
+    fig %>%
+        plotly::event_register("plotly_click")
 }
 
 plotly_text_plot <- function(text) {

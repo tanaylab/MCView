@@ -1,14 +1,26 @@
 calc_mc_egc_t <- function(dataset, metacell, genes = NULL) {
     mct_probs_trans <- get_mc_data(dataset, "mct_probs_trans")
+    if (is.null(mct_probs_trans)) {
+        return(NULL)
+    }
+
     mc_egc <- get_mc_egc(dataset)
 
     flow_prob <- mct_probs_trans[[metacell]]$probs
+    if (is.null(flow_prob) || ncol(flow_prob) == 0) {
+        return(NULL)
+    }
+
+    non_zero <- colSums(flow_prob) > 0
+    if (!any(non_zero)) {
+        return(NULL)
+    }
 
     # find maximal time with non-zero colSums
-    t_max <- which.max(c(1:ncol(flow_prob))[colSums(flow_prob) > 0])
+    t_max <- which.max(c(1:ncol(flow_prob))[non_zero])
 
     # find minimal time with non-zero colSums
-    t_min <- which.min(c(1:ncol(flow_prob))[colSums(flow_prob) > 0])
+    t_min <- which.min(c(1:ncol(flow_prob))[non_zero])
 
     flow_prob_f <- flow_prob[, t_min:t_max]
     if (is.null(ncol(flow_prob_f))) {

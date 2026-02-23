@@ -64,7 +64,8 @@ plot_sample_stacked_types <- function(dataset, globals, metacell_types, cell_typ
 
         p <- plotly::ggplotly(p, source = "samp_types_plot") %>%
             sanitize_plotly_buttons() %>%
-            sanitize_plotly_download(globals)
+            sanitize_plotly_download(globals) %>%
+            plotly::event_register("plotly_click")
 
         return(p)
     }) %>% bindCache(dataset, metacell_types, cell_type_colors, input$sample_types_ordering, globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)

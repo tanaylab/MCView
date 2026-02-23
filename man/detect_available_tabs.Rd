@@ -13,6 +13,12 @@ detect_available_tabs(daf_obj)
 Character vector of available tab names
 }
 \description{
-Uses the contract-based validation system to determine which tabs
-have sufficient data to be displayed.
+Uses a fast batch-query approach: queries all available axes, vectors,
+matrices, and scalars from the DAF once, then checks tab requirements
+in pure R without per-tab Julia roundtrips.
+}
+\details{
+If the DAF contains a pre-stored `mcview_available_tabs` scalar (a
+comma-separated list of tab names), that value is used directly and
+all validation is skipped.
 }
