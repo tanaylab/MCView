@@ -127,12 +127,53 @@ mod_atlas_server <- function(id, dataset, metacell_types, cell_type_colors, gene
                 )
             })
 
+            output$gene_selector <- renderUI({
+                req(dataset())
+                shinyWidgets::virtualSelectInput(
+                    ns("color_proj_gene"),
+                    "Gene:",
+                    choices = c(),
+                    multiple = FALSE,
+                    search = TRUE,
+                    dropboxWrapper = "body",
+                    markSearchResults = TRUE,
+                    searchByStartsWith = TRUE
+                )
+            })
+
+            output$metadata_selector <- renderUI({
+                req(dataset())
+                shinyWidgets::virtualSelectInput(
+                    ns("color_proj_metadata"),
+                    "Metadata:",
+                    choices = c(),
+                    multiple = FALSE,
+                    search = TRUE,
+                    dropboxWrapper = "body"
+                )
+            })
+
+            output$proj_gene_module_selector <- renderUI({
+                req(dataset())
+                shinyWidgets::virtualSelectInput(
+                    ns("color_proj_gene_module"),
+                    "Gene module:",
+                    choices = c(),
+                    multiple = FALSE,
+                    search = TRUE,
+                    dropboxWrapper = "body"
+                )
+            })
+
             output$cell_type_selector <- cell_type_selector(dataset, ns, id = "selected_cell_types", label = "Cell types", cell_type_colors = cell_type_colors, selected = "all")
 
             output$metacell_selector <- metacell_selector(dataset, ns, id = "selected_metacell", label = "Metacell")
 
             observe({
                 req(input$color_proj)
+                shinyjs::toggle(id = "gene_selector", condition = input$color_proj == "Gene")
+                shinyjs::toggle(id = "metadata_selector", condition = input$color_proj == "Metadata")
+                shinyjs::toggle(id = "proj_gene_module_selector", condition = input$color_proj == "Gene module")
                 shinyjs::toggle(id = "cell_type_selector", condition = input$color_proj == "Query cell type")
                 shinyjs::toggle(id = "metacell_selector", condition = input$color_proj == "Query metacell")
                 shinyjs::toggle(id = "color_by_scale", condition = input$color_proj %in% c("Query metacell", "Query cell type"))
