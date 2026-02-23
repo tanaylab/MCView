@@ -36,9 +36,9 @@ globalVariables(unique(c(
     # cell_metadata_to_metacell_from_h5ad:
     "cell_id", "metacell_name", "outlier",
     # cell_type_gene_boxplot:
-    "Cell type", "cell_type", "egc_epsilon", "expr_breaks", "metacell",
+    "Cell type", "Facet variable", "X axis", "cell_type", "egc_epsilon", "expr_breaks", "metacell",
     # cell_type_metadata_boxplot:
-    "Cell type", "cell_type", "metacell",
+    "Cell type", "Facet variable", "X axis", "cell_type", "metacell",
     # cell_type_metadata_confusion:
     "# of metacells", "% of cell type metacells", "Cell type", "cell_type", "color", "metacell", "n_tot", "n_tot_md", "p_cell_type", "p_md", "total # of cell type metacells",
     # choose_markers:

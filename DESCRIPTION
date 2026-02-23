@@ -38,6 +38,7 @@ Imports:
     future,
     gert,
     grid,
+    ggforce,
     ggplot2,
     grDevices,
     glue,
@@ -78,7 +79,8 @@ Imports:
     utils,
     umap,
     graphics
-Suggests: 
+Suggests:
+    JuliaCall,
     knitr,
     R.utils,
     processx,
