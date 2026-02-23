@@ -284,7 +284,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                 return(m)
             }) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), markers(), gene_modules(), applied_params(), genes(), input$show_genes, clipboard_changed(), mode, input$metadata_order_var, metacell_filter(), input$mat_value)
 
-            heatmap_download_handlers(output, mat, markers, metacell_filter, dataset, input, metacell_types, globals, applied_params)
+            heatmap_download_handlers(output, mat, markers, metacell_filter, dataset, input, metacell_types, globals, applied_params, ns)
 
             heatmap_matrix_reactives(ns, input, output, session, dataset, metacell_types, cell_type_colors, globals, markers, lfp_range, mode, metacell_filter, mat)
 
@@ -708,7 +708,7 @@ heatmap_tooltip_handler <- function(output, mat, metacell_filter, metacell_types
 #' @param metacell_types Reactive expression returning metacell type annotations
 #' @param globals Reactive values for global state
 #' @noRd
-heatmap_download_handlers <- function(output, mat, markers, metacell_filter, dataset, input, metacell_types, globals, applied_params) {
+heatmap_download_handlers <- function(output, mat, markers, metacell_filter, dataset, input, metacell_types, globals, applied_params, ns) {
     output$download_matrix <- downloadHandler(
         filename = function() {
             paste("markers_matrix-", Sys.Date(), ".csv", sep = "")

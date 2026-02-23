@@ -445,6 +445,63 @@ test_that("mod_markers_server initializes markers reactiveVal", {
     })
 })
 
+# --- mod_gene_correlation_server ---------------------------------------------
+
+test_that("mod_gene_correlation_server initializes without error", {
+    state <- setup_app_state()
+
+    # Gene correlation requires gg_mc_top_cor axis
+    daf_obj <- get_dataset_daf("test_data")
+    skip_if(
+        is.null(daf_obj) || !dafr::has_axis(daf_obj, "gg_mc_top_cor"),
+        "gg_mc_top_cor axis not available in DAF"
+    )
+
+    args <- build_module_args(state)
+
+    testServer(mod_gene_correlation_server, args = args, {
+        session$flushReact()
+        expect_true(TRUE)
+    })
+})
+
+test_that("mod_gene_correlation_server handles gene input and calculation", {
+    state <- setup_app_state()
+
+    daf_obj <- get_dataset_daf("test_data")
+    skip_if(
+        is.null(daf_obj) || !dafr::has_axis(daf_obj, "gg_mc_top_cor"),
+        "gg_mc_top_cor axis not available in DAF"
+    )
+
+    args <- build_module_args(state)
+
+    # Pick 3 real gene names from the dataset
+    genes <- head(gene_names("test_data"), 3)
+    skip_if(length(genes) < 2, "Need at least 2 genes in dataset")
+
+    testServer(mod_gene_correlation_server, args = args, {
+        # Enter genes into the text area
+        session$setInputs(gene_list = paste(genes, collapse = "\n"))
+        session$flushReact()
+
+        # Set mode and trigger calculation
+        session$setInputs(
+            correlation_mode = "individual",
+            analysis_type = "gene_gene_cor",
+            calculate_correlations = 1
+        )
+        session$flushReact()
+
+        # Verify no error was thrown during calculation
+        expect_true(TRUE)
+    })
+})
+
+# ==============================================================================
+# Deeper reactive tests (for modules where we can easily poke inputs)
+# ==============================================================================
+
 test_that("mod_annotate_server initializes annotation state", {
     state <- setup_app_state()
     args <- build_module_args(state)
