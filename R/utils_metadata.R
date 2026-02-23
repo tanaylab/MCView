@@ -29,6 +29,11 @@ get_metadata_colors <- function(dataset, md, colors = NULL, color_breaks = NULL,
             min_val <- min(metadata[[md]], na.rm = TRUE)
             max_val <- max(metadata[[md]], na.rm = TRUE)
 
+            if ((is.na(min_val) && is.na(max_val)) || (!is.finite(min_val) && !is.finite(max_val))) {
+                max_val <- 1
+                min_val <- 0
+            }
+
             if (min_val == max_val) {
                 min_val <- min_val - 1e-5
             }

@@ -189,7 +189,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                     cur_metacell_types <- metacell_types()
                     new_metacell_types <- cur_metacell_types %>%
                         select(-any_of(c("cell_type"))) %>%
-                        left_join(new_metacell_types %>% select(metacell, cell_type), by = "metacell") %>%
+                        left_join(new_metacell_types %>% select(metacell, cell_type) %>% distinct(metacell, .keep_all = TRUE), by = "metacell") %>%
                         mutate(cell_type = ifelse(cell_type == "(Missing)", NA, cell_type)) %>%
                         mutate(cell_type = as.character(forcats::fct_na_value_to_level(factor(cell_type), "(Missing)")))
 
@@ -210,7 +210,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                     fwrite(
                         metacell_types() %>%
                             select(metacell, cell_type, top1_gene, top1_lfp, top2_gene, top2_lfp) %>%
-                            left_join(cell_type_colors() %>% select(cell_type, color), by = "cell_type"),
+                            left_join(cell_type_colors() %>% select(cell_type, color) %>% distinct(cell_type, .keep_all = TRUE), by = "cell_type"),
                         file
                     )
                 }
