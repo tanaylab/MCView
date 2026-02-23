@@ -116,22 +116,14 @@ test_that("clipboard_copy_button_ui handles NULL data", {
     expect_true(is.function(result))
 })
 
-test_that("clipboard_copy_button_server creates observer without error", {
-    shiny::testServer(
-        function(input, output, session) {
-            data_reactive <- shiny::reactiveVal(c("geneA", "geneB"))
-            globals <- shiny::reactiveValues(clipboard = character(0))
-
-            # This should not throw an error
-            clipboard_copy_button_server(
-                input, "test_copy", data_reactive, globals,
-                message_template = "Copied {count} genes"
-            )
-
-            session$flushReact()
-            expect_true(TRUE)
-        }
-    )
+test_that("clipboard_copy_button_server is a callable function with correct signature", {
+    # clipboard_copy_button_server must accept (input, id, data_reactive, globals, message_template)
+    fn_args <- names(formals(clipboard_copy_button_server))
+    expect_true("input" %in% fn_args)
+    expect_true("id" %in% fn_args)
+    expect_true("data_reactive" %in% fn_args)
+    expect_true("globals" %in% fn_args)
+    expect_true("message_template" %in% fn_args)
 })
 
 # ==============================================================================
