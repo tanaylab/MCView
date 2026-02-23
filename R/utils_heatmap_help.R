@@ -141,15 +141,15 @@ get_metacell_by_heatmap_coord <- function(m, coord) {
     return(colnames(m)[x_coord])
 }
 
-get_markers_metadata <- function(dataset, input, metacell_types, globals) {
-    if (!is.null(input$selected_md)) {
+get_markers_metadata <- function(dataset, selected_md, metacell_types, globals) {
+    if (!is.null(selected_md)) {
         metadata <- get_mc_data(dataset(), "metadata")
         if (is.null(metadata)) {
             metadata <- metacell_types() %>% select(metacell)
         }
         metadata <- metadata %>%
             mutate(Clipboard = ifelse(metacell %in% globals$clipboard, "selected", "not selected")) %>%
-            select(metacell, one_of(input$selected_md))
+            select(metacell, one_of(selected_md))
     } else {
         metadata <- NULL
     }

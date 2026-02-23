@@ -359,6 +359,36 @@ dataset_metadata_fields_numeric <- function(dataset, atlas = FALSE) {
     return(fields)
 }
 
+dataset_metadata_fields_categorical <- function(dataset, atlas = FALSE) {
+    cache_key <- if (atlas) "metadata_fields_categorical_atlas" else "metadata_fields_categorical"
+    mc_data <- mcv_get("mc_data")
+    if (!is.null(mc_data[[dataset]][[cache_key]])) {
+        return(mc_data[[dataset]][[cache_key]])
+    }
+
+    fields <- dataset_metadata_fields(dataset, atlas = atlas)
+    df <- get_mc_data(dataset, "metadata", atlas = atlas)
+
+    if (is.null(df) || length(fields) == 0) {
+        return(c())
+    }
+
+    # Filter to non-numeric fields first
+    numeric_f <- purrr::map_lgl(fields, ~ is_numeric_field(df, .x))
+    categorical_fields <- fields[!numeric_f]
+
+    # Filter out fields with only one unique non-empty value (nothing to filter)
+    categorical_fields <- purrr::keep(categorical_fields, function(field) {
+        values <- df[[field]]
+        clean_values <- values[!is.na(values) & !is.null(values) & values != ""]
+        length(unique(clean_values)) > 1
+    })
+
+    mc_data[[dataset]][[cache_key]] <- categorical_fields
+    mcv_set("mc_data", mc_data)
+    return(categorical_fields)
+}
+
 dataset_cell_metadata_fields <- function(dataset, atlas = FALSE) {
     metadata <- get_mc_data(dataset, "cell_metadata", atlas = atlas)
     if (is.null(metadata)) {

@@ -128,6 +128,8 @@ heatmap_sidebar <- function(id, ..., show_fitted_filter = FALSE) {
     }
 
     list(
+        uiOutput(ns("apply_heatmap_changes_ui")),
+        tags$hr(),
         uiOutput(ns("reset_zoom_ui")),
         shinyWidgets::radioGroupButtons(
             inputId = ns("brush_action"),
@@ -145,6 +147,8 @@ heatmap_sidebar <- function(id, ..., show_fitted_filter = FALSE) {
         checkboxInput(ns("force_cell_type"), "Force cell type", value = TRUE),
         shinyWidgets::virtualSelectInput(ns("metadata_order_cell_type_var"), "Order cell types by", choices = NULL, selected = NULL, multiple = FALSE, search = TRUE),
         shinyWidgets::virtualSelectInput(ns("metadata_order_var"), "Order by", choices = NULL, selected = NULL, multiple = FALSE, search = TRUE),
+        checkboxInput(ns("enable_categorical_filter"), "Enable categorical filtering", value = FALSE),
+        uiOutput(ns("categorical_filter_ui")),
         tags$hr(),
         ...,
         highlight_genes_ui,

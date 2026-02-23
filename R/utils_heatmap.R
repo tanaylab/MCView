@@ -9,6 +9,50 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
         shinyWidgets::updateVirtualSelect(session = session, inputId = "metadata_order_cell_type_var", choices = c("Hierarchical-Clustering", "Colors table", dataset_metadata_fields_numeric(dataset())), selected = "Hierarchical-Clustering")
 
         shinyjs::toggle(id = "metadata_order_cell_type_var", condition = input$force_cell_type)
+        shinyjs::toggle(id = "categorical_filter_ui", condition = input$enable_categorical_filter)
+    })
+
+    output$categorical_filter_ui <- renderUI({
+        categorical_fields <- dataset_metadata_fields_categorical(dataset())
+        if (length(categorical_fields) == 0) {
+            return(p("No filterable categorical metadata fields available",
+                style = "color: #6c757d; font-style: italic;"
+            ))
+        }
+
+        tagList(
+            shinyWidgets::virtualSelectInput(
+                ns("categorical_filter_field"),
+                "Filter by categorical variable:",
+                choices = categorical_fields,
+                selected = categorical_fields[1],
+                multiple = FALSE,
+                search = TRUE
+            ),
+            uiOutput(ns("categorical_filter_values_ui"))
+        )
+    })
+
+    output$categorical_filter_values_ui <- renderUI({
+        req(input$categorical_filter_field)
+
+        metadata <- get_mc_data(dataset(), "metadata")
+        req(metadata)
+        req(input$categorical_filter_field %in% colnames(metadata))
+
+        unique_values <- unique(metadata[[input$categorical_filter_field]])
+        # Remove NA and empty strings
+        unique_values <- unique_values[!is.na(unique_values) & unique_values != ""]
+        unique_values <- sort(unique_values)
+
+        shinyWidgets::virtualSelectInput(
+            ns("categorical_filter_values"),
+            "Select values to include:",
+            choices = unique_values,
+            selected = unique_values,
+            multiple = TRUE,
+            search = TRUE
+        )
     })
 
     observe({
@@ -177,6 +221,9 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
             metacell_filter <- reactiveVal()
             selected_metacells <- reactiveVal()
 
+            # Applied parameters for batched heatmap updates
+            applied_params <- reactiveVal(NULL)
+
             genes <- genes %||% reactiveVal()
             highlighted_genes <- highlighted_genes %||% reactiveVal()
 
@@ -188,20 +235,21 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                 req(markers())
                 req(dataset())
                 req(metacell_types())
-                req(is.null(input$selected_cell_types) || all(input$selected_cell_types %in% c(cell_type_colors()$cell_type, "(Missing)")))
+                req(applied_params())
+                req(is.null(applied_params()$selected_cell_types) || all(applied_params()$selected_cell_types %in% c(cell_type_colors()$cell_type, "(Missing)")))
 
                 m <- get_marker_matrix(
                     dataset(),
                     markers(),
-                    input$selected_cell_types,
+                    applied_params()$selected_cell_types,
                     metacell_types(),
                     cell_type_colors(),
                     gene_modules(),
-                    force_cell_type = input$force_cell_type %||% TRUE,
+                    force_cell_type = applied_params()$force_cell_type %||% TRUE,
                     mode = mode,
                     notify_var_genes = TRUE,
                     metadata_order = input$metadata_order_var,
-                    cell_type_metadata_order = input$metadata_order_cell_type_var,
+                    cell_type_metadata_order = applied_params()$metadata_order_cell_type_var,
                     recalc = input$mat_value == "Local",
                     metacells = metacell_filter()
                 )
@@ -213,15 +261,30 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     }
                 }
 
+                # Apply categorical filtering if enabled
+                if (!is.null(applied_params()$enable_categorical_filter) && applied_params()$enable_categorical_filter &&
+                    !is.null(applied_params()$categorical_filter_field) && !is.null(applied_params()$categorical_filter_values) &&
+                    length(applied_params()$categorical_filter_values) > 0) {
+                    metadata <- get_mc_data(dataset(), "metadata")
+                    if (!is.null(metadata) && applied_params()$categorical_filter_field %in% colnames(metadata)) {
+                        field_values <- metadata[[applied_params()$categorical_filter_field]]
+                        valid_rows <- !is.na(field_values) & field_values != ""
+                        filtered_metacells <- metadata$metacell[
+                            valid_rows & field_values %in% applied_params()$categorical_filter_values
+                        ]
+                        m <- m[, intersect(colnames(m), filtered_metacells), drop = FALSE]
+                    }
+                }
+
                 # Add genes to the matrix if exists
                 if (!is.null(genes) && length(genes()) > 0 && !is.null(input$show_genes) && input$show_genes) {
                     m <- add_genes_to_marker_matrix(m, genes(), dataset())
                 }
 
                 return(m)
-            }) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), markers(), gene_modules(), input$selected_cell_types, input$force_cell_type, genes(), input$show_genes, clipboard_changed(), mode, input$metadata_order_var, input$metadata_order_cell_type_var, metacell_filter(), input$mat_value)
+            }) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), markers(), gene_modules(), applied_params(), genes(), input$show_genes, clipboard_changed(), mode, input$metadata_order_var, metacell_filter(), input$mat_value)
 
-            heatmap_download_handlers(output, mat, markers, metacell_filter, dataset, input, metacell_types, globals)
+            heatmap_download_handlers(output, mat, markers, metacell_filter, dataset, input, metacell_types, globals, applied_params)
 
             heatmap_matrix_reactives(ns, input, output, session, dataset, metacell_types, cell_type_colors, globals, markers, lfp_range, mode, metacell_filter, mat)
 
@@ -229,6 +292,49 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
 
             output$metadata_list <- metadata_selector(dataset, ns, id = "selected_md", label = "Metadata", metadata_id = "metadata", additional_fields = "Clipboard")
 
+            # Initialize applied_params with default values
+            observe({
+                req(cell_type_colors())
+                if (is.null(applied_params())) {
+                    all_types <- cell_type_colors() %>%
+                        filter(cell_type %in% metacell_types()$cell_type) %>%
+                        pull(cell_type)
+                    applied_params(list(
+                        selected_cell_types = all_types,
+                        selected_md = NULL,
+                        force_cell_type = TRUE,
+                        metadata_order_cell_type_var = "Hierarchical-Clustering",
+                        enable_categorical_filter = FALSE,
+                        categorical_filter_field = NULL,
+                        categorical_filter_values = NULL
+                    ))
+                }
+            })
+
+            # Dynamic UI for apply button
+            output$apply_heatmap_changes_ui <- renderUI({
+                actionButton(
+                    ns("apply_heatmap_changes"),
+                    "Update Heatmap",
+                    class = "btn-primary",
+                    style = "font-weight: bold; margin-bottom: 5px; width: 85%;",
+                    title = "Click to apply all filtering and display changes from the sidebar."
+                )
+            })
+
+            # Observer for apply changes button
+            observeEvent(input$apply_heatmap_changes, {
+                applied_params(list(
+                    selected_cell_types = input$selected_cell_types,
+                    selected_md = input$selected_md,
+                    force_cell_type = input$force_cell_type %||% TRUE,
+                    metadata_order_cell_type_var = input$metadata_order_cell_type_var,
+                    enable_categorical_filter = input$enable_categorical_filter,
+                    categorical_filter_field = input$categorical_filter_field,
+                    categorical_filter_values = input$categorical_filter_values
+                ))
+                showNotification("Applied changes - updating heatmap...", type = "message")
+            })
 
             output$reset_zoom_ui <- renderUI({
                 shinyWidgets::actionGroupButtons(ns("reset_zoom"), labels = "Reset zoom", size = "sm")
@@ -371,7 +477,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
 
             # We use this reactive in order to invalidate the cache only when input$filter_by_clipboard is TRUE
             clipboard_changed <- reactive({
-                if ((!is.null(input$filter_by_clipboard) && input$filter_by_clipboard) || (!is.null(input$selected_md) && "Clipboard" %in% input$selected_md)) {
+                if ((!is.null(input$filter_by_clipboard) && input$filter_by_clipboard) || (!is.null(applied_params()) && !is.null(applied_params()$selected_md) && "Clipboard" %in% applied_params()$selected_md)) {
                     return(c(input$filter_by_clipboard, globals$clipboard))
                 } else {
                     return(FALSE)
@@ -395,7 +501,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     req(m)
 
                     m <- filter_heatmap_by_metacell(m, metacell_filter())
-                    metadata <- get_markers_metadata(dataset, input, metacell_types, globals)
+                    metadata <- get_markers_metadata(dataset, applied_params()$selected_md, metacell_types, globals)
 
                     req(nrow(m) > 0)
                     req(ncol(m) > 0)
@@ -444,7 +550,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     return(structure(list(p = res$p, gtable = res$gtable), class = "gt_custom"))
                 },
                 res = 96
-            ) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), gene_modules(), lfp_range(), metacell_filter(), input$plot_legend, input$plot_cell_type_legend, input$plot_genes_legend, input$selected_md, markers(), input$selected_cell_types, input$force_cell_type, clipboard_changed(), input$high_color, input$low_color, input$mid_color, input$midpoint, genes(), input$show_genes, highlighted_genes(), input$highlight_color, input$max_gene_num, input$metadata_order_var, input$metadata_order_cell_type_var, input$mat_value)
+            ) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), gene_modules(), lfp_range(), metacell_filter(), input$plot_legend, input$plot_cell_type_legend, input$plot_genes_legend, applied_params(), markers(), clipboard_changed(), input$high_color, input$low_color, input$mid_color, input$midpoint, genes(), input$show_genes, highlighted_genes(), input$highlight_color, input$max_gene_num, input$metadata_order_var, input$mat_value)
 
             observeEvent(input$heatmap_brush, {
                 req(input$brush_action)
@@ -482,7 +588,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                 globals$selected_query_metacell <- metacell
             })
 
-            heatmap_tooltip_handler(output, mat, metacell_filter, metacell_types, cell_type_colors, dataset, input, globals, mode, gene_modules, genes)
+            heatmap_tooltip_handler(output, mat, metacell_filter, metacell_types, cell_type_colors, dataset, input, globals, mode, gene_modules, genes, applied_params)
         }
     )
 }
@@ -505,7 +611,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
 #' @param gene_modules Reactive expression returning gene module data
 #' @param genes Reactive expression returning selected genes (can be NULL)
 #' @noRd
-heatmap_tooltip_handler <- function(output, mat, metacell_filter, metacell_types, cell_type_colors, dataset, input, globals, mode, gene_modules, genes) {
+heatmap_tooltip_handler <- function(output, mat, metacell_filter, metacell_types, cell_type_colors, dataset, input, globals, mode, gene_modules, genes, applied_params) {
     output$hover_info <- renderUI({
         m <- mat()
         req(m)
@@ -568,7 +674,7 @@ heatmap_tooltip_handler <- function(output, mat, metacell_filter, metacell_types
                 sep = "<br/>"
             )
 
-            metadata <- get_markers_metadata(dataset, input, metacell_types, globals)
+            metadata <- get_markers_metadata(dataset, applied_params()$selected_md, metacell_types, globals)
             if (!is.null(metadata)) {
                 mc_md <- metadata %>%
                     filter(metacell == !!metacell) %>%
@@ -602,7 +708,7 @@ heatmap_tooltip_handler <- function(output, mat, metacell_filter, metacell_types
 #' @param metacell_types Reactive expression returning metacell type annotations
 #' @param globals Reactive values for global state
 #' @noRd
-heatmap_download_handlers <- function(output, mat, markers, metacell_filter, dataset, input, metacell_types, globals) {
+heatmap_download_handlers <- function(output, mat, markers, metacell_filter, dataset, input, metacell_types, globals, applied_params) {
     output$download_matrix <- downloadHandler(
         filename = function() {
             paste("markers_matrix-", Sys.Date(), ".csv", sep = "")
@@ -613,7 +719,7 @@ heatmap_download_handlers <- function(output, mat, markers, metacell_filter, dat
                 m <- m[, intersect(colnames(m), metacell_filter()), drop = FALSE]
             }
             if (input$include_metadata) {
-                metadata <- get_markers_metadata(dataset, input, metacell_types, globals)
+                metadata <- get_markers_metadata(dataset, applied_params()$selected_md, metacell_types, globals)
                 metadata_m <- metadata %>%
                     as.data.frame() %>%
                     column_to_rownames("metacell") %>%
