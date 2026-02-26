@@ -4,7 +4,7 @@
 \alias{daf_query_mc_mat}
 \title{Retrieve a slice of the UMIs matrix via DAF}
 \usage{
-daf_query_mc_mat(daf_obj, genes = NULL, metacells = NULL, cache = FALSE)
+daf_query_mc_mat(daf_obj, genes = NULL, metacells = NULL)
 }
 \arguments{
 \item{daf_obj}{DAF object}
@@ -12,8 +12,6 @@ daf_query_mc_mat(daf_obj, genes = NULL, metacells = NULL, cache = FALSE)
 \item{genes}{Optional vector of gene names to retrieve}
 
 \item{metacells}{Optional vector of metacell names to retrieve}
-
-\item{cache}{Whether to cache the query result (currently unused, kept for API compatibility)}
 }
 \value{
 Matrix slice with genes as rows and metacells as columns

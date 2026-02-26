@@ -4,14 +4,12 @@
 \alias{daf_query_cell_types}
 \title{Retrieve cell type assignments via DAF}
 \usage{
-daf_query_cell_types(daf_obj, metacells = NULL, cache = FALSE)
+daf_query_cell_types(daf_obj, metacells = NULL)
 }
 \arguments{
 \item{daf_obj}{DAF object}
 
 \item{metacells}{Optional vector of metacell names to retrieve}
-
-\item{cache}{Whether to cache the query result (currently unused, kept for API compatibility)}
 }
 \value{
 Named vector of cell types per metacell

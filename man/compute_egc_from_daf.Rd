@@ -4,7 +4,7 @@
 \alias{compute_egc_from_daf}
 \title{Compute EGC (expression per gene per cell) from DAF}
 \usage{
-compute_egc_from_daf(daf_obj, genes = NULL, metacells = NULL, cache = TRUE)
+compute_egc_from_daf(daf_obj, genes = NULL, metacells = NULL)
 }
 \arguments{
 \item{daf_obj}{DAF object}
@@ -12,8 +12,6 @@ compute_egc_from_daf(daf_obj, genes = NULL, metacells = NULL, cache = TRUE)
 \item{genes}{Optional vector of gene names to filter}
 
 \item{metacells}{Optional vector of metacell names to filter}
-
-\item{cache}{Whether to use caching (default: TRUE)}
 }
 \value{
 EGC matrix (genes x metacells) with columns summing to 1

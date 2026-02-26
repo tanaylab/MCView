@@ -18,6 +18,20 @@ get_mc_egc <- function(dataset, genes = NULL, atlas = FALSE, metacells = NULL) {
         return(NULL)
     }
 
+    # For the full unfiltered EGC matrix, use session-level cache to avoid
+    # repeated ~1.2s Julia round-trips for the 28K x 2.4K UMI matrix
+    if (is.null(genes) && is.null(metacells) && !atlas) {
+        mc_data <- mcv_get("mc_data")
+        cached <- mc_data[[dataset]][["mc_egc_full"]]
+        if (!is.null(cached)) {
+            return(cached)
+        }
+        mc_egc <- compute_egc_from_daf(daf_obj, genes = NULL, metacells = NULL)
+        mc_data[[dataset]][["mc_egc_full"]] <- mc_egc
+        mcv_set("mc_data", mc_data)
+        return(mc_egc)
+    }
+
     compute_egc_from_daf(daf_obj, genes = genes, metacells = metacells)
 }
 
@@ -43,7 +57,7 @@ get_mc_gene_modules_egc <- function(dataset, modules = NULL, gene_modules = NULL
     # Try DAF query first (if DAF has gene.module property)
     mod_mat <- daf_query_module_umis(daf_obj, modules = modules)
     if (!is.null(mod_mat)) {
-        mc_sum <- daf_query_mc_sum(daf_obj, cache = TRUE)
+        mc_sum <- daf_query_mc_sum(daf_obj)
         return(t(t(mod_mat) / mc_sum))
     }
 
@@ -63,8 +77,8 @@ get_mc_gene_modules_egc <- function(dataset, modules = NULL, gene_modules = NULL
     module_genes <- gene_modules$gene
 
     # Use query-based matrix access for module genes
-    mc_mat <- daf_query_mc_mat(daf_obj, genes = module_genes, cache = TRUE)
-    mc_sum <- daf_query_mc_sum(daf_obj, cache = TRUE)
+    mc_mat <- daf_query_mc_mat(daf_obj, genes = module_genes)
+    mc_sum <- daf_query_mc_sum(daf_obj)
 
     # Aggregate by module using base R (fallback)
     unique_modules <- unique(gene_modules$module)
@@ -131,7 +145,7 @@ get_gene_egc <- function(gene, dataset, projected = FALSE, atlas = FALSE, correc
             return(NULL)
         }
 
-        mc_sum <- daf_query_mc_sum(daf_obj, cache = TRUE)
+        mc_sum <- daf_query_mc_sum(daf_obj)
         common_metacells <- intersect(colnames(mc_mat), names(mc_sum))
         if (length(common_metacells) == 0) {
             return(NULL)
@@ -224,7 +238,7 @@ get_samples_mat <- function(cell_types, metacell_types, dataset) {
         pull(metacell)
 
     # Use query-based matrix access for target metacells
-    mc_mat <- daf_query_mc_mat(daf_obj, metacells = target_metacells, cache = TRUE)
+    mc_mat <- daf_query_mc_mat(daf_obj, metacells = target_metacells)
 
     # Get sample-metacell fractions
     samp_mc_frac <- get_samp_mc_frac(dataset)

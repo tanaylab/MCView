@@ -4,14 +4,12 @@
 \alias{daf_query_mc_sum}
 \title{Retrieve total UMIs per metacell via DAF}
 \usage{
-daf_query_mc_sum(daf_obj, metacells = NULL, cache = FALSE)
+daf_query_mc_sum(daf_obj, metacells = NULL)
 }
 \arguments{
 \item{daf_obj}{DAF object}
 
 \item{metacells}{Optional vector of metacell names to retrieve}
-
-\item{cache}{Whether to cache the query result (currently unused, kept for API compatibility)}
 }
 \value{
 Named vector of total UMIs per metacell

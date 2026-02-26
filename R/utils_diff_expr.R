@@ -47,7 +47,7 @@ calc_diff_expr <- function(mat, egc, columns, diff_thresh = 1.5, pval_thresh = 0
 calc_mc_mc_gene_df <- function(dataset, metacell1, metacell2, diff_thresh = 1.5, pval_thresh = 0.01) {
     # Query only the 2 needed metacells from DAF instead of loading the full matrix
     daf_obj <- get_dataset_daf(dataset)
-    mat <- as.matrix(daf_query_mc_mat(daf_obj, metacells = c(metacell1, metacell2), cache = TRUE))
+    mat <- as.matrix(daf_query_mc_mat(daf_obj, metacells = c(metacell1, metacell2)))
 
     egc <- get_metacells_egc(c(metacell1, metacell2), dataset) + mcv_get("egc_epsilon")
 

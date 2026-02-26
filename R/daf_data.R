@@ -216,18 +216,17 @@ filter_genes_by_flags <- function(df, lateral_genes = NULL, noisy_genes = NULL,
 #' @param daf_obj DAF object
 #' @param genes Optional vector of gene names to filter
 #' @param metacells Optional vector of metacell names to filter
-#' @param cache Whether to use caching (default: TRUE)
 #' @return EGC matrix (genes x metacells) with columns summing to 1
 #' @export
-compute_egc_from_daf <- function(daf_obj, genes = NULL, metacells = NULL, cache = TRUE) {
+compute_egc_from_daf <- function(daf_obj, genes = NULL, metacells = NULL) {
     # NOTE: Julia EGC matrix path disabled -- JuliaCall serialization overhead
     # for a full 28K x 2.4K dense matrix (~68M elements) is much slower than
     # the R path using per-gene DAF queries + sparse matrix construction.
     # The Julia path could be re-enabled once JuliaCall has efficient shared-
     # memory transfer or for very small gene subsets.
 
-    mc_mat <- daf_query_mc_mat(daf_obj, genes = genes, metacells = metacells, cache = cache)
-    mc_sum <- daf_query_mc_sum(daf_obj, metacells = metacells, cache = cache)
+    mc_mat <- daf_query_mc_mat(daf_obj, genes = genes, metacells = metacells)
+    mc_sum <- daf_query_mc_sum(daf_obj, metacells = metacells)
 
     # Filter mc_sum to match metacells in matrix
     if (!is.null(metacells)) {
@@ -250,17 +249,15 @@ compute_egc_from_daf <- function(daf_obj, genes = NULL, metacells = NULL, cache 
 #' @param axis Axis name (e.g. "metacell")
 #' @param property Vector property name (e.g. "total_UMIs", "type")
 #' @param filter Optional character vector of axis entry names to keep
-#' @param cache Whether to cache the query result (currently unused, kept for API compatibility)
 #'
 #' @return Named vector with axis entries as names, optionally filtered
 #' @noRd
-daf_query_named_vector <- function(daf_obj, axis, property, filter = NULL, cache = FALSE) {
+daf_query_named_vector <- function(daf_obj, axis, property, filter = NULL) {
+    # dafr::get_vector returns a named vector (names from NamedArrays)
     result <- dafr::get_vector(daf_obj, axis, property)
-    axis_names <- dafr::axis_entries(daf_obj, axis)
-    names(result) <- axis_names
 
     if (!is.null(filter)) {
-        valid_entries <- intersect(filter, axis_names)
+        valid_entries <- intersect(filter, names(result))
         result <- result[valid_entries]
     }
 
@@ -296,11 +293,10 @@ daf_query_gene_agg <- function(daf_obj, agg_op) {
 #' @param daf_obj DAF object
 #' @param genes Optional vector of gene names to retrieve
 #' @param metacells Optional vector of metacell names to retrieve
-#' @param cache Whether to cache the query result (currently unused, kept for API compatibility)
 #'
 #' @return Matrix slice with genes as rows and metacells as columns
 #' @export
-daf_query_mc_mat <- function(daf_obj, genes = NULL, metacells = NULL, cache = FALSE) {
+daf_query_mc_mat <- function(daf_obj, genes = NULL, metacells = NULL) {
     metacell_names <- dafr::axis_entries(daf_obj, "metacell")
 
     # For gene subsets, query per-gene vectors from DAF to avoid loading the full matrix
@@ -313,52 +309,57 @@ daf_query_mc_mat <- function(daf_obj, genes = NULL, metacells = NULL, cache = FA
             return(mat)
         }
 
-        # Query each gene individually - avoids loading full gene x metacell matrix
-        vecs <- lapply(valid_genes, function(gene) {
-            query <- glue::glue("/ metacell / gene = {escape_daf_value(gene)} : UMIs")
-            tryCatch(daf_obj[query], error = function(e) NULL)
-        })
+        # For large gene sets (>50), per-gene JuliaCall overhead (~1-3ms each) exceeds
+        # full matrix load + subset cost (~100ms). Only use per-gene path for small sets.
+        if (length(valid_genes) <= 50) {
+            # Query each gene individually - avoids loading full gene x metacell matrix
+            vecs <- lapply(valid_genes, function(gene) {
+                query <- glue::glue("/ metacell / gene = {escape_daf_value(gene)} : UMIs")
+                tryCatch(daf_obj[query], error = function(e) NULL)
+            })
 
-        # Check if per-gene queries worked
-        if (!any(sapply(vecs, is.null))) {
-            # Build sparse matrix directly from per-gene vectors
-            n_genes <- length(valid_genes)
-            n_mcs <- length(metacell_names)
-            numeric_vecs <- lapply(vecs, as.numeric)
-            # Find non-zero entries for sparse triplet construction
-            # Use list accumulation to avoid O(n²) vector growth
-            i_list <- vector("list", n_genes)
-            j_list <- vector("list", n_genes)
-            x_list <- vector("list", n_genes)
-            for (g in seq_len(n_genes)) {
-                nz <- which(numeric_vecs[[g]] != 0)
-                if (length(nz) > 0) {
-                    i_list[[g]] <- rep(g, length(nz))
-                    j_list[[g]] <- nz
-                    x_list[[g]] <- numeric_vecs[[g]][nz]
+            # Check if per-gene queries worked
+            if (!any(sapply(vecs, is.null))) {
+                # Build sparse matrix directly from per-gene vectors
+                n_genes <- length(valid_genes)
+                n_mcs <- length(metacell_names)
+                numeric_vecs <- lapply(vecs, as.numeric)
+                # Find non-zero entries for sparse triplet construction
+                # Use list accumulation to avoid O(n²) vector growth
+                i_list <- vector("list", n_genes)
+                j_list <- vector("list", n_genes)
+                x_list <- vector("list", n_genes)
+                for (g in seq_len(n_genes)) {
+                    nz <- which(numeric_vecs[[g]] != 0)
+                    if (length(nz) > 0) {
+                        i_list[[g]] <- rep(g, length(nz))
+                        j_list[[g]] <- nz
+                        x_list[[g]] <- numeric_vecs[[g]][nz]
+                    }
                 }
+                i_idx <- unlist(i_list)
+                j_idx <- unlist(j_list)
+                x_vals <- unlist(x_list)
+                if (length(i_idx) > 0) {
+                    mat <- Matrix::sparseMatrix(
+                        i = i_idx, j = j_idx, x = x_vals,
+                        dims = c(n_genes, n_mcs),
+                        dimnames = list(valid_genes, metacell_names)
+                    )
+                } else {
+                    mat <- Matrix::Matrix(0, nrow = n_genes, ncol = n_mcs, sparse = TRUE)
+                    rownames(mat) <- valid_genes
+                    colnames(mat) <- metacell_names
+                }
+                if (!is.null(metacells)) {
+                    valid_mc <- intersect(metacells, metacell_names)
+                    mat <- mat[, valid_mc, drop = FALSE]
+                }
+                return(mat)
             }
-            i_idx <- unlist(i_list)
-            j_idx <- unlist(j_list)
-            x_vals <- unlist(x_list)
-            if (length(i_idx) > 0) {
-                mat <- Matrix::sparseMatrix(
-                    i = i_idx, j = j_idx, x = x_vals,
-                    dims = c(n_genes, n_mcs),
-                    dimnames = list(valid_genes, metacell_names)
-                )
-            } else {
-                mat <- Matrix::Matrix(0, nrow = n_genes, ncol = n_mcs, sparse = TRUE)
-                rownames(mat) <- valid_genes
-                colnames(mat) <- metacell_names
-            }
-            if (!is.null(metacells)) {
-                valid_mc <- intersect(metacells, metacell_names)
-                mat <- mat[, valid_mc, drop = FALSE]
-            }
-            return(mat)
+            # Fall through to full matrix if per-gene queries failed
         }
-        # Fall through to full matrix if per-gene queries failed
+        # For >50 genes, fall through to full matrix retrieval below
     }
 
     # For small metacell subsets (no gene filter), query per-metacell to avoid loading full matrix
@@ -418,35 +419,32 @@ daf_query_mc_mat <- function(daf_obj, genes = NULL, metacells = NULL, cache = FA
 #'
 #' @param daf_obj DAF object
 #' @param metacells Optional vector of metacell names to retrieve
-#' @param cache Whether to cache the query result (currently unused, kept for API compatibility)
 #'
 #' @return Named vector of total UMIs per metacell
 #' @export
-daf_query_mc_sum <- function(daf_obj, metacells = NULL, cache = FALSE) {
-    daf_query_named_vector(daf_obj, "metacell", "total_UMIs", filter = metacells, cache = cache)
+daf_query_mc_sum <- function(daf_obj, metacells = NULL) {
+    daf_query_named_vector(daf_obj, "metacell", "total_UMIs", filter = metacells)
 }
 
 #' Retrieve cell type assignments via DAF
 #'
 #' @param daf_obj DAF object
 #' @param metacells Optional vector of metacell names to retrieve
-#' @param cache Whether to cache the query result (currently unused, kept for API compatibility)
 #'
 #' @return Named vector of cell types per metacell
 #' @export
-daf_query_cell_types <- function(daf_obj, metacells = NULL, cache = FALSE) {
-    daf_query_named_vector(daf_obj, "metacell", "type", filter = metacells, cache = cache)
+daf_query_cell_types <- function(daf_obj, metacells = NULL) {
+    daf_query_named_vector(daf_obj, "metacell", "type", filter = metacells)
 }
 
 #' Retrieve 2D coordinates via DAF
 #'
 #' @param daf_obj DAF object
 #' @param metacells Optional vector of metacell names to retrieve
-#' @param cache Whether to cache the query result (currently unused, kept for API compatibility)
 #'
 #' @return Data frame with metacell, x, y columns
 #' @export
-daf_query_2d_coords <- function(daf_obj, metacells = NULL, cache = FALSE) {
+daf_query_2d_coords <- function(daf_obj, metacells = NULL) {
     # Get axis entries
     metacell_names <- dafr::axis_entries(daf_obj, "metacell")
 
@@ -711,11 +709,9 @@ convert_daf_mc_egc <- function(daf_obj) {
     mc_sum <- convert_daf_mc_sum(daf_obj)
 
     # Compute EGC (normalized expression) - gene x metacell
-    # Divide each column by its total and multiply by median total
-    median_total <- median(mc_sum)
-    mc_egc <- sweep(mc_mat, 2, mc_sum, "/") * median_total
-
-    mc_egc
+    # Divide each column by its total to get fractions summing to 1
+    # Matches compute_egc_from_daf() and original MCView normalization
+    t(t(mc_mat) / mc_sum)
 }
 
 convert_daf_mc2d <- function(daf_obj) {
@@ -879,7 +875,15 @@ convert_daf_marker_genes <- function(daf_obj) {
 }
 
 convert_daf_gene_modules <- function(daf_obj) {
-    daf_vec(daf_obj, "gene", "module", required = FALSE)
+    modules <- daf_vec(daf_obj, "gene", "module", required = FALSE)
+    if (is.null(modules)) {
+        return(NULL)
+    }
+
+    gene_names <- dafr::axis_entries(daf_obj, "gene")
+    result <- tibble::tibble(gene = gene_names, module = modules)
+    result <- result[!is.na(result$module), ]
+    result
 }
 
 convert_daf_inner_fold_mat <- function(daf_obj) {
@@ -918,15 +922,27 @@ convert_daf_metadata <- function(daf_obj) {
         return(NULL)
     }
 
-    # Build metadata tibble
-    result <- tibble(metacell = metacell_names)
-
-    for (field in metadata_fields) {
-        vec <- daf_vec(daf_obj, "metacell", field, required = FALSE)
-        if (!is.null(vec)) {
-            result[[field]] <- vec
+    # Batch-load all metadata vectors in a single JuliaCall via get_frame
+    result <- tryCatch(
+        {
+            frame <- dafr::get_frame(daf_obj, "metacell", as.list(metadata_fields))
+            # get_frame returns a data.frame; prepend metacell names column
+            frame <- tibble::as_tibble(frame)
+            frame <- tibble::tibble(metacell = metacell_names, !!!frame)
+            frame
+        },
+        error = function(e) {
+            # Fallback: load vectors one-by-one if get_frame fails
+            res <- tibble(metacell = metacell_names)
+            for (field in metadata_fields) {
+                vec <- daf_vec(daf_obj, "metacell", field, required = FALSE)
+                if (!is.null(vec)) {
+                    res[[field]] <- vec
+                }
+            }
+            res
         }
-    }
+    )
 
     if (ncol(result) == 1) {
         return(NULL)

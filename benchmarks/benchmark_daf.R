@@ -289,7 +289,7 @@ define_benchmarks <- function(dataset_name, daf_obj, test_genes, test_mcs, itera
         run_benchmark(
             "gene_modules",
             function() {
-                mc_mat <- daf_query_mc_mat(daf_obj, cache = FALSE)
+                mc_mat <- daf_query_mc_mat(daf_obj)
                 calc_gene_modules(mc_mat, verbose = FALSE)
             },
             iterations = max(1L, iterations %/% 2L)  # Fewer iterations - this is expensive
