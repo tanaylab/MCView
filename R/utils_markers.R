@@ -13,7 +13,24 @@ calc_marker_genes <- function(mc_egc,
                               minimal_max_log_fraction = -13,
                               minimal_relative_log_fraction = 2,
                               fold_change_reg = 0.1,
-                              use_abs = TRUE) {
+                              use_abs = TRUE,
+                              daf_obj = NULL) {
+    # Try Julia-accelerated path first
+    if (!is.null(daf_obj)) {
+        julia_result <- julia_calc_marker_genes(
+            daf_obj,
+            genes_per_metacell = genes_per_metacell,
+            minimal_max_log_fraction = minimal_max_log_fraction,
+            minimal_relative_log_fraction = minimal_relative_log_fraction,
+            fold_change_reg = fold_change_reg,
+            use_abs = use_abs
+        )
+        if (!is.null(julia_result)) {
+            return(julia_result)
+        }
+    }
+
+    # R fallback
     mc_egc <- as.matrix(log2(mc_egc + 1e-5))
 
     max_log_fractions_of_genes <- matrixStats::rowMaxs(mc_egc)
@@ -272,7 +289,8 @@ get_markers <- function(dataset) {
     }
 
     # Calculate marker genes on the fly if not in DAF
-    marker_genes <- calc_marker_genes(get_mc_egc(dataset), 20)
+    daf_obj <- get_dataset_daf(dataset)
+    marker_genes <- calc_marker_genes(get_mc_egc(dataset), 20, daf_obj = daf_obj)
 
     # Store in session memory cache
     mc_data <- mcv_get("mc_data")

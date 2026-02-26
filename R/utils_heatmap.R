@@ -102,7 +102,7 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
 
         if (input$mat_value == "Local") {
             mc_egc <- get_mc_egc(dataset(), metacells = colnames(mat()))
-            markers_df <- calc_marker_genes(mc_egc, genes_per_metacell = 20)
+            markers_df <- calc_marker_genes(mc_egc, genes_per_metacell = 20, daf_obj = get_dataset_daf(dataset()))
         } else {
             if (!is.null(input$selected_cell_types)) {
                 markers_df <- metacell_types() %>%

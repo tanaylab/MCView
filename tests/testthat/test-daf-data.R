@@ -1,23 +1,11 @@
 # Test DAF data operations
 # Uses the test data at /home/obk/data/mcview/metacells_clean
-
-test_daf_path <- "/home/obk/data/mcview/metacells_clean"
-
-# Skip all tests if DAF data is not available
-skip_if_no_daf <- function() {
-    if (!dir.exists(test_daf_path)) {
-        skip("Test DAF data not available")
-    }
-    if (!requireNamespace("dafr", quietly = TRUE)) {
-        skip("dafr package not installed")
-    }
-}
+# DAF setup and skip_if_no_daf() provided by helper-daf.R
 
 # Helper to initialize DAF for testing
 setup_test_daf <- function() {
     skip_if_no_daf()
-    dafr::setup_daf()
-    daf <- dafr::open_daf(test_daf_path)
+    daf <- dafr::open_daf(get_test_daf_path())
     init_mcview_env()
     init_single_daf_mode(daf, "test_data")
     invisible(daf)
@@ -25,8 +13,7 @@ setup_test_daf <- function() {
 
 test_that("DAF initialization works", {
     skip_if_no_daf()
-    dafr::setup_daf()
-    daf <- dafr::open_daf(test_daf_path)
+    daf <- dafr::open_daf(get_test_daf_path())
 
     expect_true(inherits(daf, "Daf"))
 
@@ -212,6 +199,22 @@ test_that("inner_fold_mat is available when present", {
 })
 
 # ==============================================================================
+# Julia Helpers Initialization Test
+# ==============================================================================
+
+test_that("Julia helpers are initialized when DAF is available", {
+    skip_if_no_daf()
+    skip_if_not(
+        nzchar(Sys.getenv("CONDA_PREFIX", "")),
+        "CONDA_PREFIX not set (run via tests/run_tests.sh for Julia tests)"
+    )
+
+    # julia_helpers_ready() should return TRUE if helper-daf.R successfully
+    # called init_julia_helpers() during setup
+    expect_true(julia_helpers_ready())
+})
+
+# ==============================================================================
 # Cache Configuration Tests
 # ==============================================================================
 
@@ -283,11 +286,10 @@ test_that("extract_cache_config supports legacy cache_in_daf", {
 
 test_that("init_cache_daf returns base DAF when caching disabled", {
     skip_if_no_daf()
-    dafr::setup_daf()
-    daf <- dafr::open_daf(test_daf_path)
+    daf <- dafr::open_daf(get_test_daf_path())
 
     cache_config <- create_cache_config(enabled = FALSE)
-    result <- init_cache_daf(daf, "test", cache_config, test_daf_path)
+    result <- init_cache_daf(daf, "test", cache_config, get_test_daf_path())
 
     expect_null(result$cache_daf)
     expect_equal(result$complete_daf, daf)
@@ -297,11 +299,10 @@ test_that("init_cache_daf returns base DAF when caching disabled", {
 
 test_that("init_cache_daf creates memory cache", {
     skip_if_no_daf()
-    dafr::setup_daf()
-    daf <- dafr::open_daf(test_daf_path)
+    daf <- dafr::open_daf(get_test_daf_path())
 
     cache_config <- create_cache_config(enabled = TRUE, type = "memory")
-    result <- init_cache_daf(daf, "test_memory", cache_config, test_daf_path)
+    result <- init_cache_daf(daf, "test_memory", cache_config, get_test_daf_path())
 
     expect_true(!is.null(result$cache_daf))
     expect_true(!is.null(result$complete_daf))
@@ -310,13 +311,12 @@ test_that("init_cache_daf creates memory cache", {
 
 test_that("init_cache_daf creates files cache with relative path", {
     skip_if_no_daf()
-    dafr::setup_daf()
-    daf <- dafr::open_daf(test_daf_path)
+    daf <- dafr::open_daf(get_test_daf_path())
 
     # Use temp dir for cache
     temp_cache <- tempfile("mcview_cache_test")
     cache_config <- create_cache_config(enabled = TRUE, type = "files", cache_dir = temp_cache)
-    result <- init_cache_daf(daf, "test_files", cache_config, test_daf_path)
+    result <- init_cache_daf(daf, "test_files", cache_config, get_test_daf_path())
 
     expect_true(!is.null(result$cache_daf))
     expect_true(!is.null(result$complete_daf))
@@ -337,16 +337,14 @@ test_that("init_cache_daf creates files cache with relative path", {
 
 test_that("is_cache_valid returns FALSE for NULL cache", {
     skip_if_no_daf()
-    dafr::setup_daf()
-    daf <- dafr::open_daf(test_daf_path)
+    daf <- dafr::open_daf(get_test_daf_path())
 
     expect_false(is_cache_valid(NULL, daf, list(strategy = "hash")))
 })
 
 test_that("compute_base_hash is consistent", {
     skip_if_no_daf()
-    dafr::setup_daf()
-    daf <- dafr::open_daf(test_daf_path)
+    daf <- dafr::open_daf(get_test_daf_path())
 
     hash1 <- compute_base_hash(daf)
     hash2 <- compute_base_hash(daf)
@@ -372,8 +370,7 @@ test_that("get_cache_daf returns NULL when no cache", {
 
 test_that("get_base_daf returns original DAF", {
     skip_if_no_daf()
-    dafr::setup_daf()
-    daf <- dafr::open_daf(test_daf_path)
+    daf <- dafr::open_daf(get_test_daf_path())
 
     init_mcview_env()
 
@@ -389,8 +386,7 @@ test_that("get_base_daf returns original DAF", {
 
 test_that("get_complete_daf returns chained DAF", {
     skip_if_no_daf()
-    dafr::setup_daf()
-    daf <- dafr::open_daf(test_daf_path)
+    daf <- dafr::open_daf(get_test_daf_path())
 
     init_mcview_env()
     cache_config <- create_cache_config(enabled = TRUE, type = "memory")
@@ -408,8 +404,7 @@ test_that("get_complete_daf returns chained DAF", {
 
 test_that("populate_dataset_cache works with memory cache", {
     skip_if_no_daf()
-    dafr::setup_daf()
-    daf <- dafr::open_daf(test_daf_path)
+    daf <- dafr::open_daf(get_test_daf_path())
 
     init_mcview_env()
     cache_config <- create_cache_config(enabled = TRUE, type = "memory")
