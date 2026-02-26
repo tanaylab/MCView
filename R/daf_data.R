@@ -220,6 +220,12 @@ filter_genes_by_flags <- function(df, lateral_genes = NULL, noisy_genes = NULL,
 #' @return EGC matrix (genes x metacells) with columns summing to 1
 #' @export
 compute_egc_from_daf <- function(daf_obj, genes = NULL, metacells = NULL, cache = TRUE) {
+    # NOTE: Julia EGC matrix path disabled -- JuliaCall serialization overhead
+    # for a full 28K x 2.4K dense matrix (~68M elements) is much slower than
+    # the R path using per-gene DAF queries + sparse matrix construction.
+    # The Julia path could be re-enabled once JuliaCall has efficient shared-
+    # memory transfer or for very small gene subsets.
+
     mc_mat <- daf_query_mc_mat(daf_obj, genes = genes, metacells = metacells, cache = cache)
     mc_sum <- daf_query_mc_sum(daf_obj, metacells = metacells, cache = cache)
 
@@ -617,8 +623,9 @@ daf_query_module_umis <- function(daf_obj, modules = NULL) {
         return(NULL)
     }
 
-    # Transpose to get modules as rows, metacells as columns
-    mod_mat <- t(mod_mat)
+    # DAF query "/ gene / metacell : UMIs @ module %> Sum" returns
+    # module (rows) x metacell (columns) -- already in the desired layout.
+    # No transpose needed.
 
     # Filter by modules if specified
     if (!is.null(modules)) {
@@ -1171,7 +1178,11 @@ convert_daf_fraction_to_umi <- function(daf_obj, property_name) {
     }
 
     mc_sum <- daf_vec(daf_obj, "metacell", "total_UMIs")
-    umi_mat <- Matrix::t(frac_mat) * mc_sum
+    # frac_mat is metacell (rows) x gene (cols).
+    # Multiply each row by the corresponding metacell's total_UMIs, then transpose
+    # to get gene x metacell. Using frac_mat * mc_sum is correct because R recycles
+    # the mc_sum vector (length = nrow) down each column, matching row indices.
+    umi_mat <- Matrix::t(frac_mat * mc_sum)
     rownames(umi_mat) <- dafr::axis_entries(daf_obj, "gene")
     colnames(umi_mat) <- dafr::axis_entries(daf_obj, "metacell")
 

@@ -30,3 +30,5 @@ example/
 dev/
 ..Rcheck/
 .a5c/
+benchmarks/results/*.json
+AGENTS.md

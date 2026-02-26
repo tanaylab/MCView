@@ -4,6 +4,14 @@ init_defs <- function() {
 
     theme_set(theme_classic())
 
+    # Initialize Julia helpers for accelerated computation
+    tryCatch(
+        init_julia_helpers(),
+        error = function(e) {
+            cli::cli_alert_warning("Julia helpers initialization skipped: {e$message}")
+        }
+    )
+
     init_tab_defs()
 
     if (isTRUE(app_config("profile"))) {

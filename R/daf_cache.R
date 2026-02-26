@@ -632,7 +632,7 @@ precompute_daf_correlations <- function(daf_obj, k = 30, egc_epsilon = 1e-5, for
 
     if (is.null(gg_df) || nrow(gg_df) == 0) {
         mc_egc <- convert_daf_mc_egc(daf_obj)
-        gg_df <- calc_gg_mc_top_cor(mc_egc, k = k, egc_epsilon = egc_epsilon)
+        gg_df <- calc_gg_mc_top_cor(mc_egc, k = k, egc_epsilon = egc_epsilon, daf_obj = daf_obj)
     }
 
     gg_df <- gg_df %>%

@@ -6,32 +6,13 @@
 #   2. clipboard_copy_button_server() creates an observer without error
 #   3. heatmap_download_handlers() receives ns and can render the copy button
 #   4. Gene correlation module copy button initializes
-
-test_daf_path <- "/home/obk/data/mcview/metacells_clean"
-
-.daf_setup_done_clip <- new.env(parent = emptyenv())
-.daf_setup_done_clip$ok <- FALSE
-
-skip_if_no_daf <- function() {
-    skip_if(!dir.exists(test_daf_path), "OBK DAF not available")
-    skip_if(!requireNamespace("dafr", quietly = TRUE), "dafr not installed")
-    if (!.daf_setup_done_clip$ok) {
-        tryCatch(
-            {
-                dafr::setup_daf(pkg_check = FALSE, julia_environment = "custom")
-                .daf_setup_done_clip$ok <- TRUE
-            },
-            error = function(e) {
-                skip(paste("dafr::setup_daf() failed:", conditionMessage(e)))
-            }
-        )
-    }
-}
+#
+# DAF setup and skip_if_no_daf() provided by helper-daf.R
 
 setup_app_state <- function() {
     skip_if_no_daf()
 
-    daf <- dafr::open_daf(test_daf_path)
+    daf <- dafr::open_daf(get_test_daf_path())
     init_mcview_env()
     init_single_daf_mode(daf, "test_data")
 

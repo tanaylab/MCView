@@ -4,38 +4,12 @@
 #   1. DAF contract validation against a real dataset
 #   2. App initialization (environment, config, tabs)
 #   3. HTTP-level app startup (background process + HTTP 200 check)
-
-test_daf_path <- "/home/obk/data/mcview/metacells_clean"
-
-# ==============================================================================
-# Skip Helpers
-# ==============================================================================
-
-# Track whether DAF setup has been completed in this R session
-.daf_setup_done <- new.env(parent = emptyenv())
-.daf_setup_done$ok <- FALSE
-
-skip_if_no_daf <- function() {
-    skip_if(!dir.exists(test_daf_path), "OBK DAF not available")
-    skip_if(!requireNamespace("dafr", quietly = TRUE), "dafr not installed")
-    # Setup Julia/DAF once per session, skipping package installation
-    # (packages are pre-installed in the conda environment)
-    if (!.daf_setup_done$ok) {
-        tryCatch(
-            {
-                dafr::setup_daf(pkg_check = FALSE, julia_environment = "custom")
-                .daf_setup_done$ok <- TRUE
-            },
-            error = function(e) {
-                skip(paste("dafr::setup_daf() failed:", conditionMessage(e)))
-            }
-        )
-    }
-}
+#
+# DAF setup and skip_if_no_daf() provided by helper-daf.R
 
 # Helper: open the OBK DAF (call after skip_if_no_daf)
 open_obk_daf <- function() {
-    dafr::open_daf(test_daf_path)
+    dafr::open_daf(get_test_daf_path())
 }
 
 # ==============================================================================
@@ -302,7 +276,7 @@ test_that("run_app() starts and responds with HTTP 200", {
     # Determine the package root for devtools::load_all()
     pkg_root <- system.file(package = "MCView")
     # If running from source tree, use the project directory
-    src_root <- normalizePath(file.path(test_daf_path, "..", "..", ".."), mustWork = FALSE)
+    src_root <- normalizePath(file.path(get_test_daf_path(), "..", "..", ".."), mustWork = FALSE)
     if (file.exists(file.path(src_root, "DESCRIPTION"))) {
         pkg_root <- src_root
     }
@@ -342,7 +316,7 @@ test_that("run_app() starts and responds with HTTP 200", {
                 launch.browser = FALSE
             )
         },
-        args = list(daf_path = test_daf_path, port = port, pkg_root = pkg_root),
+        args = list(daf_path = get_test_daf_path(), port = port, pkg_root = pkg_root),
         env = c(
             JULIA_PROJECT = "@dafr-mcview",
             JULIA_LOAD_PATH = "@:@dafr-mcview:@stdlib",

@@ -40,9 +40,25 @@ dataset_ls <- function() {
 #' calculate the k top correlated and anti correlated genes for each gene
 #'
 #' @param egc egc matrix (normalized metacell counts per gene)
+#' @param k number of top correlations per direction
+#' @param egc_epsilon epsilon for log2 computation
+#' @param daf_obj optional DAF object; when provided, tries Julia acceleration first
 #'
 #' @noRd
-calc_gg_mc_top_cor <- function(egc, k = 30, egc_epsilon = 1e-5) {
+calc_gg_mc_top_cor <- function(egc, k = 30, egc_epsilon = 1e-5, daf_obj = NULL) {
+    # Try Julia acceleration when a DAF object is available
+    if (!is.null(daf_obj)) {
+        julia_result <- julia_calc_gg_mc_top_cor(
+            daf_obj,
+            egc_epsilon = egc_epsilon,
+            k = k
+        )
+        if (!is.null(julia_result) && nrow(julia_result) > 0) {
+            return(julia_result)
+        }
+    }
+
+    # R fallback: full N×N correlation matrix
     lfp <- log2(egc + egc_epsilon)
 
     cm <- tryCatch(

@@ -10,39 +10,19 @@
 #   3. Calls shiny::testServer() with the module's server function
 #   4. Flushes reactive dependencies
 #   5. Passes if no error is thrown
+#
+# DAF setup and skip_if_no_daf() provided by helper-daf.R
 
 # ==============================================================================
 # Setup
 # ==============================================================================
-
-test_daf_path <- "/home/obk/data/mcview/metacells_clean"
-
-# Track whether DAF setup has been completed in this R session
-.daf_setup_done_mod <- new.env(parent = emptyenv())
-.daf_setup_done_mod$ok <- FALSE
-
-skip_if_no_daf <- function() {
-    skip_if(!dir.exists(test_daf_path), "OBK DAF not available")
-    skip_if(!requireNamespace("dafr", quietly = TRUE), "dafr not installed")
-    if (!.daf_setup_done_mod$ok) {
-        tryCatch(
-            {
-                dafr::setup_daf(pkg_check = FALSE, julia_environment = "custom")
-                .daf_setup_done_mod$ok <- TRUE
-            },
-            error = function(e) {
-                skip(paste("dafr::setup_daf() failed:", conditionMessage(e)))
-            }
-        )
-    }
-}
 
 # Helper: set up the full app state and return data needed by module args.
 # Every test that calls this should have already called skip_if_no_daf().
 setup_app_state <- function() {
     skip_if_no_daf()
 
-    daf <- dafr::open_daf(test_daf_path)
+    daf <- dafr::open_daf(get_test_daf_path())
     init_mcview_env()
     init_single_daf_mode(daf, "test_data")
 

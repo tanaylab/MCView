@@ -7,28 +7,8 @@
 #
 # The test uses callr::r_bg() to isolate the app process, with proper cleanup
 # via withr::defer().
-
-test_daf_path <- "/home/obk/data/mcview/metacells_clean"
-
-# Track whether DAF setup has been completed in this R session
-.daf_setup_done_smoke <- new.env(parent = emptyenv())
-.daf_setup_done_smoke$ok <- FALSE
-
-skip_if_no_daf <- function() {
-    skip_if(!dir.exists(test_daf_path), "OBK DAF not available")
-    skip_if(!requireNamespace("dafr", quietly = TRUE), "dafr not installed")
-    if (!.daf_setup_done_smoke$ok) {
-        tryCatch(
-            {
-                dafr::setup_daf(pkg_check = FALSE, julia_environment = "custom")
-                .daf_setup_done_smoke$ok <- TRUE
-            },
-            error = function(e) {
-                skip(paste("dafr::setup_daf() failed:", conditionMessage(e)))
-            }
-        )
-    }
-}
+#
+# DAF setup and skip_if_no_daf() provided by helper-daf.R
 
 test_that("Full app starts without critical errors", {
     skip_on_cran()
@@ -81,7 +61,7 @@ test_that("Full app starts without critical errors", {
             )
             print(app)
         },
-        args = list(daf_path = test_daf_path, port = port, pkg_root = pkg_root),
+        args = list(daf_path = get_test_daf_path(), port = port, pkg_root = pkg_root),
         stderr = stderr_file,
         stdout = stdout_file,
         env = c(
@@ -226,7 +206,7 @@ test_that("Full app serves static assets", {
             )
             print(app)
         },
-        args = list(daf_path = test_daf_path, port = port, pkg_root = pkg_root),
+        args = list(daf_path = get_test_daf_path(), port = port, pkg_root = pkg_root),
         stderr = stderr_file,
         stdout = stdout_file,
         env = c(

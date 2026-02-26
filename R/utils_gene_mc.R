@@ -97,6 +97,30 @@ get_cached_cor <- function(gg_mc_top_cor, gene, type, exclude = NULL) {
 }
 
 calc_top_cors <- function(dataset, gene, type, data_vec, metacell_filter, exclude, atlas = FALSE) {
+    # Try Julia path first: uses cached centered EGC matrix + BLAS gemv.
+    # Returns only small top-k result (no large matrix transfer).
+    # Falls back to R if Julia unavailable or on error.
+    if (!atlas && is.null(metacell_filter)) {
+        daf_obj <- get_daf_for_query(dataset, atlas = atlas)
+        if (is.null(data_vec)) {
+            julia_result <- julia_calc_top_cors(
+                daf_obj, gene, type = type,
+                egc_epsilon = mcv_get("egc_epsilon"),
+                k = 30L, exclude = exclude
+            )
+        } else {
+            julia_result <- julia_calc_top_cors_with_vec(
+                daf_obj, data_vec, type = type,
+                egc_epsilon = mcv_get("egc_epsilon"),
+                k = 30L, exclude = exclude
+            )
+        }
+        if (!is.null(julia_result)) {
+            return(julia_result)
+        }
+    }
+
+    # R fallback: BLAS-accelerated correlation
     # Push metacell filter down to DAF query to avoid loading full matrix
     mc_egc <- get_mc_egc(dataset, atlas = atlas,
         metacells = if (is.null(data_vec)) metacell_filter else NULL)
