@@ -461,3 +461,54 @@ julia_calc_marker_genes <- function(daf_obj,
         }
     )
 }
+
+
+# ==============================================================================
+# R Wrapper: Pseudobulk computation via Julia
+# ==============================================================================
+
+#' Compute pseudobulk matrix via Julia (single call, no per-gene loop)
+#'
+#' This wraps the Julia mcview_compute_pseudobulk function which operates
+#' directly on the sparse UMIs matrix in Julia memory, computing grouped
+#' sums via efficient sparse matrix-vector multiplication.
+#'
+#' @param cells_daf_jl Julia DAF object (the raw cells DAF, not the R wrapper)
+#' @param group_field Name of the cell-level grouping field
+#' @param group_values Character vector of group values to compute pseudobulk for
+#' @param cell_mask Logical vector (length = n_cells), TRUE = include cell
+#'
+#' @return Matrix (genes x groups) with dimnames, or NULL if Julia unavailable
+#' @noRd
+julia_compute_pseudobulk <- function(cells_daf_jl, group_field, group_values, cell_mask) {
+    if (!julia_helpers_ready()) {
+        return(NULL)
+    }
+
+    tryCatch(
+        {
+            result <- JuliaCall::julia_call(
+                "mcview_compute_pseudobulk",
+                cells_daf_jl,
+                as.character(group_field),
+                as.character(group_values),
+                as.logical(cell_mask),
+                need_return = "R"
+            )
+
+            if (is.null(result) || is.null(result$matrix)) {
+                return(NULL)
+            }
+
+            mat <- result$matrix
+            rownames(mat) <- as.character(result$gene_names)
+            colnames(mat) <- as.character(result$group_names)
+
+            return(mat)
+        },
+        error = function(e) {
+            cli::cli_alert_warning("Julia compute_pseudobulk failed: {e$message}")
+            NULL
+        }
+    )
+}

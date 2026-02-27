@@ -471,7 +471,33 @@ get_group_pseudobulk_mat <- function(dataset, genes, group_field,
     filtered_groups <- group_vec[keep_mask]
     unique_groups <- sort(unique(filtered_groups))
 
-    # Build the matrix gene-by-gene
+    # Try Julia-accelerated pseudobulk (single sparse matrix-vector multiply per group)
+    mc_data <- mcv_get("mc_data")
+    raw_cells_daf <- mc_data[[dataset]][["cells_daf"]]
+    if (!is.null(raw_cells_daf) && julia_helpers_ready()) {
+        julia_mat <- julia_compute_pseudobulk(
+            raw_cells_daf$jl_obj,
+            group_field,
+            unique_groups,
+            keep_mask
+        )
+        if (!is.null(julia_mat)) {
+            # Subset to requested genes if not all
+            all_genes <- rownames(julia_mat)
+            if (!is.null(genes) && length(genes) < length(all_genes)) {
+                gene_idx <- match(genes, all_genes)
+                gene_idx <- gene_idx[!is.na(gene_idx)]
+                julia_mat <- julia_mat[gene_idx, , drop = FALSE]
+            }
+            return(julia_mat)
+        }
+    }
+
+    # Fallback: build the matrix gene-by-gene (slow but memory-efficient)
+    if (is.null(genes)) {
+        genes <- dafr::axis_entries(cells_daf, "gene")
+    }
+
     mat <- matrix(0, nrow = length(genes), ncol = length(unique_groups),
                   dimnames = list(genes, unique_groups))
 
@@ -569,22 +595,47 @@ calc_group_diff_expr <- function(dataset, group_field,
     group1_name <- paste(group1_values, collapse = "+")
     group2_name <- paste(group2_values, collapse = "+")
 
-    umis1 <- numeric(length(all_genes))
-    umis2 <- numeric(length(all_genes))
-    names(umis1) <- all_genes
-    names(umis2) <- all_genes
-
-    for (i in seq_along(all_genes)) {
-        gene <- all_genes[i]
-        gene_escaped <- escape_daf_value(gene)
-        cell_umis <- tryCatch(
-            cells_daf[glue::glue("/ cell / gene = {gene_escaped} : UMIs")],
-            error = function(e) NULL
+    # Try Julia-accelerated pseudobulk (2 sparse matrix-vector multiplies instead of 28K queries)
+    mc_data <- mcv_get("mc_data")
+    raw_cells_daf <- mc_data[[dataset]][["cells_daf"]]
+    julia_result <- NULL
+    if (!is.null(raw_cells_daf) && julia_helpers_ready()) {
+        julia_result <- julia_compute_pseudobulk(
+            raw_cells_daf$jl_obj,
+            group_field,
+            c(group1_values, group2_values),
+            mask1 | mask2
         )
-        if (is.null(cell_umis)) next
-        cell_umis <- as.numeric(cell_umis)
-        umis1[i] <- sum(cell_umis[mask1], na.rm = TRUE)
-        umis2[i] <- sum(cell_umis[mask2], na.rm = TRUE)
+    }
+
+    if (!is.null(julia_result)) {
+        # Extract the two group columns from Julia result
+        # Julia computed pseudobulk for each group value separately
+        # We need to sum across values within each group
+        umis1 <- rowSums(julia_result[, group1_values, drop = FALSE])
+        umis2 <- rowSums(julia_result[, group2_values, drop = FALSE])
+        names(umis1) <- rownames(julia_result)
+        names(umis2) <- rownames(julia_result)
+        all_genes <- rownames(julia_result)
+    } else {
+        # Fallback: per-gene queries (slow but always works)
+        umis1 <- numeric(length(all_genes))
+        umis2 <- numeric(length(all_genes))
+        names(umis1) <- all_genes
+        names(umis2) <- all_genes
+
+        for (i in seq_along(all_genes)) {
+            gene <- all_genes[i]
+            gene_escaped <- escape_daf_value(gene)
+            cell_umis <- tryCatch(
+                cells_daf[glue::glue("/ cell / gene = {gene_escaped} : UMIs")],
+                error = function(e) NULL
+            )
+            if (is.null(cell_umis)) next
+            cell_umis <- as.numeric(cell_umis)
+            umis1[i] <- sum(cell_umis[mask1], na.rm = TRUE)
+            umis2[i] <- sum(cell_umis[mask2], na.rm = TRUE)
+        }
     }
 
     # Compute enriched gene counts (EGC) -- fraction of total
