@@ -471,29 +471,28 @@ get_group_pseudobulk_mat <- function(dataset, genes, group_field,
     filtered_groups <- group_vec[keep_mask]
     unique_groups <- sort(unique(filtered_groups))
 
-    # Try Julia-accelerated pseudobulk (single sparse matrix-vector multiply per group)
-    mc_data <- mcv_get("mc_data")
-    raw_cells_daf <- mc_data[[dataset]][["cells_daf"]]
-    if (!is.null(raw_cells_daf) && julia_helpers_ready()) {
-        julia_mat <- julia_compute_pseudobulk(
-            raw_cells_daf$jl_obj,
-            group_field,
-            unique_groups,
-            keep_mask
+    # Use DAF's native GroupBy query when no cell filter is applied.
+    # "/ cell / gene : UMIs @ {group_field} %> Sum" computes the grouped sum
+    # entirely in Julia — no per-gene round-trips, no custom helper needed.
+    if (all(keep_mask)) {
+        query_str <- glue::glue("/ cell / gene : UMIs @ {group_field} %> Sum")
+        daf_mat <- tryCatch(
+            cells_daf[query_str],
+            error = function(e) NULL
         )
-        if (!is.null(julia_mat)) {
-            # Subset to requested genes if not all
-            all_genes <- rownames(julia_mat)
-            if (!is.null(genes) && length(genes) < length(all_genes)) {
-                gene_idx <- match(genes, all_genes)
+        if (!is.null(daf_mat)) {
+            # DAF returns group_values x gene; transpose to gene x group_values
+            daf_mat <- t(daf_mat)
+            if (!is.null(genes) && length(genes) < nrow(daf_mat)) {
+                gene_idx <- match(genes, rownames(daf_mat))
                 gene_idx <- gene_idx[!is.na(gene_idx)]
-                julia_mat <- julia_mat[gene_idx, , drop = FALSE]
+                daf_mat <- daf_mat[gene_idx, , drop = FALSE]
             }
-            return(julia_mat)
+            return(daf_mat)
         }
     }
 
-    # Fallback: build the matrix gene-by-gene (slow but memory-efficient)
+    # Filtered fallback: build the matrix gene-by-gene
     if (is.null(genes)) {
         genes <- dafr::axis_entries(cells_daf, "gene")
     }
@@ -595,30 +594,29 @@ calc_group_diff_expr <- function(dataset, group_field,
     group1_name <- paste(group1_values, collapse = "+")
     group2_name <- paste(group2_values, collapse = "+")
 
-    # Try Julia-accelerated pseudobulk (2 sparse matrix-vector multiplies instead of 28K queries)
-    mc_data <- mcv_get("mc_data")
-    raw_cells_daf <- mc_data[[dataset]][["cells_daf"]]
-    julia_result <- NULL
-    if (!is.null(raw_cells_daf) && julia_helpers_ready()) {
-        julia_result <- julia_compute_pseudobulk(
-            raw_cells_daf$jl_obj,
-            group_field,
-            c(group1_values, group2_values),
-            mask1 | mask2
+    # Use DAF's native GroupBy query when no cell type filter is applied.
+    # Single query computes grouped sums for all genes at once in Julia.
+    daf_result <- NULL
+    if (is.null(cell_types)) {
+        query_str <- glue::glue("/ cell / gene : UMIs @ {group_field} %> Sum")
+        daf_result <- tryCatch(
+            {
+                # Returns group_values x gene; transpose to gene x group_values
+                t(cells_daf[query_str])
+            },
+            error = function(e) NULL
         )
     }
 
-    if (!is.null(julia_result)) {
-        # Extract the two group columns from Julia result
-        # Julia computed pseudobulk for each group value separately
-        # We need to sum across values within each group
-        umis1 <- rowSums(julia_result[, group1_values, drop = FALSE])
-        umis2 <- rowSums(julia_result[, group2_values, drop = FALSE])
-        names(umis1) <- rownames(julia_result)
-        names(umis2) <- rownames(julia_result)
-        all_genes <- rownames(julia_result)
+    if (!is.null(daf_result)) {
+        # Sum across group values within each group
+        umis1 <- rowSums(daf_result[, group1_values, drop = FALSE])
+        umis2 <- rowSums(daf_result[, group2_values, drop = FALSE])
+        names(umis1) <- rownames(daf_result)
+        names(umis2) <- rownames(daf_result)
+        all_genes <- rownames(daf_result)
     } else {
-        # Fallback: per-gene queries (slow but always works)
+        # Filtered fallback: per-gene queries
         umis1 <- numeric(length(all_genes))
         umis2 <- numeric(length(all_genes))
         names(umis1) <- all_genes
