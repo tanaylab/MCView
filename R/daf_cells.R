@@ -230,6 +230,29 @@ get_cell_metacell_map <- function(dataset) {
 }
 
 # ==============================================================================
+# Cell Type View Helper
+# ==============================================================================
+
+#' Create a DAF view filtered to specific cell types
+#'
+#' Uses DAF's viewer() with a mask on the cell axis to restrict to cells
+#' whose metacell's type matches the requested cell types. The filter uses
+#' a regex match on the chained lookup `metacell : type`.
+#'
+#' @param cells_daf Chained cells DAF (cells + metacells)
+#' @param cell_types Character vector of cell types to include
+#' @param metacell_types Optional metacell_types tibble (unused, for API compat)
+#' @return A filtered DAF view
+#' @noRd
+make_cell_type_view <- function(cells_daf, cell_types, metacell_types = NULL) {
+    # Escape regex special characters in type names and build OR pattern
+    escaped_types <- gsub("([.+*?^${}()|\\[\\]\\\\])", "\\\\\\1", cell_types)
+    types_pattern <- paste(escaped_types, collapse = "|")
+    filter_query <- glue::glue("/ cell & metacell : type ~ ^({types_pattern})$")
+    dafr::viewer(cells_daf, axes = list("cell" = filter_query))
+}
+
+# ==============================================================================
 # Group Composition
 # ==============================================================================
 
@@ -363,56 +386,21 @@ get_group_gene_expression <- function(dataset, gene, group_field,
         cli_abort("Cells DAF not available for dataset '{dataset}'")
     }
 
-    # Query single gene UMIs across all cells using the DAF query string
+    # Use DAF GroupBy query, with optional cell type view for filtering
+    query_daf <- cells_daf
+    if (!is.null(cell_types)) {
+        query_daf <- make_cell_type_view(cells_daf, cell_types, metacell_types)
+    }
+
     gene_escaped <- escape_daf_value(gene)
-    cell_umis <- tryCatch(
-        cells_daf[glue::glue("/ cell / gene = {gene_escaped} : UMIs")],
+    query_str <- glue::glue("/ cell / gene = {gene_escaped} : UMIs @ {group_field} %> Sum")
+    result <- tryCatch(
+        query_daf[query_str],
         error = function(e) {
-            cli_abort("Failed to query gene '{gene}' UMIs: {conditionMessage(e)}")
+            cli_abort("Failed to query gene '{gene}' UMIs grouped by '{group_field}': {conditionMessage(e)}")
         }
     )
-
-    # Get group field vector
-    group_vec <- get_cell_field_map(dataset, group_field)
-    if (is.null(group_vec)) {
-        cli_abort("Field '{group_field}' not found on cell axis")
-    }
-
-    # Defensive: ensure cell_umis and group_vec are aligned before positional subsetting
-    if (length(cell_umis) != length(group_vec)) {
-        cli_abort(c(
-            "Length mismatch between cell UMIs ({length(cell_umis)}) and group vector ({length(group_vec)})",
-            "i" = "The cells DAF and group field '{group_field}' may have different cell axes."
-        ))
-    }
-
-    # Apply cell type filter if requested
-    if (!is.null(cell_types)) {
-        mc_vec <- get_cell_metacell_map(dataset)
-        if (is.null(mc_vec)) {
-            cli_abort("Cell-to-metacell mapping not found for cell type filtering")
-        }
-        if (is.null(metacell_types)) {
-            metacell_types <- get_metacell_types_data(dataset)
-        }
-        mc_to_type <- stats::setNames(
-            as.character(metacell_types$cell_type),
-            as.character(metacell_types$metacell)
-        )
-
-        # Determine which cells belong to the requested cell types
-        cell_ct <- mc_to_type[mc_vec]
-        keep_mask <- !is.na(cell_ct) & cell_ct %in% cell_types
-        cell_umis <- cell_umis[keep_mask]
-        group_vec <- group_vec[keep_mask]
-    }
-
-    # Sum UMIs by group
-    result <- tapply(as.numeric(cell_umis), group_vec, sum, na.rm = TRUE)
-
-    # Convert to plain named numeric vector
-    result <- stats::setNames(as.numeric(result), names(result))
-    return(result)
+    return(stats::setNames(as.numeric(result), names(result)))
 }
 
 # ==============================================================================
@@ -444,77 +432,32 @@ get_group_pseudobulk_mat <- function(dataset, genes, group_field,
         cli_alert_warning("Querying all {length(genes)} genes - this may be slow")
     }
 
-    # Get group assignments and (optional) cell type filter mask upfront
-    group_vec <- get_cell_field_map(dataset, group_field)
-    if (is.null(group_vec)) {
-        cli_abort("Field '{group_field}' not found on cell axis")
-    }
-
-    keep_mask <- rep(TRUE, length(group_vec))
-
+    # Use DAF's native GroupBy query for the aggregation, with an optional
+    # viewer to filter cells by type. All computation happens in Julia.
+    query_daf <- cells_daf
     if (!is.null(cell_types)) {
-        mc_vec <- get_cell_metacell_map(dataset)
-        if (is.null(mc_vec)) {
-            cli_abort("Cell-to-metacell mapping not found for cell type filtering")
-        }
-        if (is.null(metacell_types)) {
-            metacell_types <- get_metacell_types_data(dataset)
-        }
-        mc_to_type <- stats::setNames(
-            as.character(metacell_types$cell_type),
-            as.character(metacell_types$metacell)
-        )
-        cell_ct <- mc_to_type[mc_vec]
-        keep_mask <- !is.na(cell_ct) & cell_ct %in% cell_types
+        query_daf <- make_cell_type_view(cells_daf, cell_types, metacell_types)
     }
 
-    filtered_groups <- group_vec[keep_mask]
-    unique_groups <- sort(unique(filtered_groups))
-
-    # Use DAF's native GroupBy query when no cell filter is applied.
-    # "/ cell / gene : UMIs @ {group_field} %> Sum" computes the grouped sum
-    # entirely in Julia — no per-gene round-trips, no custom helper needed.
-    if (all(keep_mask)) {
-        query_str <- glue::glue("/ cell / gene : UMIs @ {group_field} %> Sum")
-        daf_mat <- tryCatch(
-            cells_daf[query_str],
-            error = function(e) NULL
-        )
-        if (!is.null(daf_mat)) {
+    query_str <- glue::glue("/ cell / gene : UMIs @ {group_field} %> Sum")
+    daf_mat <- tryCatch(
+        {
             # DAF returns group_values x gene; transpose to gene x group_values
-            daf_mat <- t(daf_mat)
-            if (!is.null(genes) && length(genes) < nrow(daf_mat)) {
-                gene_idx <- match(genes, rownames(daf_mat))
-                gene_idx <- gene_idx[!is.na(gene_idx)]
-                daf_mat <- daf_mat[gene_idx, , drop = FALSE]
-            }
-            return(daf_mat)
+            t(query_daf[query_str])
+        },
+        error = function(e) {
+            cli_abort("Failed to compute pseudobulk grouped by '{group_field}': {conditionMessage(e)}")
         }
+    )
+
+    # Subset to requested genes if needed
+    if (!is.null(genes) && length(genes) < nrow(daf_mat)) {
+        gene_idx <- match(genes, rownames(daf_mat))
+        gene_idx <- gene_idx[!is.na(gene_idx)]
+        daf_mat <- daf_mat[gene_idx, , drop = FALSE]
     }
 
-    # Filtered fallback: build the matrix gene-by-gene
-    if (is.null(genes)) {
-        genes <- dafr::axis_entries(cells_daf, "gene")
-    }
-
-    mat <- matrix(0, nrow = length(genes), ncol = length(unique_groups),
-                  dimnames = list(genes, unique_groups))
-
-    for (i in seq_along(genes)) {
-        gene <- genes[i]
-        gene_escaped <- escape_daf_value(gene)
-        cell_umis <- tryCatch(
-            cells_daf[glue::glue("/ cell / gene = {gene_escaped} : UMIs")],
-            error = function(e) NULL
-        )
-        if (is.null(cell_umis)) next
-
-        filtered_umis <- as.numeric(cell_umis[keep_mask])
-        sums <- tapply(filtered_umis, filtered_groups, sum, na.rm = TRUE)
-        mat[i, names(sums)] <- as.numeric(sums)
-    }
-
-    return(mat)
+    return(daf_mat)
 }
 
 # ==============================================================================
@@ -546,95 +489,41 @@ calc_group_diff_expr <- function(dataset, group_field,
         cli_abort("Cells DAF not available for dataset '{dataset}'")
     }
 
-    # Get all genes
-    all_genes <- dafr::axis_entries(cells_daf, "gene")
-
-    # Get group assignments
-    group_vec <- get_cell_field_map(dataset, group_field)
-    if (is.null(group_vec)) {
+    # Validate group field exists before running the expensive query
+    if (!dafr::has_vector(cells_daf, "cell", group_field)) {
         cli_abort("Field '{group_field}' not found on cell axis")
     }
 
-    # Defensive: ensure group_vec length matches the cell axis
-    n_cells <- length(dafr::axis_entries(cells_daf, "cell"))
-    if (length(group_vec) != n_cells) {
-        cli_abort(c(
-            "Length mismatch between group vector ({length(group_vec)}) and cell axis ({n_cells})",
-            "i" = "The cells DAF and group field '{group_field}' may have different cell axes."
-        ))
-    }
-
-    # Build cell masks for each group
-    mask1 <- group_vec %in% group1_values
-    mask2 <- group_vec %in% group2_values
-
-    # Apply cell type filter if needed
+    # Use DAF's native GroupBy query with an optional cell type view.
+    # Single query computes grouped sums for all genes at once in Julia.
+    query_daf <- cells_daf
     if (!is.null(cell_types)) {
-        mc_vec <- get_cell_metacell_map(dataset)
-        if (is.null(metacell_types)) {
-            metacell_types <- get_metacell_types_data(dataset)
-        }
-        mc_to_type <- stats::setNames(
-            as.character(metacell_types$cell_type),
-            as.character(metacell_types$metacell)
-        )
-        cell_ct <- mc_to_type[mc_vec]
-        ct_mask <- !is.na(cell_ct) & cell_ct %in% cell_types
-        mask1 <- mask1 & ct_mask
-        mask2 <- mask2 & ct_mask
+        query_daf <- make_cell_type_view(cells_daf, cell_types, metacell_types)
     }
 
-    n1 <- sum(mask1)
-    n2 <- sum(mask2)
-    if (n1 == 0 || n2 == 0) {
-        cli_abort("One or both groups have zero cells after filtering")
-    }
-
-    # Compute pseudobulk: sum UMIs per gene for each group
     group1_name <- paste(group1_values, collapse = "+")
     group2_name <- paste(group2_values, collapse = "+")
 
-    # Use DAF's native GroupBy query when no cell type filter is applied.
-    # Single query computes grouped sums for all genes at once in Julia.
-    daf_result <- NULL
-    if (is.null(cell_types)) {
-        query_str <- glue::glue("/ cell / gene : UMIs @ {group_field} %> Sum")
-        daf_result <- tryCatch(
-            {
-                # Returns group_values x gene; transpose to gene x group_values
-                t(cells_daf[query_str])
-            },
-            error = function(e) NULL
-        )
-    }
-
-    if (!is.null(daf_result)) {
-        # Sum across group values within each group
-        umis1 <- rowSums(daf_result[, group1_values, drop = FALSE])
-        umis2 <- rowSums(daf_result[, group2_values, drop = FALSE])
-        names(umis1) <- rownames(daf_result)
-        names(umis2) <- rownames(daf_result)
-        all_genes <- rownames(daf_result)
-    } else {
-        # Filtered fallback: per-gene queries
-        umis1 <- numeric(length(all_genes))
-        umis2 <- numeric(length(all_genes))
-        names(umis1) <- all_genes
-        names(umis2) <- all_genes
-
-        for (i in seq_along(all_genes)) {
-            gene <- all_genes[i]
-            gene_escaped <- escape_daf_value(gene)
-            cell_umis <- tryCatch(
-                cells_daf[glue::glue("/ cell / gene = {gene_escaped} : UMIs")],
-                error = function(e) NULL
-            )
-            if (is.null(cell_umis)) next
-            cell_umis <- as.numeric(cell_umis)
-            umis1[i] <- sum(cell_umis[mask1], na.rm = TRUE)
-            umis2[i] <- sum(cell_umis[mask2], na.rm = TRUE)
+    query_str <- glue::glue("/ cell / gene : UMIs @ {group_field} %> Sum")
+    daf_result <- tryCatch(
+        {
+            # Returns group_values x gene; transpose to gene x group_values
+            t(query_daf[query_str])
+        },
+        error = function(e) {
+            cli_abort("Failed to compute DE pseudobulk grouped by '{group_field}': {conditionMessage(e)}")
         }
+    )
+
+    # Sum across group values within each group
+    g1_cols <- intersect(group1_values, colnames(daf_result))
+    g2_cols <- intersect(group2_values, colnames(daf_result))
+    if (length(g1_cols) == 0 || length(g2_cols) == 0) {
+        cli_abort("One or both groups have zero cells after filtering")
     }
+    umis1 <- rowSums(daf_result[, g1_cols, drop = FALSE])
+    umis2 <- rowSums(daf_result[, g2_cols, drop = FALSE])
+    all_genes <- rownames(daf_result)
 
     # Compute enriched gene counts (EGC) -- fraction of total
     egc_epsilon <- mcv_get("egc_epsilon") %||% 1e-5
@@ -677,46 +566,39 @@ get_group_qc_stats <- function(dataset, group_field) {
         cli_abort("Cells DAF not available for dataset '{dataset}'")
     }
 
-    # Get group assignments
-    group_vec <- get_cell_field_map(dataset, group_field)
-    if (is.null(group_vec)) {
-        cli_abort("Field '{group_field}' not found on cell axis")
+    # Use DAF's GroupBy queries for efficient per-group aggregation
+    has_total_umis <- dafr::has_vector(cells_daf, "cell", "total_UMIs")
+
+    # Count cells per group
+    count_query <- glue::glue("/ cell : {group_field} @ {group_field} %> Count")
+    counts <- tryCatch(cells_daf[count_query], error = function(e) NULL)
+    if (is.null(counts)) {
+        cli_abort("Failed to compute cell counts by '{group_field}'")
     }
 
-    # Get total UMIs per cell if available
-    total_umis_vec <- tryCatch(
-        dafr::get_vector(cells_daf, "cell", "total_UMIs"),
-        error = function(e) NULL
-    )
-
-    if (is.null(total_umis_vec)) {
-        # Return counts only
-        counts <- table(group_vec)
+    if (!has_total_umis) {
         return(tibble::tibble(
             group_id = names(counts),
             n_cells = as.integer(counts),
             total_umis = NA_real_,
             median_umis_per_cell = NA_real_
-        ))
+        ) %>% dplyr::arrange(group_id))
     }
 
-    total_umis_vec <- as.numeric(total_umis_vec)
+    # Sum and median of total_UMIs per group
+    sum_query <- glue::glue("/ cell : total_UMIs @ {group_field} %> Sum")
+    med_query <- glue::glue("/ cell : total_UMIs @ {group_field} %> Median")
+    total_sums <- cells_daf[sum_query]
+    medians <- cells_daf[med_query]
 
-    # Compute per-group stats
-    groups <- unique(group_vec)
-    stats_list <- lapply(groups, function(g) {
-        mask <- group_vec == g
-        umis <- total_umis_vec[mask]
-        tibble::tibble(
-            group_id = g,
-            n_cells = sum(mask),
-            total_umis = sum(umis, na.rm = TRUE),
-            median_umis_per_cell = stats::median(umis, na.rm = TRUE)
-        )
-    })
-
-    dplyr::bind_rows(stats_list) %>%
-        dplyr::arrange(group_id)
+    # Align by group name
+    groups <- names(counts)
+    tibble::tibble(
+        group_id = groups,
+        n_cells = as.integer(counts[groups]),
+        total_umis = as.numeric(total_sums[groups]),
+        median_umis_per_cell = as.numeric(medians[groups])
+    ) %>% dplyr::arrange(group_id)
 }
 
 # ==============================================================================
