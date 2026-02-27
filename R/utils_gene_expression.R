@@ -223,9 +223,23 @@ get_cell_types_egc <- function(cell_types, metacell_types, dataset, mat = NULL, 
 #' @param cell_types Vector of cell type names
 #' @param metacell_types Metacell types data frame
 #' @param dataset Dataset name
-#' @return Samples UMI matrix
+#' @param group_field Optional grouping field for cell-level pseudobulk.
+#'   When non-NULL and cell-level data is available, uses get_group_pseudobulk_mat
+#'   instead of metacell-weighted approach.
+#' @return Samples UMI matrix (genes x samples/groups)
 #' @export
-get_samples_mat <- function(cell_types, metacell_types, dataset) {
+get_samples_mat <- function(cell_types, metacell_types, dataset, group_field = NULL) {
+    # Cell-level pseudobulk path
+    if (!is.null(group_field) && has_cell_gene_umis(dataset)) {
+        all_genes <- gene_names(dataset)
+        mat <- get_group_pseudobulk_mat(
+            dataset, genes = all_genes, group_field = group_field,
+            cell_types = cell_types, metacell_types = metacell_types
+        )
+        return(mat)
+    }
+
+    # Original metacell-weighted approach
     daf_obj <- get_dataset_daf(dataset)
 
     if (is.null(daf_obj)) {
@@ -266,7 +280,21 @@ get_samples_mat <- function(cell_types, metacell_types, dataset) {
     return(samp_mat)
 }
 
-get_samples_egc <- function(cell_types, metacell_types, dataset) {
+get_samples_egc <- function(cell_types, metacell_types, dataset, group_field = NULL) {
+    # Cell-level pseudobulk path
+    if (!is.null(group_field) && has_cell_gene_umis(dataset)) {
+        mat <- get_samples_mat(cell_types, metacell_types, dataset, group_field = group_field)
+        if (is.null(mat)) {
+            return(NULL)
+        }
+        # Normalize to EGC (fraction of total UMIs per sample)
+        col_sums <- colSums(mat)
+        col_sums[col_sums == 0] <- 1 # avoid division by zero
+        egc <- t(t(mat) / col_sums)
+        return(egc)
+    }
+
+    # Original metacell-weighted approach
     mc_types <- metacell_types %>%
         filter(cell_type %in% cell_types) %>%
         select(metacell, cell_type) %>%
@@ -283,7 +311,43 @@ get_samples_egc <- function(cell_types, metacell_types, dataset) {
     return(samp_egc)
 }
 
-get_samples_gene_egc <- function(gene, dataset, metacells = NULL) {
+get_samples_gene_egc <- function(gene, dataset, metacells = NULL, group_field = NULL, metacell_types = NULL) {
+    # Cell-level pseudobulk path
+    if (!is.null(group_field) && has_cell_gene_umis(dataset)) {
+        # Determine cell_types from metacells filter if provided
+        cell_types_filter <- NULL
+        if (!is.null(metacells) && !is.null(metacell_types)) {
+            cell_types_filter <- metacell_types %>%
+                dplyr::filter(metacell %in% metacells) %>%
+                dplyr::pull(cell_type) %>%
+                unique()
+        }
+
+        gene_umis <- get_group_gene_expression(
+            dataset, gene, group_field,
+            cell_types = cell_types_filter,
+            metacell_types = metacell_types
+        )
+
+        # Get total UMIs per group for normalization
+        # Sum across all genes would be expensive; use the group QC stats if available
+        qc <- tryCatch(
+            get_group_qc_stats(dataset, group_field),
+            error = function(e) NULL
+        )
+
+        if (!is.null(qc) && !all(is.na(qc$total_umis))) {
+            total_umis <- stats::setNames(qc$total_umis, qc$group_id)
+            common <- intersect(names(gene_umis), names(total_umis))
+            egc <- gene_umis[common] / total_umis[common]
+        } else {
+            # Fallback: return raw UMIs (not ideal but functional)
+            egc <- gene_umis
+        }
+        return(egc)
+    }
+
+    # Original metacell-weighted approach
     g <- get_gene_egc(gene, dataset)
     samp_mc_frac <- get_samp_mc_frac(dataset)
     if (!is.null(metacells)) {

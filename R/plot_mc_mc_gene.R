@@ -89,6 +89,14 @@ render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, global
             xlab <- "Group A"
             ylab <- "Group B"
             source <- glue("grp_grp_plot{source_suffix}")
+        } else if (mode == "GroupComparison") {
+            # Dynamic column names from calc_group_diff_expr output
+            df_cols <- setdiff(colnames(mc_mc_gene_scatter_df()), c("gene", "diff", "pval", "col"))
+            req(length(df_cols) >= 2)
+            xlab <- df_cols[1]
+            ylab <- df_cols[2]
+            label_prefix <- ""
+            source <- glue("grp_comparison_plot{source_suffix}")
         } else if (mode == "Samples") {
             req(input$samp1)
             req(input$samp2)
@@ -205,6 +213,57 @@ render_mc_mc_gene_diff_table <- function(input, output, session, ns, dataset, mc
             )
 
             if (input$show_diff_expr_table) {
+                DT::datatable(
+                    df %>%
+                        mutate(type = annotate_genes(gene, dataset())) %>%
+                        filter(col != "gray") %>%
+                        arrange(diff) %>%
+                        select(Gene = gene, `Diff (log2)` = diff, `P-value` = pval, Type = type) %>%
+                        mutate(GeneCards = glue("<a href='{link}' target='_blank'>Open</a>", link = paste0("https://www.genecards.org/cgi-bin/carddisp.pl?gene=", Gene))),
+                    selection = "single",
+                    escape = FALSE,
+                    rownames = FALSE,
+                    extensions = c("Buttons", "Responsive"),
+                    options = list(
+                        dom = "Bfrtip",
+                        buttons = list(
+                            list(
+                                extend = "copy",
+                                exportOptions = list(columns = 0:2)
+                            ),
+                            list(
+                                extend = c("csv"),
+                                exportOptions = list(columns = 0:2)
+                            ),
+                            list(
+                                extend = "excel",
+                                exportOptions = list(columns = 0:2)
+                            )
+                        )
+                    )
+                ) %>%
+                    DT::formatSignif(columns = c("Diff (log2)"), digits = 3) %>%
+                    DT::formatSignif(columns = c("P-value"), digits = 2)
+            }
+        },
+        server = FALSE
+    )
+}
+
+render_group_comparison_diff_table <- function(input, output, session, ns, dataset, group_comparison_df) {
+    DT::renderDT(
+        {
+            df <- group_comparison_df()
+
+            df <- filter_genes_by_flags(
+                df,
+                lateral_genes = get_mc_data(dataset(), "lateral_genes"),
+                noisy_genes = get_mc_data(dataset(), "noisy_genes"),
+                include_lateral = is.null(input$hide_lateral) || !input$hide_lateral,
+                include_noisy = is.null(input$hide_noisy) || !input$hide_noisy
+            )
+
+            if (!is.null(input$show_group_comparison_table) && input$show_group_comparison_table) {
                 DT::datatable(
                     df %>%
                         mutate(type = annotate_genes(gene, dataset())) %>%

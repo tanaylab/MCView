@@ -194,7 +194,7 @@ globalVariables(unique(c(
     # plot_sample_scatter : get_var_md:
     "samp_id",
     # plot_sample_stacked_types:
-    "# of cells", "Cell type", "cell_type", "color", "Fraction", "metacell", "samp_id", "Sample",
+    "# of cells", "Cell type", "cell_type", "color", "Fraction", "group_id", "metacell", "n_cells", "samp_id", "Sample",
     # plot_type_predictions_bar:
     "cell_type", "color", "fraction", "metacell", "type",
     # plot_vein:
@@ -210,6 +210,8 @@ globalVariables(unique(c(
     # render_2d_plotly : plot_2d_atlas_proj:
     "cell_type", "metacell", "query", "weight", "Weight",
     # render_mc_mc_gene_diff_table:
+    "gene", "Gene", "pval", "type",
+    # render_group_comparison_diff_table:
     "gene", "Gene", "pval", "type",
     # render_mc_mc_gene_plotly:
     "cell_type", "fitted_gene",

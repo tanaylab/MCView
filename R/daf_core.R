@@ -70,6 +70,30 @@ init_single_daf_mode <- function(daf_obj, dataset_name, config_file = NULL, prof
     )
     mcv_set("mc_data", mc_data)
 
+    # Auto-detect or explicitly set cells DAF
+    cells_daf_path <- config$cells_daf
+    if (is.null(cells_daf_path)) {
+        # Auto-detect: look for cells_clean sibling of metacells_clean
+        metacells_path <- daf_storage_path(daf_obj)
+        if (!is.null(metacells_path)) {
+            candidate <- gsub("metacells", "cells", metacells_path)
+            if (candidate != metacells_path && fs::dir_exists(candidate)) {
+                cells_daf_path <- candidate
+            }
+        }
+    }
+    if (!is.null(cells_daf_path) && fs::dir_exists(cells_daf_path)) {
+        tryCatch(
+            {
+                set_cells_daf(dataset_name, cells_daf_path)
+                cli_alert_success("Cells DAF auto-detected for '{dataset_name}': {cells_daf_path}")
+            },
+            error = function(e) {
+                cli_warn("Failed to set cells DAF for '{dataset_name}': {conditionMessage(e)}")
+            }
+        )
+    }
+
     cli_alert_success("DAF dataset '{dataset_name}' loaded successfully")
 
     # Return cache population status for caller to handle
@@ -149,6 +173,33 @@ init_multi_daf_mode <- function(daf_list, config_file = NULL, profile = FALSE,
     # Update config
     config$cache_in_daf <- any(sapply(mc_data, function(x) !is.null(x$cache_daf)))
     mcv_set("config", config)
+
+    # Auto-detect or explicitly set cells DAF for each dataset
+    for (dataset_name in names(daf_list)) {
+        daf_obj <- daf_list[[dataset_name]]
+        cells_daf_path <- config$cells_daf
+        if (is.null(cells_daf_path)) {
+            # Auto-detect: look for cells_clean sibling of metacells_clean
+            metacells_path <- daf_storage_path(daf_obj)
+            if (!is.null(metacells_path)) {
+                candidate <- gsub("metacells", "cells", metacells_path)
+                if (candidate != metacells_path && fs::dir_exists(candidate)) {
+                    cells_daf_path <- candidate
+                }
+            }
+        }
+        if (!is.null(cells_daf_path) && fs::dir_exists(cells_daf_path)) {
+            tryCatch(
+                {
+                    set_cells_daf(dataset_name, cells_daf_path)
+                    cli_alert_success("Cells DAF auto-detected for '{dataset_name}': {cells_daf_path}")
+                },
+                error = function(e) {
+                    cli_warn("Failed to set cells DAF for '{dataset_name}': {conditionMessage(e)}")
+                }
+            )
+        }
+    }
 
     cli_alert_success("Loaded {length(daf_list)} DAF datasets: {paste(names(daf_list), collapse=', ')}")
 

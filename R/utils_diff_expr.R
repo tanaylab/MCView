@@ -75,11 +75,32 @@ calc_ct_ct_gene_df <- function(dataset, cell_type1, cell_type2, metacell_types, 
 #' calculate sample / sample gene expression dataframe
 #'
 #' @param dataset name of metacell object
-#' @param samp1 id of the first cell type
-#' @param samp2 id of the second cell type
+#' @param samp1 id of the first sample/group
+#' @param samp2 id of the second sample/group
+#' @param metacell_types metacell_types tibble
+#' @param cell_types cell types to filter by
+#' @param group_field optional grouping field for cell-level pseudobulk
+#' @param diff_thresh log2 fold-change threshold
+#' @param pval_thresh p-value threshold
 #'
 #' @noRd
-calc_samp_samp_gene_df <- function(dataset, samp1, samp2, metacell_types, cell_types, diff_thresh = 1.5, pval_thresh = 0.01) {
+calc_samp_samp_gene_df <- function(dataset, samp1, samp2, metacell_types, cell_types,
+                                   group_field = NULL, diff_thresh = 1.5, pval_thresh = 0.01) {
+    # Cell-level pseudobulk path
+    if (!is.null(group_field) && has_cell_gene_umis(dataset)) {
+        df <- calc_group_diff_expr(
+            dataset, group_field,
+            group1_values = samp1,
+            group2_values = samp2,
+            cell_types = cell_types,
+            metacell_types = metacell_types,
+            diff_thresh = diff_thresh,
+            pval_thresh = pval_thresh
+        )
+        return(df)
+    }
+
+    # Original metacell-weighted approach
     mat <- get_samples_mat(cell_types, metacell_types, dataset)
     egc <- get_samples_egc(cell_types, metacell_types, dataset) + mcv_get("egc_epsilon")
 

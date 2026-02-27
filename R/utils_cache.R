@@ -195,7 +195,13 @@ has_samples <- function(dataset) {
     # Check DAF cell.samp_id vector existence instead of loading full cell metadata
     daf_obj <- get_dataset_daf(dataset)
     if (!is.null(daf_obj)) {
-        return(dafr::has_axis(daf_obj, "cell") && dafr::has_vector(daf_obj, "cell", "samp_id"))
+        if (dafr::has_axis(daf_obj, "cell") && dafr::has_vector(daf_obj, "cell", "samp_id")) {
+            return(TRUE)
+        }
+    }
+    # Also check for cell-level grouping fields from the cells DAF
+    if (has_cell_gene_umis(dataset) && length(get_cell_grouping_fields(dataset)) > 0) {
+        return(TRUE)
     }
     if (!has_cell_metadata(dataset)) {
         return(FALSE)

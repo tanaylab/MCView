@@ -83,7 +83,7 @@ cleanup_mcview_env <- function() {
                         mc_data[[ds_name]][["top_cor_genes"]] <- list()
                     }
                     # Empty DAF internal caches (releases Julia-side memory)
-                    for (daf_field in c("daf_obj", "cache_daf", "base_daf")) {
+                    for (daf_field in c("daf_obj", "cache_daf", "base_daf", "cells_daf", "chained_cells_daf")) {
                         daf_ref <- mc_data[[ds_name]][[daf_field]]
                         if (!is.null(daf_ref) && inherits(daf_ref, "Daf")) {
                             tryCatch(
@@ -96,6 +96,8 @@ cleanup_mcview_env <- function() {
                     mc_data[[ds_name]][["daf_obj"]] <- NULL
                     mc_data[[ds_name]][["cache_daf"]] <- NULL
                     mc_data[[ds_name]][["base_daf"]] <- NULL
+                    mc_data[[ds_name]][["cells_daf"]] <- NULL
+                    mc_data[[ds_name]][["chained_cells_daf"]] <- NULL
                 },
                 error = function(e) {
                     # Suppress errors during cleanup

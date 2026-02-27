@@ -4,7 +4,7 @@
 \alias{get_samples_mat}
 \title{Get samples matrix}
 \usage{
-get_samples_mat(cell_types, metacell_types, dataset)
+get_samples_mat(cell_types, metacell_types, dataset, group_field = NULL)
 }
 \arguments{
 \item{cell_types}{Vector of cell type names}
@@ -12,9 +12,13 @@ get_samples_mat(cell_types, metacell_types, dataset)
 \item{metacell_types}{Metacell types data frame}
 
 \item{dataset}{Dataset name}
+
+\item{group_field}{Optional grouping field for cell-level pseudobulk.
+When non-NULL and cell-level data is available, uses get_group_pseudobulk_mat
+instead of metacell-weighted approach.}
 }
 \value{
-Samples UMI matrix
+Samples UMI matrix (genes x samples/groups)
 }
 \description{
 Get samples matrix
