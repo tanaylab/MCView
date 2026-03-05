@@ -639,3 +639,589 @@ cleanup_browser_test <- function(session = NULL, bg_process = NULL) {
 
     invisible(NULL)
 }
+
+# ==============================================================================
+# Interaction Helpers (for scenario tests)
+# ==============================================================================
+
+#' Set a Shiny input value via JavaScript
+#'
+#' Uses Shiny.setInputValue() to programmatically set an input, then waits
+#' for Shiny to become idle.
+#'
+#' @param session A ChromoteSession object
+#' @param input_id The Shiny input ID to set
+#' @param value The value to set (will be JSON-encoded for non-scalar types)
+#' @return TRUE if the value was set successfully, FALSE otherwise
+set_shiny_input <- function(session, input_id, value) {
+    tryCatch(
+        {
+            # JSON-encode the value for safe injection into JS
+            value_js <- jsonlite::toJSON(value, auto_unbox = TRUE)
+
+            js <- sprintf(
+                "
+                (function() {
+                    if (typeof Shiny === 'undefined' || !Shiny.setInputValue) return false;
+                    Shiny.setInputValue('%s', %s, {priority: 'event'});
+                    return true;
+                })()
+                ",
+                input_id, value_js
+            )
+
+            result <- tryCatch(
+                session$Runtime$evaluate(expression = js),
+                error = function(e) {
+                    Sys.sleep(2)
+                    tryCatch(
+                        session$Runtime$evaluate(expression = js),
+                        error = function(e2) list(result = list(value = FALSE))
+                    )
+                }
+            )
+
+            if (!isTRUE(result$result$value)) {
+                warning("Failed to set Shiny input '", input_id, "'")
+                return(FALSE)
+            }
+
+            Sys.sleep(0.5)
+            wait_for_shiny_idle(session)
+        },
+        error = function(e) {
+            warning("Error setting Shiny input '", input_id, "': ", e$message)
+            FALSE
+        }
+    )
+}
+
+#' Click a radio button by its label text
+#'
+#' Supports radioGroupButtons (shinyWidgets), prettyRadioButtons, and standard
+#' radio inputs. Searches within the specified container for a button or label
+#' whose text matches label_text.
+#'
+#' @param session A ChromoteSession object
+#' @param container_selector CSS selector for the container holding the radio group
+#' @param label_text The visible text of the radio option to select
+#' @return TRUE if the click succeeded, FALSE otherwise
+click_radio_button <- function(session, container_selector, label_text) {
+    tryCatch(
+        {
+            safe_selector <- gsub("'", "\\\\'", container_selector)
+            safe_label <- gsub("'", "\\\\'", label_text)
+
+            js <- sprintf(
+                "
+                (function() {
+                    var container = document.querySelector('%s');
+                    if (!container) return false;
+
+                    // Strategy 1: radioGroupButtons (shinyWidgets) - buttons in btn-group
+                    var buttons = container.querySelectorAll('.btn-group button, .btn-group-toggle button, .btn-group label.btn');
+                    for (var i = 0; i < buttons.length; i++) {
+                        if (buttons[i].textContent.trim() === '%s') {
+                            buttons[i].click();
+                            return true;
+                        }
+                    }
+
+                    // Strategy 2: prettyRadioButtons - div.pretty with labels
+                    var prettyLabels = container.querySelectorAll('.pretty.p-default.p-round label, .pretty label');
+                    for (var i = 0; i < prettyLabels.length; i++) {
+                        if (prettyLabels[i].textContent.trim() === '%s') {
+                            var input = prettyLabels[i].closest('.pretty').querySelector('input[type=\"radio\"]');
+                            if (input) {
+                                input.click();
+                                return true;
+                            }
+                            prettyLabels[i].click();
+                            return true;
+                        }
+                    }
+
+                    // Strategy 3: Generic fallback - any label or button with matching text
+                    var allClickables = container.querySelectorAll('label, button, input[type=\"radio\"]');
+                    for (var i = 0; i < allClickables.length; i++) {
+                        if (allClickables[i].textContent.trim() === '%s') {
+                            allClickables[i].click();
+                            return true;
+                        }
+                    }
+
+                    // Strategy 4: Find label by text and click associated input
+                    var labels = container.querySelectorAll('label');
+                    for (var i = 0; i < labels.length; i++) {
+                        if (labels[i].textContent.trim() === '%s') {
+                            var forId = labels[i].getAttribute('for');
+                            if (forId) {
+                                var input = document.getElementById(forId);
+                                if (input) { input.click(); return true; }
+                            }
+                            labels[i].click();
+                            return true;
+                        }
+                    }
+
+                    return false;
+                })()
+                ",
+                safe_selector, safe_label, safe_label, safe_label, safe_label
+            )
+
+            result <- tryCatch(
+                session$Runtime$evaluate(expression = js),
+                error = function(e) {
+                    Sys.sleep(2)
+                    tryCatch(
+                        session$Runtime$evaluate(expression = js),
+                        error = function(e2) list(result = list(value = FALSE))
+                    )
+                }
+            )
+
+            if (!isTRUE(result$result$value)) {
+                warning("Radio button '", label_text, "' not found in '", container_selector, "'")
+                return(FALSE)
+            }
+
+            Sys.sleep(0.5)
+            wait_for_shiny_idle(session)
+        },
+        error = function(e) {
+            warning("Error clicking radio button '", label_text, "': ", e$message)
+            FALSE
+        }
+    )
+}
+
+#' Toggle a checkbox input
+#'
+#' Supports standard checkboxInput and awesomeCheckbox (shinyWidgets).
+#' Finds the checkbox element within the input wrapper and clicks it.
+#'
+#' @param session A ChromoteSession object
+#' @param input_id The Shiny input ID of the checkbox
+#' @return TRUE if the checkbox was toggled, FALSE otherwise
+click_checkbox <- function(session, input_id) {
+    tryCatch(
+        {
+            js <- sprintf(
+                "
+                (function() {
+                    // Strategy 1: Direct input element by ID (standard checkboxInput)
+                    var el = document.getElementById('%s');
+                    if (el && el.tagName === 'INPUT' && el.type === 'checkbox') {
+                        el.click();
+                        return true;
+                    }
+
+                    // Strategy 2: Wrapper div contains the input (checkboxInput wraps in div)
+                    if (el) {
+                        var input = el.querySelector('input[type=\"checkbox\"]');
+                        if (input) {
+                            input.click();
+                            return true;
+                        }
+                    }
+
+                    // Strategy 3: awesomeCheckbox - look for wrapper with matching input name
+                    var awesome = document.querySelector('#' + CSS.escape('%s') + ' input[type=\"checkbox\"], input[type=\"checkbox\"][id=\"%s\"]');
+                    if (awesome) {
+                        awesome.click();
+                        return true;
+                    }
+
+                    return false;
+                })()
+                ",
+                input_id, input_id, input_id
+            )
+
+            result <- tryCatch(
+                session$Runtime$evaluate(expression = js),
+                error = function(e) {
+                    Sys.sleep(2)
+                    tryCatch(
+                        session$Runtime$evaluate(expression = js),
+                        error = function(e2) list(result = list(value = FALSE))
+                    )
+                }
+            )
+
+            if (!isTRUE(result$result$value)) {
+                warning("Checkbox '", input_id, "' not found")
+                return(FALSE)
+            }
+
+            Sys.sleep(0.5)
+            wait_for_shiny_idle(session)
+        },
+        error = function(e) {
+            warning("Error clicking checkbox '", input_id, "': ", e$message)
+            FALSE
+        }
+    )
+}
+
+#' Toggle a shinyWidgets switch or prettySwitch
+#'
+#' prettySwitch renders as a `<div class="pretty p-switch">` wrapping an input
+#' and a label. This function finds the switch by input ID and clicks it.
+#'
+#' @param session A ChromoteSession object
+#' @param input_id The Shiny input ID of the switch
+#' @return TRUE if the switch was toggled, FALSE otherwise
+click_switch <- function(session, input_id) {
+    tryCatch(
+        {
+            js <- sprintf(
+                "
+                (function() {
+                    // Strategy 1: Direct input element
+                    var input = document.getElementById('%s');
+                    if (input && input.tagName === 'INPUT') {
+                        input.click();
+                        return true;
+                    }
+
+                    // Strategy 2: prettySwitch - wrapper div, find input inside
+                    if (input) {
+                        var cb = input.querySelector('input[type=\"checkbox\"]');
+                        if (cb) {
+                            cb.click();
+                            return true;
+                        }
+                        // Try clicking the label inside the pretty wrapper
+                        var label = input.querySelector('.pretty.p-switch label, label');
+                        if (label) {
+                            label.click();
+                            return true;
+                        }
+                    }
+
+                    // Strategy 3: Find by CSS escape of the ID
+                    var byEscape = document.querySelector('#' + CSS.escape('%s') + ' input[type=\"checkbox\"], input#' + CSS.escape('%s'));
+                    if (byEscape) {
+                        byEscape.click();
+                        return true;
+                    }
+
+                    // Strategy 4: Find the pretty p-switch wrapper containing our input
+                    var switches = document.querySelectorAll('.pretty.p-switch');
+                    for (var i = 0; i < switches.length; i++) {
+                        var inp = switches[i].querySelector('input[id=\"' + '%s' + '\"]');
+                        if (inp) {
+                            inp.click();
+                            return true;
+                        }
+                    }
+
+                    return false;
+                })()
+                ",
+                input_id, input_id, input_id, input_id
+            )
+
+            result <- tryCatch(
+                session$Runtime$evaluate(expression = js),
+                error = function(e) {
+                    Sys.sleep(2)
+                    tryCatch(
+                        session$Runtime$evaluate(expression = js),
+                        error = function(e2) list(result = list(value = FALSE))
+                    )
+                }
+            )
+
+            if (!isTRUE(result$result$value)) {
+                warning("Switch '", input_id, "' not found")
+                return(FALSE)
+            }
+
+            Sys.sleep(0.5)
+            wait_for_shiny_idle(session)
+        },
+        error = function(e) {
+            warning("Error clicking switch '", input_id, "': ", e$message)
+            FALSE
+        }
+    )
+}
+
+#' Click a Shiny action button
+#'
+#' Finds the button by its ID and clicks it via JavaScript, then waits
+#' for Shiny to become idle.
+#'
+#' @param session A ChromoteSession object
+#' @param button_id The Shiny button ID to click
+#' @return TRUE if the button was clicked, FALSE otherwise
+click_button <- function(session, button_id) {
+    tryCatch(
+        {
+            js <- sprintf(
+                "
+                (function() {
+                    var btn = document.getElementById('%s');
+                    if (btn) {
+                        btn.click();
+                        return true;
+                    }
+                    return false;
+                })()
+                ",
+                button_id
+            )
+
+            result <- tryCatch(
+                session$Runtime$evaluate(expression = js),
+                error = function(e) {
+                    Sys.sleep(2)
+                    tryCatch(
+                        session$Runtime$evaluate(expression = js),
+                        error = function(e2) list(result = list(value = FALSE))
+                    )
+                }
+            )
+
+            if (!isTRUE(result$result$value)) {
+                warning("Button '", button_id, "' not found")
+                return(FALSE)
+            }
+
+            Sys.sleep(0.5)
+            wait_for_shiny_idle(session)
+        },
+        error = function(e) {
+            warning("Error clicking button '", button_id, "': ", e$message)
+            FALSE
+        }
+    )
+}
+
+#' Count the number of traces in a plotly chart
+#'
+#' Accesses the plotly internal data structure to count how many traces
+#' are present in the plot.
+#'
+#' @param session A ChromoteSession object
+#' @param output_id The Shiny output ID of the plotly output
+#' @return Integer count of plotly traces, or 0 if not found
+get_plotly_traces <- function(session, output_id) {
+    tryCatch(
+        {
+            js <- sprintf(
+                "
+                (function() {
+                    // Plotly attaches data to the .js-plotly-plot element inside the output div
+                    var container = document.getElementById('%s');
+                    if (!container) return 0;
+
+                    // The actual plotly element may be the container itself or a child
+                    var plotEl = container.querySelector('.js-plotly-plot') || container;
+
+                    // plotly.js stores trace data in _fullData
+                    if (plotEl._fullData && Array.isArray(plotEl._fullData)) {
+                        return plotEl._fullData.length;
+                    }
+
+                    // Fallback: check data attribute
+                    if (plotEl.data && Array.isArray(plotEl.data)) {
+                        return plotEl.data.length;
+                    }
+
+                    return 0;
+                })()
+                ",
+                output_id
+            )
+
+            result <- tryCatch(
+                session$Runtime$evaluate(expression = js),
+                error = function(e) {
+                    Sys.sleep(2)
+                    tryCatch(
+                        session$Runtime$evaluate(expression = js),
+                        error = function(e2) list(result = list(value = 0))
+                    )
+                }
+            )
+
+            if (is.null(result) || is.null(result$result$value)) {
+                return(0L)
+            }
+            as.integer(result$result$value)
+        },
+        error = function(e) {
+            warning("Error getting plotly traces for '", output_id, "': ", e$message)
+            0L
+        }
+    )
+}
+
+#' Get the text content of a DOM element
+#'
+#' Uses querySelector to find an element and returns its trimmed textContent.
+#'
+#' @param session A ChromoteSession object
+#' @param selector A CSS selector string
+#' @return The text content as a string, or NULL if the element was not found
+get_element_text <- function(session, selector) {
+    tryCatch(
+        {
+            safe_selector <- gsub("'", "\\\\'", selector)
+
+            js <- sprintf(
+                "
+                (function() {
+                    var el = document.querySelector('%s');
+                    return el ? el.textContent.trim() : null;
+                })()
+                ",
+                safe_selector
+            )
+
+            result <- tryCatch(
+                session$Runtime$evaluate(expression = js),
+                error = function(e) {
+                    Sys.sleep(2)
+                    tryCatch(
+                        session$Runtime$evaluate(expression = js),
+                        error = function(e2) NULL
+                    )
+                }
+            )
+
+            if (is.null(result)) return(NULL)
+            result$result$value
+        },
+        error = function(e) {
+            warning("Error getting element text for '", selector, "': ", e$message)
+            NULL
+        }
+    )
+}
+
+#' Wait for a DOM element to appear
+#'
+#' Polls until an element matching the selector exists in the DOM,
+#' or until the timeout expires.
+#'
+#' @param session A ChromoteSession object
+#' @param selector A CSS selector string
+#' @param timeout Maximum seconds to wait (default: 15)
+#' @param poll_interval Seconds between polls (default: 0.5)
+#' @return TRUE if the element appeared, FALSE if timeout expired
+wait_for_element <- function(session, selector, timeout = 15, poll_interval = 0.5) {
+    tryCatch(
+        {
+            safe_selector <- gsub("'", "\\\\'", selector)
+            js <- sprintf(
+                "document.querySelector('%s') !== null",
+                safe_selector
+            )
+
+            start_time <- Sys.time()
+
+            while (difftime(Sys.time(), start_time, units = "secs") < timeout) {
+                result <- tryCatch(
+                    session$Runtime$evaluate(expression = js),
+                    error = function(e) {
+                        Sys.sleep(1)
+                        tryCatch(
+                            session$Runtime$evaluate(expression = js),
+                            error = function(e2) NULL
+                        )
+                    }
+                )
+
+                if (!is.null(result) && isTRUE(result$result$value)) {
+                    return(TRUE)
+                }
+
+                Sys.sleep(poll_interval)
+            }
+
+            FALSE
+        },
+        error = function(e) {
+            warning("Error waiting for element '", selector, "': ", e$message)
+            FALSE
+        }
+    )
+}
+
+#' Open a shinydashboardPlus boxSidebar
+#'
+#' Finds the sidebar toggle button within a box and clicks it if the
+#' sidebar is not already open. Waits for the CSS animation to complete.
+#'
+#' @param session A ChromoteSession object
+#' @param box_id The ID of the shinydashboardPlus box element
+#' @return TRUE if the sidebar was opened (or was already open), FALSE on error
+open_box_sidebar <- function(session, box_id) {
+    tryCatch(
+        {
+            js <- sprintf(
+                "
+                (function() {
+                    var box = document.getElementById('%s');
+                    if (!box) return false;
+
+                    // Check if sidebar is already open
+                    // shinydashboardPlus uses 'control-sidebar-open' class on the box
+                    // or 'direct-chat-contacts-open' on some versions
+                    var isOpen = box.classList.contains('control-sidebar-open') ||
+                                 box.classList.contains('direct-chat-contacts-open') ||
+                                 box.querySelector('.direct-chat-contacts-open') !== null;
+
+                    if (isOpen) return true;
+
+                    // Find the sidebar toggle button
+                    // shinydashboardPlus boxSidebar toggle is typically a button with
+                    // data-widget='chat-pane-toggle' or a btn inside the box-tools
+                    var toggle = box.querySelector('[data-widget=\"chat-pane-toggle\"]') ||
+                                 box.querySelector('.box-tools .btn[data-card-widget=\"sidebar-toggle\"]') ||
+                                 box.querySelector('.card-tools .btn[data-card-widget=\"sidebar-toggle\"]') ||
+                                 box.querySelector('[data-card-widget=\"sidebar-toggle\"]') ||
+                                 box.querySelector('.box-tools button:not([data-widget=\"collapse\"]):not([data-widget=\"remove\"])');
+
+                    if (toggle) {
+                        toggle.click();
+                        return true;
+                    }
+
+                    return false;
+                })()
+                ",
+                box_id
+            )
+
+            result <- tryCatch(
+                session$Runtime$evaluate(expression = js),
+                error = function(e) {
+                    Sys.sleep(2)
+                    tryCatch(
+                        session$Runtime$evaluate(expression = js),
+                        error = function(e2) list(result = list(value = FALSE))
+                    )
+                }
+            )
+
+            if (!isTRUE(result$result$value)) {
+                warning("Box sidebar toggle not found for box '", box_id, "'")
+                return(FALSE)
+            }
+
+            # Wait for CSS animation to complete
+            Sys.sleep(0.5)
+            wait_for_shiny_idle(session)
+        },
+        error = function(e) {
+            warning("Error opening box sidebar '", box_id, "': ", e$message)
+            FALSE
+        }
+    )
+}
