@@ -40,25 +40,28 @@ get_cells_daf <- function(dataset) {
             if (is.null(metacells_daf)) {
                 metacells_daf <- mc_data[[dataset]][["base_daf"]]
             }
-            if (is.null(metacells_daf)) {
-                cli_warn("No metacells DAF found for dataset '{dataset}'; returning cells DAF only")
-                mc_data[[dataset]][["cells_daf"]] <- cells_daf
-                mc_data[[dataset]][["chained_cells_daf"]] <- cells_daf
-                mcv_set("mc_data", mc_data)
-                return(cells_daf)
+
+            # Try chaining with the metacells DAF for cross-axis queries
+            chained <- NULL
+            if (!is.null(metacells_daf)) {
+                chained <- tryCatch(
+                    dafr::chain_reader(
+                        list(metacells_daf, cells_daf),
+                        name = paste0(dataset, ".chained")
+                    ),
+                    error = function(e) {
+                        cli_warn("Failed to chain cells DAF with metacells DAF: {conditionMessage(e)}")
+                        NULL
+                    }
+                )
             }
 
-            chained <- dafr::chain_reader(
-                list(metacells_daf, cells_daf),
-                name = paste0(dataset, ".chained")
-            )
-
-            # Cache both the raw cells DAF and the chained version
+            # Cache both raw and chained; fall back to cells DAF alone if chaining failed
             mc_data[[dataset]][["cells_daf"]] <- cells_daf
-            mc_data[[dataset]][["chained_cells_daf"]] <- chained
+            mc_data[[dataset]][["chained_cells_daf"]] <- chained %||% cells_daf
             mcv_set("mc_data", mc_data)
 
-            return(chained)
+            return(chained %||% cells_daf)
         },
         error = function(e) {
             cli_warn("Failed to load cells DAF from '{cells_daf_path}': {conditionMessage(e)}")
@@ -248,7 +251,14 @@ make_cell_type_view <- function(cells_daf, cell_types, metacell_types = NULL) {
     # Escape regex special characters in type names and build OR pattern
     escaped_types <- gsub("([.+*?^${}()|\\[\\]\\\\])", "\\\\\\1", cell_types)
     types_pattern <- paste(escaped_types, collapse = "|")
-    filter_query <- glue::glue("/ cell & metacell : type ~ ^({types_pattern})$")
+
+    # Use metacell chain lookup if available, otherwise direct cell type vector
+    if (dafr::has_vector(cells_daf, "cell", "metacell")) {
+        filter_query <- glue::glue("/ cell & metacell : type ~ ^({types_pattern})$")
+    } else {
+        # Direct cell-level type vector
+        filter_query <- glue::glue("/ cell & type ~ ^({types_pattern})$")
+    }
     dafr::viewer(cells_daf, axes = list("cell" = filter_query))
 }
 
@@ -275,43 +285,54 @@ get_group_cell_type_composition <- function(dataset, group_field, metacell_types
         cli_abort("Field '{group_field}' not found on cell axis for dataset '{dataset}'")
     }
 
-    # Get cell -> metacell mapping
+    # Try cell -> metacell -> type path first, then fall back to direct cell type
     mc_vec <- get_cell_metacell_map(dataset)
-    if (is.null(mc_vec)) {
-        cli_abort("Cell-to-metacell mapping not found for dataset '{dataset}'")
-    }
 
-    # Get metacell -> cell_type mapping
-    if (is.null(metacell_types)) {
-        metacell_types <- get_metacell_types_data(dataset)
-    }
-    if (is.null(metacell_types)) {
-        cli_abort("metacell_types not available for dataset '{dataset}'")
-    }
+    if (!is.null(mc_vec)) {
+        # Standard path: metacell -> cell_type mapping
+        if (is.null(metacell_types)) {
+            metacell_types <- get_metacell_types_data(dataset)
+        }
+        if (is.null(metacell_types)) {
+            cli_abort("metacell_types not available for dataset '{dataset}'")
+        }
 
-    mc_to_type <- stats::setNames(
-        as.character(metacell_types$cell_type),
-        as.character(metacell_types$metacell)
-    )
+        mc_to_type <- stats::setNames(
+            as.character(metacell_types$cell_type),
+            as.character(metacell_types$metacell)
+        )
 
-    # Use only cells that have both a group and a valid metacell
-    cell_names <- names(group_vec)
-    if (is.null(cell_names)) {
-        cell_names <- names(mc_vec)
-    }
-    common_cells <- intersect(names(group_vec), names(mc_vec))
-    if (length(common_cells) == 0) {
-        # Try positional matching if names are not set
-        n <- min(length(group_vec), length(mc_vec))
-        group_sub <- group_vec[seq_len(n)]
-        mc_sub <- mc_vec[seq_len(n)]
+        common_cells <- intersect(names(group_vec), names(mc_vec))
+        if (length(common_cells) == 0) {
+            n <- min(length(group_vec), length(mc_vec))
+            group_sub <- group_vec[seq_len(n)]
+            mc_sub <- mc_vec[seq_len(n)]
+        } else {
+            group_sub <- group_vec[common_cells]
+            mc_sub <- mc_vec[common_cells]
+        }
+
+        cell_types <- mc_to_type[mc_sub]
     } else {
-        group_sub <- group_vec[common_cells]
-        mc_sub <- mc_vec[common_cells]
-    }
+        # Fallback: use direct cell-level type vector (e.g., "type" or "cell_type")
+        type_vec <- get_cell_field_map(dataset, "type")
+        if (is.null(type_vec)) {
+            type_vec <- get_cell_field_map(dataset, "cell_type")
+        }
+        if (is.null(type_vec)) {
+            cli_abort("No cell-to-metacell mapping or cell type vector found for dataset '{dataset}'")
+        }
 
-    # Map metacell to cell type
-    cell_types <- mc_to_type[mc_sub]
+        common_cells <- intersect(names(group_vec), names(type_vec))
+        if (length(common_cells) == 0) {
+            n <- min(length(group_vec), length(type_vec))
+            group_sub <- group_vec[seq_len(n)]
+            cell_types <- type_vec[seq_len(n)]
+        } else {
+            group_sub <- group_vec[common_cells]
+            cell_types <- type_vec[common_cells]
+        }
+    }
 
     # Filter out cells with unknown metacells or types
     valid <- !is.na(cell_types) & !is.na(group_sub)

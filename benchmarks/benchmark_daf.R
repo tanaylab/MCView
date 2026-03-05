@@ -415,7 +415,20 @@ main <- function() {
         options(dafr.JULIA_HOME = file.path(conda_prefix, "bin"))
     }
     t0_julia <- proc.time()[["elapsed"]]
-    dafr::setup_daf(pkg_check = FALSE, julia_environment = "custom")
+    # Use sysimage if available for faster Julia startup
+    sysimage <- Sys.getenv("JULIA_SYSIMAGE", "")
+    if (!nzchar(sysimage) && nzchar(conda_prefix)) {
+        candidate <- file.path(conda_prefix, "share", "julia", "sysimage_daf.so")
+        if (file.exists(candidate)) {
+            sysimage <- candidate
+            cat(sprintf("  Using sysimage: %s\n", sysimage))
+        }
+    }
+    setup_args <- list(pkg_check = FALSE, julia_environment = "custom")
+    if (nzchar(sysimage) && file.exists(sysimage)) {
+        setup_args$sysimage_path <- sysimage
+    }
+    do.call(dafr::setup_daf, setup_args)
     t_julia_init <- proc.time()[["elapsed"]] - t0_julia
     cat(sprintf("  Julia initialized in %.2fs\n", t_julia_init))
 

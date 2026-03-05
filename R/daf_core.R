@@ -432,29 +432,33 @@ detect_available_tabs <- function(daf_obj) {
         # If stored value was empty/invalid, fall through to detection
     }
 
-    # Batch-query all DAF metadata in a few calls (instead of ~300 individual calls)
+    # Batch-query DAF metadata with targeted checks (not N² axis-pair queries)
     available_axes <- dafr::axes_set(daf_obj)
-    available_scalars <- dafr::scalars_set(daf_obj)
 
-    # Query vectors and matrices only for axes that exist
+    # Query vectors only for axes relevant to tab detection
+    tab_relevant_axes <- intersect(available_axes, c("metacell", "gene", "type", "cell", "gg_mc_top_cor"))
     available_vectors <- list()
-    for (axis in available_axes) {
+    for (axis in tab_relevant_axes) {
         vecs <- tryCatch(dafr::vectors_set(daf_obj, axis), error = function(e) character(0))
         available_vectors[[axis]] <- vecs
     }
 
+    # Only query the specific matrix pairs needed for tab detection
+    # (3 targeted queries instead of N² queries for all axis pairs)
     available_matrices <- list()
-    for (rows_axis in available_axes) {
-        for (cols_axis in available_axes) {
-            if (rows_axis != cols_axis) {
-                mats <- tryCatch(
-                    dafr::matrices_set(daf_obj, rows_axis, cols_axis),
-                    error = function(e) character(0)
-                )
-                if (length(mats) > 0) {
-                    key <- paste0(rows_axis, ",", cols_axis)
-                    available_matrices[[key]] <- mats
-                }
+    matrix_checks <- list(
+        c("metacell", "gene"),
+        c("gene", "metacell")
+    )
+    for (pair in matrix_checks) {
+        if (pair[1] %in% available_axes && pair[2] %in% available_axes) {
+            mats <- tryCatch(
+                dafr::matrices_set(daf_obj, pair[1], pair[2]),
+                error = function(e) character(0)
+            )
+            if (length(mats) > 0) {
+                key <- paste0(pair[1], ",", pair[2])
+                available_matrices[[key]] <- mats
             }
         }
     }
@@ -473,11 +477,6 @@ detect_available_tabs <- function(daf_obj) {
     # Helper: check if an axis exists
     has_ax <- function(axis) {
         axis %in% available_axes
-    }
-
-    # Helper: check if a scalar exists
-    has_sc <- function(name) {
-        name %in% available_scalars
     }
 
     # Validate core contract first (required for all tabs)
@@ -545,10 +544,10 @@ detect_available_tabs <- function(daf_obj) {
     # Annotate - always available if core passes
     tabs <- c(tabs, "Annotate")
 
-    # Samples - requires cell axis + cell.metacell + cell.samp_id
-    if (has_ax("cell") && has_vec("cell", "metacell") && has_vec("cell", "samp_id")) {
-        tabs <- c(tabs, "Samples")
-    }
+    # Samples - always include; runtime has_samples() controls actual visibility.
+    # Cell data may come from the metacells DAF (cell axis) or a separate cells DAF
+    # that is loaded after tab detection.
+    tabs <- c(tabs, "Samples")
 
     # Gene correlation - requires gg_mc_top_cor axis
     if (has_ax("gg_mc_top_cor")) {

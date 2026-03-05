@@ -1,3 +1,29 @@
+# ==============================================================================
+# Lazy future::plan initialization
+# ==============================================================================
+
+# Track whether future::plan(multisession) has been activated
+.future_plan_state <- new.env(parent = emptyenv())
+.future_plan_state$initialized <- FALSE
+
+#' Ensure future plan is set to multisession (lazy, one-time)
+#'
+#' Called on first use of future_promise (e.g., Flow tab's plot_vein).
+#' Avoids the ~5.7s cost of spawning worker processes at app startup
+#' when the Flow tab may never be visited.
+#'
+#' @return TRUE invisibly
+#' @noRd
+ensure_future_plan <- function() {
+    if (!.future_plan_state$initialized) {
+        .future_plan_state$initialized <- TRUE
+        # Use multisession instead of multicore to avoid forking a process
+        # with embedded Julia (fork is unsupported and causes segfaults)
+        future::plan(future::multisession)
+    }
+    invisible(TRUE)
+}
+
 #' Run the MCView Application
 #'
 #' Run the MCView application with DAF data.
@@ -5,6 +31,9 @@
 #' @param daf A DAF object, a named list of DAF objects, or a path to a DAF directory/H5 file
 #' @param name Name for the dataset when using a single DAF object (default: "data").
 #'   Ignored when `daf` is a named list.
+#' @param cells_daf Optional path to a cells-level DAF directory. When provided,
+#'   enables cell-level features (grouping, pseudobulk DE, QC stats). If NULL,
+#'   auto-detection looks for a sibling directory with "metacells" replaced by "cells".
 #' @param atlas Optional atlas DAF object for projection comparison
 #' @param config_file Optional path to YAML configuration file
 #' @param port App port
@@ -35,6 +64,9 @@
 #' atlas_daf <- dafr::files_daf("path/to/atlas")
 #' run_app(query_daf, atlas = atlas_daf)
 #'
+#' # With cell-level data
+#' run_app(daf_obj, cells_daf = "path/to/cells_clean")
+#'
 #' # From path (auto-loads DAF)
 #' run_app("path/to/daf")
 #' run_app("path/to/data.h5")
@@ -55,6 +87,7 @@
 #' @export
 run_app <- function(daf,
                     name = "data",
+                    cells_daf = NULL,
                     atlas = NULL,
                     config_file = NULL,
                     port = NULL,
@@ -100,6 +133,16 @@ run_app <- function(daf,
         cli_abort("daf must be a DAF object, a named list of DAF objects, or a path to DAF data")
     }
 
+    # Set cells DAF if explicitly provided (overrides auto-detection)
+    if (!is.null(cells_daf)) {
+        cells_daf_path <- if (is.character(cells_daf)) cells_daf else NULL
+        if (!is.null(cells_daf_path) && dir.exists(cells_daf_path)) {
+            dataset_name <- if (inherits(daf, "Daf")) name else names(daf)[1]
+            set_cells_daf(dataset_name, cells_daf_path)
+            cli::cli_alert_success("Cells DAF set for '{dataset_name}': {cells_daf_path}")
+        }
+    }
+
     # Initialize atlas if provided
     if (!is.null(atlas)) {
         if (is.character(atlas)) {
@@ -110,9 +153,10 @@ run_app <- function(daf,
 
     timed("init_defs", init_defs())
     timed("config_shiny_cache", config_shiny_cache())
-    # Use multisession instead of multicore to avoid forking a process
-    # with embedded Julia (fork is unsupported and causes segfaults)
-    future::plan(future::multisession)
+    # Defer future::plan(multisession) until first use (Flow tab).
+    # This saves ~5.7s at startup since spawning worker processes is expensive
+    # and only the Flow tab (plot_vein) uses future_promise.
+    # See ensure_future_plan() below.
 
     # Register onStop hook for orderly shutdown
     shiny::onStop(function() {
@@ -169,12 +213,18 @@ mcview_on_stop <- function() {
     cli::cli_alert_info("MCView shutting down...")
 
     # Reset future plan to sequential to avoid orphaned worker processes
-    tryCatch(
-        future::plan(future::sequential),
-        error = function(e) {
-            # Suppress errors during shutdown
-        }
-    )
+    # (only if the multisession plan was actually activated)
+    if (.future_plan_state$initialized) {
+        tryCatch(
+            {
+                future::plan(future::sequential)
+                .future_plan_state$initialized <- FALSE
+            },
+            error = function(e) {
+                # Suppress errors during shutdown
+            }
+        )
+    }
 
     # Clean up MCView environment (DAF caches, in-memory state)
     tryCatch(

@@ -109,8 +109,17 @@ launch_mcview_bg <- function(daf_path = get_test_daf_path(),
                     # Load package from source in dev mode
                     devtools::load_all(pkg_root, quiet = TRUE)
 
-                    # Initialize Julia/DAF
-                    dafr::setup_daf(pkg_check = FALSE, julia_environment = "custom")
+                    # Initialize Julia/DAF (use sysimage if available)
+                    sysimage <- Sys.getenv("JULIA_SYSIMAGE", "")
+                    if (!nzchar(sysimage) && nzchar(conda_prefix)) {
+                        candidate <- file.path(conda_prefix, "share", "julia", "sysimage_daf.so")
+                        if (file.exists(candidate)) sysimage <- candidate
+                    }
+                    setup_args <- list(pkg_check = FALSE, julia_environment = "custom")
+                    if (nzchar(sysimage) && file.exists(sysimage)) {
+                        setup_args$sysimage_path <- sysimage
+                    }
+                    do.call(dafr::setup_daf, setup_args)
 
                     # Open DAF dataset
                     daf <- dafr::open_daf(daf_path)

@@ -56,7 +56,21 @@ skip_if_no_daf <- function() {
 
         tryCatch(
             {
-                dafr::setup_daf(pkg_check = FALSE, julia_environment = "custom")
+                # Use sysimage if available (set by tests/run_tests.sh or auto-detected)
+                sysimage <- Sys.getenv("JULIA_SYSIMAGE", "")
+                if (!nzchar(sysimage) && nzchar(conda_prefix)) {
+                    candidate <- file.path(conda_prefix, "share", "julia", "sysimage_daf.so")
+                    if (file.exists(candidate)) {
+                        sysimage <- candidate
+                        message("[helper-daf] Auto-detected sysimage: ", sysimage)
+                    }
+                }
+                setup_args <- list(pkg_check = FALSE, julia_environment = "custom")
+                if (nzchar(sysimage) && file.exists(sysimage)) {
+                    setup_args$sysimage_path <- sysimage
+                    message("[helper-daf] Using Julia sysimage: ", sysimage)
+                }
+                do.call(dafr::setup_daf, setup_args)
                 .daf_test_state$ok <- TRUE
 
                 # Initialize Julia helpers so tests can exercise Julia-accelerated paths

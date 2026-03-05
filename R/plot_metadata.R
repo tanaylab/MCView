@@ -319,11 +319,9 @@ mc2d_plot_metadata_ggp_categorical <- function(mc2d_df,
             showlegend = showlegend
         )
     }
-    fig <- plotly::plot_ly() %>% add_scatter_layer()
-
-    fig <- fig %>% mc2d_add_graph_edges(graph, graph_color, graph_width)
-
-    fig <- fig %>%
+    # Draw edges first so scatter points appear on top
+    fig <- plotly::plot_ly() %>%
+        mc2d_add_graph_edges(graph, graph_color, graph_width) %>%
         add_scatter_layer(showlegend = TRUE)
 
     fig <- fig %>% mc2d_plotly_proj_layout(legend_title = legend_title)
@@ -390,11 +388,9 @@ mc2d_plot_metadata_ggp_numeric <- function(mc2d_df,
             showlegend = showlegend
         )
     }
-    fig <- plotly::plot_ly() %>% add_scatter_layer()
-
-    fig <- fig %>% mc2d_add_graph_edges(graph, graph_color, graph_width)
-
-    fig <- fig %>%
+    # Draw edges first so scatter points appear on top
+    fig <- plotly::plot_ly() %>%
+        mc2d_add_graph_edges(graph, graph_color, graph_width) %>%
         add_scatter_layer(showlegend = TRUE)
 
     fig <- fig %>% mc2d_plotly_proj_layout(legend_title = legend_title, use_colorbar = TRUE)

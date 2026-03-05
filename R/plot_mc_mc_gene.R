@@ -49,8 +49,12 @@ plot_mc_mc_gene <- function(df, metacell1, metacell2, highlight = NULL, label_pr
     return(p)
 }
 
-render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, globals, gene_modules, mc_mc_gene_scatter_df = NULL, metacell_names = NULL, cell_type_colors = NULL, mode = NULL, source_suffix = "", dragmode = NULL, plotly_buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), metacell_types = NULL) {
+render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, globals, gene_modules, mc_mc_gene_scatter_df = NULL, metacell_names = NULL, cell_type_colors = NULL, mode = NULL, source_suffix = "", dragmode = NULL, plotly_buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), metacell_types = NULL, tab_guard = NULL) {
     plotly::renderPlotly({
+        # Defer computation until the tab is active (when tab_guard is specified)
+        if (!is.null(tab_guard)) {
+            req(globals$current_tab == tab_guard)
+        }
         req(mc_mc_gene_scatter_df)
 
         if (!is.null(input$diff_expr_table_rows_selected)) {

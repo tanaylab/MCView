@@ -63,10 +63,11 @@ mod_qc_server <- function(id, dataset, metacell_types, cell_type_colors, gene_mo
         function(input, output, session) {
             ns <- session$ns
 
-            # Value boxes
-            output$num_metacells <- qc_value_box("n_metacells", "Number of metacells", dataset, color = "black")
-            output$num_cells <- qc_value_box("n_cells", "Number of cells", dataset, color = "purple")
+            # Value boxes - defer until QC tab is active
+            output$num_metacells <- qc_value_box("n_metacells", "Number of metacells", dataset, color = "black", globals = globals)
+            output$num_cells <- qc_value_box("n_cells", "Number of cells", dataset, color = "purple", globals = globals)
             output$num_outliers <- shinydashboard::renderValueBox({
+                req(globals$current_tab == "qc")
                 num_cells <- get_mc_data(dataset(), "qc_stats")$n_cells
                 num_outliers <- get_mc_data(dataset(), "qc_stats")$n_outliers
                 req(num_cells)
@@ -88,8 +89,8 @@ mod_qc_server <- function(id, dataset, metacell_types, cell_type_colors, gene_mo
                     color = color
                 )
             })
-            output$median_umis_per_metacell <- qc_value_box("median_umis_per_metacell", "Median UMIs / MC", dataset, color = "blue")
-            output$median_cells_per_metacell <- qc_value_box("median_cells_per_metacell", "Median cells / MC", dataset, color = "maroon")
+            output$median_umis_per_metacell <- qc_value_box("median_umis_per_metacell", "Median UMIs / MC", dataset, color = "blue", globals = globals)
+            output$median_cells_per_metacell <- qc_value_box("median_cells_per_metacell", "Median cells / MC", dataset, color = "maroon", globals = globals)
 
             output$plot_qc_umis <- qc_stat_plot("umis", "Number of UMIs per metacell", dataset, input, "plot_qc_umis_type", globals, log_scale = TRUE)
             output$plot_qc_cell_num <- qc_stat_plot("cells", "Number of cells per metacell", dataset, input, "plot_qc_cell_num_type", globals)
@@ -106,8 +107,12 @@ mod_qc_server <- function(id, dataset, metacell_types, cell_type_colors, gene_mo
     )
 }
 
-qc_value_box <- function(field, title, dataset, color = "black") {
+qc_value_box <- function(field, title, dataset, color = "black", globals = NULL, tab_id = "qc") {
     shinydashboard::renderValueBox({
+        # Defer computation until the tab is active
+        if (!is.null(globals)) {
+            req(globals$current_tab == tab_id)
+        }
         if (field == "n_metacells") {
             # Use DAF axis length instead of loading full matrix
             daf_obj <- get_dataset_daf(dataset())
@@ -204,8 +209,10 @@ zero_fold_table <- function(dataset, input) {
     )
 }
 
-zero_fold_gene_plot <- function(dataset, input, globals) {
+zero_fold_gene_plot <- function(dataset, input, globals, tab_id = "qc") {
     plotly::renderPlotly({
+        # Defer computation until the tab is active
+        req(globals$current_tab == tab_id)
         zero_fold_df <- get_mc_data(dataset(), "gene_zero_fold")
         req(zero_fold_df)
 
@@ -246,6 +253,7 @@ gene_inner_fold_table <- function(dataset, input) {
             gene_inner_fold_df <- get_gene_qc(dataset())
             req(gene_inner_fold_df)
             req(gene_inner_fold_df$significant_inner_folds_count)
+            req("max_expr" %in% colnames(gene_inner_fold_df))
             gene_inner_fold_df %>%
                 filter(significant_inner_folds_count > 0) %>%
                 mutate(max_expr = log2(max_expr + 1e-5)) %>%
@@ -271,11 +279,16 @@ gene_inner_fold_table <- function(dataset, input) {
     )
 }
 
-gene_inner_fold_scatter_plot <- function(dataset, input, globals) {
+gene_inner_fold_scatter_plot <- function(dataset, input, globals, tab_id = "qc") {
     plotly::renderPlotly({
+        # Defer computation until the tab is active
+        req(globals$current_tab == tab_id)
         gene_inner_fold_df <- get_gene_qc(dataset())
         if (is.null(gene_inner_fold_df) || is.null(gene_inner_fold_df$significant_inner_folds_count)) {
             return(plotly_text_plot("Please recompute the metacells\nusing the latest version\nin order to see this plot."))
+        }
+        if (!"max_expr" %in% colnames(gene_inner_fold_df)) {
+            return(plotly_text_plot("Gene max expression data not available"))
         }
 
         p <- gene_inner_fold_df %>%
@@ -295,8 +308,10 @@ gene_inner_fold_scatter_plot <- function(dataset, input, globals) {
     }) %>% bindCache(dataset(), globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
 }
 
-qc_stat_plot <- function(field, xlab, dataset, input, plot_type_id, globals, ylab = NULL, log_scale = FALSE, field_input = plot_type_id) {
+qc_stat_plot <- function(field, xlab, dataset, input, plot_type_id, globals, ylab = NULL, log_scale = FALSE, field_input = plot_type_id, tab_id = "qc") {
     plotly::renderPlotly({
+        # Defer computation until the tab is active
+        req(globals$current_tab == tab_id)
         qc_df <- as_tibble(get_mc_data(dataset(), "mc_qc_metadata"))
 
         if (length(field) > 1) {

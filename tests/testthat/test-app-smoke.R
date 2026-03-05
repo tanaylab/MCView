@@ -47,7 +47,17 @@ test_that("Full app starts without critical errors", {
 
             # Load package from source in dev mode
             devtools::load_all(pkg_root, quiet = TRUE)
-            dafr::setup_daf(pkg_check = FALSE, julia_environment = "custom")
+            # Use sysimage if available for faster Julia startup
+            sysimage <- Sys.getenv("JULIA_SYSIMAGE", "")
+            if (!nzchar(sysimage) && nzchar(conda_prefix)) {
+                candidate <- file.path(conda_prefix, "share", "julia", "sysimage_daf.so")
+                if (file.exists(candidate)) sysimage <- candidate
+            }
+            setup_args <- list(pkg_check = FALSE, julia_environment = "custom")
+            if (nzchar(sysimage) && file.exists(sysimage)) {
+                setup_args$sysimage_path <- sysimage
+            }
+            do.call(dafr::setup_daf, setup_args)
             daf <- dafr::open_daf(daf_path)
             # run_app() returns a shiny app object via golem::with_golem_options
             # which defaults to print=FALSE. We must explicitly print() to start
@@ -195,7 +205,17 @@ test_that("Full app serves static assets", {
             }
 
             devtools::load_all(pkg_root, quiet = TRUE)
-            dafr::setup_daf(pkg_check = FALSE, julia_environment = "custom")
+            # Use sysimage if available for faster Julia startup
+            sysimage <- Sys.getenv("JULIA_SYSIMAGE", "")
+            if (!nzchar(sysimage) && nzchar(conda_prefix)) {
+                candidate <- file.path(conda_prefix, "share", "julia", "sysimage_daf.so")
+                if (file.exists(candidate)) sysimage <- candidate
+            }
+            setup_args <- list(pkg_check = FALSE, julia_environment = "custom")
+            if (nzchar(sysimage) && file.exists(sysimage)) {
+                setup_args$sysimage_path <- sysimage
+            }
+            do.call(dafr::setup_daf, setup_args)
             daf <- dafr::open_daf(daf_path)
             app <- run_app(
                 daf,

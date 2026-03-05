@@ -78,7 +78,7 @@ mod_gene_mc_server <- function(id, dataset, metacell_types, cell_type_colors, ge
             clipboard_changed <- clipboard_changed_2d_reactive(input, globals)
 
             # Projection plots
-            output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, selected_cell_types = selected_cell_types, source = "proj_mc_plot_gene_tab") %>%
+            output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, selected_cell_types = selected_cell_types, source = "proj_mc_plot_gene_tab", tab_guard = "gene_mc") %>%
                 bindCache(
                     dataset(),
                     input$color_proj,
@@ -120,7 +120,7 @@ mod_gene_mc_server <- function(id, dataset, metacell_types, cell_type_colors, ge
 
             connect_gene_plots(input, output, session, ns, source = "proj_mc_plot_gene_tab")
 
-            scatter_box_outputs(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, ns, plotly_source = "md_md_plot", selected_cell_types = selected_cell_types)
+            scatter_box_outputs(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, ns, plotly_source = "md_md_plot", selected_cell_types = selected_cell_types, tab_guard = "gene_mc")
 
             atlas_gene_gene(input, output, session, dataset, metacell_types, cell_type_colors, globals, ns)
         }

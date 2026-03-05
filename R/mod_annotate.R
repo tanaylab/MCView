@@ -730,16 +730,17 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 buttons = c("hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"),
                 dragmode = "select",
                 selected_metacell_types = selected_metacell_types,
-                selected_cell_types = selected_cell_types
+                selected_cell_types = selected_cell_types,
+                tab_guard = "annotate"
             )
 
             # Use the already defined selected_cell_types reactiveVal (defined at the top of the server) so that it is shared across the module
-            scatter_box_outputs(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, ns, selected_cell_types = selected_cell_types, plotly_source = "gene_gene_plot_annot", plotly_buttons = c("hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = "select")
+            scatter_box_outputs(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, ns, selected_cell_types = selected_cell_types, plotly_source = "gene_gene_plot_annot", plotly_buttons = c("hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = "select", tab_guard = "annotate")
 
             connect_gene_plots(input, output, session, ns, source = "proj_annot_plot")
 
             # MC/MC diff gene expression plots
-            diff_expr_outputs(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, ns, source_suffix = "_annot")
+            diff_expr_outputs(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, ns, source_suffix = "_annot", tab_guard = "annotate")
 
             mod_gene_mc_plotly_observers(input, session, source = "mc_mc_plot_annot", notification_suffix = "")
         }

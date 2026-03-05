@@ -45,7 +45,7 @@ scatter_box <- function(ns, id, title = "Gene/Gene", x_selected = "Gene", y_sele
     )
 }
 
-scatter_box_outputs <- function(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, ns, plotly_source, plotly_buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL, atlas = FALSE, selected_cell_types = NULL) {
+scatter_box_outputs <- function(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, ns, plotly_source, plotly_buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL, atlas = FALSE, selected_cell_types = NULL, tab_guard = NULL) {
     if (!is.null(selected_cell_types)) {
         observe({
             if (is.null(selected_cell_types())) {
@@ -87,6 +87,10 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
     clipboard_changed <- clipboard_changed_scatter_reactive(input, globals)
 
     output$plot_gene_gene_mc <- plotly::renderPlotly({
+        # Defer computation until the tab is active (when tab_guard is specified)
+        if (!is.null(tab_guard)) {
+            req(globals$current_tab == tab_guard)
+        }
         req(input$x_axis_var)
         req(input$y_axis_var)
         req(input$color_by_var)

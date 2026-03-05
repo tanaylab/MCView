@@ -395,6 +395,7 @@ plot_vein <- function(dataset,
         graphics::polygon(xs, ys, col = cols, border = borders, lwd = lwds)
     }
 
+    ensure_future_plan()
     future_promise({
         get_polygons()
     }) %...>% plot_vein_polygons()

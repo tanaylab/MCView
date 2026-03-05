@@ -70,6 +70,7 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
             ns <- session$ns
 
             output$num_metacells_atlas <- shinydashboard::renderValueBox({
+                req(globals$current_tab == "projection_qc")
                 # Use DAF axis length instead of loading full atlas matrix
                 atlas_daf <- get_atlas_daf()
                 req(atlas_daf)
@@ -80,8 +81,9 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
                     color = "black"
                 )
             })
-            output$num_metacells_query <- qc_value_box("n_metacells", "Number of query metacells", dataset, color = "purple")
+            output$num_metacells_query <- qc_value_box("n_metacells", "Number of query metacells", dataset, color = "purple", globals = globals, tab_id = "projection_qc")
             output$num_metacells_similar <- shinydashboard::renderValueBox({
+                req(globals$current_tab == "projection_qc")
                 # Use DAF axis length instead of loading full matrix
                 daf_obj <- get_dataset_daf(dataset())
                 req(daf_obj)
@@ -109,6 +111,7 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
             })
 
             output$common_genes <- shinydashboard::renderValueBox({
+                req(globals$current_tab == "projection_qc")
                 # Use DAF axis entries instead of loading full matrices
                 query_daf <- get_dataset_daf(dataset())
                 atlas_daf <- get_atlas_daf()
@@ -130,6 +133,7 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
             })
 
             output$fitted_genes <- shinydashboard::renderValueBox({
+                req(globals$current_tab == "projection_qc")
                 gene_md <- get_mc_data(dataset(), "gene_metadata")
                 req(gene_md)
                 req(has_name(gene_md, "fitted_gene_any"))
@@ -158,6 +162,7 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
             })
 
             output$avg_projection_cor <- shinydashboard::renderValueBox({
+                req(globals$current_tab == "projection_qc")
                 qc_df <- as_tibble(get_mc_data(dataset(), "mc_qc_metadata"))
                 req(qc_df)
                 req(qc_df$projected_correlation)
@@ -171,14 +176,14 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
                 )
             })
 
-            output$plot_projected_correlation <- qc_stat_plot("projected_correlation", "Projected correlation per metacell", dataset, input, "plot_projected_correlation_type", globals)
+            output$plot_projected_correlation <- qc_stat_plot("projected_correlation", "Projected correlation per metacell", dataset, input, "plot_projected_correlation_type", globals, tab_id = "projection_qc")
 
-            output$correction_factor_box <- gene_correction_factor_stat_box(ns, id, dataset, "Correction factor per gene", "plot_correction_factor_scatter")
+            output$correction_factor_box <- gene_correction_factor_stat_box(ns, id, dataset, "Correction factor per gene", "plot_correction_factor_scatter", globals = globals)
 
             output$plot_correction_factor_scatter <- gene_correction_factor_scatter_plot(dataset, input, globals)
             output$gene_correction_factor_table <- gene_correction_factor_table(dataset, input)
 
-            output$plot_mc_stacked_type <- plot_type_predictions_bar(dataset, metacell_types, cell_type_colors)
+            output$plot_mc_stacked_type <- plot_type_predictions_bar(dataset, metacell_types, cell_type_colors, globals = globals)
 
             output$plot_fitted_genes_per_cell_type <- fitted_genes_per_cell_type_plot(dataset, input, globals)
             output$fitted_genes_per_cell_type_table <- fitted_genes_per_cell_type_table(dataset, input)
@@ -189,8 +194,11 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
 }
 
 
-gene_correction_factor_stat_box <- function(ns, id, dataset, title, output_id, width = 12, height = "35vh") {
+gene_correction_factor_stat_box <- function(ns, id, dataset, title, output_id, width = 12, height = "35vh", globals = NULL) {
     renderUI({
+        if (!is.null(globals)) {
+            req(globals$current_tab == "projection_qc")
+        }
         gene_qc <- get_gene_qc(dataset())
         req(gene_qc)
         req(has_name(gene_qc, "correction_factor"))
@@ -211,11 +219,15 @@ gene_correction_factor_stat_box <- function(ns, id, dataset, title, output_id, w
     })
 }
 
-gene_correction_factor_scatter_plot <- function(dataset, input, globals) {
+gene_correction_factor_scatter_plot <- function(dataset, input, globals, tab_id = "projection_qc") {
     plotly::renderPlotly({
+        req(globals$current_tab == tab_id)
         gene_qc <- get_gene_qc(dataset())
         if (is.null(gene_qc) || is.null(gene_qc$correction_factor)) {
             return(plotly_text_plot("Please recompute the metacells\nusing the latest version\nin order to see this plot."))
+        }
+        if (!"max_expr" %in% colnames(gene_qc)) {
+            return(plotly_text_plot("Gene max expression data not available"))
         }
 
         p <- gene_qc %>%
@@ -244,6 +256,7 @@ gene_correction_factor_table <- function(dataset, input) {
             gene_qc <- get_gene_qc(dataset())
             req(gene_qc)
             req(gene_qc$correction_factor)
+            req("max_expr" %in% colnames(gene_qc))
             gene_qc %>%
                 filter(correction_factor != 0, correction_factor != 1) %>%
                 arrange(desc(correction_factor)) %>%
@@ -354,8 +367,9 @@ fitted_genes_per_cell_type_table <- function(dataset, input) {
     )
 }
 
-fitted_genes_per_cell_type_plot <- function(dataset, input, globals) {
+fitted_genes_per_cell_type_plot <- function(dataset, input, globals, tab_id = "projection_qc") {
     plotly::renderPlotly({
+        req(globals$current_tab == tab_id)
         gene_qc <- get_gene_qc(dataset())
         if (is.null(gene_qc)) {
             return(plotly_text_plot("Please recompute the metacells\nusing the latest version\nin order to see this plot."))

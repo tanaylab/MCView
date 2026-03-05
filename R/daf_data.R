@@ -1038,8 +1038,17 @@ convert_daf_gene_qc <- function(daf_obj) {
     gene_names <- dafr::axis_entries(daf_obj, "gene")
     result <- tibble(gene = gene_names)
 
-    # Handle max_expr with fallback
+    # Handle max_expr: try precomputed vectors, then compute from UMIs matrix
     result <- add_optional_vec_with_fallback(result, daf_obj, "gene", "max_expr", "mcview_cache_gene_max_umis")
+    if (!"max_expr" %in% colnames(result) && dafr::has_matrix(daf_obj, "metacell", "gene", "UMIs")) {
+        max_umis <- tryCatch(
+            daf_obj["/ metacell / gene : UMIs %> Max"],
+            error = function(e) NULL
+        )
+        if (!is.null(max_umis)) {
+            result$max_expr <- as.numeric(max_umis)
+        }
+    }
 
     # Add standard gene QC vectors
     result <- add_optional_vecs(result, daf_obj, "gene", c(

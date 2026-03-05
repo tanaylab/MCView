@@ -161,12 +161,10 @@ mc2d_plot_gene_ggp <- function(dataset,
         )
     }
 
-    fig <- plotly::plot_ly() %>% add_scatter_layer()
-
-    fig <- fig %>% mc2d_add_graph_edges(graph, graph_color, graph_width)
-
-    fig <- fig %>% add_scatter_layer(showlegend = TRUE)
-
+    # Draw edges first so scatter points appear on top
+    fig <- plotly::plot_ly() %>%
+        mc2d_add_graph_edges(graph, graph_color, graph_width) %>%
+        add_scatter_layer(showlegend = TRUE)
 
     fig <- fig %>% mc2d_plotly_proj_layout(legend_title = legend_title, use_colorbar = TRUE)
 
@@ -216,7 +214,6 @@ render_2d_gene_fig <- function(gene, input, dataset, atlas, mc2d,
         selected_cell_types = selected_cell_types
     )
 
-    fig <- fig %>% rm_plotly_grid()
     return(fig)
 }
 
@@ -558,8 +555,7 @@ finalize_2d_plotly <- function(fig, input, globals, source, buttons, dragmode) {
 
     fig <- fig %>%
         sanitize_for_WebGL() %>%
-        plotly::toWebGL() %>%
-        rm_plotly_grid()
+        plotly::toWebGL()
 
     return(fig)
 }
@@ -568,8 +564,12 @@ finalize_2d_plotly <- function(fig, input, globals, source, buttons, dragmode) {
 # Main orchestrator
 # ---------------------------------------------------------------------------
 
-render_2d_plotly <- function(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, source, buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL, refresh_on_gene_change = FALSE, atlas = FALSE, query_types = NULL, group = NULL, groupA = NULL, groupB = NULL, selected_metacell_types = NULL, selected_cell_types = NULL) {
+render_2d_plotly <- function(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, source, buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL, refresh_on_gene_change = FALSE, atlas = FALSE, query_types = NULL, group = NULL, groupA = NULL, groupB = NULL, selected_metacell_types = NULL, selected_cell_types = NULL, tab_guard = NULL) {
     plotly::renderPlotly({
+        # Defer computation until the tab is active (when tab_guard is specified)
+        if (!is.null(tab_guard)) {
+            req(globals$current_tab == tab_guard)
+        }
         req(input$color_proj)
         req(input$point_size)
         req(input$stroke)

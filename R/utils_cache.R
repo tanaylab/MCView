@@ -145,12 +145,41 @@ get_mc_data <- function(dataset, var_name, atlas = FALSE) {
         return(get_metadata(dataset, atlas = atlas))
     }
 
+    # Memoize static DAF conversions in mc_data to avoid repeated Julia round-trips.
+    # These variables are read-only during a session (user cannot edit them).
+    static_vars <- c(
+        "mc_mat", "mc_sum", "mc2d", "lateral_genes", "noisy_genes",
+        "marker_genes", "gene_modules", "inner_fold_mat", "inner_stdev_mat",
+        "mc_qc_metadata", "gene_qc", "gg_mc_top_cor", "gene_zero_fold",
+        "metacell_graphs", "qc_stats", "cell_metadata",
+        "projected_fold", "mc_mat_corrected", "projected_mat",
+        "proj_weights", "query_atlas_cell_type_fracs", "query_md"
+    )
+
+    cache_key <- if (atlas) paste0(var_name, "_atlas") else var_name
+    if (var_name %in% static_vars) {
+        mc_data <- mcv_get("mc_data")
+        cached <- mc_data[[dataset]][[cache_key]]
+        if (!is.null(cached)) {
+            return(cached)
+        }
+    }
+
     daf_obj <- get_daf_for_query(dataset, atlas)
     if (is.null(daf_obj)) {
         return(NULL)
     }
 
-    convert_daf_to_mcview(daf_obj, var_name, atlas)
+    result <- convert_daf_to_mcview(daf_obj, var_name, atlas)
+
+    # Store in mc_data cache for static variables
+    if (!is.null(result) && var_name %in% static_vars) {
+        mc_data <- mcv_get("mc_data")
+        mc_data[[dataset]][[cache_key]] <- result
+        mcv_set("mc_data", mc_data)
+    }
+
+    result
 }
 
 
@@ -270,7 +299,11 @@ get_samp_mc_frac <- function(dataset) {
 }
 
 calc_samp_metadata <- function(dataset) {
-    metadata <- get_mc_data(dataset, "cell_metadata") %>% select(-any_of(c("metacell", "cell_id", "outlier")))
+    metadata <- get_mc_data(dataset, "cell_metadata")
+    if (is.null(metadata)) {
+        return(NULL)
+    }
+    metadata <- metadata %>% select(-any_of(c("metacell", "cell_id", "outlier")))
     samp_columns <- metadata %>%
         group_by(samp_id) %>%
         summarise(across(everything(), n_distinct))

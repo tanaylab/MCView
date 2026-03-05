@@ -39,6 +39,11 @@ app_server <- function(input, output, session) {
         globals$plotly_scale <- input$plotly_scale
     })
 
+    # Track current sidebar tab so modules can defer computation until visited
+    observe({
+        globals$current_tab <- input$tab_sidebar
+    })
+
     output$menu <- shinydashboard::renderMenu({
         items_list <- purrr::map(mcv_get("tab_defs")[globals$active_tabs], ~ {
             shinydashboard::menuSubItem(.x$title, tabName = .x$module_name, icon = icon(.x$icon))
