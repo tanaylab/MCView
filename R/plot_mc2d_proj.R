@@ -5,7 +5,7 @@
 #' @noRd
 mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_size(dataset), min_d = min_edge_length(dataset), stroke = initial_proj_stroke(dataset), graph_color = "black", graph_width = 0.1, id = NULL, max_lfp = NULL, min_lfp = NULL, max_expr = NULL, min_expr = NULL, stat = "expression", atlas = FALSE, gene_name = NULL, graph_name = NULL, mc2d = NULL, selected_cell_types = NULL, metacell_types = NULL) {
     mc2d <- mc2d %||% get_mc_data(dataset, "mc2d", atlas = atlas)
-    metacell_types <- get_mc_data(dataset, "metacell_types", atlas = atlas)
+    metacell_types <- metacell_types %||% get_mc_data(dataset, "metacell_types", atlas = atlas)
     min_lfp <- min_lfp %||% -3
     max_lfp <- max_lfp %||% 3
     if (length(gene) > 1) {
