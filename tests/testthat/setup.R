@@ -40,12 +40,12 @@ test_cache_file_exists <- function(file, project_dir, dataset) {
 test_dataset <- function(project_dir,
                          dataset,
                          required_files = c(
-                             "mc_mat.qs",
-                             "mc_sum.qs",
-                             "mc2d.qs",
+                             "mc_mat.qs2",
+                             "mc_sum.qs2",
+                             "mc2d.qs2",
                              "metacell_types.tsv",
                              "cell_type_colors.tsv",
-                             "marker_genes.qs"
+                             "marker_genes.qs2"
                          )) {
     dataset_dir <- fs::path(project_dir, "cache", dataset)
     expect_true(fs::dir_exists(project_dir))

@@ -86,12 +86,12 @@ test_that("import_dataset works with calc_gg_cor=TRUE", {
         project_dir,
         "PBMC163k_gg_cor",
         required_files = c(
-            "mc_mat.qs",
-            "mc_sum.qs",
-            "mc2d.qs",
+            "mc_mat.qs2",
+            "mc_sum.qs2",
+            "mc2d.qs2",
             "metacell_types.tsv",
             "cell_type_colors.tsv",
-            "gg_mc_top_cor.qs"
+            "gg_mc_top_cor.qs2"
         )
     )
     withr::defer(unlink(fs::path(project_dir, "cache", "PBMC163k_ctf_ctcf")))

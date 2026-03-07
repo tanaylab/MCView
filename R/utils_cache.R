@@ -1,4 +1,4 @@
-serialize_shiny_data <- function(object, name, dataset, cache_dir, df2mat = FALSE, preset = "fast", flat = FALSE, ...) {
+serialize_shiny_data <- function(object, name, dataset, cache_dir, df2mat = FALSE, flat = FALSE, ...) {
     dataset_dir <- fs::path(cache_dir, dataset)
 
     if (!fs::dir_exists(dataset_dir)) {
@@ -12,7 +12,7 @@ serialize_shiny_data <- function(object, name, dataset, cache_dir, df2mat = FALS
     if (flat) {
         fwrite(object, fs::path(dataset_dir, glue("{name}.tsv")), sep = "\t")
     } else {
-        qs::qsave(object, fs::path(dataset_dir, glue("{name}.qs")), preset = preset, ...)
+        qs2::qs_save(object, fs::path(dataset_dir, glue("{name}.qs2")), ...)
     }
 
     cli_alert_success_verbose("saved {.field {name}}")
@@ -32,7 +32,15 @@ load_shiny_data <- function(name, dataset, cache_dir, atlas = FALSE) {
             object$metacell <- as.character(object$metacell)
         }
     } else {
-        object <- qs::qread(fs::path(cache_dir, glue("{name}.qs")))
+        qs2_file <- fs::path(cache_dir, glue("{name}.qs2"))
+        qs_file <- fs::path(cache_dir, glue("{name}.qs"))
+        if (fs::file_exists(qs2_file)) {
+            object <- qs2::qs_read(qs2_file)
+        } else if (fs::file_exists(qs_file)) {
+            object <- qs::qread(qs_file)
+        } else {
+            cli_abort("Cannot find {.file {name}} in {.file {cache_dir}} (looked for .qs2 and .qs files)")
+        }
     }
 
     if (is.data.frame(object) && rlang::has_name(object, "__rowname__")) {
@@ -47,7 +55,7 @@ load_shiny_data <- function(name, dataset, cache_dir, atlas = FALSE) {
 load_all_mc_data_atlas <- function(dataset, cache_dir) {
     atlas_dir <- fs::path(cache_dir, dataset, "atlas")
     if (fs::dir_exists(atlas_dir)) {
-        files <- list.files(atlas_dir, pattern = "*\\.(qs|tsv|csv)")
+        files <- list.files(atlas_dir, pattern = "*\\.(qs2|qs|tsv|csv)")
 
         if (is.null(mc_data[[dataset]])) {
             mc_data[[dataset]] <<- list()
@@ -59,7 +67,7 @@ load_all_mc_data_atlas <- function(dataset, cache_dir) {
 
         for (fn in files) {
             var_name <- basename(fn) %>%
-                sub("\\.qs$", "", .) %>%
+                sub("\\.(qs2|qs)$", "", .) %>%
                 sub("\\.tsv$", "", .)
             obj <- load_shiny_data(var_name, dataset, cache_dir, atlas = TRUE)
 
@@ -74,7 +82,7 @@ load_all_mc_data <- function(dataset, cache_dir) {
         load_all_mc_data_atlas(dataset, cache_dir)
     }
 
-    files <- list.files(fs::path(cache_dir, dataset), pattern = "*\\.(qs|tsv|csv)")
+    files <- list.files(fs::path(cache_dir, dataset), pattern = "*\\.(qs2|qs|tsv|csv)")
 
     if (is.null(mc_data[[dataset]])) {
         mc_data[[dataset]] <<- list()
@@ -82,7 +90,7 @@ load_all_mc_data <- function(dataset, cache_dir) {
 
     for (fn in files) {
         var_name <- basename(fn) %>%
-            sub("\\.qs$", "", .) %>%
+            sub("\\.(qs2|qs)$", "", .) %>%
             sub("\\.tsv$", "", .)
         obj <- load_shiny_data(var_name, dataset, cache_dir)
 
@@ -90,7 +98,7 @@ load_all_mc_data <- function(dataset, cache_dir) {
     }
 }
 
-verify_app_cache <- function(project, required_files = c("mc_mat.qs", "mc_sum.qs", "mc2d.qs", "metacell_types.tsv", "cell_type_colors.tsv"), datasets = NULL) {
+verify_app_cache <- function(project, required_files = c("mc_mat", "mc_sum", "mc2d", "metacell_types", "cell_type_colors"), datasets = NULL) {
     cache_dir <- project_cache_dir(project)
     if (is.null(datasets)) {
         datasets <- dataset_ls(project)
@@ -99,7 +107,9 @@ verify_app_cache <- function(project, required_files = c("mc_mat.qs", "mc_sum.qs
     for (dataset in datasets) {
         dataset_dir <- fs::path(cache_dir, dataset)
         for (file in required_files) {
-            if (!fs::file_exists(fs::path(dataset_dir, file))) {
+            extensions <- c(".qs2", ".qs", ".tsv", ".csv")
+            found <- any(purrr::map_lgl(extensions, ~ fs::file_exists(fs::path(dataset_dir, paste0(file, .x)))))
+            if (!found) {
                 cli_abort("The file {.file {file}} is missing in {.file {dataset_dir}}. Did you forget to import?")
             }
         }
