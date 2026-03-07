@@ -1,6 +1,6 @@
 Package: MCView
 Title: A Shiny App for Metacell Analysis
-Version: 0.2.53
+Version: 0.2.54
 Authors@R: 
     person(given = "Aviezer",
            family = "Lifshitz",
@@ -50,6 +50,7 @@ Imports:
     promises,
     purrr,
     qs,
+    qs2,
     rclipboard,
     rlang,
     rmarkdown,
@@ -89,7 +90,8 @@ Suggests:
     profvis
 VignetteBuilder: 
     knitr
-Remotes: 
+Remotes:
+    qsbase/qs,
     tanaylab/tgutil,
     tanaylab/metacell
 Encoding: UTF-8

@@ -1,3 +1,7 @@
+# MCView 0.2.54
+
+* Switched serialization from `qs` to `qs2` (`qs` was removed from CRAN). New cache files are saved in `.qs2` format. Existing projects with `.qs` cache files are still supported via the legacy `qs` package (installed from GitHub).
+
 # MCView 0.2.53
 
 * Fix: stroke was not working in the atlas tab.

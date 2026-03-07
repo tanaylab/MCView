@@ -272,7 +272,7 @@ test_that("import_dataset works with metadata colors", {
     saved_md <- tgutil::fread(fs::path(project_dir, "cache", dataset, "metadata.tsv")) %>% tibble::as_tibble()
     expect_equivalent(metadata_df, saved_md)
 
-    saved_md_colors <- qs::qread(fs::path(project_dir, "cache", dataset, "metadata_colors.qs"))
+    saved_md_colors <- qs2::qs_read(fs::path(project_dir, "cache", dataset, "metadata_colors.qs2"))
     expect_equivalent(metadata_colors, saved_md_colors)
 
     withr::defer(unlink(fs::path(project_dir, "cache", dataset)))
@@ -358,7 +358,7 @@ test_that("import_dataset works with metadata colors without breaks", {
     saved_md <- tgutil::fread(fs::path(project_dir, "cache", dataset, "metadata.tsv")) %>% tibble::as_tibble()
     expect_equivalent(metadata_df, saved_md)
 
-    saved_md_colors <- qs::qread(fs::path(project_dir, "cache", dataset, "metadata_colors.qs"))
+    saved_md_colors <- qs2::qs_read(fs::path(project_dir, "cache", dataset, "metadata_colors.qs2"))
     expect_equivalent(metadata_colors, saved_md_colors)
 
     withr::defer(unlink(fs::path(project_dir, "cache", dataset)))
@@ -589,7 +589,7 @@ test_that("update_metadata_colors work", {
         overwrite = FALSE
     )
 
-    saved_md_colors <- qs::qread(fs::path(project_dir, "cache", dataset, "metadata_colors.qs"))
+    saved_md_colors <- qs2::qs_read(fs::path(project_dir, "cache", dataset, "metadata_colors.qs2"))
     expect_equivalent(metadata_colors_modified, saved_md_colors)
 
     withr::defer(unlink(fs::path(project_dir, "cache", dataset)))
@@ -638,7 +638,7 @@ test_that("update_metadata_colors work with overwrite = TRUE", {
         overwrite = TRUE
     )
 
-    saved_md_colors <- qs::qread(fs::path(project_dir, "cache", dataset, "metadata_colors.qs"))
+    saved_md_colors <- qs2::qs_read(fs::path(project_dir, "cache", dataset, "metadata_colors.qs2"))
     expect_equivalent(metadata_colors_modified, saved_md_colors)
 
     withr::defer(unlink(fs::path(project_dir, "cache", dataset)))

@@ -89,9 +89,16 @@ update_metadata_colors <- function(project,
 
     new_metadata_colors <- parse_metadata_colors(metadata_colors, metadata)
 
-    prev_colors_file <- fs::path(cache_dir, dataset, "metadata_colors.qs")
-    if (fs::file_exists(prev_colors_file) && !overwrite) {
-        metadata_colors <- qs::qread(prev_colors_file)
+    prev_colors_file_qs2 <- fs::path(cache_dir, dataset, "metadata_colors.qs2")
+    prev_colors_file_qs <- fs::path(cache_dir, dataset, "metadata_colors.qs")
+    if (!overwrite && fs::file_exists(prev_colors_file_qs2)) {
+        metadata_colors <- qs2::qs_read(prev_colors_file_qs2)
+        for (f in names(metadata_colors)) {
+            metadata_colors[[f]] <- NULL
+        }
+        metadata_colors <- c(metadata_colors, new_metadata_colors)
+    } else if (!overwrite && fs::file_exists(prev_colors_file_qs)) {
+        metadata_colors <- qs::qread(prev_colors_file_qs)
         for (f in names(metadata_colors)) {
             metadata_colors[[f]] <- NULL
         }
