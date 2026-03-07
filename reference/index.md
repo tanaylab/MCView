@@ -1,0 +1,52 @@
+# Package index
+
+## All functions
+
+- [`calc_gene_gene_correlations()`](calc_gene_gene_correlations.md) :
+  Calculate gene-gene correlations (correlation between input genes)
+- [`calc_individual_correlations()`](calc_individual_correlations.md) :
+  Calculate correlations for multiple genes individually
+- [`calc_module_correlations()`](calc_module_correlations.md) :
+  Calculate correlations for genes as a module/anchor
+- [`cell_metadata_to_metacell()`](cell_metadata_to_metacell.md)
+  [`cell_metadata_to_metacell_from_metacell1()`](cell_metadata_to_metacell.md)
+  [`cell_metadata_to_metacell_from_h5ad()`](cell_metadata_to_metacell.md)
+  : Convert cell metadata to metacell metadata
+- [`clipboard_copy_button_server()`](clipboard_copy_button_server.md) :
+  Create server logic for copy button notifications
+- [`clipboard_copy_button_ui()`](clipboard_copy_button_ui.md) : Create a
+  reactive copy button using rclipboard
+- [`create_bundle()`](create_bundle.md) : Generate a 'deployment ready'
+  bundle of the a project app
+- [`create_project()`](create_project.md) : Create a configuration
+  folder for a project
+- [`dataset_ls()`](dataset_ls.md) : List datasets in a project
+- [`dataset_rm()`](dataset_rm.md) : Remove a dataset from a project
+- [`import_cell_metadata()`](import_cell_metadata.md) : Import cell
+  metadata to an MCView dataset
+- [`import_dataset()`](import_dataset.md) : Import a dataset to an
+  MCView project
+- [`import_dataset_metacell1()`](import_dataset_metacell1.md) : Import a
+  dataset to an MCView project from metacell R package
+- [`plot_correlation_barplot()`](plot_correlation_barplot.md) : Create
+  correlation barplot for single gene
+- [`plot_correlation_heatmap()`](plot_correlation_heatmap.md) : Create
+  correlation heatmap for multiple genes
+- [`print(`*`<gt_custom>`*`)`](print.gt_custom.md) : Print method for
+  "gt_custom" class we are overriding the print function, similiar to
+  the one at shiny/render-plot.R:
+  https://github.com/rstudio/shiny/blob/main/R/render-plot.R in order to
+  provide a separate ggplot_build and gtable objects
+- [`run_app()`](run_app.md) : Run the MCView Application
+- [`update_2d_projection()`](update_2d_projection.md) : Update default
+  2D projection for a dataset
+- [`update_cell_type_colors()`](update_cell_type_colors.md) : Update
+  color assignment for each cell type
+- [`update_gene_modules()`](update_gene_modules.md) : Update gene
+  modules
+- [`update_metacell_types()`](update_metacell_types.md) : Update cell
+  type assignment for each metacell
+- [`update_metadata()`](update_metadata.md) : Update metadata for a
+  dataset
+- [`update_metadata_colors()`](update_metadata_colors.md) : Update
+  metadata colors for a dataset

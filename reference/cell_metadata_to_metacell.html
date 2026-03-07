@@ -23,7 +23,7 @@ then runs cell_metadata_to_metacell."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">MCView</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.53</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.54</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -186,23 +186,13 @@ in<code>cell_metadata</code>, where the values are the fraction of cells with th
 <span class="r-in"><span>    func <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="va">x</span> <span class="op">*</span> <span class="fl">2</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Numerical variables: md1, md2</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Returning more (or less) than 1 row per `summarise()` group was deprecated in</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> dplyr 1.1.0.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Please use `reframe()` instead.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> When switching from `summarise()` to `reframe()`, remember that `reframe()`</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span>   always returns an ungrouped data frame and adjust accordingly.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> The deprecated feature was likely used in the <span style="color: #0000BB;">dplyr</span> package.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span>   Please report the issue at <span style="color: #0000BB; font-style: italic;">&lt;https://github.com/tidyverse/dplyr/issues&gt;</span>.</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in summarise(.tbl, !!!funs):</span> <span style="color: #00BBBB;">ℹ</span> In argument: `md1 = (function (x) ...`.</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> In group 1: `metacell = 0`.</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span style="font-weight: bold;">Caused by error:</span></span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> `md1` must be size 1, not 3260.</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> To return more or less than 1 row per group, use `reframe()`.</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">metadata1</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 6 × 3</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   metacell   md1    md2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>        0     6 -<span style="color: #BB0000;">0.893</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span>        0     2 -<span style="color: #BB0000;">2.12</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span>        0    10  2.26 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">4</span>        0     4 -<span style="color: #BB0000;">0.713</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">5</span>        0     2  1.67 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">6</span>        0     6  1.41 </span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error:</span> object 'metadata1' not found</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">metadata3</span> <span class="op">&lt;-</span> <span class="fu">cell_metadata_to_metacell</span><span class="op">(</span></span></span>
@@ -245,7 +235,7 @@ in<code>cell_metadata</code>, where the values are the fraction of cells with th
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer></div>

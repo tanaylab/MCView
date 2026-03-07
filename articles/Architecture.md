@@ -1,0 +1,218 @@
+# Architecture
+
+An **MCView** app needs two components in order to run:
+
+1.  Configuration file (`config.yaml`).
+2.  Cached data of one or more datasets.
+
+The app can use additional files that are not essential:
+
+1.  `about.Rmd` - custom “About” page.
+
+In order to bundle together the configuration and cached data,
+**MCView** supports a concept of a ‘project’.
+
+## Projects
+
+A project is a standard library structure that binds config and cache,
+e.g.:
+
+``` md
+my_project
+├── config
+│   ├── about.Rmd
+│   └── config.yaml
+└── cache
+    ├── ko
+    └── wt
+```
+
+The above example shows the directory structure of a project named
+`my_project` that contains two metacell datasets - wt and ko. Multiple
+functions in the **MCView** package would accept the project path and
+would expect to find the configuration files and cache in the standard
+relative path.
+
+Creation of a project can be done by running:
+
+``` r
+MCView::create_project("my_project")
+```
+
+Which would open a text editor in order to edit the configuration file.
+
+## Configuration files
+
+An **MCView** project can have 2 configuration files:
+
+1.  config.yaml - main configuration file (required)
+2.  about.Rmd - text for the about tab (optional)
+
+The main configuration file (`config/config.yaml`) contains the
+parameters:
+
+``` yaml
+title: MCView
+tabs: ["QC", "Manifold", "Genes", "Markers", "Gene modules", "Diff. Expression", "Cell types", "Annotate", "About"] # which tabs to show
+selected_gene1: Foxc1 # Default selected gene1 (optional)
+selected_gene2: Twist1 # Default selected gene2 (optional)
+selected_mc1: 1 # Default selected metacell1 
+selected_mc2: 2 # Default selected metacell2
+datasets: # optional parameters per dataset
+  PBMC163k:
+    min_d: 0.3 # default minimal edge distance to show in projection plots
+    # projection_point_size: 1 # Default size for projection points
+    # projection_stroke: 0.1 # Default line stroke for projection points
+    # scatters_point_size: 2 # Default size for scatter plot (such as gene gene plots)
+    # scatters_stroke_size: 0.1 # Default line stroke for scatter plot (such as gene gene plots)
+    # scatters_log_labels: false # Logarithmic scale for scatter plot labels
+```
+
+### title
+
+The title of the app. This would be shown on the top left of the screen.
+
+### tabs
+
+Controls which tabs to show in the left sidebar and their order. Options
+are:
+
+``` yaml
+["QC", "Manifold", "Genes", "Query", "Atlas", "Markers", "Gene modules", "Projected-fold", "Diff. Expression", "Cell types", "Flow", "Annotate", "About"]
+```
+
+Why would you want to add or remove tabs?
+
+Many times we would want to separate between a the ‘development’ version
+of an **MCView** app which allows users to re-annotate the data and a
+‘production’ version which only contains data analysis tabs. This can be
+done by removing “Annotate” from the `tabs` field. In addition, you
+might want to always start the app from the “Genes” tab instead of the
+“Manifold”, which can be done by changing the order in the `tabs` field.
+And lastly, some tabs such as “Query”, “Atlas” and “Flow” are not
+enabled by default and should be added explicitly to the tabs section of
+the config file.
+
+### selected_gene1/selected_gene2 (optional)
+
+The default genes that would be selected (in any screen with gene
+selection). If this parameter is missing, the 2 genes with highest
+max(expr)-min(expr) in the first dataset would be chosen.
+
+### selected_mc1/selected_mc2
+
+The default metacells that would be selected in the Diff. Expression
+tab.
+
+### datasets (optional)
+
+Additional per-dataset parameters. Current parameters include default
+visualization properties of projection and scatter plots.
+
+### about.Rmd
+
+This Rmarkdown file contains the contents of the about page. Edit it as
+you wish, and remember that you can remove the “About” tab altogether
+using the `tabs` parameter in `config.yaml`.
+
+## Cached data
+
+In order to run, **MCView** needs to pre-process the metacell matrix and
+cluster annotations. This can be done by the
+[`MCView::import_dataset`](../reference/import_dataset.md) function
+which accepts a project path, dataset name and path to the `h5ad` file
+that was generated from metacell1.
+
+The cached files would be saved under the cache section in the project
+folder, in a separate folder for each dataset. In the above example:
+
+``` md
+└── cache
+    ├── ko
+    └── wt
+```
+
+You can list the datasets in the project using:
+
+``` r
+MCView::dataset_ls("my_project")
+```
+
+And removal of a dataset can be done by:
+
+``` r
+MCView::dataset_rm("my_project", "dataset")
+```
+
+## Running the app
+
+Running the app can be done by running:
+
+``` r
+MCView::run_app(project = "/path/to/my/project")
+```
+
+## Deployment
+
+Starting from version 0.2.41, MCView projects are deployment-ready by
+default. When you import a dataset using
+[`import_dataset()`](../reference/import_dataset.md), an `app.R` file is
+automatically added to the project directory. This means you can simply
+copy the entire project directory to any Shiny server for deployment.
+
+The structure of a deployment-ready MCView project looks like this:
+
+    my_project/
+    ├── app.R
+    ├── config/
+    │   ├── about.Rmd
+    │   └── config.yaml
+    └── cache/
+        ├── dataset1/
+        └── dataset2/
+
+To deploy the app, you can simply:
+
+1.  Copy the entire project directory to your Shiny server
+2.  For shinyapps.io, run:
+
+``` r
+rsconnect::deployApp(appDir = "my_project")
+```
+
+For backward compatibility, you can still create a separate bundle
+using:
+
+``` r
+MCView::create_bundle(project = "my_project", path = getwd(), name = "my_project_bundle")
+```
+
+However, this is no longer necessary as the project directory itself is
+already deployment-ready.
+
+Note: When deployed, the app will use the installed version of the
+MCView package on the server. If you want to ensure consistent behavior
+regardless of package updates, you can create a self-contained bundle
+that includes the MCView code:
+
+``` r
+MCView::create_bundle(
+    project = "my_project",
+    path = getwd(),
+    name = "my_project_bundle",
+    self_contained = TRUE
+)
+```
+
+I you need to create a light version of MCView for deployment on a
+server with limited resources, you can use the `light_version=TRUE`
+argument:
+
+``` r
+MCView::create_bundle(
+    project = "my_project",
+    path = getwd(),
+    name = "my_project_bundle",
+    light_version = TRUE
+)
+```
