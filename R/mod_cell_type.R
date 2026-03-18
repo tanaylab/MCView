@@ -167,6 +167,11 @@ mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, 
         function(input, output, session) {
             ns <- session$ns
 
+            # Module-level metadata reactive to avoid redundant DAF fetches
+            metadata <- reactive({
+                get_mc_data(dataset(), "metadata")
+            })
+
             top_correlated_selector("boxplot_axis_var", "boxplot_axis", "boxplot_axis_type", input, output, session, dataset, ns, button_labels = c("Select"), ids = c("boxplot"), gene_modules = gene_modules, metacell_types = metacell_types, selected_cell_types = "boxplot_cell_types")
 
             render_axis_select_ui("boxplot_axis", "Data", "boxplot_axis_select", md_choices = dataset_metadata_fields(dataset()), md_selected = dataset_metadata_fields(dataset())[1], selected_gene = mcv_get("default_gene1"), input = input, output = output, ns = ns, dataset = dataset, gene_modules = gene_modules, session = session)
@@ -242,8 +247,8 @@ mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, 
             # X-axis metadata selector
             output$x_axis_metadata_selector <- renderUI({
                 req(input$x_axis_type == "metadata")
-                metadata <- get_mc_data(dataset(), "metadata")
-                req(metadata)
+                md <- metadata()
+                req(md)
 
                 categorical_cols <- dataset_metadata_fields_categorical(dataset())
 
@@ -266,11 +271,11 @@ mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, 
             output$x_axis_categories_selector <- renderUI({
                 req(input$x_axis_type == "metadata")
                 req(input$x_axis_metadata_var)
-                metadata <- get_mc_data(dataset(), "metadata")
-                req(metadata)
-                req(input$x_axis_metadata_var %in% colnames(metadata))
+                md <- metadata()
+                req(md)
+                req(input$x_axis_metadata_var %in% colnames(md))
 
-                categories <- unique(metadata[[input$x_axis_metadata_var]])
+                categories <- unique(md[[input$x_axis_metadata_var]])
                 categories <- categories[!is.na(categories)]
 
                 if (length(categories) > 0) {
@@ -304,8 +309,8 @@ mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, 
             # Facet metadata selector
             output$facet_metadata_selector <- renderUI({
                 req(input$facet_by == "metadata")
-                metadata <- get_mc_data(dataset(), "metadata")
-                req(metadata)
+                md <- metadata()
+                req(md)
 
                 categorical_cols <- dataset_metadata_fields_categorical(dataset())
 
@@ -332,10 +337,10 @@ mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, 
             observe({
                 req(input$boxplot_axis_type)
                 req(input$boxplot_axis_var)
-                metadata <- get_mc_data(dataset(), "metadata")
-                req(metadata)
+                md <- metadata()
+                req(md)
 
-                shinyjs::toggle(id = "confusion_color_by_selector", condition = input$boxplot_axis_type == "Metadata" && input$boxplot_axis_var %in% colnames(metadata) && !is_numeric_field(metadata, input$boxplot_axis_var))
+                shinyjs::toggle(id = "confusion_color_by_selector", condition = input$boxplot_axis_type == "Metadata" && input$boxplot_axis_var %in% colnames(md) && !is_numeric_field(md, input$boxplot_axis_var))
             })
 
             # Set default ylim values based on current data
@@ -377,13 +382,13 @@ mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, 
                                 }
                             }
                         } else {
-                            metadata <- get_mc_data(dataset(), "metadata")
-                            req(!is.null(metadata))
-                            req(input$boxplot_axis_var %in% colnames(metadata))
-                            if (is_numeric_field(metadata, input$boxplot_axis_var)) {
+                            md <- metadata()
+                            req(!is.null(md))
+                            req(input$boxplot_axis_var %in% colnames(md))
+                            if (is_numeric_field(md, input$boxplot_axis_var)) {
                                 df <- metacell_types() %>%
                                     filter(cell_type %in% cell_types_to_use) %>%
-                                    left_join(metadata %>% select(metacell, !!input$boxplot_axis_var), by = "metacell")
+                                    left_join(md %>% select(metacell, !!input$boxplot_axis_var), by = "metacell")
 
                                 if (nrow(df) > 0) {
                                     var_values <- df[[input$boxplot_axis_var]]
@@ -466,11 +471,11 @@ mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, 
             # Select All / Clear All observers for x-axis categories
             observeEvent(input$select_all_categories, {
                 req(input$x_axis_metadata_var)
-                metadata <- get_mc_data(dataset(), "metadata")
-                req(metadata)
-                req(input$x_axis_metadata_var %in% colnames(metadata))
+                md <- metadata()
+                req(md)
+                req(input$x_axis_metadata_var %in% colnames(md))
 
-                categories <- unique(metadata[[input$x_axis_metadata_var]])
+                categories <- unique(md[[input$x_axis_metadata_var]])
                 categories <- categories[!is.na(categories)]
                 updateCheckboxGroupInput(session, "x_axis_categories", selected = as.character(categories))
             })
@@ -480,6 +485,7 @@ mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, 
             })
 
             output$cell_type_boxplot <- plotly::renderPlotly({
+                req(globals$current_tab == "cell_type")
                 req(input$boxplot_axis_type)
                 req(dataset())
                 req(metacell_types())
@@ -571,10 +577,10 @@ mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, 
                         log_scale = isTRUE(input$log_scale)
                     )
                 } else {
-                    metadata <- get_mc_data(dataset(), "metadata")
-                    req(!is.null(metadata))
-                    req(input$boxplot_axis_var %in% colnames(metadata))
-                    if (is_numeric_field(metadata, input$boxplot_axis_var)) {
+                    md <- metadata()
+                    req(!is.null(md))
+                    req(input$boxplot_axis_var %in% colnames(md))
+                    if (is_numeric_field(md, input$boxplot_axis_var)) {
                         custom_ylim <- if (isTRUE(input$custom_ylim) && !is.null(input$ylim_min) && !is.null(input$ylim_max)) {
                             tryCatch(
                                 {
@@ -646,7 +652,16 @@ mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, 
                     sanitize_plotly_download(globals)
 
                 return(fig)
-            })
+            }) %>% bindCache(
+                dataset(), metacell_types(), cell_type_colors(), gene_modules(),
+                input$boxplot_axis_type, input$boxplot_axis_var, input$plot_type,
+                input$x_axis_type, input$boxplot_cell_types, input$cell_type_filter,
+                input$x_axis_metadata_var, input$x_axis_categories,
+                input$facet_by, input$facet_metadata_var,
+                input$custom_ylim, input$ylim_min, input$ylim_max,
+                input$coord_flip, input$log_scale, input$confusion_color_by,
+                globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale
+            )
         }
     )
 }

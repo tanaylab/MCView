@@ -68,8 +68,9 @@ mod_qc_server <- function(id, dataset, metacell_types, cell_type_colors, gene_mo
             output$num_cells <- qc_value_box("n_cells", "Number of cells", dataset, color = "purple", globals = globals)
             output$num_outliers <- shinydashboard::renderValueBox({
                 req(globals$current_tab == "qc")
-                num_cells <- get_mc_data(dataset(), "qc_stats")$n_cells
-                num_outliers <- get_mc_data(dataset(), "qc_stats")$n_outliers
+                qc_stats <- get_mc_data(dataset(), "qc_stats")
+                num_cells <- qc_stats$n_cells
+                num_outliers <- qc_stats$n_outliers
                 req(num_cells)
                 req(num_outliers)
                 p_outliers <- num_outliers / num_cells

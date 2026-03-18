@@ -148,6 +148,7 @@ mod_flow_server <- function(id, dataset, metacell_types, cell_type_colors, gene_
 
             output$gene_vein_plot <- renderPlot(
                 {
+                    req(globals$current_tab == "flow")
                     req(input$color_gene_vein)
                     req(input$vein_gene_foc_type)
 
@@ -176,11 +177,12 @@ mod_flow_server <- function(id, dataset, metacell_types, cell_type_colors, gene_
                     plot_vein(dataset(), gene = gene, foc_type = foc_type, color_order = color_order, metacell_types = metacell_types())
                 },
                 res = 96
-            )
+            ) %>% bindCache(dataset(), input$color_gene_vein, input$gene, input$vein_gene_foc_type, metacell_types())
 
             # Metacell flow
             output$plot_metacell_flow <- renderPlot(
                 {
+                    req(globals$current_tab == "flow")
                     req(has_network(dataset()))
                     req(input$selected_metacell)
 
@@ -190,7 +192,7 @@ mod_flow_server <- function(id, dataset, metacell_types, cell_type_colors, gene_
                         theme(plot.title = element_text(colour = "darkblue"))
                 },
                 res = 96
-            )
+            ) %>% bindCache(dataset(), input$selected_metacell, metacell_types())
 
 
             top_var_genes <- reactive({
@@ -214,6 +216,7 @@ mod_flow_server <- function(id, dataset, metacell_types, cell_type_colors, gene_
             })
 
             output$plot_mc_traj <- plotly::renderPlotly({
+                req(globals$current_tab == "flow")
                 req(input$traj_genes)
                 req(has_network(dataset()))
                 req(input$selected_metacell)
@@ -222,7 +225,7 @@ mod_flow_server <- function(id, dataset, metacell_types, cell_type_colors, gene_
                     sanitize_plotly_buttons() %>%
                     sanitize_plotly_download(globals) %>%
                     plotly::event_register("plotly_click")
-            })
+            }) %>% bindCache(dataset(), input$traj_genes, input$selected_metacell, globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
         }
     )
 }

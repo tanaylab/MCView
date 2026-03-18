@@ -257,10 +257,10 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
             })
 
             # Projection plots
-            output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, projected_metacell_types, atlas_colors, gene_modules, globals, group = group, source = "proj_mc_plot_proj_tab")
+            output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, projected_metacell_types, atlas_colors, gene_modules, globals, group = group, source = "proj_mc_plot_proj_tab", tab_guard = "query")
 
             # Differential expression
-            output$plot_mc_mc_gene_scatter <- render_mc_mc_gene_plotly(input, output, session, ns, dataset, globals, gene_modules, mc_mc_gene_scatter_df, metacell_names, atlas_colors, metacell_types = metacell_types)
+            output$plot_mc_mc_gene_scatter <- render_mc_mc_gene_plotly(input, output, session, ns, dataset, globals, gene_modules, mc_mc_gene_scatter_df, metacell_names, atlas_colors, metacell_types = metacell_types, tab_guard = "query")
 
             # Select a gene when clicking on it
             plotly_click_observer("projection_diff_expr_plot", session, "axis_var", notification_prefix = "Selected ", update_function = shinyWidgets::updatePickerInput)
@@ -290,6 +290,7 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
             )
 
             output$plot_gene_gene_mc <- plotly::renderPlotly({
+                req(globals$current_tab == "query")
                 req(input$axis_var)
                 req(input$color_by_var)
                 req(input$axis_type)

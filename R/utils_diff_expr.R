@@ -151,8 +151,10 @@ get_single_mc_fraction_umis <- function(daf_obj, metacell, mc_sum_val, fraction_
     gene_names <- dafr::axis_entries(daf_obj, "gene")
     frac_vec <- tryCatch(
         {
-            query <- glue::glue("/ gene / metacell = {escape_daf_value(metacell)} : {fraction_name}")
-            daf_obj[query]
+            # v0.2.0: per-metacell column extraction via query is not supported;
+            # fall back to full matrix load + column subset
+            mat <- dafr::get_matrix(daf_obj, "gene", "metacell", fraction_name)
+            mat[, metacell]
         },
         error = function(e) NULL
     )

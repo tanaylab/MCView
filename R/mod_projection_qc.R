@@ -412,5 +412,5 @@ fitted_genes_per_cell_type_plot <- function(dataset, input, globals, tab_id = "p
         plotly::ggplotly(p) %>%
             sanitize_plotly_buttons() %>%
             sanitize_plotly_download(globals)
-    })
+    }) %>% bindCache(dataset(), globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
 }

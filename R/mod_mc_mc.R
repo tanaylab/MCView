@@ -181,12 +181,12 @@ mod_mc_mc_server <- function(id, dataset, metacell_types, cell_type_colors, gene
             })
 
             # Differential expression
-            output$plot_mc_mc_gene_scatter <- render_mc_mc_gene_plotly(input, output, session, ns, dataset, globals, gene_modules, mc_mc_gene_scatter_df, metacell_names, cell_type_colors)
+            output$plot_mc_mc_gene_scatter <- render_mc_mc_gene_plotly(input, output, session, ns, dataset, globals, gene_modules, mc_mc_gene_scatter_df, metacell_names, cell_type_colors, tab_guard = "mc_mc")
 
             output$diff_expr_table <- render_mc_mc_gene_diff_table(input, output, session, ns, dataset, mc_mc_gene_scatter_df)
 
             # Projection plots
-            output$plot_mc_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, groupA = groupA, groupB = groupB, source = "proj_mc_plot")
+            output$plot_mc_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, groupA = groupA, groupB = groupB, source = "proj_mc_plot", tab_guard = "mc_mc")
 
             diff_expr_auto_update_globals(mc_mc_gene_scatter_df, globals)
 

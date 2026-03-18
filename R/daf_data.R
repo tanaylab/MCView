@@ -76,7 +76,7 @@ daf_query_flagged_genes <- function(daf_obj, flag_name) {
     }
     tryCatch(
         {
-            query <- glue::glue("/ gene & {flag_name} : name")
+            query <- glue::glue("@ gene [ {flag_name} ] : name")
             result <- daf_obj[query]
             return(result)
         },
@@ -275,7 +275,7 @@ daf_query_named_vector <- function(daf_obj, axis, property, filter = NULL) {
 #' @return Named vector with gene names
 #' @noRd
 daf_query_gene_agg <- function(daf_obj, agg_op) {
-    query <- paste0("/ metacell / gene : UMIs %> ", agg_op)
+    query <- paste0("@ metacell @ gene :: UMIs >> ", agg_op)
     result <- daf_obj[query]
     names(result) <- dafr::axis_entries(daf_obj, "gene")
     return(result)
@@ -314,7 +314,7 @@ daf_query_mc_mat <- function(daf_obj, genes = NULL, metacells = NULL) {
         if (length(valid_genes) <= 50) {
             # Query each gene individually - avoids loading full gene x metacell matrix
             vecs <- lapply(valid_genes, function(gene) {
-                query <- glue::glue("/ metacell / gene = {escape_daf_value(gene)} : UMIs")
+                query <- glue::glue("@ metacell @ gene = {escape_daf_value(gene)} :: UMIs")
                 tryCatch(daf_obj[query], error = function(e) NULL)
             })
 
@@ -368,7 +368,7 @@ daf_query_mc_mat <- function(daf_obj, genes = NULL, metacells = NULL) {
         valid_metacells <- intersect(as.character(metacells), metacell_names)
         if (length(valid_metacells) > 0) {
             vecs <- lapply(valid_metacells, function(mc) {
-                query <- glue::glue("/ gene / metacell = {escape_daf_value(mc)} : UMIs")
+                query <- glue::glue("@ gene @ metacell = {escape_daf_value(mc)} :: UMIs")
                 tryCatch(daf_obj[query], error = function(e) NULL)
             })
 
@@ -489,9 +489,9 @@ daf_query_2d_coords <- function(daf_obj, metacells = NULL) {
 #' @export
 daf_query_cell_type_umis <- function(daf_obj, cell_types = NULL) {
     # Use DAF query for efficient grouping
-    # Query: / metacell / gene : UMIs @ type %> Sum
-    # This groups by type and sums the UMIs
-    ct_mat <- daf_obj["/ metacell / gene : UMIs @ type %> Sum"]
+    # Query: @ metacell @ gene :: UMIs -/ type >- Sum
+    # GroupRowsBy type (metacell axis) and reduce columns with Sum
+    ct_mat <- daf_obj["@ metacell @ gene :: UMIs -/ type >- Sum"]
 
     # Transpose to get genes as rows, cell types as columns
     ct_mat <- t(ct_mat)
@@ -518,8 +518,8 @@ daf_query_cell_type_umis <- function(daf_obj, cell_types = NULL) {
 #' @export
 daf_query_cell_type_sum <- function(daf_obj, cell_types = NULL) {
     # Use DAF query for efficient grouping
-    # Query: / metacell : total_UMIs @ type %> Sum
-    result <- daf_obj["/ metacell : total_UMIs @ type %> Sum"]
+    # Query: @ metacell : total_UMIs / type >> Sum
+    result <- daf_obj["@ metacell : total_UMIs / type >> Sum"]
 
     # Filter by cell types if specified
     if (!is.null(cell_types)) {
@@ -607,10 +607,11 @@ daf_query_module_umis <- function(daf_obj, modules = NULL) {
     }
 
     # Use DAF query for efficient grouping by module
-    # Query: / gene / metacell : UMIs @ module %> Sum
+    # Query: @ gene @ metacell :: UMIs -/ module >- Sum
+    # GroupRowsBy module (gene axis) and reduce columns with Sum
     mod_mat <- tryCatch(
         {
-            daf_obj["/ gene / metacell : UMIs @ module %> Sum"]
+            daf_obj["@ gene @ metacell :: UMIs -/ module >- Sum"]
         },
         error = function(e) {
             return(NULL)
@@ -621,7 +622,7 @@ daf_query_module_umis <- function(daf_obj, modules = NULL) {
         return(NULL)
     }
 
-    # DAF query "/ gene / metacell : UMIs @ module %> Sum" returns
+    # DAF query "@ gene @ metacell :: UMIs -/ module >- Sum" returns
     # module (rows) x metacell (columns) -- already in the desired layout.
     # No transpose needed.
 
@@ -642,7 +643,7 @@ daf_query_module_umis <- function(daf_obj, modules = NULL) {
 #' @return Named vector of counts per type
 #' @export
 daf_query_type_counts <- function(daf_obj) {
-    result <- daf_obj["/ metacell : type @ type %> Count"]
+    result <- daf_obj["@ metacell : type / type >> Count"]
     return(result)
 }
 
@@ -908,7 +909,7 @@ convert_daf_metadata <- function(daf_obj) {
     # Get list of available metacell properties
     props <- tryCatch(
         {
-            daf_obj["/ metacell ?"]
+            daf_obj["@ metacell : ?"]
         },
         error = function(e) {
             return(character(0))
@@ -981,7 +982,7 @@ convert_daf_cell_metadata <- function(daf_obj) {
     # Discover and add any additional cell-level vectors
     cell_props <- tryCatch(
         {
-            daf_obj["/ cell ?"]
+            daf_obj["@ cell : ?"]
         },
         error = function(e) {
             return(character(0))
@@ -1018,9 +1019,9 @@ convert_daf_mc_qc_metadata <- function(daf_obj) {
     ))
 
     # Compute max_inner_fold per metacell using DAF aggregation if not present
-    if (is.null(result$max_inner_fold) && dafr::has_matrix(daf_obj, "gene", "metacell", "inner_fold")) {
+    if (!"max_inner_fold" %in% colnames(result) && dafr::has_matrix(daf_obj, "gene", "metacell", "inner_fold")) {
         max_if <- tryCatch(
-            daf_obj["/ gene / metacell : inner_fold %> Max"],
+            daf_obj["@ gene @ metacell :: inner_fold >> Max"],
             error = function(e) NULL
         )
         if (!is.null(max_if)) {
@@ -1042,7 +1043,7 @@ convert_daf_gene_qc <- function(daf_obj) {
     result <- add_optional_vec_with_fallback(result, daf_obj, "gene", "max_expr", "mcview_cache_gene_max_umis")
     if (!"max_expr" %in% colnames(result) && dafr::has_matrix(daf_obj, "metacell", "gene", "UMIs")) {
         max_umis <- tryCatch(
-            daf_obj["/ metacell / gene : UMIs %> Max"],
+            daf_obj["@ metacell @ gene :: UMIs >> Max"],
             error = function(e) NULL
         )
         if (!is.null(max_umis)) {
@@ -1062,7 +1063,7 @@ convert_daf_gene_qc <- function(daf_obj) {
         result$max_inner_fold <- max_if
     } else if (dafr::has_matrix(daf_obj, "gene", "metacell", "inner_fold")) {
         max_if <- tryCatch(
-            daf_obj["/ metacell / gene : inner_fold %> Max"],
+            daf_obj["@ metacell @ gene :: inner_fold >> Max"],
             error = function(e) NULL
         )
         if (!is.null(max_if)) {
@@ -1071,7 +1072,7 @@ convert_daf_gene_qc <- function(daf_obj) {
     }
 
     # Include fitted gene metadata if present
-    gene_props <- tryCatch(daf_obj["/ gene ?"], error = function(e) character(0))
+    gene_props <- tryCatch(daf_obj["@ gene : ?"], error = function(e) character(0))
     fitted_fields <- grep("^fitted_gene_of", gene_props, value = TRUE)
     result <- add_optional_vecs(result, daf_obj, "gene", fitted_fields)
 

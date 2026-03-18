@@ -9,12 +9,18 @@ raw_dir <- fs::path(test_dir, "raw")
 
 fs::dir_create(raw_dir)
 
-# set the timeout to more than 60 seconds in order to be able to download the files on github
+# Cache test data locally to avoid re-downloading on every test run
 options(timeout = 1e4)
-download.file(
-    "http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz",
-    fs::path(raw_dir, "PBMC_processed.tar.gz")
-)
+local_cache <- fs::path(Sys.getenv("HOME"), ".cache", "mcview_test_data")
+cached_tarball <- fs::path(local_cache, "PBMC_processed.tar.gz")
+if (!fs::file_exists(cached_tarball)) {
+    fs::dir_create(local_cache)
+    download.file(
+        "http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz",
+        cached_tarball
+    )
+}
+fs::file_copy(cached_tarball, fs::path(raw_dir, "PBMC_processed.tar.gz"))
 
 untar(fs::path(raw_dir, "PBMC_processed.tar.gz"), exdir = raw_dir)
 

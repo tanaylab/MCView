@@ -193,7 +193,18 @@ render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, global
         }
 
         return(fig)
-    })
+    }) %>% bindCache(
+        dataset(), mc_mc_gene_scatter_df(), gene_modules(),
+        input$diff_expr_table_rows_selected, input$mode, mode,
+        input$metacell1, input$metacell2, input$samp1, input$samp2,
+        input$hide_lateral, input$hide_noisy,
+        input$show_only_fitted,
+        if (!is.null(metacell_types)) metacell_types(),
+        if (!is.null(cell_type_colors)) cell_type_colors(),
+        if (!is.null(metacell_names)) metacell_names(),
+        source_suffix, dragmode,
+        globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale
+    )
 }
 
 render_mc_mc_gene_diff_table <- function(input, output, session, ns, dataset, mc_mc_gene_scatter_df) {

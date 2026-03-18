@@ -32,8 +32,9 @@ get_cached_cor_daf <- function(daf_obj, gene, type, exclude = NULL) {
         }
 
         base_q <- dafr::Axis(axis_name) %>%
-            dafr::And("gene1") %>%
-            dafr::IsEqual(gene)
+            dafr::BeginMask("gene1") %>%
+            dafr::IsEqual(gene) %>%
+            dafr::EndMask()
 
         df <- tryCatch(
             dafr::get_dataframe(daf_obj, base_q, columns = c("gene2", "cor", "type"), cache = TRUE),

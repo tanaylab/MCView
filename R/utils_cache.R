@@ -358,7 +358,7 @@ dataset_metadata_fields <- function(dataset, atlas = FALSE) {
 
     daf_obj <- if (atlas) get_atlas_daf() else get_dataset_daf(dataset)
     if (!is.null(daf_obj)) {
-        fields <- tryCatch(daf_obj["/ metacell ?"], error = function(e) NULL)
+        fields <- tryCatch(daf_obj["@ metacell : ?"], error = function(e) NULL)
         if (is.null(fields)) {
             fields <- tryCatch(dafr::vectors_set(daf_obj, "metacell"), error = function(e) character(0))
         }

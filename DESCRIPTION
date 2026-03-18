@@ -24,7 +24,7 @@ Imports:
     chameleon,
     cli,
     data.table,
-    dafr (>= 0.0.1),
+    dafr (>= 0.1.0),
     colourpicker,
     circlize,
     cowplot (>= 1.2.0),

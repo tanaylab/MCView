@@ -254,10 +254,10 @@ make_cell_type_view <- function(cells_daf, cell_types, metacell_types = NULL) {
 
     # Use metacell chain lookup if available, otherwise direct cell type vector
     if (dafr::has_vector(cells_daf, "cell", "metacell")) {
-        filter_query <- glue::glue("/ cell & metacell : type ~ ^({types_pattern})$")
+        filter_query <- glue::glue("@ cell [ metacell : type ~ ^({types_pattern})$ ]")
     } else {
         # Direct cell-level type vector
-        filter_query <- glue::glue("/ cell & type ~ ^({types_pattern})$")
+        filter_query <- glue::glue("@ cell [ type ~ ^({types_pattern})$ ]")
     }
     dafr::viewer(cells_daf, axes = list("cell" = filter_query))
 }
@@ -413,15 +413,25 @@ get_group_gene_expression <- function(dataset, gene, group_field,
         query_daf <- make_cell_type_view(cells_daf, cell_types, metacell_types)
     }
 
-    gene_escaped <- escape_daf_value(gene)
-    query_str <- glue::glue("/ cell / gene = {gene_escaped} : UMIs @ {group_field} %> Sum")
+    # v0.2.0: IsEqual on matrix axis is not supported, so we compute the full
+    # gene x group matrix via GroupRowsBy and then extract the requested gene row.
+    query_str <- glue::glue("@ cell @ gene :: UMIs -/ {group_field} >- Sum")
     result <- tryCatch(
-        query_daf[query_str],
+        {
+            mat <- query_daf[query_str]
+            # mat is group x gene; extract the row/column for our gene
+            if (gene %in% rownames(mat)) {
+                stats::setNames(as.numeric(mat[gene, ]), colnames(mat))
+            } else if (gene %in% colnames(mat)) {
+                stats::setNames(as.numeric(mat[, gene]), rownames(mat))
+            } else {
+                cli_abort("Gene '{gene}' not found in grouped result")
+            }
+        },
         error = function(e) {
             cli_abort("Failed to query gene '{gene}' UMIs grouped by '{group_field}': {conditionMessage(e)}")
         }
     )
-    return(stats::setNames(as.numeric(result), names(result)))
 }
 
 # ==============================================================================
@@ -460,7 +470,7 @@ get_group_pseudobulk_mat <- function(dataset, genes, group_field,
         query_daf <- make_cell_type_view(cells_daf, cell_types, metacell_types)
     }
 
-    query_str <- glue::glue("/ cell / gene : UMIs @ {group_field} %> Sum")
+    query_str <- glue::glue("@ cell @ gene :: UMIs -/ {group_field} >- Sum")
     daf_mat <- tryCatch(
         {
             # DAF returns group_values x gene; transpose to gene x group_values
@@ -525,7 +535,7 @@ calc_group_diff_expr <- function(dataset, group_field,
     group1_name <- paste(group1_values, collapse = "+")
     group2_name <- paste(group2_values, collapse = "+")
 
-    query_str <- glue::glue("/ cell / gene : UMIs @ {group_field} %> Sum")
+    query_str <- glue::glue("@ cell @ gene :: UMIs -/ {group_field} >- Sum")
     daf_result <- tryCatch(
         {
             # Returns group_values x gene; transpose to gene x group_values
@@ -591,7 +601,7 @@ get_group_qc_stats <- function(dataset, group_field) {
     has_total_umis <- dafr::has_vector(cells_daf, "cell", "total_UMIs")
 
     # Count cells per group
-    count_query <- glue::glue("/ cell : {group_field} @ {group_field} %> Count")
+    count_query <- glue::glue("@ cell : {group_field} / {group_field} >> Count")
     counts <- tryCatch(cells_daf[count_query], error = function(e) NULL)
     if (is.null(counts)) {
         cli_abort("Failed to compute cell counts by '{group_field}'")
@@ -607,8 +617,8 @@ get_group_qc_stats <- function(dataset, group_field) {
     }
 
     # Sum and median of total_UMIs per group
-    sum_query <- glue::glue("/ cell : total_UMIs @ {group_field} %> Sum")
-    med_query <- glue::glue("/ cell : total_UMIs @ {group_field} %> Median")
+    sum_query <- glue::glue("@ cell : total_UMIs / {group_field} >> Sum")
+    med_query <- glue::glue("@ cell : total_UMIs / {group_field} >> Median")
     total_sums <- cells_daf[sum_query]
     medians <- cells_daf[med_query]
 
