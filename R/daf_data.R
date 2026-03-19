@@ -233,7 +233,10 @@ compute_egc_from_daf <- function(daf_obj, genes = NULL, metacells = NULL) {
         mc_sum <- mc_sum[intersect(metacells, names(mc_sum))]
     }
 
-    t(t(mc_mat) / mc_sum)
+    # Divide each column by the corresponding mc_sum value.
+    # sweep() avoids 2 transpose copies vs. the old t(t(mc_mat) / mc_sum) pattern:
+    # only 1 output matrix is allocated instead of 3 intermediates.
+    sweep(mc_mat, 2, mc_sum, "/")
 }
 
 # ==============================================================================
@@ -277,7 +280,11 @@ daf_query_named_vector <- function(daf_obj, axis, property, filter = NULL) {
 daf_query_gene_agg <- function(daf_obj, agg_op) {
     query <- paste0("@ metacell @ gene :: UMIs >> ", agg_op)
     result <- daf_obj[query]
-    names(result) <- dafr::axis_entries(daf_obj, "gene")
+    # dafr may return named vectors from NamedArrays (zero-copy jlview);
+    # skip post-hoc names assignment to avoid COW materialization.
+    if (is.null(names(result)) && length(result) > 1) {
+        names(result) <- dafr::axis_entries(daf_obj, "gene")
+    }
     return(result)
 }
 
@@ -384,20 +391,22 @@ daf_query_mc_mat <- function(daf_obj, genes = NULL, metacells = NULL) {
 
     # Full matrix retrieval (needed when genes=NULL or per-gene queries failed)
     # Request gene x metacell directly - DAF handles relayout internally
+    # dafr::get_matrix() returns named matrices from NamedArrays (zero-copy jlview);
+    # avoid post-hoc dimnames assignment which triggers COW materialization.
     gene_names <- dafr::axis_entries(daf_obj, "gene")
     mc_mat <- tryCatch(
         {
             m <- dafr::get_matrix(daf_obj, "gene", "metacell", "UMIs")
-            rownames(m) <- gene_names
-            colnames(m) <- metacell_names
+            if (is.null(rownames(m))) rownames(m) <- gene_names
+            if (is.null(colnames(m))) colnames(m) <- metacell_names
             m
         },
         error = function(e) {
             # Fallback: load metacell x gene and transpose
             m <- dafr::get_matrix(daf_obj, "metacell", "gene", "UMIs")
             m <- Matrix::t(m)
-            rownames(m) <- gene_names
-            colnames(m) <- metacell_names
+            if (is.null(rownames(m))) rownames(m) <- gene_names
+            if (is.null(colnames(m))) colnames(m) <- metacell_names
             m
         }
     )
@@ -700,7 +709,11 @@ convert_daf_mc_mat <- function(daf_obj) {
 
 convert_daf_mc_sum <- function(daf_obj) {
     mc_sum <- daf_vec(daf_obj, "metacell", "total_UMIs")
-    names(mc_sum) <- dafr::axis_entries(daf_obj, "metacell")
+    # dafr::get_vector() returns named vectors from NamedArrays (zero-copy jlview);
+    # skip post-hoc names assignment to avoid COW materialization.
+    if (is.null(names(mc_sum))) {
+        names(mc_sum) <- dafr::axis_entries(daf_obj, "metacell")
+    }
     mc_sum
 }
 
@@ -710,9 +723,9 @@ convert_daf_mc_egc <- function(daf_obj) {
     mc_sum <- convert_daf_mc_sum(daf_obj)
 
     # Compute EGC (normalized expression) - gene x metacell
-    # Divide each column by its total to get fractions summing to 1
-    # Matches compute_egc_from_daf() and original MCView normalization
-    t(t(mc_mat) / mc_sum)
+    # Divide each column by its total to get fractions summing to 1.
+    # sweep() avoids 2 transpose copies vs. the old t(t(mc_mat) / mc_sum) pattern.
+    sweep(mc_mat, 2, mc_sum, "/")
 }
 
 convert_daf_mc2d <- function(daf_obj) {
@@ -1209,8 +1222,12 @@ convert_daf_fraction_to_umi <- function(daf_obj, property_name) {
     # to get gene x metacell. Using frac_mat * mc_sum is correct because R recycles
     # the mc_sum vector (length = nrow) down each column, matching row indices.
     umi_mat <- Matrix::t(frac_mat * mc_sum)
-    rownames(umi_mat) <- dafr::axis_entries(daf_obj, "gene")
-    colnames(umi_mat) <- dafr::axis_entries(daf_obj, "metacell")
+    if (is.null(rownames(umi_mat))) {
+        rownames(umi_mat) <- dafr::axis_entries(daf_obj, "gene")
+    }
+    if (is.null(colnames(umi_mat))) {
+        colnames(umi_mat) <- dafr::axis_entries(daf_obj, "metacell")
+    }
 
     return(umi_mat)
 }

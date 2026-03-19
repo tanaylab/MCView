@@ -493,10 +493,13 @@ has_gg_mc_top_cor <- function(dataset) {
 
 get_mc_sum <- function(dataset, atlas = FALSE) {
     mc_sum <- get_mc_data(dataset, "mc_sum", atlas = atlas)
-    # Use DAF axis entries directly instead of loading the full matrix just for column names
-    daf_obj <- get_daf_for_query(dataset, atlas)
-    if (!is.null(daf_obj)) {
-        names(mc_sum) <- dafr::axis_entries(daf_obj, "metacell")
+    # convert_daf_mc_sum() already returns a named vector from dafr;
+    # skip redundant names assignment to avoid COW materialization of jlview.
+    if (is.null(names(mc_sum))) {
+        daf_obj <- get_daf_for_query(dataset, atlas)
+        if (!is.null(daf_obj)) {
+            names(mc_sum) <- dafr::axis_entries(daf_obj, "metacell")
+        }
     }
     return(mc_sum)
 }

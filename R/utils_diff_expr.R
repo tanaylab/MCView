@@ -144,6 +144,9 @@ calc_obs_exp_mc_df <- function(dataset, metacell, diff_thresh = 1.5, pval_thresh
 }
 
 # Helper: extract a single metacell's UMIs from a fraction matrix via DAF
+# Note: get_matrix returns a zero-copy ALTREP view, and column extraction from the
+# column-major (gene x metacell) layout is O(n_genes) with contiguous memory access,
+# so this is already efficient without needing a DAF single-column query.
 get_single_mc_fraction_umis <- function(daf_obj, metacell, mc_sum_val, fraction_name) {
     if (!dafr::has_matrix(daf_obj, "metacell", "gene", fraction_name)) {
         return(NULL)
@@ -151,8 +154,6 @@ get_single_mc_fraction_umis <- function(daf_obj, metacell, mc_sum_val, fraction_
     gene_names <- dafr::axis_entries(daf_obj, "gene")
     frac_vec <- tryCatch(
         {
-            # v0.2.0: per-metacell column extraction via query is not supported;
-            # fall back to full matrix load + column subset
             mat <- dafr::get_matrix(daf_obj, "gene", "metacell", fraction_name)
             mat[, metacell]
         },
@@ -162,7 +163,9 @@ get_single_mc_fraction_umis <- function(daf_obj, metacell, mc_sum_val, fraction_
         return(NULL)
     }
     umis <- as.numeric(frac_vec) * as.numeric(mc_sum_val)
-    names(umis) <- gene_names
+    if (is.null(names(umis))) {
+        names(umis) <- gene_names
+    }
     umis
 }
 
