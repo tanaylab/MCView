@@ -683,21 +683,14 @@ precompute_daf_metacell_top_genes <- function(daf_obj, egc_epsilon = 1e-5, force
     metacell_names <- dafr::axis_entries(daf_obj, "metacell")
     gene_names <- rownames(mc_egc)
 
-    # Vectorized top gene computation using max.col on transposed matrix
-    # mc_egc is gene x metacell, transpose to metacell x gene for max.col
-    # jlview_t returns a lazy ALTREP view; as.matrix() materializes for max.col
-    egc_t <- as.matrix(jlview::jlview_t(mc_egc))
-
-    # Top 1: find column index of max value per metacell
-    top1_idx <- max.col(egc_t, ties.method = "first")
-    top1_gene <- gene_names[top1_idx]
-    top1_lfp <- log2(egc_t[cbind(seq_len(nrow(egc_t)), top1_idx)] + egc_epsilon)
-
-    # Top 2: mask top1 values, find next max
-    egc_t[cbind(seq_len(nrow(egc_t)), top1_idx)] <- -Inf
-    top2_idx <- max.col(egc_t, ties.method = "first")
-    top2_gene <- gene_names[top2_idx]
-    top2_lfp <- log2(egc_t[cbind(seq_len(nrow(egc_t)), top2_idx)] + egc_epsilon)
+    # Find top-2 genes per metacell without transpose or mutation.
+    # mc_egc is gene x metacell; jlview_top2_per_col finds top-2 rows (genes)
+    # per column (metacell) entirely in Julia on the pinned array.
+    tops <- jlview::jlview_top2_per_col(mc_egc)
+    top1_gene <- gene_names[tops$top1_idx]
+    top1_lfp <- log2(tops$top1_val + egc_epsilon)
+    top2_gene <- gene_names[tops$top2_idx]
+    top2_lfp <- log2(tops$top2_val + egc_epsilon)
 
     if (any(is.na(top1_gene)) || any(is.na(top2_gene)) ||
         any(is.na(top1_lfp)) || any(is.na(top2_lfp))) {

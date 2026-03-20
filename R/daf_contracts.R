@@ -916,18 +916,16 @@ precompute_mcview_cache <- function(daf_obj, verbose = TRUE) {
         lfp <- log2(sweep(egc, 2, gene_means, "/") + 1e-5)
         lfp <- as.matrix(lfp)
 
-        metacell_names <- rownames(mc_mat)
         gene_names <- colnames(mc_mat)
-        n_mc <- length(metacell_names)
 
-        top1_idx <- max.col(lfp, ties.method = "first")
-        top1_gene <- gene_names[top1_idx]
-        top1_lfp <- lfp[cbind(seq_len(n_mc), top1_idx)]
-
-        lfp[cbind(seq_len(n_mc), top1_idx)] <- -Inf
-        top2_idx <- max.col(lfp, ties.method = "first")
-        top2_gene <- gene_names[top2_idx]
-        top2_lfp <- lfp[cbind(seq_len(n_mc), top2_idx)]
+        # Find top-2 genes per metacell without mutation.
+        # lfp is metacell x gene; jlview_top2_per_row finds top-2 columns
+        # (genes) per row (metacell).
+        tops <- jlview::jlview_top2_per_row(lfp)
+        top1_gene <- gene_names[tops$top1_idx]
+        top2_gene <- gene_names[tops$top2_idx]
+        top1_lfp <- tops$top1_val
+        top2_lfp <- tops$top2_val
 
         daf_obj <- dafr::set_vector(daf_obj, "metacell", "mcview_cache_top1_gene", top1_gene)
         daf_obj <- dafr::set_vector(daf_obj, "metacell", "mcview_cache_top2_gene", top2_gene)

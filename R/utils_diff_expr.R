@@ -62,9 +62,10 @@ calc_diff_expr <- function(mat, egc, columns, diff_thresh = 1.5, pval_thresh = 0
 #'
 #' @noRd
 calc_mc_mc_gene_df <- function(dataset, metacell1, metacell2, diff_thresh = 1.5, pval_thresh = 0.01) {
-    # Query only the 2 needed metacells from DAF instead of loading the full matrix
-    daf_obj <- get_dataset_daf(dataset)
-    mat <- as.matrix(daf_query_mc_mat(daf_obj, metacells = c(metacell1, metacell2)))
+    # Extract 2 columns from the cached full UMIs matrix (gene x metacell).
+    # This avoids a per-metacell DAF query and sparse->dense conversion.
+    mc_mat <- get_mc_data(dataset, "mc_mat")
+    mat <- mc_mat[, c(metacell1, metacell2), drop = FALSE]
 
     egc <- get_metacells_egc(c(metacell1, metacell2), dataset) + mcv_get("egc_epsilon")
 
