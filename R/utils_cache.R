@@ -158,14 +158,24 @@ get_mc_data <- function(dataset, var_name, atlas = FALSE) {
         return(get_metadata(dataset, atlas = atlas))
     }
 
-    # Memoize static DAF conversions in mc_data to avoid repeated Julia round-trips.
-    # These variables are read-only during a session (user cannot edit them).
+    # Memoize DERIVED data that requires non-trivial assembly beyond raw DAF
+    # reads.  Variables that are thin wrappers around a single dafr::get_vector()
+    # or dafr::get_matrix() call are NOT cached here because dafr's own R-side
+    # cache (keyed by version counter) already avoids the Julia round-trip.
+    #
+    # Removed from cache (dafr handles these):
+    #   mc_sum        - single get_vector + names()
+    #   lateral_genes - get_vector + flag filter
+    #   noisy_genes   - get_vector + flag filter
+    #   inner_fold_mat  - single get_matrix
+    #   inner_stdev_mat - single get_matrix
+    #   projected_fold  - single get_matrix
     static_vars <- c(
-        "mc_mat", "mc_sum", "mc2d", "lateral_genes", "noisy_genes",
-        "marker_genes", "gene_modules", "inner_fold_mat", "inner_stdev_mat",
+        "mc_mat", "mc2d",
+        "marker_genes", "gene_modules",
         "mc_qc_metadata", "gene_qc", "gg_mc_top_cor", "gene_zero_fold",
         "metacell_graphs", "qc_stats", "cell_metadata",
-        "projected_fold", "mc_mat_corrected", "projected_mat",
+        "mc_mat_corrected", "projected_mat",
         "proj_weights", "query_atlas_cell_type_fracs", "query_md"
     )
 

@@ -1,7 +1,8 @@
-# Convert EGC matrix to fold-change (footprint) by normalizing to row medians
+# Convert EGC matrix to fold-change (footprint) by normalizing to row medians.
+# For jlview inputs, the epsilon addition and row-median division are fused into
+# a single Julia call, avoiding intermediate R materialization (~521MB for EGC).
 egc_to_fp <- function(mc_egc, epsilon = 1e-5) {
-    mc_egc_norm <- mc_egc + epsilon
-    jlview::jlview_fp(mc_egc_norm)
+    jlview::jlview_fp(mc_egc, epsilon = epsilon)
 }
 
 #' Get expression per gene per cell (EGC) matrix
