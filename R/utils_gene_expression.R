@@ -166,20 +166,17 @@ get_gene_egc <- function(gene, dataset, projected = FALSE, atlas = FALSE, correc
         }
     }
 
-    # Fast path 2: direct matrix row extraction (skip sparse matrix machinery in
-    # daf_query_mc_mat which loads the full matrix anyway since per-gene DAF
-    # queries are not supported on read-only DAF wrappers)
-    mc_mat <- tryCatch(
-        dafr::get_matrix(daf_obj, "gene", "metacell", "UMIs"),
-        error = function(e) NULL
-    )
+    # Fast path 2: extract row from session-cached UMIs matrix.
+    # get_mc_data(dataset, "mc_mat") is cached after first access, so this
+    # avoids a ~1s Julia round-trip on every single-gene query.
+    mc_mat <- get_mc_data(dataset, "mc_mat", atlas = atlas)
     if (!is.null(mc_mat) && gene %in% rownames(mc_mat)) {
-        mc_sum <- daf_query_mc_sum(daf_obj)
+        mc_sum <- get_mc_sum(dataset, atlas = atlas)
         gene_umis <- mc_mat[gene, ]
         return(gene_umis / mc_sum[names(gene_umis)])
     }
 
-    # Fallback: full compute path
+    # Fallback: full compute path (first access before mc_mat is cached)
     egc <- compute_egc_from_daf(daf_obj, genes = gene)
 
     # Return as vector (single gene)

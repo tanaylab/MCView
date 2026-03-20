@@ -1027,7 +1027,9 @@ convert_daf_mc_qc_metadata <- function(daf_obj) {
             error = function(e) NULL
         )
         if (!is.null(max_if)) {
-            result$max_inner_fold <- as.numeric(max_if)
+            # Assign directly; DAF aggregation returns numeric jlview — skip
+            # as.numeric() to avoid copying the ALTREP view.
+            result$max_inner_fold <- max_if
         }
     }
 
@@ -1049,7 +1051,9 @@ convert_daf_gene_qc <- function(daf_obj) {
             error = function(e) NULL
         )
         if (!is.null(max_umis)) {
-            result$max_expr <- as.numeric(max_umis)
+            # Assign directly; DAF aggregation returns numeric jlview — skip
+            # as.numeric() to avoid copying the ALTREP view.
+            result$max_expr <- max_umis
         }
     }
 
@@ -1069,7 +1073,9 @@ convert_daf_gene_qc <- function(daf_obj) {
             error = function(e) NULL
         )
         if (!is.null(max_if)) {
-            result$max_inner_fold <- as.numeric(max_if)
+            # Assign directly; DAF aggregation returns numeric jlview — skip
+            # as.numeric() to avoid copying the ALTREP view.
+            result$max_inner_fold <- max_if
         }
     }
 

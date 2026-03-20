@@ -124,16 +124,16 @@ get_metadata <- function(dataset, atlas = FALSE) {
 
     if (!is.null(metadata)) {
         mc_qc_metadata <- convert_daf_to_mcview(daf_obj, "mc_qc_metadata", atlas)
-        if (!is.null(mc_qc_metadata)) {
-            same_colnames <- intersect(colnames(mc_qc_metadata), colnames(metadata))
-            same_colnames <- same_colnames[same_colnames != "metacell"]
-
-            mc_qc_metadata <- mc_qc_metadata %>%
-                select(-any_of(same_colnames))
-
-            if (!is.null(mc_qc_metadata) && ncol(mc_qc_metadata) > 1) {
-                metadata <- metadata %>%
-                    left_join(mc_qc_metadata, by = "metacell")
+        if (!is.null(mc_qc_metadata) && ncol(mc_qc_metadata) > 1) {
+            # Both tibbles share the same metacell axis in the same order,
+            # so we can bind columns directly instead of left_join().
+            # left_join forces materialization of jlview ALTREP columns;
+            # direct column assignment preserves zero-copy views.
+            existing_cols <- colnames(metadata)
+            for (col in colnames(mc_qc_metadata)) {
+                if (col != "metacell" && !(col %in% existing_cols)) {
+                    metadata[[col]] <- mc_qc_metadata[[col]]
+                }
             }
         }
     }
