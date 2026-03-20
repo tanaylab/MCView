@@ -949,7 +949,7 @@ precompute_mcview_cache <- function(daf_obj, verbose = TRUE) {
             egc <- sweep(mc_mat, 1, mc_sum, "/")
             gene_names <- colnames(mc_mat)
         }
-        max_expr <- matrixStats::colMaxs(as.matrix(egc))
+        max_expr <- matrixStats::colMaxs(egc)
         names(max_expr) <- gene_names
         total_expr <- colSums(egc)
         daf_obj <- dafr::set_vector(daf_obj, "gene", "mcview_cache_max_expr", max_expr)

@@ -31,7 +31,7 @@ calc_marker_genes <- function(mc_egc,
     }
 
     # R fallback -- fuse log2 + epsilon via lazy ALTREP view, then densify
-    mc_egc <- as.matrix(jlview::jlview_log2p(mc_egc, 1e-5))
+    mc_egc <- jlview::jlview_log2p(mc_egc, 1e-5)
 
     max_log_fractions_of_genes <- matrixStats::rowMaxs(mc_egc)
 
@@ -63,7 +63,7 @@ select_top_fold_genes_per_metacell <- function(fold_matrix, genes_per_metacell =
         cli_abort("No genes with at least one value above the {.field minimal_relative_log_fraction} threshold ({.val {.value minimal_relative_log_fraction}})")
     }
 
-    fm <- as.matrix(fold_matrix)
+    fm <- fold_matrix
     gene_nms <- rownames(fold_matrix)
     mc_nms <- colnames(fold_matrix)
     n_mc <- ncol(fm)
@@ -140,7 +140,6 @@ filter_markers_mat <- function(gene_folds) {
 }
 
 get_top_marks <- function(feat, notify_var_genes = TRUE) {
-    feat <- as.matrix(feat)
     g_ncover <- rowSums(feat > 1)
     main_mark <- names(g_ncover)[which.max(g_ncover)]
     f <- feat[main_mark, , drop = FALSE] < 0.25
@@ -162,8 +161,6 @@ get_top_marks <- function(feat, notify_var_genes = TRUE) {
 #' @noRd
 #' @return named vector with metacell order
 order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers = FALSE, force_cell_type = FALSE, metacell_types = NULL, order_each_cell_type = FALSE, epsilon = 0, notify_var_genes = FALSE, log_transform = TRUE, cached_dist = NULL, secondary_order = NULL) {
-    gene_folds <- as.matrix(gene_folds)
-
     if (filter_markers) {
         gene_folds <- filter_markers_mat(gene_folds)
     }
@@ -420,7 +417,7 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
         mat <- log2(mat)
     }
 
-    gene_ord <- order(max.col(as.matrix(mat), ties.method = "first"))
+    gene_ord <- order(max.col(mat, ties.method = "first"))
     mat <- mat[gene_ord, , drop = FALSE]
 
     return(mat)

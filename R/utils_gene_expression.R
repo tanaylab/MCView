@@ -1,7 +1,7 @@
 # Convert EGC matrix to fold-change (footprint) by normalizing to row medians
 egc_to_fp <- function(mc_egc, epsilon = 1e-5) {
     mc_egc_norm <- mc_egc + epsilon
-    mc_egc_norm / matrixStats::rowMedians(as.matrix(mc_egc_norm), na.rm = TRUE)
+    jlview::jlview_fp(mc_egc_norm)
 }
 
 #' Get expression per gene per cell (EGC) matrix

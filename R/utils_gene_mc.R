@@ -127,7 +127,7 @@ calc_top_cors <- function(dataset, gene, type, data_vec, metacell_filter, exclud
         metacells = if (is.null(data_vec)) metacell_filter else NULL)
 
     # log2(egc + epsilon) as lazy ALTREP view, then densify for tgs_cor
-    lfp <- as.matrix(jlview::jlview_log2p(mc_egc, mcv_get("egc_epsilon")))
+    lfp <- jlview::jlview_log2p(mc_egc, mcv_get("egc_epsilon"))
     if (!is.null(exclude)) {
         exclude_idx <- which(rownames(lfp) %in% exclude)
         if (length(exclude_idx) > 0) {
@@ -366,7 +366,7 @@ calc_module_correlations <- function(dataset, genes, n_top = 30, cell_type_filte
     }
 
     # Calculate module expression as mean of constituent genes
-    module_expr <- colMeans(as.matrix(mc_egc[valid_genes, , drop = FALSE]), na.rm = TRUE)
+    module_expr <- colMeans(mc_egc[valid_genes, , drop = FALSE], na.rm = TRUE)
 
     # Use calc_top_cors with the module expression vector
     cors <- calc_top_cors(dataset, "module", "both", module_expr, metacell_filter, valid_genes, atlas = atlas)
@@ -423,7 +423,7 @@ calc_gene_gene_correlations <- function(dataset, genes, cell_type_filter = NULL,
     }
 
     # Filter metacells if needed
-    expr_data <- as.matrix(mc_egc[valid_genes, , drop = FALSE])
+    expr_data <- mc_egc[valid_genes, , drop = FALSE]
     if (!is.null(metacell_filter)) {
         metacell_filter <- intersect(metacell_filter, colnames(expr_data))
         expr_data <- expr_data[, metacell_filter, drop = FALSE]
@@ -498,7 +498,7 @@ plot_correlation_heatmap <- function(correlation_results, input_genes, dataset,
     }
 
     # Calculate correlation matrix (BLAS-accelerated)
-    expr_subset <- as.matrix(mc_egc[genes_in_data, , drop = FALSE])
+    expr_subset <- mc_egc[genes_in_data, , drop = FALSE]
     t_expr <- t(expr_subset)
     cor_matrix <- tryCatch(
         .Call("tgs_cross_cor_blas", t_expr, t_expr, TRUE, FALSE, FALSE, 0, new.env(parent = parent.frame())),
