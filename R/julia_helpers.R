@@ -463,3 +463,51 @@ julia_calc_marker_genes <- function(daf_obj,
 }
 
 
+# ==============================================================================
+# R Wrapper: Check string vector cardinalities via Julia
+# ==============================================================================
+
+#' Filter string vectors by cardinality using Julia (with R fallback)
+#'
+#' Given a set of candidate vector names known to be string-typed, checks their
+#' cardinality (unique value count) on the Julia side without transferring full
+#' vectors to R. Returns only those with 1 < n_unique <= max_cardinality.
+#'
+#' @param daf_obj DAF object (must have a cell axis)
+#' @param axis Axis name (e.g., "cell")
+#' @param candidate_names Character vector of string-typed vector names to check
+#' @param max_cardinality Maximum number of unique values (default: 1000)
+#'
+#' @return Character vector of field names passing the cardinality filter,
+#'   or NULL if Julia unavailable (caller should use R fallback)
+#' @noRd
+julia_get_grouping_fields <- function(daf_obj, axis, candidate_names,
+                                       max_cardinality = 1000L) {
+    if (!julia_helpers_ready()) {
+        return(NULL)
+    }
+
+    tryCatch(
+        {
+            result <- JuliaCall::julia_call(
+                "mcview_get_string_vector_cardinalities",
+                daf_obj$jl_obj,
+                as.character(axis),
+                as.character(candidate_names),
+                as.integer(max_cardinality),
+                need_return = "R"
+            )
+
+            if (is.null(result)) {
+                return(character(0))
+            }
+            as.character(result)
+        },
+        error = function(e) {
+            cli::cli_alert_warning(
+                "Julia get_grouping_fields failed: {e$message}"
+            )
+            NULL
+        }
+    )
+}

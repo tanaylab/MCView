@@ -66,6 +66,14 @@ ensure_metacell_types_fields <- function(metacell_types) {
 }
 
 get_metacell_types_data <- function(dataset, atlas = FALSE) {
+    # Return cached result if available (metacell_types is static per session)
+    cache_key <- if (atlas) "metacell_types_atlas" else "metacell_types"
+    mc_data <- mcv_get("mc_data")
+    cached <- mc_data[[dataset]][[cache_key]]
+    if (!is.null(cached)) {
+        return(cached)
+    }
+
     daf_obj <- get_daf_for_query(dataset, atlas)
     if (is.null(daf_obj)) {
         return(NULL)
@@ -90,6 +98,11 @@ get_metacell_types_data <- function(dataset, atlas = FALSE) {
         left_join(cell_type_colors %>% select(cell_type, mc_col = color), by = "cell_type")
 
     metacell_types <- ensure_metacell_types_fields(metacell_types)
+
+    # Cache the result for subsequent calls
+    mc_data <- mcv_get("mc_data")
+    mc_data[[dataset]][[cache_key]] <- metacell_types
+    mcv_set("mc_data", mc_data)
 
     return(metacell_types)
 }

@@ -16,6 +16,36 @@ using LinearAlgebra
 using SparseArrays
 
 # ==============================================================================
+# Cell Vector Type Inspection
+# ==============================================================================
+
+"""
+    mcview_get_string_vector_cardinalities(daf, axis, names, max_card)
+
+For a given set of vector names on `axis`, compute the number of unique values
+for each vector. Only vectors whose eltype is a subtype of AbstractString are
+checked; others are silently skipped. Returns a Dict mapping vector name to its
+unique count (only entries with 1 < count <= max_card are included).
+
+This avoids transferring full vectors to R just to check `is.character()`.
+"""
+function mcview_get_string_vector_cardinalities(daf, axis::AbstractString,
+                                                 names::Vector{String},
+                                                 max_card::Int64)
+    result = String[]
+    for name in names
+        vec = DataAxesFormats.get_vector(daf, axis, name)
+        eltype(vec) <: AbstractString || continue
+        n_unique = length(unique(vec))
+        if n_unique > 1 && n_unique <= max_card
+            push!(result, name)
+        end
+    end
+    return result
+end
+
+
+# ==============================================================================
 # EGC Matrix Cache
 # ==============================================================================
 

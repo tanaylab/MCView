@@ -96,6 +96,13 @@ init_single_daf_mode <- function(daf_obj, dataset_name, config_file = NULL, prof
 
     cli_alert_success("DAF dataset '{dataset_name}' loaded successfully")
 
+    # Precompute top genes into cache DAF if vectors are missing.
+    # This avoids a costly EGC-based fallback in convert_daf_metacell_types()
+    # on first access (saves ~3.8s per call).
+    if (!is.null(cache_result$cache_daf)) {
+        precompute_daf_metacell_top_genes(cache_result$cache_daf)
+    }
+
     # Return cache population status for caller to handle
     invisible(cache_result$needs_population)
 }

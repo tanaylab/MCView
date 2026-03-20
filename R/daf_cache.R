@@ -685,7 +685,8 @@ precompute_daf_metacell_top_genes <- function(daf_obj, egc_epsilon = 1e-5, force
 
     # Vectorized top gene computation using max.col on transposed matrix
     # mc_egc is gene x metacell, transpose to metacell x gene for max.col
-    egc_t <- t(as.matrix(mc_egc))
+    # jlview_t returns a lazy ALTREP view; as.matrix() materializes for max.col
+    egc_t <- as.matrix(jlview::jlview_t(mc_egc))
 
     # Top 1: find column index of max value per metacell
     top1_idx <- max.col(egc_t, ties.method = "first")

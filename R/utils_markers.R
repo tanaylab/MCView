@@ -30,8 +30,8 @@ calc_marker_genes <- function(mc_egc,
         }
     }
 
-    # R fallback
-    mc_egc <- as.matrix(log2(mc_egc + 1e-5))
+    # R fallback -- fuse log2 + epsilon via lazy ALTREP view, then densify
+    mc_egc <- as.matrix(jlview::jlview_log2p(mc_egc, 1e-5))
 
     max_log_fractions_of_genes <- matrixStats::rowMaxs(mc_egc)
 

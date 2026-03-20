@@ -151,6 +151,11 @@ get_cell_field_map <- function(dataset, field_name) {
 #' Queries the cells DAF for all cell-level vector properties and filters
 #' to categorical (string) fields with reasonable cardinality (< 1000 unique values).
 #'
+#' Uses a two-phase optimization:
+#' 1. Read FilesDaf JSON metadata to identify string-typed vectors (~0.03s)
+#' 2. Check cardinality only for string vectors via a single Julia call (~0.1s warm)
+#' Falls back to loading each vector in R when metadata is unavailable.
+#'
 #' @param dataset Dataset name
 #' @param max_cardinality Maximum number of unique values to consider a field
 #'   suitable for grouping (default: 1000)
@@ -176,7 +181,25 @@ get_cell_grouping_fields <- function(dataset, max_cardinality = 1000) {
     exclude_fields <- c("metacell", "name")
     candidates <- setdiff(all_vectors, exclude_fields)
 
-    # Filter to string/categorical fields with reasonable cardinality
+    # Phase 1: Identify string-typed vectors from FilesDaf JSON metadata.
+    # This reads tiny ~40-byte JSON files and avoids loading any vector data.
+    string_candidates <- get_string_vectors_from_metadata(dataset, candidates)
+
+    if (!is.null(string_candidates)) {
+        # Phase 2: Check cardinality via a single Julia call (avoids per-vector
+        # R<->Julia round-trips and never transfers full vectors to R).
+        julia_result <- julia_get_grouping_fields(
+            cells_daf, "cell", string_candidates, max_cardinality
+        )
+        if (!is.null(julia_result)) {
+            return(julia_result)
+        }
+
+        # Julia unavailable: fall back to R, but only for string candidates
+        candidates <- string_candidates
+    }
+
+    # Fallback: load each candidate vector in R to check type and cardinality
     grouping_fields <- character(0)
     for (field in candidates) {
         tryCatch(
@@ -194,6 +217,44 @@ get_cell_grouping_fields <- function(dataset, max_cardinality = 1000) {
     }
 
     return(grouping_fields)
+}
+
+#' Read FilesDaf JSON metadata to identify string-typed vectors
+#'
+#' For FilesDaf datasets, each vector has a small JSON metadata file containing
+#' the element type. This function reads those files to identify string vectors
+#' without loading any actual data (~0.03s for 65 vectors).
+#'
+#' @param dataset Dataset name
+#' @param candidate_names Character vector of vector names to check
+#' @return Character vector of string-typed names, or NULL if metadata unavailable
+#' @noRd
+get_string_vectors_from_metadata <- function(dataset, candidate_names) {
+    mc_data <- mcv_get("mc_data")
+    cells_path <- mc_data[[dataset]][["cells_daf_path"]]
+    if (is.null(cells_path)) {
+        return(NULL)
+    }
+
+    vecs_dir <- file.path(cells_path, "vectors", "cell")
+    if (!dir.exists(vecs_dir)) {
+        return(NULL)
+    }
+
+    string_names <- character(0)
+    for (name in candidate_names) {
+        json_file <- file.path(vecs_dir, paste0(name, ".json"))
+        if (!file.exists(json_file)) next
+        meta <- tryCatch(
+            jsonlite::fromJSON(json_file, simplifyVector = FALSE),
+            error = function(e) NULL
+        )
+        if (!is.null(meta) && identical(meta$eltype, "String")) {
+            string_names <- c(string_names, name)
+        }
+    }
+
+    return(string_names)
 }
 
 #' Get cell-to-metacell mapping

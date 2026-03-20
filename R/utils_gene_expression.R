@@ -157,6 +157,29 @@ get_gene_egc <- function(gene, dataset, projected = FALSE, atlas = FALSE, correc
         return(gene_vec / mc_sum[common_metacells])
     }
 
+    # Fast path 1: check session-level mc_egc_full cache (instant extraction)
+    if (!atlas) {
+        mc_data <- mcv_get("mc_data")
+        cached_egc <- mc_data[[dataset]][["mc_egc_full"]]
+        if (!is.null(cached_egc) && gene %in% rownames(cached_egc)) {
+            return(cached_egc[gene, ])
+        }
+    }
+
+    # Fast path 2: direct matrix row extraction (skip sparse matrix machinery in
+    # daf_query_mc_mat which loads the full matrix anyway since per-gene DAF
+    # queries are not supported on read-only DAF wrappers)
+    mc_mat <- tryCatch(
+        dafr::get_matrix(daf_obj, "gene", "metacell", "UMIs"),
+        error = function(e) NULL
+    )
+    if (!is.null(mc_mat) && gene %in% rownames(mc_mat)) {
+        mc_sum <- daf_query_mc_sum(daf_obj)
+        gene_umis <- mc_mat[gene, ]
+        return(gene_umis / mc_sum[names(gene_umis)])
+    }
+
+    # Fallback: full compute path
     egc <- compute_egc_from_daf(daf_obj, genes = gene)
 
     # Return as vector (single gene)

@@ -234,9 +234,8 @@ compute_egc_from_daf <- function(daf_obj, genes = NULL, metacells = NULL) {
     }
 
     # Divide each column by the corresponding mc_sum value.
-    # sweep() avoids 2 transpose copies vs. the old t(t(mc_mat) / mc_sum) pattern:
-    # only 1 output matrix is allocated instead of 3 intermediates.
-    sweep(mc_mat, 2, mc_sum, "/")
+    # jlview_sweep returns a lazy ALTREP view -- no allocation until materialized.
+    jlview::jlview_sweep(mc_mat, 2, mc_sum, "/")
 }
 
 # ==============================================================================
@@ -724,8 +723,8 @@ convert_daf_mc_egc <- function(daf_obj) {
 
     # Compute EGC (normalized expression) - gene x metacell
     # Divide each column by its total to get fractions summing to 1.
-    # sweep() avoids 2 transpose copies vs. the old t(t(mc_mat) / mc_sum) pattern.
-    sweep(mc_mat, 2, mc_sum, "/")
+    # jlview_sweep returns a lazy ALTREP view -- no allocation until materialized.
+    jlview::jlview_sweep(mc_mat, 2, mc_sum, "/")
 }
 
 convert_daf_mc2d <- function(daf_obj) {
@@ -936,27 +935,17 @@ convert_daf_metadata <- function(daf_obj) {
         return(NULL)
     }
 
-    # Batch-load all metadata vectors in a single JuliaCall via get_frame
-    result <- tryCatch(
-        {
-            frame <- dafr::get_frame(daf_obj, "metacell", as.list(metadata_fields))
-            # get_frame returns a data.frame; prepend metacell names column
-            frame <- tibble::as_tibble(frame)
-            frame <- tibble::tibble(metacell = metacell_names, !!!frame)
-            frame
-        },
-        error = function(e) {
-            # Fallback: load vectors one-by-one if get_frame fails
-            res <- tibble(metacell = metacell_names)
-            for (field in metadata_fields) {
-                vec <- daf_vec(daf_obj, "metacell", field, required = FALSE)
-                if (!is.null(vec)) {
-                    res[[field]] <- vec
-                }
-            }
-            res
+    # Load each metadata vector individually via daf_vec (returns zero-copy
+    # jlview views) instead of get_frame() which serializes all fields through
+    # Julia DataFrames.  This avoids the overhead of DataFrame construction on
+    # the Julia side and keeps each column as a lightweight ALTREP view.
+    result <- tibble(metacell = metacell_names)
+    for (field in metadata_fields) {
+        vec <- daf_vec(daf_obj, "metacell", field, required = FALSE)
+        if (!is.null(vec)) {
+            result[[field]] <- vec
         }
-    )
+    }
 
     if (ncol(result) == 1) {
         return(NULL)

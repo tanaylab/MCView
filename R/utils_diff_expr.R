@@ -12,7 +12,25 @@ calc_diff_expr <- function(mat, egc, columns, diff_thresh = 1.5, pval_thresh = 0
     if (nrow(m) > 0) {
         tots <- colSums(m)
 
-        pvals <- apply(m, 1, function(x) suppressWarnings(stats::chisq.test(matrix(c(x, tots), nrow = 2))$p.value))
+        # Vectorized chi-squared test for 2x2 contingency tables with
+        # Yates' continuity correction (matching stats::chisq.test default
+        # for 2x2 tables).
+        # Each gene's table is:  matrix(c(x[1], x[2], tots[1], tots[2]), nrow=2)
+        # i.e.  a=x[1], c=x[2], b=tots[1], d=tots[2]
+        # chi2_yates = (max(|a*d - b*c| - N/2, 0))^2 * N / (r1 * r2 * c1 * c2)
+        a <- m[, 1]
+        c_val <- m[, 2]
+        b <- rep(tots[1], length(a))
+        d <- rep(tots[2], length(a))
+        N <- a + b + c_val + d
+        r1 <- a + b
+        r2 <- c_val + d
+        c1 <- a + c_val
+        c2 <- b + d
+        denom <- r1 * r2 * c1 * c2
+        ad_bc <- abs(a * d - b * c_val)
+        chi2 <- ifelse(denom == 0, 0, pmax(ad_bc - N / 2, 0)^2 * N / denom)
+        pvals <- ifelse(denom == 0, 1, stats::pchisq(chi2, df = 1, lower.tail = FALSE))
 
         df[f, ]$pval <- pvals
     }
