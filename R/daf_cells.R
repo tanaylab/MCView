@@ -658,7 +658,13 @@ get_group_qc_stats <- function(dataset, group_field) {
         cli_abort("Cells DAF not available for dataset '{dataset}'")
     }
 
-    # Use DAF's GroupBy queries for efficient per-group aggregation
+    # Try batched Julia helper first (single R<->Julia call instead of 3)
+    julia_result <- julia_group_qc_stats(cells_daf, group_field)
+    if (!is.null(julia_result)) {
+        return(julia_result)
+    }
+
+    # Fallback: 3 sequential DAF GroupBy queries
     has_total_umis <- dafr::has_vector(cells_daf, "cell", "total_UMIs")
 
     # Count cells per group

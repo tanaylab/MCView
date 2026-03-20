@@ -16,6 +16,90 @@ using LinearAlgebra
 using SparseArrays
 
 # ==============================================================================
+# Group QC Stats (batched Count + Sum + Median in one Julia call)
+# ==============================================================================
+
+"""
+    mcview_group_qc_stats(daf, group_field::AbstractString)
+
+Compute per-group QC stats in a single Julia call, avoiding 3 R<->Julia
+round-trips. Returns Dict with "group_id", "n_cells", "total_umis",
+"median_umis_per_cell" as parallel vectors.
+
+The group_field is a cell-level categorical vector (e.g., "batch_set_id").
+If `total_UMIs` is not available on the cell axis, total_umis and
+median_umis_per_cell are returned as NaN vectors.
+"""
+function mcview_group_qc_stats(daf, group_field::AbstractString)
+    cell_names = axis_vector(daf, "cell")
+    group_vec = get_vector(daf, "cell", group_field)
+    n_cells = length(cell_names)
+
+    # Build group -> cell indices mapping
+    group_indices = Dict{String, Vector{Int}}()
+    @inbounds for i in 1:n_cells
+        g = String(group_vec[i])
+        if haskey(group_indices, g)
+            push!(group_indices[g], i)
+        else
+            group_indices[g] = [i]
+        end
+    end
+
+    groups = sort(collect(keys(group_indices)))
+    n_groups = length(groups)
+
+    counts = Vector{Int64}(undef, n_groups)
+    total_sums = Vector{Float64}(undef, n_groups)
+    medians = Vector{Float64}(undef, n_groups)
+
+    has_umis = DataAxesFormats.has_vector(daf, "cell", "total_UMIs")
+
+    if has_umis
+        total_umis_vec = get_vector(daf, "cell", "total_UMIs")
+
+        buf = Vector{Float64}(undef, n_cells)  # scratch for median computation
+
+        @inbounds for (gi, g) in enumerate(groups)
+            indices = group_indices[g]
+            counts[gi] = length(indices)
+
+            s = 0.0
+            for (bi, idx) in enumerate(indices)
+                val = Float64(total_umis_vec[idx])
+                s += val
+                buf[bi] = val
+            end
+            total_sums[gi] = s
+
+            # Compute median in-place using a view of buf
+            n = counts[gi]
+            sub = view(buf, 1:n)
+            sort!(sub)
+            if n % 2 == 0
+                medians[gi] = (sub[n ÷ 2] + sub[n ÷ 2 + 1]) / 2.0
+            else
+                medians[gi] = sub[n ÷ 2 + 1]
+            end
+        end
+    else
+        @inbounds for (gi, g) in enumerate(groups)
+            counts[gi] = length(group_indices[g])
+            total_sums[gi] = NaN
+            medians[gi] = NaN
+        end
+    end
+
+    return Dict(
+        "group_id" => groups,
+        "n_cells" => counts,
+        "total_umis" => total_sums,
+        "median_umis_per_cell" => medians
+    )
+end
+
+
+# ==============================================================================
 # Cell Vector Type Inspection
 # ==============================================================================
 

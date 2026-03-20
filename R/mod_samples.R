@@ -177,7 +177,17 @@ mod_samples_server <- function(id, dataset, metacell_types, cell_type_colors, ge
                 )
             })
 
-            output$plot_sample_stacked_types <- plot_sample_stacked_types(dataset, globals, metacell_types, cell_type_colors, input, group_field)
+            # Shared reactive for cell-type composition, used by both the stacked
+            # bar plot and the composition CI panel.  Cached per (dataset, group_field,
+            # metacell_types) so switching back to a previous grouping field is instant.
+            group_composition <- reactive({
+                req(dataset())
+                req(has_cell_gene_umis(dataset()))
+                gf <- group_field()
+                get_group_cell_type_composition(dataset(), gf, metacell_types())
+            }) %>% bindCache(dataset(), group_field(), metacell_types())
+
+            output$plot_sample_stacked_types <- plot_sample_stacked_types(dataset, globals, metacell_types, cell_type_colors, input, group_field, composition_reactive = group_composition)
 
             scatter_selectors(ns, dataset, output, globals)
             projection_selectors(ns, dataset, output, input, gene_modules, globals, session, weight = 0.6)
@@ -588,9 +598,9 @@ mod_samples_server <- function(id, dataset, metacell_types, cell_type_colors, ge
                 req(has_cell_gene_umis(dataset()))
                 req(input$samp1)
                 req(input$samp2)
-                gf <- group_field()
 
-                composition <- get_group_cell_type_composition(dataset(), gf, metacell_types())
+                # Reuse the shared composition reactive (already cached)
+                composition <- group_composition()
                 req(nrow(composition) > 0)
 
                 # Filter to only selected samples

@@ -464,6 +464,54 @@ julia_calc_marker_genes <- function(daf_obj,
 
 
 # ==============================================================================
+# R Wrapper: Batched group QC stats via Julia
+# ==============================================================================
+
+#' Compute per-group QC stats in a single Julia call
+#'
+#' Batches Count, Sum, and Median of total_UMIs per group into one Julia call,
+#' eliminating 3 sequential R<->Julia round-trips.
+#'
+#' @param cells_daf DAF object with cell axis and group_field vector
+#' @param group_field Cell-level categorical field name
+#'
+#' @return Tibble with group_id, n_cells, total_umis, median_umis_per_cell;
+#'   or NULL if Julia unavailable
+#' @noRd
+julia_group_qc_stats <- function(cells_daf, group_field) {
+    if (!julia_helpers_ready()) {
+        return(NULL)
+    }
+
+    tryCatch(
+        {
+            result <- JuliaCall::julia_call(
+                "mcview_group_qc_stats",
+                cells_daf$jl_obj,
+                as.character(group_field),
+                need_return = "R"
+            )
+
+            if (is.null(result) || length(result$group_id) == 0) {
+                return(NULL)
+            }
+
+            tibble::tibble(
+                group_id = as.character(result$group_id),
+                n_cells = as.integer(result$n_cells),
+                total_umis = as.numeric(result$total_umis),
+                median_umis_per_cell = as.numeric(result$median_umis_per_cell)
+            ) %>% dplyr::arrange(group_id)
+        },
+        error = function(e) {
+            cli::cli_alert_warning("Julia group_qc_stats failed: {e$message}")
+            NULL
+        }
+    )
+}
+
+
+# ==============================================================================
 # R Wrapper: Check string vector cardinalities via Julia
 # ==============================================================================
 

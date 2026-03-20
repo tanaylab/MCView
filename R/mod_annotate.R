@@ -447,9 +447,12 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
             })
 
             output$mc_type_table <- DT::renderDataTable(
-                to_show(),
+                {
+                    # Initial render with empty placeholder; data pushed via proxy
+                    tibble(metacell = character(), cell_type = character())
+                },
                 escape = FALSE,
-                server = FALSE,
+                server = TRUE,
                 rownames = FALSE,
                 filter = "top",
                 options = list(
@@ -458,6 +461,16 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                     language = list(emptyTable = "Please select metacells")
                 )
             )
+
+            mc_type_proxy <- DT::dataTableProxy("mc_type_table")
+
+            observe({
+                data <- to_show()
+                if (is.null(data) || nrow(data) == 0) {
+                    data <- tibble(metacell = character(), cell_type = character())
+                }
+                DT::replaceData(mc_type_proxy, data, resetPaging = FALSE, rownames = FALSE)
+            })
 
             output$cell_type_table <- DT::renderDataTable(
                 DT::datatable(cell_type_colors() %>% select(cell_type, color),
@@ -716,6 +729,9 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
 
             projection_selectors(ns, dataset, output, input, gene_modules, globals, session, weight = 0.6)
 
+            # We use this reactive in order to invalidate the cache only when needed
+            clipboard_changed <- clipboard_changed_2d_reactive(input, globals)
+
             # Projection plots
             output$plot_gene_proj_2d <- render_2d_plotly(
                 input,
@@ -732,7 +748,41 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 selected_metacell_types = selected_metacell_types,
                 selected_cell_types = selected_cell_types,
                 tab_guard = "annotate"
-            )
+            ) %>%
+                bindCache(
+                    dataset(),
+                    input$color_proj,
+                    metacell_types(),
+                    cell_type_colors(),
+                    input$point_size,
+                    input$stroke,
+                    input$min_edge_size,
+                    input$set_range,
+                    input$proj_stat,
+                    input$expr_range,
+                    input$lfp,
+                    input$color_proj_gene,
+                    input$color_proj_metadata,
+                    input$color_proj_gene_module,
+                    clipboard_changed(),
+                    input$graph_name,
+                    input$legend_orientation,
+                    input$show_legend_projection,
+                    selected_cell_types(),
+                    # Only include selection state in cache key when "Selected" color
+                    # mode is active; otherwise metacell clicks would needlessly
+                    # bust the projection cache.
+                    {
+                        if (!is.null(input$color_proj) && input$color_proj == "Selected") {
+                            selected_metacell_types()
+                        }
+                    },
+                    globals$mc2d,
+                    globals$plotly_format,
+                    globals$plotly_width,
+                    globals$plotly_height,
+                    globals$plotly_scale
+                )
 
             # Use the already defined selected_cell_types reactiveVal (defined at the top of the server) so that it is shared across the module
             scatter_box_outputs(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, ns, selected_cell_types = selected_cell_types, plotly_source = "gene_gene_plot_annot", plotly_buttons = c("hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = "select", tab_guard = "annotate")

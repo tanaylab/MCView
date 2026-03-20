@@ -1,11 +1,17 @@
-plot_sample_stacked_types <- function(dataset, globals, metacell_types, cell_type_colors, input, group_field = NULL) {
+plot_sample_stacked_types <- function(dataset, globals, metacell_types, cell_type_colors, input, group_field = NULL, composition_reactive = NULL) {
     plotly::renderPlotly({
+        req(globals$current_tab == "samples")
         gf <- if (!is.null(group_field)) group_field() else "samp_id"
         use_cells <- has_cell_gene_umis(dataset()) && !is.null(group_field)
 
         if (use_cells) {
             # Cell-based composition using the selected grouping field
-            composition <- get_group_cell_type_composition(dataset(), gf, metacell_types())
+            # Use shared reactive if available (avoids recomputing for CI panel)
+            composition <- if (!is.null(composition_reactive)) {
+                composition_reactive()
+            } else {
+                get_group_cell_type_composition(dataset(), gf, metacell_types())
+            }
 
             samp_types <- composition %>%
                 dplyr::rename(Sample = group_id, `Fraction` = fraction, `# of cells` = n_cells) %>%

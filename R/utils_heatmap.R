@@ -282,7 +282,19 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                 }
 
                 return(m)
-            }) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), markers(), gene_modules(), applied_params(), genes(), input$show_genes, clipboard_changed(), mode, input$metadata_order_var, metacell_filter(), input$mat_value)
+            }) %>% bindCache(
+                id, dataset(), metacell_types(), cell_type_colors(), markers(), gene_modules(),
+                # Use only mat-relevant fields from applied_params to avoid cache misses
+                # when unrelated fields (e.g., selected_md) change
+                applied_params()$selected_cell_types,
+                applied_params()$force_cell_type,
+                applied_params()$metadata_order_cell_type_var,
+                applied_params()$enable_categorical_filter,
+                applied_params()$categorical_filter_field,
+                applied_params()$categorical_filter_values,
+                genes(), input$show_genes, clipboard_changed(), mode,
+                input$metadata_order_var, metacell_filter(), input$mat_value
+            )
 
             heatmap_download_handlers(output, mat, markers, metacell_filter, dataset, input, metacell_types, globals, applied_params, ns)
 
@@ -550,7 +562,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     return(structure(list(p = res$p, gtable = res$gtable), class = "gt_custom"))
                 },
                 res = 96
-            ) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), gene_modules(), lfp_range(), metacell_filter(), input$plot_legend, input$plot_cell_type_legend, input$plot_genes_legend, applied_params(), markers(), clipboard_changed(), input$high_color, input$low_color, input$mid_color, input$midpoint, genes(), input$show_genes, highlighted_genes(), input$highlight_color, input$max_gene_num, input$metadata_order_var, input$mat_value)
+            ) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), gene_modules(), lfp_range(), metacell_filter(), applied_params(), markers(), clipboard_changed(), input$high_color, input$low_color, input$mid_color, input$midpoint, genes(), input$show_genes, highlighted_genes(), input$highlight_color, input$metadata_order_var, input$mat_value, mode)
 
             observeEvent(input$heatmap_brush, {
                 req(input$brush_action)
