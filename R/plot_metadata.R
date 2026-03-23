@@ -533,8 +533,15 @@ plot_mc_scatter <- function(dataset,
     }
 
     if (show_correlation) {
-        correlation <- cor(df[[x_var]], df[[y_var]], method = correlation_type, use = "pairwise.complete.obs")
-        correlation_text <- glue("Correlation: {round(correlation, 3)} ({correlation_type})")
+        x_vals <- df[[x_var]][!is.na(df[[x_var]]) & !is.na(df[[y_var]])]
+        y_vals <- df[[y_var]][!is.na(df[[x_var]]) & !is.na(df[[y_var]])]
+        if (length(unique(x_vals)) > 1 && length(unique(y_vals)) > 1) {
+            correlation <- cor(df[[x_var]], df[[y_var]], method = correlation_type, use = "pairwise.complete.obs")
+            correlation_text <- glue("Correlation: {round(correlation, 3)} ({correlation_type})")
+        } else {
+            correlation <- NA
+            correlation_text <- "Correlation: N/A (zero variance)"
+        }
     }
 
     p <- ggplot(

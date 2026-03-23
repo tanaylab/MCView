@@ -346,32 +346,65 @@ add_gene_flags <- function(daf, cache_dir, gene_names) {
 #' Add optional matrices to DAF
 #' @noRd
 add_optional_matrices <- function(daf, cache_dir, gene_names, metacell_names) {
+    # Helper: reindex a matrix to match target row/col names, filling missing with 0
+    reindex_matrix <- function(mat, target_rows, target_cols) {
+        # Get available rows/cols
+        avail_rows <- as.character(rownames(mat))
+        avail_cols <- as.character(colnames(mat))
+
+        # Metacells must all be present (columns)
+        col_idx <- match(target_cols, avail_cols)
+        if (any(is.na(col_idx))) {
+            return(NULL)
+        }
+
+        # For genes (rows), allow partial overlap - fill missing with 0
+        row_idx <- match(target_rows, avail_rows)
+        has_all_rows <- !any(is.na(row_idx))
+
+        if (has_all_rows) {
+            return(as.matrix(mat[row_idx, col_idx, drop = FALSE]))
+        }
+
+        # Partial overlap: build dense matrix, fill available rows
+        result <- matrix(0, nrow = length(target_rows), ncol = length(target_cols),
+                         dimnames = list(target_rows, target_cols))
+        present <- !is.na(row_idx)
+        result[present, ] <- as.matrix(mat[row_idx[present], col_idx, drop = FALSE])
+        result
+    }
+
     # Inner fold matrix
     inner_fold <- read_cache_file(cache_dir, "inner_fold_mat")
     if (!is.null(inner_fold) && !is.null(dim(inner_fold))) {
-        # Ensure correct orientation (gene x metacell in cache)
-        row_idx <- match(gene_names, as.character(rownames(inner_fold)))
-        col_idx <- match(metacell_names, as.character(colnames(inner_fold)))
-        inner_fold <- inner_fold[row_idx, col_idx, drop = FALSE]
-        daf <- dafr::set_matrix(daf, "gene", "metacell", "inner_fold", as.matrix(inner_fold))
+        mat <- reindex_matrix(inner_fold, gene_names, metacell_names)
+        if (!is.null(mat)) {
+            daf <- dafr::set_matrix(daf, "gene", "metacell", "inner_fold", mat)
+        } else {
+            cli_alert_info("Skipping inner_fold matrix (metacell mismatch)")
+        }
     }
 
     # Inner stdev matrix
     inner_stdev <- read_cache_file(cache_dir, "inner_stdev_mat")
     if (!is.null(inner_stdev) && !is.null(dim(inner_stdev))) {
-        row_idx <- match(gene_names, as.character(rownames(inner_stdev)))
-        col_idx <- match(metacell_names, as.character(colnames(inner_stdev)))
-        inner_stdev <- inner_stdev[row_idx, col_idx, drop = FALSE]
-        daf <- dafr::set_matrix(daf, "gene", "metacell", "inner_stdev_log", as.matrix(inner_stdev))
+        mat <- reindex_matrix(inner_stdev, gene_names, metacell_names)
+        if (!is.null(mat)) {
+            daf <- dafr::set_matrix(daf, "gene", "metacell", "inner_stdev_log", mat)
+        } else {
+            cli_alert_info("Skipping inner_stdev_log matrix (metacell mismatch)")
+        }
     }
 
     # Projected fold matrix
     projected_fold <- read_cache_file(cache_dir, "projected_fold")
     if (!is.null(projected_fold) && !is.null(dim(projected_fold))) {
-        row_idx <- match(gene_names, as.character(rownames(projected_fold)))
-        col_idx <- match(metacell_names, as.character(colnames(projected_fold)))
-        projected_fold <- projected_fold[row_idx, col_idx, drop = FALSE]
-        daf <- dafr::set_matrix(daf, "gene", "metacell", "projected_fold", as.matrix(projected_fold))
+        mat <- reindex_matrix(projected_fold, gene_names, metacell_names)
+        if (!is.null(mat)) {
+            daf <- dafr::set_matrix(daf, "gene", "metacell", "projected_fold", mat)
+        } else {
+            cli_alert_info("Skipping projected_fold matrix (metacell mismatch)")
+        }
     }
 
     # Corrected UMI matrix (mc_mat_corrected)

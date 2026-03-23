@@ -32,3 +32,4 @@ dev/
 .a5c/
 benchmarks/results/*.json
 AGENTS.md
+test_output/

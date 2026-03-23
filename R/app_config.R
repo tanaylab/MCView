@@ -4,11 +4,30 @@ init_defs <- function() {
 
     theme_set(theme_classic())
 
+    # Pre-warm dafr R→Julia dispatch (JIT for NamedArray/ReadOnly types)
+    # This shifts ~8s of JIT overhead from first data access to startup.
+    # Must run before any dafr::get_vector/get_matrix calls.
+    prewarm_dafr_dispatch()
+
     # Initialize Julia helpers for accelerated computation
     tryCatch(
         init_julia_helpers(),
         error = function(e) {
             cli::cli_alert_warning("Julia helpers initialization skipped: {e$message}")
+        }
+    )
+
+    # Pre-warm Julia correlation cache (JIT + EGC cache build)
+    # This shifts ~48s of JIT overhead from first user click to startup
+    tryCatch(
+        {
+            daf_obj <- get_dataset_daf(dataset_ls()[1])
+            if (!is.null(daf_obj)) {
+                prewarm_julia_cors(daf_obj, mcv_get("egc_epsilon"))
+            }
+        },
+        error = function(e) {
+            cli::cli_alert_warning("Julia correlation pre-warm skipped: {e$message}")
         }
     )
 

@@ -7,6 +7,7 @@
 run_app(
   daf,
   name = "data",
+  cells_daf = NULL,
   atlas = NULL,
   config_file = NULL,
   port = NULL,
@@ -22,6 +23,10 @@ run_app(
 
 \item{name}{Name for the dataset when using a single DAF object (default: "data").
 Ignored when `daf` is a named list.}
+
+\item{cells_daf}{Optional path to a cells-level DAF directory. When provided,
+enables cell-level features (grouping, pseudobulk DE, QC stats). If NULL,
+auto-detection looks for a sibling directory with "metacells" replaced by "cells".}
 
 \item{atlas}{Optional atlas DAF object for projection comparison}
 
@@ -98,6 +103,9 @@ run_app(list(
 query_daf <- dafr::files_daf("path/to/query")
 atlas_daf <- dafr::files_daf("path/to/atlas")
 run_app(query_daf, atlas = atlas_daf)
+
+# With cell-level data
+run_app(daf_obj, cells_daf = "path/to/cells_clean")
 
 # From path (auto-loads DAF)
 run_app("path/to/daf")

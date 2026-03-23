@@ -128,7 +128,6 @@ metadata_selector <- function(dataset, ns, id = "selected_md", label = "Metadata
 
 
 top_correlated_selector_multiple_genes <- function(input, output, session, dataset, ns, id, label, gene, action_id, action_label = "Add") {
-    req(has_gg_mc_top_cor(dataset()))
     tagList(
         selectInput(
             ns(id),
@@ -168,7 +167,6 @@ top_correlated_selector <- function(gene_id, id, type_id, input, output, session
             }
             req(input$show_correlations)
         }
-        req(has_gg_mc_top_cor(dataset()))
         req(input[[type_id]] == "Gene" || input[[type_id]] == "Gene module" || input[[type_id]] == "Metadata")
         req(input[[gene_id]])
 

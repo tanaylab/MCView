@@ -19,3 +19,9 @@ Character vector of field names, or character(0) if none available
 Queries the cells DAF for all cell-level vector properties and filters
 to categorical (string) fields with reasonable cardinality (< 1000 unique values).
 }
+\details{
+Uses a two-phase optimization:
+1. Read FilesDaf JSON metadata to identify string-typed vectors (~0.03s)
+2. Check cardinality only for string vectors via a single Julia call (~0.1s warm)
+Falls back to loading each vector in R when metadata is unavailable.
+}

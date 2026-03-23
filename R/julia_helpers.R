@@ -91,6 +91,96 @@ julia_helpers_enabled <- function() {
     isTRUE(getOption("mcview.use_julia_helpers", TRUE))
 }
 
+#' Pre-warm Julia correlation cache for a dataset
+#'
+#' Calls mcview_calc_top_cors once to trigger JIT compilation of all helper
+#' functions and build the EGC cache. This shifts ~48s of JIT overhead from
+#' the first user-triggered correlation query to app startup.
+#'
+#' @param daf_obj DAF object
+#' @param egc_epsilon Epsilon for log2 computation
+#' @noRd
+prewarm_julia_cors <- function(daf_obj, egc_epsilon = 1e-5) {
+    if (!julia_helpers_ready()) {
+        return(invisible(NULL))
+    }
+    tryCatch(
+        {
+            # Pick the first gene to force JIT + cache build
+            gene <- dafr::axis_entries(daf_obj, "gene")[1]
+            JuliaCall::julia_call(
+                "mcview_calc_top_cors",
+                daf_obj$jl_obj,
+                as.character(gene),
+                as.numeric(egc_epsilon),
+                1L,
+                need_return = "R"
+            )
+            cli::cli_alert_success("Julia correlation cache pre-warmed")
+        },
+        error = function(e) {
+            cli::cli_alert_warning("Julia correlation pre-warm failed: {e$message}")
+        }
+    )
+    invisible(NULL)
+}
+
+# ==============================================================================
+# dafr dispatch warmup
+# ==============================================================================
+
+#' Warm up Julia JIT for dafr FilesDaf operations
+#'
+#' The first call to dafr::get_vector() on a FilesDaf triggers ~4s of Julia JIT
+#' compilation for RCall's sexp()/rcopy() type conversion of NamedVector/ReadOnly
+#' return types. The DataAxesFormats functions themselves are precompiled in the
+#' sysimage, but RCall/JuliaCall aren't, so the R↔Julia bridge needs JIT.
+#'
+#' This function creates a tiny temporary FilesDaf and returns one float vector
+#' and one string vector through the full julia_call → docall → sexp path.
+#' This triggers JIT for the NamedVector{Float64, ReadOnly{...}} and
+#' NamedVector{String, ReadOnly{...}} conversion paths.
+#'
+#' Cost: ~2s. Saves ~4s on every cold-start first data access.
+#'
+#' @noRd
+prewarm_dafr_dispatch <- function() {
+    tryCatch(
+        {
+            start <- proc.time()[["elapsed"]]
+            # Create a tiny 1-element FilesDaf to minimize I/O
+            JuliaCall::julia_command("using DataAxesFormats")
+            JuliaCall::julia_command("_pw_dir = mktempdir()")
+            JuliaCall::julia_command("_pw = FilesDaf(_pw_dir, \"w\"; name=\"w\")")
+            JuliaCall::julia_command("add_axis!(_pw, \"r\", [\"a\"])")
+            JuliaCall::julia_command("add_axis!(_pw, \"c\", [\"x\"])")
+            JuliaCall::julia_command("set_vector!(_pw, \"r\", \"nv\", [1.0])")
+            JuliaCall::julia_command("set_vector!(_pw, \"r\", \"sv\", [\"x\"])")
+            JuliaCall::julia_command("set_matrix!(_pw, \"r\", \"c\", \"m\", reshape([1.0], 1, 1))")
+            JuliaCall::julia_command("_pw = nothing; GC.gc()")
+            JuliaCall::julia_command("_pw_r = FilesDaf(_pw_dir, \"r\"; name=\"r\")")
+
+            # Return vectors/matrix through the full dafr R pipeline to trigger
+            # JIT for: julia_call docall path, sexp for NamedVector types,
+            # AND from_julia_array (_strip_wrappers, jlview, name extraction)
+            pw_daf <- dafr::Daf(JuliaCall::julia_eval("_pw_r"))
+            invisible(dafr::get_vector(pw_daf, "r", "nv"))  # Float64
+            invisible(dafr::get_vector(pw_daf, "r", "sv"))  # String
+            invisible(dafr::get_matrix(pw_daf, "r", "c", "m"))  # Float64 matrix
+
+            # Cleanup
+            JuliaCall::julia_command("_pw_r = nothing; GC.gc()")
+
+            elapsed <- proc.time()[["elapsed"]] - start
+            cli::cli_alert_success("dafr dispatch pre-warmed ({round(elapsed, 1)}s)")
+        },
+        error = function(e) {
+            cli::cli_alert_warning("dafr dispatch pre-warm failed: {e$message}")
+        }
+    )
+    invisible(NULL)
+}
+
 # ==============================================================================
 # R Wrapper: calc_top_cors via Julia
 # ==============================================================================
