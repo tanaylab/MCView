@@ -525,9 +525,29 @@ main <- function() {
         datasets = datasets
     )
 
-    # Step 8: Embed config into DAF scalars
+    # Step 8: Embed config into DAF scalars + pre-store available tabs
     if (opts$verbose) msg_info("Embedding configuration into DAF...")
     embed_config_in_daf(daf_output_dir, datasets, opts$format, old_config, verbose = opts$verbose)
+
+    # Pre-store available tabs so detect_available_tabs() is instant at runtime
+    # (avoids ~1.3s of has_vector/has_matrix checks on every cold start)
+    if (opts$verbose) msg_info("Pre-storing available tabs...")
+    for (ds in datasets) {
+        daf_ext <- if (opts$format == "h5") ".h5" else ""
+        daf_path <- file.path(daf_output_dir, paste0(ds, daf_ext))
+        if (file.exists(daf_path) || dir.exists(daf_path)) {
+            tryCatch({
+                daf_rw <- if (opts$format == "h5") {
+                    dafr::h5df(daf_path, mode = "w+")
+                } else {
+                    dafr::files_daf(daf_path, mode = "w+")
+                }
+                MCView::store_available_tabs(daf_rw)
+            }, error = function(e) {
+                if (opts$verbose) msg_warn("Could not pre-store tabs for {ds}: {conditionMessage(e)}")
+            })
+        }
+    }
 
     # Step 9: Create output app structure
     msg_info("Creating app structure...")

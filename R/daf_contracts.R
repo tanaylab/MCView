@@ -220,7 +220,27 @@ mcview_core_contract <- function() {
                 "UMI counts per metacell-gene"
             )
         ),
-        scalars = list(),
+        scalars = list(
+            # Config scalars (all optional — can come from YAML config instead)
+            scalar_spec("mcview_title", CONTRACT_OPTIONAL, "character",
+                        "App title displayed in UI header"),
+            scalar_spec("mcview_tabs", CONTRACT_OPTIONAL, "character",
+                        "Comma-separated list of enabled tab names"),
+            scalar_spec("mcview_excluded_tabs", CONTRACT_OPTIONAL, "character",
+                        "Comma-separated list of excluded tab names"),
+            scalar_spec("mcview_light_version", CONTRACT_OPTIONAL, "logical",
+                        "Use light version of UI"),
+            scalar_spec("mcview_about_markdown", CONTRACT_OPTIONAL, "character",
+                        "Markdown content for About tab"),
+            scalar_spec("mcview_cache_in_daf", CONTRACT_OPTIONAL, "logical",
+                        "Store runtime cache in writable DAF layer"),
+            scalar_spec("mcview_cache_daf_root", CONTRACT_OPTIONAL, "character",
+                        "Path to writable cache DAF directory"),
+
+            # Pre-computed metadata (strongly recommended for fast startup)
+            scalar_spec("mcview_available_tabs", CONTRACT_OPTIONAL, "character",
+                        "Comma-separated auto-detected tabs; eliminates ~1.3s detect_available_tabs on cold start")
+        ),
 
         # Special validation rules
         custom_rules = list(
