@@ -187,17 +187,6 @@ test_that("get_mc_fp returns fold change matrix", {
     expect_gt(ncol(fp), 0)
 })
 
-test_that("inner_fold_mat is available when present", {
-    daf <- setup_test_daf()
-
-    inner_fold <- get_mc_data("test_data", "inner_fold_mat")
-
-    # This may or may not be present depending on the DAF
-    if (!is.null(inner_fold)) {
-        expect_true(is.matrix(inner_fold) || inherits(inner_fold, "Matrix"))
-    }
-})
-
 # ==============================================================================
 # Julia Helpers Initialization Test
 # ==============================================================================

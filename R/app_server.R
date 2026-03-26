@@ -73,14 +73,6 @@ app_server <- function(input, output, session) {
         if (!has_samples(dataset()) && !("Samples" %in% mcv_get("config")$tabs)) {
             available_tabs <- available_tabs[available_tabs != "Samples"]
         }
-        # Check DAF matrix existence instead of loading full matrices
-        daf_obj <- get_dataset_daf(dataset())
-        if (is.null(daf_obj) || !dafr::has_matrix(daf_obj, "gene", "metacell", "inner_fold")) {
-            available_tabs <- available_tabs[available_tabs != "Inner-fold"]
-        }
-        if (is.null(daf_obj) || (!dafr::has_matrix(daf_obj, "gene", "metacell", "inner_stdev_log") && !dafr::has_matrix(daf_obj, "gene", "metacell", "inner_std_log"))) {
-            available_tabs <- available_tabs[available_tabs != "Stdev-fold"]
-        }
         if (is.null(get_mc_data(dataset(), "type_flow"))) {
             available_tabs <- available_tabs[available_tabs != "Flow"]
         }

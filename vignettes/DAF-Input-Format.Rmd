@@ -109,26 +109,6 @@ These boolean vectors enable gene filtering in the UI.
 If `top1_gene`/`top2_gene`/`top1_lfp`/`top2_lfp` are missing, MCView computes
 them from the UMI matrix on first load. Precomputing saves startup time.
 
-### Inner-Fold and Stdev Matrices
-
-These enable the **Inner-fold** and **Stdev-fold** tabs respectively.
-
-| Rows | Columns | Name | Description |
-|------|---------|------|-------------|
-| `gene` | `metacell` | `inner_fold` | Inner fold values per gene-metacell |
-| `gene` | `metacell` | `inner_stdev_log` | Inner stdev log per gene-metacell |
-
-### QC Metadata (vectors on `metacell` axis)
-
-These enhance the **QC** tab.
-
-| Name | Type | Description |
-|------|------|-------------|
-| `max_inner_fold` | numeric | Maximum inner fold per metacell |
-| `max_inner_fold_no_lateral` | numeric | Max inner fold excluding lateral genes |
-| `max_inner_stdev_log` | numeric | Max inner stdev log per metacell |
-| `zero_fold` | numeric | Zero fold per metacell |
-
 ### QC Scalars
 
 | Name | Type | Description |
@@ -153,20 +133,6 @@ with associated vectors. If missing, MCView computes correlations on-the-fly
 | `gene2` | character | Second gene in the pair |
 | `cor` | numeric | Correlation value (-1 to 1) |
 | `type` | character | `"pos"` or `"neg"` |
-
-### Gene Zero-Fold Statistics
-
-**Axis:** `gene_zero_fold` (one entry per gene-metacell-type combination)
-
-| Name | Type | Description |
-|------|------|-------------|
-| `gene` | character | Gene name |
-| `metacell` | character | Metacell name |
-| `zero_fold` | numeric | Zero fold value |
-| `avg` | numeric | Average value |
-| `obs` | numeric | Observed value |
-| `exp` | numeric | Expected value |
-| `type` | character | Cell type |
 
 ### Metacell Graph (for network visualization)
 
@@ -253,8 +219,6 @@ MCView automatically enables tabs based on the data present in the DAF:
 | **QC** | Core + QC metadata recommended |
 | **Markers** | `gene.is_marker` vector |
 | **Gene modules** | `gene.module` vector |
-| **Inner-fold** | `gene,metacell.inner_fold` matrix |
-| **Stdev-fold** | `gene,metacell.inner_stdev_log` matrix |
 | **Samples** | `cell` axis + `cell.metacell` + `cell.samp_id` |
 | **Flow** | Time annotation data in metacell metadata |
 | **Atlas** / **Query** / **Projected-fold** | Atlas projection data + separate atlas DAF |
@@ -354,8 +318,8 @@ MCView provides programmatic access to all contract definitions:
 contracts <- mcview_all_contracts()
 
 # Get contract for a specific tab
-inner_fold_contract <- mcview_tab_contract("Inner-fold")
-print_contract(inner_fold_contract)
+markers_contract <- mcview_tab_contract("Markers")
+print_contract(markers_contract)
 
 # Generate full markdown documentation
 generate_contract_docs("mcview_contracts.md")

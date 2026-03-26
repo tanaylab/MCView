@@ -216,15 +216,6 @@ test_that("QC tab renders correctly", {
     has_cell_num_plot <- element_exists(session, "#qc-plot_qc_cell_num")
     expect_true(has_cell_num_plot, info = "Cells per metacell plot container should exist")
 
-    has_inner_fold_plot <- element_exists(session, "#qc-plot_qc_inner_fold")
-    expect_true(has_inner_fold_plot, info = "Inner fold plot container should exist")
-
-    has_zero_fold_plot <- element_exists(session, "#qc-plot_zero_fold")
-    expect_true(has_zero_fold_plot, info = "Zero fold plot container should exist")
-
-    has_gene_inner_fold <- element_exists(session, "#qc-plot_gene_inner_fold_scatter")
-    expect_true(has_gene_inner_fold, info = "Gene inner fold scatter plot container should exist")
-
     take_screenshot(session, "tab-06-qc")
 })
 
@@ -258,62 +249,7 @@ test_that("Markers tab renders correctly", {
 })
 
 # ==============================================================================
-# Tab 8: Inner-fold (conditional)
-# ==============================================================================
-test_that("Inner-fold tab renders correctly", {
-    # This tab may not be available if inner_fold matrix is missing
-    clicked <- tryCatch(
-        click_tab(session, "Inner-fold", timeout = 30),
-        error = function(e) FALSE
-    )
-    if (!isTRUE(clicked)) {
-        skip("Inner-fold tab not available in this dataset")
-    }
-
-    Sys.sleep(2)
-    idle <- wait_for_shiny_idle(session, timeout = 60)
-    expect_true(idle, info = "Shiny should reach idle state on Inner-fold tab")
-
-    # module_name is "inner_fold"
-    # heatmap_box ID: inner_fold-inner_fold_heatmap-heatmap_box
-    has_heatmap_box <- element_exists(session, "#inner_fold-inner_fold_heatmap-heatmap_box")
-    expect_true(has_heatmap_box, info = "Inner-fold heatmap box should exist")
-
-    has_plotting_area <- element_exists(session, "#inner_fold-inner_fold_heatmap-plotting_area")
-    expect_true(has_plotting_area, info = "Inner-fold heatmap plotting area should exist")
-
-    take_screenshot(session, "tab-08-inner-fold")
-})
-
-# ==============================================================================
-# Tab 9: Stdev-fold (conditional)
-# ==============================================================================
-test_that("Stdev-fold tab renders correctly", {
-    clicked <- tryCatch(
-        click_tab(session, "Stdev-fold", timeout = 30),
-        error = function(e) FALSE
-    )
-    if (!isTRUE(clicked)) {
-        skip("Stdev-fold tab not available in this dataset")
-    }
-
-    Sys.sleep(2)
-    idle <- wait_for_shiny_idle(session, timeout = 60)
-    expect_true(idle, info = "Shiny should reach idle state on Stdev-fold tab")
-
-    # module_name is "stdev_fold"
-    # heatmap_box ID: stdev_fold-stdev_fold_heatmap-heatmap_box
-    has_heatmap_box <- element_exists(session, "#stdev_fold-stdev_fold_heatmap-heatmap_box")
-    expect_true(has_heatmap_box, info = "Stdev-fold heatmap box should exist")
-
-    has_plotting_area <- element_exists(session, "#stdev_fold-stdev_fold_heatmap-plotting_area")
-    expect_true(has_plotting_area, info = "Stdev-fold heatmap plotting area should exist")
-
-    take_screenshot(session, "tab-09-stdev-fold")
-})
-
-# ==============================================================================
-# Tab 10: Projection QC (conditional - requires atlas)
+# Tab 8: Projection QC (conditional - requires atlas)
 # ==============================================================================
 test_that("Projection QC tab renders correctly", {
     clicked <- tryCatch(
@@ -360,11 +296,11 @@ test_that("Projection QC tab renders correctly", {
     has_fitted_ct_plot <- element_exists(session, "#projection_qc-plot_fitted_genes_per_cell_type")
     expect_true(has_fitted_ct_plot, info = "Fitted genes per cell type plot container should exist")
 
-    take_screenshot(session, "tab-10-projection-qc")
+    take_screenshot(session, "tab-08-projection-qc")
 })
 
 # ==============================================================================
-# Tab 11: Atlas (conditional - requires atlas)
+# Tab 9: Atlas (conditional - requires atlas)
 # ==============================================================================
 test_that("Atlas tab renders correctly", {
     clicked <- tryCatch(
@@ -392,11 +328,11 @@ test_that("Atlas tab renders correctly", {
     has_color_proj <- element_exists(session, "#atlas-color_proj")
     expect_true(has_color_proj, info = "Atlas color-by radio buttons should exist")
 
-    take_screenshot(session, "tab-11-atlas")
+    take_screenshot(session, "tab-09-atlas")
 })
 
 # ==============================================================================
-# Tab 12: Annotate
+# Tab 10: Annotate
 # ==============================================================================
 test_that("Annotate tab renders correctly", {
     idle <- navigate_to_tab(session, "Annotate")
@@ -438,11 +374,11 @@ test_that("Annotate tab renders correctly", {
     has_add_ct_btn <- element_exists(session, "#annotate-add_cell_type_modal")
     expect_true(has_add_ct_btn, info = "Add cell type button should exist")
 
-    take_screenshot(session, "tab-12-annotate")
+    take_screenshot(session, "tab-10-annotate")
 })
 
 # ==============================================================================
-# Tab 13: Samples (conditional - requires sample data)
+# Tab 11: Samples (conditional - requires sample data)
 # ==============================================================================
 test_that("Samples tab renders correctly", {
     clicked <- tryCatch(
@@ -478,7 +414,7 @@ test_that("Samples tab renders correctly", {
     has_ordering <- element_exists(session, "#samples-sample_types_ordering")
     expect_true(has_ordering, info = "Sample ordering selector should exist")
 
-    take_screenshot(session, "tab-13-samples")
+    take_screenshot(session, "tab-11-samples")
 })
 
 # ==============================================================================

@@ -536,16 +536,6 @@ detect_available_tabs <- function(daf_obj) {
         tabs <- c(tabs, "Gene modules")
     }
 
-    # Inner-fold - requires gene,metacell.inner_fold matrix
-    if (has_mat("gene", "metacell", "inner_fold")) {
-        tabs <- c(tabs, "Inner-fold")
-    }
-
-    # Stdev-fold - requires gene,metacell.inner_stdev_log or inner_std_log matrix
-    if (has_mat("gene", "metacell", "inner_stdev_log") || has_mat("gene", "metacell", "inner_std_log")) {
-        tabs <- c(tabs, "Stdev-fold")
-    }
-
     # Projection QC - all fields are optional, so available if core passes
     tabs <- c(tabs, "Projection QC")
 

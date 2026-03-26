@@ -253,9 +253,6 @@ convert_dataset_to_daf <- function(cache_dir,
     # Add gene QC vectors
     add_gene_qc_vectors(daf, cache_dir, gene_names)
 
-    # Add zero-fold gene statistics
-    add_gene_zero_fold(daf, cache_dir)
-
     # Add gene correlations
     add_gene_correlations(daf, cache_dir)
 
@@ -372,28 +369,6 @@ add_optional_matrices <- function(daf, cache_dir, gene_names, metacell_names) {
         present <- !is.na(row_idx)
         result[present, ] <- as.matrix(mat[row_idx[present], col_idx, drop = FALSE])
         result
-    }
-
-    # Inner fold matrix
-    inner_fold <- read_cache_file(cache_dir, "inner_fold_mat")
-    if (!is.null(inner_fold) && !is.null(dim(inner_fold))) {
-        mat <- reindex_matrix(inner_fold, gene_names, metacell_names)
-        if (!is.null(mat)) {
-            daf <- dafr::set_matrix(daf, "gene", "metacell", "inner_fold", mat)
-        } else {
-            cli_alert_info("Skipping inner_fold matrix (metacell mismatch)")
-        }
-    }
-
-    # Inner stdev matrix
-    inner_stdev <- read_cache_file(cache_dir, "inner_stdev_mat")
-    if (!is.null(inner_stdev) && !is.null(dim(inner_stdev))) {
-        mat <- reindex_matrix(inner_stdev, gene_names, metacell_names)
-        if (!is.null(mat)) {
-            daf <- dafr::set_matrix(daf, "gene", "metacell", "inner_stdev_log", mat)
-        } else {
-            cli_alert_info("Skipping inner_stdev_log matrix (metacell mismatch)")
-        }
     }
 
     # Projected fold matrix
@@ -594,36 +569,6 @@ add_gene_qc_vectors <- function(daf, cache_dir, gene_names) {
     if (!is.null(gene_qc) && is.data.frame(gene_qc) && nrow(gene_qc) > 0) {
         gene_qc <- gene_qc[match(gene_names, as.character(gene_qc$gene)), ]
         daf <- set_daf_vectors_from_df(daf, "gene", gene_qc, "gene")
-    }
-
-    invisible(daf)
-}
-
-#' Add gene zero-fold statistics to DAF
-#' @noRd
-add_gene_zero_fold <- function(daf, cache_dir) {
-    gene_zero_fold <- read_cache_file(cache_dir, "gene_zero_fold")
-    if (!is.null(gene_zero_fold) && is.data.frame(gene_zero_fold) && nrow(gene_zero_fold) > 0) {
-        required_cols <- c("gene", "metacell", "zero_fold", "avg", "obs", "exp", "type")
-        if (all(required_cols %in% colnames(gene_zero_fold))) {
-            gene_zero_fold <- gene_zero_fold %>%
-                filter(!is.na(gene), !is.na(metacell), !is.na(zero_fold), !is.na(avg), !is.na(obs), !is.na(exp), !is.na(type))
-
-            if (nrow(gene_zero_fold) > 0) {
-                axis_name <- "gene_zero_fold"
-                if (!dafr::has_axis(daf, axis_name)) {
-                    daf <- dafr::add_axis(daf, axis_name, as.character(seq_len(nrow(gene_zero_fold))))
-                }
-
-                daf <- dafr::set_vector(daf, axis_name, "gene", as.character(gene_zero_fold$gene))
-                daf <- dafr::set_vector(daf, axis_name, "metacell", as.character(gene_zero_fold$metacell))
-                daf <- dafr::set_vector(daf, axis_name, "zero_fold", as.numeric(gene_zero_fold$zero_fold))
-                daf <- dafr::set_vector(daf, axis_name, "avg", as.numeric(gene_zero_fold$avg))
-                daf <- dafr::set_vector(daf, axis_name, "obs", as.numeric(gene_zero_fold$obs))
-                daf <- dafr::set_vector(daf, axis_name, "exp", as.numeric(gene_zero_fold$exp))
-                daf <- dafr::set_vector(daf, axis_name, "type", as.character(gene_zero_fold$type))
-            }
-        }
     }
 
     invisible(daf)

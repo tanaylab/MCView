@@ -117,7 +117,7 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
                 new_markers_df <- get_marker_genes(dataset(), mode = mode)
             }
 
-            if (has_name(new_markers_df, "metacell") && mode != "Outliers") {
+            if (has_name(new_markers_df, "metacell")) {
                 markers_df <- markers_df %>%
                     select(metacell) %>%
                     inner_join(new_markers_df, by = "metacell")
@@ -172,21 +172,7 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
     })
 
     output$add_genes_ui <- renderUI({
-        if (mode %in% c("Inner", "Outliers", "Stdev")) {
-            if (mode == "Inner") {
-                mc_fp <- get_mc_data(dataset(), "inner_fold_mat")
-            } else if (mode == "Stdev") {
-                mc_fp <- get_mc_data(dataset(), "inner_stdev_mat")
-            } else {
-                mc_fp <- get_mc_data(dataset(), "deviant_fold_mat")
-            }
-            req(mc_fp)
-            gene_choices <- rownames(mc_fp)[Matrix::rowSums(mc_fp) > 0]
-            req(markers)
-            gene_choices <- gene_choices[!(gene_choices %in% markers())]
-        } else {
-            gene_choices <- gene_names(dataset())
-        }
+        gene_choices <- gene_names(dataset())
 
 
         tagList(
@@ -554,7 +540,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                         col_names = ncol(m) <= 100,
                         top_cell_type_bar = ncol(m) <= 100,
                         interleave = nrow(m) > 80,
-                        vertical_gridlines = mode %in% c("Inner", "Proj", "Stdev"),
+                        vertical_gridlines = mode %in% c("Proj"),
                         separate_gtable = TRUE
                     )
 
@@ -654,48 +640,35 @@ heatmap_tooltip_handler <- function(output, mat, metacell_filter, metacell_types
         top_genes <- mcell_stats %>%
             glue::glue_data("{top1_gene} ({round(top1_lfp, digits=2)}), {top2_gene} ({round(top2_lfp, digits=2)})")
 
-        if (mode == "Outliers") {
-            mcell_tooltip <- paste(
-                glue("Gene: {gene_name}", gene_name = gene_label(gene, dataset(), gene_modules())),
-                glue("Cell: {metacell}"),
-                glue("Value: {round(value, digits=2)}"),
-                glue("Most similar metacell: {mcell_stats$most_similar_metacell}"),
-                glue("Cell type: {mcell_stats$cell_type}"),
-                glue("Top genes: {top_genes}"),
-                ifelse(has_name(mcell_stats, "mc_age"), glue("Metacell age (E[t]): {round(mcell_stats$mc_age, digits=2)}"), ""),
-                sep = "<br/>"
-            )
-        } else {
-            gene_prefix <- "Gene"
-            if (mode == "Gene modules" && !(gene %in% genes())) {
-                gene_prefix <- "Gene module"
-            }
+        gene_prefix <- "Gene"
+        if (mode == "Gene modules" && !(gene %in% genes())) {
+            gene_prefix <- "Gene module"
+        }
 
-            gene_name <- gene_label(gene, dataset(), gene_modules())
-            if (mode == "Gene modules") {
-                gene_name <- gene
-            }
+        gene_name <- gene_label(gene, dataset(), gene_modules())
+        if (mode == "Gene modules") {
+            gene_name <- gene
+        }
 
-            mcell_tooltip <- paste(
-                glue("{gene_prefix}: {gene_name}"),
-                glue("Metacell: {metacell}"),
-                glue("Value: {round(value, digits=2)}"),
-                glue("Cell type: {mcell_stats$cell_type}"),
-                glue("Top genes: {top_genes}"),
-                ifelse(has_name(mcell_stats, "mc_age"), glue("Metacell age (E[t]): {round(mcell_stats$mc_age, digits=2)}"), ""),
-                sep = "<br/>"
-            )
+        mcell_tooltip <- paste(
+            glue("{gene_prefix}: {gene_name}"),
+            glue("Metacell: {metacell}"),
+            glue("Value: {round(value, digits=2)}"),
+            glue("Cell type: {mcell_stats$cell_type}"),
+            glue("Top genes: {top_genes}"),
+            ifelse(has_name(mcell_stats, "mc_age"), glue("Metacell age (E[t]): {round(mcell_stats$mc_age, digits=2)}"), ""),
+            sep = "<br/>"
+        )
 
-            metadata <- get_markers_metadata(dataset, applied_params()$selected_md, metacell_types, globals)
-            if (!is.null(metadata)) {
-                mc_md <- metadata %>%
-                    filter(metacell == !!metacell) %>%
-                    select(-metacell)
-                md_tooltip <- purrr::map_chr(colnames(mc_md), ~
-                    glue("{.x}: {mc_md[[.x]][1]}")) %>%
-                    paste(collapse = "<br/>")
-                mcell_tooltip <- paste(mcell_tooltip, md_tooltip)
-            }
+        metadata <- get_markers_metadata(dataset, applied_params()$selected_md, metacell_types, globals)
+        if (!is.null(metadata)) {
+            mc_md <- metadata %>%
+                filter(metacell == !!metacell) %>%
+                select(-metacell)
+            md_tooltip <- purrr::map_chr(colnames(mc_md), ~
+                glue("{.x}: {mc_md[[.x]][1]}")) %>%
+                paste(collapse = "<br/>")
+            mcell_tooltip <- paste(mcell_tooltip, md_tooltip)
         }
 
         wellPanel(

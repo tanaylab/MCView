@@ -164,18 +164,15 @@ get_mc_data <- function(dataset, var_name, atlas = FALSE) {
     # cache (keyed by version counter) already avoids the Julia round-trip.
     #
     # Removed from cache (dafr handles these):
-    #   mc_sum        - single get_vector + names()
-    #   lateral_genes - get_vector + flag filter
-    #   noisy_genes   - get_vector + flag filter
-    #   inner_fold_mat  - single get_matrix
-    #   inner_stdev_mat - single get_matrix
+    #   mc_sum         - single get_vector + names()
+    #   lateral_genes  - get_vector + flag filter
+    #   noisy_genes    - get_vector + flag filter
     #   projected_fold  - single get_matrix
     static_vars <- c(
         "mc_mat", "mc2d",
         "marker_genes", "gene_modules",
-        "marker_genes_inner_fold", "marker_genes_inner_stdev",
-        "marker_genes_deviant_fold", "marker_genes_projected",
-        "mc_qc_metadata", "gene_qc", "gg_mc_top_cor", "gene_zero_fold",
+        "marker_genes_projected",
+        "mc_qc_metadata", "gene_qc", "gg_mc_top_cor",
         "metacell_graphs", "qc_stats", "cell_metadata",
         "mc_mat_corrected", "projected_mat",
         "proj_weights", "query_atlas_cell_type_fracs", "query_md"
@@ -538,10 +535,5 @@ get_mc_sum <- function(dataset, atlas = FALSE) {
 }
 
 get_gene_qc <- function(dataset) {
-    gene_qc <- get_mc_data(dataset, "gene_qc")
-    if (is.null(gene_qc)) {
-        gene_qc <- get_mc_data(dataset, "gene_inner_fold")
-    }
-
-    return(gene_qc)
+    get_mc_data(dataset, "gene_qc")
 }

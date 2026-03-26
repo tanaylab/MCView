@@ -46,8 +46,8 @@
 #' @noRd
 MCVIEW_TAB_NAMES <- c(
     "About", "Manifold", "Genes", "Diff. Expression", "Cell types",
-    "QC", "Markers", "Gene modules", "Gene correlation", "Inner-fold",
-    "Stdev-fold", "Projection QC", "Atlas", "Annotate", "Samples", "Flow"
+    "QC", "Markers", "Gene modules", "Gene correlation",
+    "Projection QC", "Atlas", "Annotate", "Samples", "Flow"
 )
 
 # ==============================================================================
@@ -199,10 +199,6 @@ mcview_contract_to_dafr <- function(contract) {
 #' Sample ID note: `mcview_sample_property` is a scalar that names which cell
 #' vector to use as the sample identifier (e.g. "embryo", "batch_set_id").
 #' There is no hardcoded `samp_id` vector -- the cell vector name is dynamic.
-#'
-#' Inner stdev note: the pipeline may produce either `inner_stdev_log` or
-#' `inner_std_log`. MCView accepts both names; the R layer normalizes to
-#' whichever is present.
 #'
 #' @return List containing axes, vectors, matrices, and scalars specifications
 #' @export
@@ -428,18 +424,6 @@ mcview_core_contract <- function() {
             # ==================================================================
             # Optional gene x metacell matrices
             # ==================================================================
-            matrix_spec(
-                "gene", "metacell", "inner_fold", CONTRACT_OPTIONAL, "numeric",
-                "Inner fold per gene-metacell (enables Inner-fold / QC tabs)"
-            ),
-            matrix_spec(
-                "gene", "metacell", "inner_stdev_log", CONTRACT_OPTIONAL, "numeric",
-                "Inner stdev log per gene-metacell (enables Stdev-fold tab)"
-            ),
-            matrix_spec(
-                "gene", "metacell", "inner_std_log", CONTRACT_OPTIONAL, "numeric",
-                "Inner std log per gene-metacell (alternative name for inner_stdev_log)"
-            ),
             matrix_spec(
                 "gene", "metacell", "geomean_fraction", CONTRACT_OPTIONAL, "numeric",
                 "Geometric mean fraction per gene-metacell (avoids runtime EGC computation)"
@@ -683,22 +667,6 @@ mcview_qc_contract <- function() {
                 "Alias for total_UMIs"
             ),
             vector_spec(
-                "metacell", "max_inner_fold", CONTRACT_OPTIONAL, "numeric",
-                "Maximum inner fold per metacell"
-            ),
-            vector_spec(
-                "metacell", "max_inner_fold_no_lateral", CONTRACT_OPTIONAL, "numeric",
-                "Max inner fold excluding lateral genes"
-            ),
-            vector_spec(
-                "metacell", "max_inner_stdev_log", CONTRACT_OPTIONAL, "numeric",
-                "Max inner stdev log per metacell"
-            ),
-            vector_spec(
-                "metacell", "zero_fold", CONTRACT_OPTIONAL, "numeric",
-                "Zero fold per metacell"
-            ),
-            vector_spec(
                 "metacell", "rare_metacell", CONTRACT_OPTIONAL, "logical",
                 "Whether metacell is rare"
             ),
@@ -759,52 +727,6 @@ mcview_gene_modules_contract <- function() {
             vector_spec(
                 "gene", "module", CONTRACT_REQUIRED, "character",
                 "Gene module assignment"
-            )
-        )
-    )
-}
-
-#' Contract for Inner-fold tab
-#' @export
-mcview_inner_fold_contract <- function() {
-    list(
-        name = "Inner-fold",
-        description = "Inner fold analysis per gene",
-        extends = "core",
-        matrices = list(
-            matrix_spec(
-                "gene", "metacell", "inner_fold", CONTRACT_REQUIRED, "numeric",
-                "Inner fold per gene-metacell"
-            )
-        ),
-        vectors = list(
-            vector_spec(
-                "gene", "is_lateral", CONTRACT_OPTIONAL, "logical",
-                "Whether gene is lateral"
-            ),
-            vector_spec(
-                "metacell", "max_inner_fold", CONTRACT_OPTIONAL, "numeric",
-                "Maximum inner fold per metacell"
-            )
-        )
-    )
-}
-
-#' Contract for Stdev-fold tab
-#' @export
-mcview_stdev_fold_contract <- function() {
-    list(
-        name = "Stdev-fold",
-        description = "Inner standard deviation analysis",
-        extends = "core",
-        matrices = list(
-            matrix_spec(
-                "gene", "metacell", "inner_stdev_log", CONTRACT_OPTIONAL, "numeric",
-                "Inner stdev log per gene-metacell"
-            ),
-            matrix_spec(
-                "gene", "metacell", "inner_std_log", CONTRACT_OPTIONAL, "numeric",
-                "Inner std log per gene-metacell (alternative name)"
             )
         )
     )
@@ -979,48 +901,6 @@ mcview_gene_correlations_contract <- function() {
             vector_spec(
                 "gg_mc_top_cor", "type", CONTRACT_OPTIONAL, "character",
                 "Cell type for correlation (legacy axis)"
-            )
-        )
-    )
-}
-
-#' Contract for gene zero-fold data
-#' @export
-mcview_gene_zero_fold_contract <- function() {
-    list(
-        name = "Gene Zero Fold",
-        description = "Gene zero-fold statistics",
-        axes = list(
-            gene_zero_fold = axis_spec(CONTRACT_OPTIONAL, "Gene zero-fold statistics")
-        ),
-        vectors = list(
-            vector_spec(
-                "gene_zero_fold", "gene", CONTRACT_OPTIONAL, "character",
-                "Gene name"
-            ),
-            vector_spec(
-                "gene_zero_fold", "metacell", CONTRACT_OPTIONAL, "character",
-                "Metacell name"
-            ),
-            vector_spec(
-                "gene_zero_fold", "zero_fold", CONTRACT_OPTIONAL, "numeric",
-                "Zero fold value"
-            ),
-            vector_spec(
-                "gene_zero_fold", "avg", CONTRACT_OPTIONAL, "numeric",
-                "Average value"
-            ),
-            vector_spec(
-                "gene_zero_fold", "obs", CONTRACT_OPTIONAL, "numeric",
-                "Observed value"
-            ),
-            vector_spec(
-                "gene_zero_fold", "exp", CONTRACT_OPTIONAL, "numeric",
-                "Expected value"
-            ),
-            vector_spec(
-                "gene_zero_fold", "type", CONTRACT_OPTIONAL, "character",
-                "Cell type"
             )
         )
     )
@@ -1262,26 +1142,6 @@ mcview_cache_contract <- function() {
             ),
 
             # ==================================================================
-            # QC vectors (max inner fold per metacell)
-            # ==================================================================
-            vector_spec(
-                "metacell", "mcview_cache_max_inner_fold", CONTRACT_OPTIONAL, "numeric",
-                "Max inner_fold per metacell across all genes"
-            ),
-            vector_spec(
-                "metacell", "mcview_cache_max_inner_fold_no_lateral", CONTRACT_OPTIONAL, "numeric",
-                "Max inner_fold per metacell excluding lateral genes"
-            ),
-
-            # ==================================================================
-            # Per-gene max inner fold (optional)
-            # ==================================================================
-            vector_spec(
-                "gene", "mcview_cache_gene_max_inner_fold", CONTRACT_OPTIONAL, "numeric",
-                "Max inner_fold per gene across metacells"
-            ),
-
-            # ==================================================================
             # Per-type marker genes
             # ==================================================================
             vector_spec(
@@ -1467,15 +1327,12 @@ mcview_all_contracts <- function() {
         qc = mcview_qc_contract(),
         markers = mcview_markers_contract(),
         gene_modules = mcview_gene_modules_contract(),
-        inner_fold = mcview_inner_fold_contract(),
-        stdev_fold = mcview_stdev_fold_contract(),
         projection_qc = mcview_projection_qc_contract(),
         atlas = mcview_atlas_contract(),
         annotate = mcview_annotate_contract(),
         samples = mcview_samples_contract(),
         flow = mcview_flow_contract(),
         gene_correlations = mcview_gene_correlations_contract(),
-        gene_zero_fold = mcview_gene_zero_fold_contract(),
         config = mcview_config_contract(),
         cache = mcview_cache_contract()
     )
@@ -1497,8 +1354,6 @@ mcview_tab_contract <- function(tab_name) {
         "Markers" = mcview_markers_contract(),
         "Gene modules" = mcview_gene_modules_contract(),
         "Gene correlation" = mcview_gene_correlations_contract(),
-        "Inner-fold" = mcview_inner_fold_contract(),
-        "Stdev-fold" = mcview_stdev_fold_contract(),
         "Projection QC" = mcview_projection_qc_contract(),
         "Atlas" = mcview_atlas_contract(),
         "Annotate" = mcview_annotate_contract(),

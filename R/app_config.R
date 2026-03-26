@@ -230,16 +230,6 @@ init_tab_defs <- function() {
             module_name = "annotate",
             icon = "pen"
         ),
-        "Inner-fold" = list(
-            title = "Inner-fold",
-            module_name = "inner_fold",
-            icon = "cloud-sun-rain"
-        ),
-        "Stdev-fold" = list(
-            title = "Stdev-fold",
-            module_name = "stdev_fold",
-            icon = "cloud-sun-rain"
-        ),
         "Projected-fold" = list(
             title = "Projected-fold",
             module_name = "proj_fold",

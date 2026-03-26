@@ -61,10 +61,6 @@ globalVariables(unique(c(
     "Correction factor", "correction_factor", "gene", "Gene", "Max expression", "max_expr", "type", "Type",
     # gene_correction_factor_table:
     "correction_factor", "gene", "Max expression", "max_expr", "type",
-    # gene_inner_fold_scatter_plot:
-    "# of metacells", "gene", "Gene", "Max expression", "max_expr", "significant_inner_folds_count", "type", "Type",
-    # gene_inner_fold_table:
-    "# of metacells", "gene", "Max expression", "max_expr", "significant_inner_folds_count", "type",
     # gene_label:
     "gene", "module",
     # get_cell_type_colors:
@@ -98,7 +94,7 @@ globalVariables(unique(c(
     # import_cell_metadata:
     "cell_id", "metacell", "samp_id",
     # import_dataset:
-    "cell_type", "cluster", "color", "correction_factor", "fp", "gene", "gene1", "gene2", "grouped", "metacell", "significant_inner_folds_count", "total_umis",
+    "cell_type", "cluster", "color", "correction_factor", "fp", "gene", "gene1", "gene2", "grouped", "metacell", "total_umis",
     # import_dataset_metacell1:
     "cell_type", "color", "metacell", "time_bin",
     # init_temp_scdb:
@@ -225,10 +221,6 @@ globalVariables(unique(c(
     "metacell",
     # verify_gene_modules:
     "gene",
-    # zero_fold_gene_plot:
-    "avg", "Expected", "Expression", "FC", "gene", "Gene", "metacell", "Metacell", "obs", "Observed", "type", "Type", "zero_fold",
-    # zero_fold_table:
-    "avg", "Expected", "Expression", "FC", "gene", "metacell", "obs", "type", "zero_fold",
     ":=", "sec_ord", "metacell_names",
     "ord_mean",
     # mctnetwork_mc_rank_from_color_ord (metacell v1 legacy):

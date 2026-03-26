@@ -677,16 +677,10 @@ convert_daf_to_mcview <- function(daf_obj, var_name, atlas = FALSE) {
         "noisy_genes" = convert_daf_noisy_genes(daf_obj),
         "marker_genes" = convert_daf_marker_genes(daf_obj),
         "gene_modules" = convert_daf_gene_modules(daf_obj),
-        "inner_fold_mat" = convert_daf_inner_fold_mat(daf_obj),
-        "inner_stdev_mat" = convert_daf_inner_stdev_mat(daf_obj),
-        "marker_genes_inner_fold" = convert_daf_marker_genes_from_mat(daf_obj, "inner_fold"),
-        "marker_genes_inner_stdev" = convert_daf_marker_genes_from_mat(daf_obj, "inner_stdev"),
-        "marker_genes_deviant_fold" = convert_daf_marker_genes_from_mat(daf_obj, "deviant_fold"),
         "marker_genes_projected" = convert_daf_marker_genes_from_mat(daf_obj, "projected_fold"),
         "mc_qc_metadata" = convert_daf_mc_qc_metadata(daf_obj),
         "gene_qc" = convert_daf_gene_qc(daf_obj),
         "gg_mc_top_cor" = convert_daf_gg_mc_top_cor(daf_obj),
-        "gene_zero_fold" = convert_daf_gene_zero_fold(daf_obj),
         "metacell_graphs" = convert_daf_metacell_graphs(daf_obj),
         "qc_stats" = convert_daf_qc_stats(daf_obj),
         "cell_metadata" = convert_daf_cell_metadata(daf_obj),
@@ -907,35 +901,19 @@ convert_daf_gene_modules <- function(daf_obj) {
     result
 }
 
-convert_daf_inner_fold_mat <- function(daf_obj) {
-    daf_mat(daf_obj, "gene", "metacell", "inner_fold", required = FALSE)
-}
-
-convert_daf_inner_stdev_mat <- function(daf_obj) {
-    mat <- daf_mat(daf_obj, "gene", "metacell", "inner_stdev_log", required = FALSE)
-    if (is.null(mat)) {
-        mat <- daf_mat(daf_obj, "gene", "metacell", "inner_std_log", required = FALSE)
-    }
-    mat
-}
-
 #' Compute marker genes from a fold-change matrix
 #'
-#' For Inner-fold, Stdev-fold, Projected-fold, and Deviant-fold heatmaps the
-#' marker gene list must be derived from the matrix itself (top variable genes
-#' per metacell). This function selects the top-2 genes per metacell by absolute
-#' value, using the same select_top_fold_genes_per_metacell() logic used
-#' elsewhere in the codebase.
+#' For Projected-fold heatmaps the marker gene list must be derived from the
+#' matrix itself (top variable genes per metacell). This function selects the
+#' top-2 genes per metacell by absolute value, using the same
+#' select_top_fold_genes_per_metacell() logic used elsewhere in the codebase.
 #'
 #' @param daf_obj DAF object
-#' @param mode One of "inner_fold", "inner_stdev", "deviant_fold", "projected_fold"
+#' @param mode Currently only "projected_fold" is supported
 #' @return Tibble with columns metacell, gene, rank, fp; or NULL if matrix absent
 #' @noRd
 convert_daf_marker_genes_from_mat <- function(daf_obj, mode) {
     mat <- switch(mode,
-        "inner_fold" = convert_daf_inner_fold_mat(daf_obj),
-        "inner_stdev" = convert_daf_inner_stdev_mat(daf_obj),
-        "deviant_fold" = daf_mat(daf_obj, "gene", "metacell", "deviant_fold", required = FALSE),
         "projected_fold" = daf_mat(daf_obj, "gene", "metacell", "projected_fold", required = FALSE),
         NULL
     )
@@ -1088,67 +1066,8 @@ convert_daf_mc_qc_metadata <- function(daf_obj) {
 
     # Add standard QC vectors
     result <- add_optional_vecs(result, daf_obj, "metacell", c(
-        "max_inner_fold", "max_inner_fold_no_lateral",
-        "max_inner_stdev_log", "zero_fold", "rare_gene_module", "is_rare"
+        "rare_gene_module", "is_rare"
     ))
-
-    # Compute max_inner_fold per metacell from inner_fold matrix if not present
-    if (!"max_inner_fold" %in% colnames(result) && dafr::has_matrix(daf_obj, "gene", "metacell", "inner_fold")) {
-        max_if <- tryCatch(
-            {
-                mat <- dafr::get_matrix(daf_obj, "gene", "metacell", "inner_fold")
-                matrixStats::colMaxs(as.matrix(mat))
-            },
-            error = function(e) NULL
-        )
-        if (!is.null(max_if)) {
-            result$max_inner_fold <- max_if
-        }
-    }
-
-    # Compute max_inner_fold_no_lateral if not present
-    if (!"max_inner_fold_no_lateral" %in% colnames(result) && dafr::has_matrix(daf_obj, "gene", "metacell", "inner_fold")) {
-        max_if_nl <- tryCatch(
-            {
-                mat <- dafr::get_matrix(daf_obj, "gene", "metacell", "inner_fold")
-                # Exclude lateral genes if available
-                lateral <- if (dafr::has_vector(daf_obj, "gene", "is_lateral")) {
-                    dafr::get_vector(daf_obj, "gene", "is_lateral")
-                } else {
-                    rep(FALSE, nrow(mat))
-                }
-                mat_nl <- mat[!lateral, , drop = FALSE]
-                matrixStats::colMaxs(as.matrix(mat_nl))
-            },
-            error = function(e) NULL
-        )
-        if (!is.null(max_if_nl)) {
-            result$max_inner_fold_no_lateral <- max_if_nl
-        }
-    }
-
-    # Compute max_inner_stdev_log per metacell from inner_std_log/inner_stdev_log matrix
-    if (!"max_inner_stdev_log" %in% colnames(result)) {
-        mat_name <- if (dafr::has_matrix(daf_obj, "gene", "metacell", "inner_stdev_log")) {
-            "inner_stdev_log"
-        } else if (dafr::has_matrix(daf_obj, "gene", "metacell", "inner_std_log")) {
-            "inner_std_log"
-        } else {
-            NULL
-        }
-        if (!is.null(mat_name)) {
-            max_isl <- tryCatch(
-                {
-                    mat <- dafr::get_matrix(daf_obj, "gene", "metacell", mat_name)
-                    matrixStats::colMaxs(as.matrix(mat))
-                },
-                error = function(e) NULL
-            )
-            if (!is.null(max_isl)) {
-                result$max_inner_stdev_log <- max_isl
-            }
-        }
-    }
 
     if (ncol(result) == 1) {
         return(NULL)
@@ -1178,7 +1097,7 @@ convert_daf_gene_qc <- function(daf_obj) {
 
     # Add standard gene QC vectors
     result <- add_optional_vecs(result, daf_obj, "gene", c(
-        "type", "is_marker", "significant_inner_folds_count",
+        "type", "is_marker",
         "is_lateral", "is_noisy", "module", "correction_factor"
     ))
 
@@ -1194,23 +1113,6 @@ convert_daf_gene_qc <- function(daf_obj) {
             is_noi ~ "noisy",
             TRUE ~ "other"
         )
-    }
-
-    # Try precomputed vector first, then compute per-gene max from inner_fold matrix
-    max_if <- daf_vec(daf_obj, "gene", "max_inner_fold", required = FALSE)
-    if (!is.null(max_if)) {
-        result$max_inner_fold <- max_if
-    } else if (dafr::has_matrix(daf_obj, "gene", "metacell", "inner_fold")) {
-        max_if <- tryCatch(
-            {
-                mat <- dafr::get_matrix(daf_obj, "gene", "metacell", "inner_fold")
-                matrixStats::rowMaxs(as.matrix(mat))
-            },
-            error = function(e) NULL
-        )
-        if (!is.null(max_if)) {
-            result$max_inner_fold <- max_if
-        }
     }
 
     # Include fitted gene metadata if present
@@ -1247,28 +1149,6 @@ convert_daf_gg_mc_top_cor <- function(daf_obj) {
         gene2 = as.character(gene2),
         cor = as.numeric(cor),
         type = as.character(type)
-    )
-}
-
-convert_daf_gene_zero_fold <- function(daf_obj) {
-    if (!dafr::has_axis(daf_obj, "gene_zero_fold")) {
-        return(NULL)
-    }
-
-    required <- c("gene", "metacell", "zero_fold", "avg", "obs", "exp", "type")
-    vectors <- purrr::map(required, ~ daf_vec(daf_obj, "gene_zero_fold", .x, required = FALSE))
-    if (any(purrr::map_lgl(vectors, is.null))) {
-        return(NULL)
-    }
-
-    tibble(
-        gene = as.character(vectors[[1]]),
-        metacell = as.character(vectors[[2]]),
-        zero_fold = as.numeric(vectors[[3]]),
-        avg = as.numeric(vectors[[4]]),
-        obs = as.numeric(vectors[[5]]),
-        exp = as.numeric(vectors[[6]]),
-        type = as.character(vectors[[7]])
     )
 }
 

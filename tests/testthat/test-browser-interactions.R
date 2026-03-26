@@ -5,7 +5,7 @@
 #   - Markers heatmap sidebar toggles
 #   - Diff. Expression mode switching, filters, table toggle
 #   - Genes axis type switching, correlation toggle
-#   - QC ECDF/Density toggle, zero fold table toggle
+#   - QC ECDF/Density toggle
 #   - Cell types plot type, coord flip, select/clear all
 #
 # Each test verifies that outputs re-render after the interaction.
@@ -314,42 +314,6 @@ test_that("QC: ECDF/Density toggle changes plot type", {
     Sys.sleep(2)
     wait_for_shiny_idle(session, timeout = 60)
     take_screenshot(session, "interact-qc-umis-density")
-})
-
-test_that("QC: zero fold table toggle shows table", {
-    # Still on QC tab
-    # The zero fold table depends on gene_zero_fold data in DAF.
-    # If the dataset lacks a gene_zero_fold axis, the plot_zero_fold output will
-    # be empty (req() silently stops rendering) and so will the table.
-    # Check whether the plot has rendered content to decide the expected outcome.
-    has_zero_fold_plot <- element_exists(session, "#qc-plot_zero_fold .plotly")
-
-    # show_zero_fold_table is a prettySwitch
-    click_switch(session, "qc-show_zero_fold_table")
-    Sys.sleep(2)
-    wait_for_shiny_idle(session, timeout = 60)
-
-    if (has_zero_fold_plot) {
-        # Dataset has gene_zero_fold data - table should appear
-        table_appeared <- wait_for_element(session, "#qc-zero_fold_table table, #qc-zero_fold_table .dataTables_wrapper", timeout = 15)
-        expect_true(table_appeared, label = "Zero fold table should appear after toggle")
-    } else {
-        # Dataset lacks gene_zero_fold data - switch toggles but table stays empty
-        # Verify the switch input value changed to TRUE
-        switch_value <- tryCatch({
-            res <- session$Runtime$evaluate(
-                expression = "document.getElementById('qc-show_zero_fold_table') && document.getElementById('qc-show_zero_fold_table').checked"
-            )
-            isTRUE(res$result$value)
-        }, error = function(e) FALSE)
-        expect_true(switch_value, label = "Zero fold switch should toggle to TRUE even without data")
-    }
-    take_screenshot(session, "interact-qc-zero-fold-table")
-
-    # Toggle OFF
-    click_switch(session, "qc-show_zero_fold_table")
-    Sys.sleep(1)
-    wait_for_shiny_idle(session, timeout = 30)
 })
 
 # ==============================================================================

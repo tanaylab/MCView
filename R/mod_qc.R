@@ -22,19 +22,11 @@ mod_qc_ui <- function(id) {
         ),
         generic_column(
             width = 6,
-            qc_stat_box(ns, id, "# of UMIs per metacell", "plot_qc_umis"),
-            qc_stat_box(ns, id, "Max inner-fold per metacell", "plot_qc_inner_fold",
-                width = 12, height = "27vh",
-                checkboxInput(ns("include_lateral"), label = "Include lateral", value = FALSE)
-            ),
-            gene_inner_fold_stat_box(ns, id, "# of metacells with significant inner-fold", "plot_gene_inner_fold_scatter"),
-            qc_stat_box(ns, id, "Max inner-stdev per metacell", "plot_qc_std")
+            qc_stat_box(ns, id, "# of UMIs per metacell", "plot_qc_umis")
         ),
         generic_column(
             width = 6,
-            qc_stat_box(ns, id, "# of cells per metacell", "plot_qc_cell_num"),
-            qc_stat_box(ns, id, "Max zero-fold per metacell", "plot_mc_zero_fold"),
-            zero_fold_stat_box(ns, id, "# of cells with zero UMIs per gene", "plot_zero_fold")
+            qc_stat_box(ns, id, "# of cells per metacell", "plot_qc_cell_num")
         )
     )
 }
@@ -95,15 +87,6 @@ mod_qc_server <- function(id, dataset, metacell_types, cell_type_colors, gene_mo
 
             output$plot_qc_umis <- qc_stat_plot("umis", "Number of UMIs per metacell", dataset, input, "plot_qc_umis_type", globals, log_scale = TRUE)
             output$plot_qc_cell_num <- qc_stat_plot("cells", "Number of cells per metacell", dataset, input, "plot_qc_cell_num_type", globals)
-            output$plot_qc_inner_fold <- qc_stat_plot(c("max_inner_fold", "max_inner_fold_no_lateral"), "Max inner-fold per metacell", dataset, input, "plot_qc_inner_fold_type", globals, field_input = "include_lateral")
-            output$plot_qc_std <- qc_stat_plot("max_inner_stdev_log", "Max stdev(log(fractions)) per metacell", dataset, input, "plot_qc_std_type", globals)
-            output$plot_mc_zero_fold <- qc_stat_plot("zero_fold", "Max log2(# of zero cells / expected) per metacell", dataset, input, "plot_mc_zero_fold_type", globals)
-
-            output$plot_zero_fold <- zero_fold_gene_plot(dataset, input, globals)
-            output$zero_fold_table <- zero_fold_table(dataset, input)
-
-            output$plot_gene_inner_fold_scatter <- gene_inner_fold_scatter_plot(dataset, input, globals)
-            output$gene_inner_fold_table <- gene_inner_fold_table(dataset, input)
         }
     )
 }
@@ -163,170 +146,11 @@ qc_stat_box <- function(ns, id, title, output_id, width = 12, height = "27vh", .
     )
 }
 
-zero_fold_stat_box <- function(ns, id, title, output_id, width = 12, height = "35vh") {
-    generic_box(
-        id = ns(id),
-        title = title,
-        status = "primary",
-        solidHeader = TRUE,
-        collapsible = TRUE,
-        closable = FALSE,
-        width = width,
-        shinycssloaders::withSpinner(
-            plotly::plotlyOutput(ns(output_id), height = height)
-        ),
-        shinyWidgets::prettySwitch(inputId = ns("show_zero_fold_table"), value = FALSE, label = "Show table"),
-        DT::DTOutput(ns("zero_fold_table"))
-    )
-}
-
-zero_fold_table <- function(dataset, input) {
-    DT::renderDT(
-        if (input$show_zero_fold_table) {
-            zero_fold_df <- get_mc_data(dataset(), "gene_zero_fold")
-            req(zero_fold_df)
-            zero_fold_df %>%
-                filter(avg >= -10) %>%
-                slice(1:100) %>%
-                select(Gene = gene, Observed = obs, Expected = exp, FC = zero_fold, Type = type, Expression = avg, Metacell = metacell) %>%
-                mutate(Expected = round(Expected, digits = 1), FC = round(FC, digits = 2), Expression = round(Expression, digits = 2)) %>%
-                DT::datatable(
-                    rownames = FALSE,
-                    options = list(
-                        pageLength = 20,
-                        scrollX = TRUE,
-                        scrollY = "300px",
-                        scrollCollapse = TRUE,
-                        dom = "ftp",
-                        columnDefs = list(
-                            list(
-                                targets = 0,
-                                width = "100px"
-                            )
-                        )
-                    )
-                )
-        }
-    )
-}
-
-zero_fold_gene_plot <- function(dataset, input, globals, tab_id = "qc") {
-    plotly::renderPlotly({
-        # Defer computation until the tab is active
-        req(globals$current_tab == tab_id)
-        zero_fold_df <- get_mc_data(dataset(), "gene_zero_fold")
-        req(zero_fold_df)
-
-        p <- zero_fold_df %>%
-            rename(Expression = avg, FC = zero_fold, Gene = gene, Type = type, Metacell = metacell) %>%
-            mutate(Observed = obs, Expected = round(exp, digits = 1)) %>%
-            ggplot(aes(x = Expression, y = FC, label = Gene, color = Type, Observed = Observed, Expected = Expected, Metacell = Metacell)) +
-            scale_color_manual(values = c("other" = "gray", "lateral" = "blue", "noisy" = "red", "lateral, noisy" = "purple")) +
-            geom_point(size = 0.5) +
-            geom_abline(intercept = 0, slope = 1, color = "black", linetype = "dashed") +
-            xlab("log2(gene expression)") +
-            ylab("log2(# of zero cells / expected)")
-
-        prepare_plotly_scatter(p, tooltip = NULL, globals = globals)
-    }) %>% bindCache(dataset(), globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
-}
-
-gene_inner_fold_stat_box <- function(ns, id, title, output_id, width = 12, height = "35vh") {
-    generic_box(
-        id = ns(id),
-        title = title,
-        status = "primary",
-        solidHeader = TRUE,
-        collapsible = TRUE,
-        closable = FALSE,
-        width = width,
-        shinycssloaders::withSpinner(
-            plotly::plotlyOutput(ns(output_id), height = height)
-        ),
-        shinyWidgets::prettySwitch(inputId = ns("show_gene_inner_fold_table"), value = FALSE, label = "Show table"),
-        DT::DTOutput(ns("gene_inner_fold_table"))
-    )
-}
-
-gene_inner_fold_table <- function(dataset, input) {
-    DT::renderDT(
-        if (input$show_gene_inner_fold_table) {
-            gene_inner_fold_df <- get_gene_qc(dataset())
-            req(gene_inner_fold_df)
-            req(gene_inner_fold_df$significant_inner_folds_count)
-            req("max_expr" %in% colnames(gene_inner_fold_df))
-            gene_inner_fold_df %>%
-                filter(significant_inner_folds_count > 0) %>%
-                mutate(max_expr = log2(max_expr + 1e-5)) %>%
-                select(Gene = gene, `# of metacells` = significant_inner_folds_count, `Max expression` = max_expr, Type = type) %>%
-                mutate(`# of metacells` = round(`# of metacells`, digits = 1), `Max expression` = round(`Max expression`, digits = 2)) %>%
-                DT::datatable(
-                    rownames = FALSE,
-                    options = list(
-                        pageLength = 20,
-                        scrollX = TRUE,
-                        scrollY = "300px",
-                        scrollCollapse = TRUE,
-                        dom = "ftp",
-                        columnDefs = list(
-                            list(
-                                targets = 0,
-                                width = "100px"
-                            )
-                        )
-                    )
-                )
-        }
-    )
-}
-
-gene_inner_fold_scatter_plot <- function(dataset, input, globals, tab_id = "qc") {
-    plotly::renderPlotly({
-        # Defer computation until the tab is active
-        req(globals$current_tab == tab_id)
-        gene_inner_fold_df <- get_gene_qc(dataset())
-        if (is.null(gene_inner_fold_df) || is.null(gene_inner_fold_df$significant_inner_folds_count)) {
-            return(plotly_text_plot("Please recompute the metacells\nusing the latest version\nin order to see this plot."))
-        }
-        if (!"max_expr" %in% colnames(gene_inner_fold_df)) {
-            return(plotly_text_plot("Gene max expression data not available"))
-        }
-
-        p <- gene_inner_fold_df %>%
-            mutate(max_expr = log2(max_expr + 1e-5)) %>%
-            rename(Gene = gene, `# of metacells` = significant_inner_folds_count, `Max expression` = max_expr, Type = type) %>%
-            ggplot(aes(x = `Max expression`, y = `# of metacells`, label = Gene, color = Type)) +
-            scale_color_manual(values = c("other" = "gray", "lateral" = "blue", "noisy" = "red", "lateral, noisy" = "purple")) +
-            geom_point(size = 0.5) +
-            xlab("log2(gene expression)") +
-            ylab("# of metacells with significant inner-fold")
-
-        plotly::ggplotly(p) %>%
-            sanitize_for_WebGL() %>%
-            plotly::toWebGL() %>%
-            sanitize_plotly_buttons() %>%
-            sanitize_plotly_download(globals)
-    }) %>% bindCache(dataset(), globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
-}
-
-qc_stat_plot <- function(field, xlab, dataset, input, plot_type_id, globals, ylab = NULL, log_scale = FALSE, field_input = plot_type_id, tab_id = "qc") {
+qc_stat_plot <- function(field, xlab, dataset, input, plot_type_id, globals, ylab = NULL, log_scale = FALSE, tab_id = "qc") {
     plotly::renderPlotly({
         # Defer computation until the tab is active
         req(globals$current_tab == tab_id)
         qc_df <- as_tibble(get_mc_data(dataset(), "mc_qc_metadata"))
-
-        if (length(field) > 1) {
-            req(length(field) == 2)
-            req(!is.null(field_input))
-            req(field_input != plot_type_id)
-            req(length(field_input) == 1)
-            req(!is.null(input[[field_input]]))
-            if (input[[field_input]]) {
-                field <- field[1]
-            } else {
-                field <- field[2]
-            }
-        }
 
         req(qc_df[[field]])
 
@@ -341,7 +165,7 @@ qc_stat_plot <- function(field, xlab, dataset, input, plot_type_id, globals, yla
         p <- sanitize_plotly_download(p, globals)
 
         return(p)
-    }) %>% bindCache(dataset(), input[[plot_type_id]], field, plot_type_id, input[[field_input]], globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
+    }) %>% bindCache(dataset(), input[[plot_type_id]], field, plot_type_id, globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
 }
 
 qc_density <- function(qc_df, field, xlab, ylab, globals, log_scale = FALSE) {

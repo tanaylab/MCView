@@ -1,6 +1,6 @@
 #' Create help modal content for the heatmap
 #'
-#' @param mode The mode of the heatmap (Markers, Inner, Stdev, etc.)
+#' @param mode The mode of the heatmap (Markers, Proj, etc.)
 #' @return A modalDialog UI element
 #' @noRd
 create_heatmap_help_modal <- function(mode = "Markers") {
@@ -12,17 +12,6 @@ create_heatmap_help_modal <- function(mode = "Markers") {
                 p("Each row represents a gene, and each column represents a metacell. The colors indicate the log-fold change
           of gene expression relative to the median across all metacells."),
                 p("Genes are sorted by their expression pattern to highlight cell type-specific marker genes.")
-            )
-        } else if (mode == "Inner") {
-            tagList(
-                p("This heatmap shows the inner-fold matrix."),
-                p("For each metacell, for each gene, the inner_fold is the strongest (highest absolute value) deviant_fold of any of the cells contained in the metacell"),
-                p("For each cell, for each gene, the deviant_fold holds the fold factor (log base 2) between the expression level of the gene in the cell and the metacell it belongs to (or the most similar metacell for outlier cells). This uses the same (strong) normalization factor we use when computing deviant (outlier) cells, so for outliers, you should see some (non-excluded, non-noisy) genes with a fold factor above 3 (8x), or some (non-excluded, noisy) genes with a fold factor above 5 (32x), which justify why we haven't merged that cell into a metacell; for cells grouped into metacells, you shouldn't see (many) such genes. If there is a large number of outlier cells and a few non-noisy genes have a high fold factor for many of them, you should consider marking these genes as noisy and recomputing the metacells. If they are already marked as noisy, you may want to completely exclude them.")
-            )
-        } else if (mode == "Stdev") {
-            tagList(
-                p("This heatmap shows the inner_stdev_log matrix."),
-                p("For each metacell, for each gene, the standard deviation of the log (base 2) of the fraction of the gene across the cells of the metacell. Ideally, the standard deviation should be ~1/3rd of the deviants_min_gene_fold_factor (which is 3 by default), indicating that (all)most cells are within that maximal fold factor. In practice we may see higher values - the lower, the better. Both this and the inner_fold can be used for quality control over the consistency of the gene expression in the metacell.")
             )
         } else {
             p("")
