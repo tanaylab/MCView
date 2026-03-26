@@ -115,11 +115,13 @@ mod_atlas_server <- function(id, dataset, metacell_types, cell_type_colors, gene
             output$top_correlated_select_color_proj <- renderUI({
                 req(input$gene1)
                 req(has_gg_mc_top_cor(dataset()))
+                markers_only_val <- isTRUE(input$markers_only_atlas_cor %||% TRUE)
                 tagList(
+                    checkboxInput(ns("markers_only_atlas_cor"), "Markers only", value = markers_only_val),
                     selectInput(
                         ns("selected_top_gene"),
                         glue("Top correlated to {input$color_proj_gene}:"),
-                        choices = c(get_top_cor_gene(dataset(), input$color_proj_gene, type = "pos"), get_top_cor_gene(dataset(), input$color_proj_gene, type = "neg")),
+                        choices = c(get_top_cor_gene(dataset(), input$color_proj_gene, type = "pos", markers_only = markers_only_val), get_top_cor_gene(dataset(), input$color_proj_gene, type = "neg", markers_only = markers_only_val)),
                         selected = NULL,
                         size = 10,
                         selectize = FALSE

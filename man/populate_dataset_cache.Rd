@@ -2,19 +2,19 @@
 % Please edit documentation in R/daf_cache.R
 \name{populate_dataset_cache}
 \alias{populate_dataset_cache}
-\title{Populate cache for a dataset in a running MCView session}
+\title{Populate derived data for a dataset in a running MCView session}
 \usage{
 populate_dataset_cache(dataset, what = NULL, force = FALSE, verbose = TRUE)
 }
 \arguments{
 \item{dataset}{Dataset name}
 
-\item{what}{What to cache (NULL = all)}
+\item{what}{What to compute (NULL = all)}
 
 \item{force}{Recompute even if present}
 
 \item{verbose}{Print progress}
 }
 \description{
-Populate cache for a dataset in a running MCView session
+Populate derived data for a dataset in a running MCView session
 }

@@ -147,6 +147,11 @@ mod_gene_correlation_ui <- function(id) {
                     conditionalPanel(
                         condition = paste0("!(input['", ns("correlation_mode"), "'] == 'individual' && input['", ns("analysis_type"), "'] == 'gene_gene_cor')"),
                         div(
+                            title = "When enabled, only search for correlations among marker genes. When disabled, search among all genes.",
+                            style = "cursor: help;",
+                            checkboxInput(ns("markers_only"), "Marker genes only", value = TRUE)
+                        ),
+                        div(
                             title = "Maximum number of correlated genes to find per input gene. Higher values provide more results but may include weaker correlations.",
                             style = "cursor: help;",
                             numericInput(ns("n_correlations"), "Top correlations per gene",
@@ -547,6 +552,18 @@ mod_gene_correlation_server <- function(id, dataset, metacell_types, cell_type_c
                             } else {
                                 incProgress(0.2, detail = "Module correlation")
                                 results <- calc_module_correlations(dataset(), valid_genes, input$n_correlations, cell_type_filter, input$cor_threshold)
+                            }
+
+                            # Filter to marker genes only (for find_genes and module modes)
+                            markers_only <- isTRUE(input$markers_only)
+                            is_gene_gene <- (input$correlation_mode == "individual" &&
+                                !is.null(input$analysis_type) && input$analysis_type == "gene_gene_cor")
+                            if (markers_only && !is_gene_gene) {
+                                marker_data <- get_mc_data(dataset(), "marker_genes")
+                                if (!is.null(marker_data) && nrow(marker_data) > 0) {
+                                    marker_names <- unique(marker_data$gene)
+                                    results <- results %>% filter(gene2 %in% marker_names)
+                                }
                             }
 
                             incProgress(0.6, detail = "Processing results")

@@ -185,7 +185,7 @@ calc_top_cors <- function(dataset, gene, type, data_vec, metacell_filter, exclud
     return(df)
 }
 
-get_top_cor_gene <- function(dataset, gene, type = "pos", atlas = FALSE, data_vec = NULL, exclude = NULL, metacell_filter = NULL) {
+get_top_cor_gene <- function(dataset, gene, type = "pos", atlas = FALSE, data_vec = NULL, exclude = NULL, metacell_filter = NULL, markers_only = FALSE) {
     df <- NULL
     df_from_calc <- FALSE
     cache_used <- FALSE
@@ -247,6 +247,16 @@ get_top_cor_gene <- function(dataset, gene, type = "pos", atlas = FALSE, data_ve
     if (!is.null(exclude)) {
         df <- df %>%
             filter(!(gene2 %in% exclude))
+    }
+
+    if (isTRUE(markers_only)) {
+        marker_genes <- tryCatch({
+            get_mc_data(dataset, "marker_genes")$gene
+        }, error = function(e) NULL)
+        if (!is.null(marker_genes) && length(marker_genes) > 0) {
+            df <- df %>%
+                filter(gene2 %in% marker_genes)
+        }
     }
 
     res <- df %>%

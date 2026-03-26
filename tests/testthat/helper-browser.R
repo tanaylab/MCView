@@ -576,8 +576,16 @@ get_js_errors <- function(session) {
                 // Check for Shiny notification errors
                 var notifications = document.querySelectorAll('.shiny-notification-error, .shiny-output-error');
                 for (var i = 0; i < notifications.length; i++) {
-                    var text = notifications[i].textContent.trim();
-                    if (text) errors.push(text);
+                    var el = notifications[i];
+                    var text = (el.innerText || el.textContent || '').trim();
+                    var id = el.id || el.getAttribute('data-output-id') || '(unknown)';
+                    var cls = el.className || '';
+                    if (text) {
+                        errors.push('[' + id + '] ' + text);
+                    } else {
+                        // Element exists but has no text; report id and classes
+                        errors.push('[' + id + '] (empty error element, class=' + cls + ')');
+                    }
                 }
                 return errors;
             })()

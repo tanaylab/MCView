@@ -679,6 +679,10 @@ convert_daf_to_mcview <- function(daf_obj, var_name, atlas = FALSE) {
         "gene_modules" = convert_daf_gene_modules(daf_obj),
         "inner_fold_mat" = convert_daf_inner_fold_mat(daf_obj),
         "inner_stdev_mat" = convert_daf_inner_stdev_mat(daf_obj),
+        "marker_genes_inner_fold" = convert_daf_marker_genes_from_mat(daf_obj, "inner_fold"),
+        "marker_genes_inner_stdev" = convert_daf_marker_genes_from_mat(daf_obj, "inner_stdev"),
+        "marker_genes_deviant_fold" = convert_daf_marker_genes_from_mat(daf_obj, "deviant_fold"),
+        "marker_genes_projected" = convert_daf_marker_genes_from_mat(daf_obj, "projected_fold"),
         "mc_qc_metadata" = convert_daf_mc_qc_metadata(daf_obj),
         "gene_qc" = convert_daf_gene_qc(daf_obj),
         "gg_mc_top_cor" = convert_daf_gg_mc_top_cor(daf_obj),
@@ -717,7 +721,16 @@ convert_daf_mc_sum <- function(daf_obj) {
 }
 
 convert_daf_mc_egc <- function(daf_obj) {
-    # Get UMI matrix (gene x metacell after transpose)
+    # Prefer pre-computed geomean_fraction when available in the DAF.
+    # This is a geometric-mean normalization (different from linear UMIs/total_UMIs)
+    # but is the preferred EGC representation when the data provider supplies it.
+    if (dafr::has_matrix(daf_obj, "gene", "metacell", "geomean_fraction")) {
+        cli::cli_inform("Using pre-computed {.field geomean_fraction} matrix from DAF")
+        return(dafr::get_matrix(daf_obj, "gene", "metacell", "geomean_fraction"))
+    }
+
+    # Fall back: compute linear fraction from UMIs / total_UMIs
+    cli::cli_inform("Computing EGC as UMIs / total_UMIs (no {.field geomean_fraction} in DAF)")
     mc_mat <- convert_daf_mc_mat(daf_obj)
     mc_sum <- convert_daf_mc_sum(daf_obj)
 
@@ -899,7 +912,49 @@ convert_daf_inner_fold_mat <- function(daf_obj) {
 }
 
 convert_daf_inner_stdev_mat <- function(daf_obj) {
-    daf_mat(daf_obj, "gene", "metacell", "inner_stdev_log", required = FALSE)
+    mat <- daf_mat(daf_obj, "gene", "metacell", "inner_stdev_log", required = FALSE)
+    if (is.null(mat)) {
+        mat <- daf_mat(daf_obj, "gene", "metacell", "inner_std_log", required = FALSE)
+    }
+    mat
+}
+
+#' Compute marker genes from a fold-change matrix
+#'
+#' For Inner-fold, Stdev-fold, Projected-fold, and Deviant-fold heatmaps the
+#' marker gene list must be derived from the matrix itself (top variable genes
+#' per metacell). This function selects the top-2 genes per metacell by absolute
+#' value, using the same select_top_fold_genes_per_metacell() logic used
+#' elsewhere in the codebase.
+#'
+#' @param daf_obj DAF object
+#' @param mode One of "inner_fold", "inner_stdev", "deviant_fold", "projected_fold"
+#' @return Tibble with columns metacell, gene, rank, fp; or NULL if matrix absent
+#' @noRd
+convert_daf_marker_genes_from_mat <- function(daf_obj, mode) {
+    mat <- switch(mode,
+        "inner_fold" = convert_daf_inner_fold_mat(daf_obj),
+        "inner_stdev" = convert_daf_inner_stdev_mat(daf_obj),
+        "deviant_fold" = daf_mat(daf_obj, "gene", "metacell", "deviant_fold", required = FALSE),
+        "projected_fold" = daf_mat(daf_obj, "gene", "metacell", "projected_fold", required = FALSE),
+        NULL
+    )
+    if (is.null(mat)) {
+        return(NULL)
+    }
+    # Keep only genes with non-zero rows
+    row_nz <- if (is(mat, "sparseMatrix")) Matrix::rowSums(mat) != 0 else rowSums(mat) != 0
+    mat <- mat[row_nz, , drop = FALSE]
+    if (nrow(mat) == 0) {
+        return(NULL)
+    }
+    mat_dense <- as.matrix(mat)
+    select_top_fold_genes_per_metacell(
+        mat_dense,
+        genes_per_metacell = 2,
+        minimal_relative_log_fraction = 0.5,
+        fold_change_reg = 0
+    )
 }
 
 # ==============================================================================
@@ -963,18 +1018,36 @@ convert_daf_cell_metadata <- function(daf_obj) {
         return(NULL)
     }
 
-    # Read the required cell.samp_id vector
-    samp_id_vec <- daf_vec(daf_obj, "cell", "samp_id", required = FALSE)
-    if (is.null(samp_id_vec)) {
-        return(NULL)
+    # Determine the sample ID source vector:
+    # 1. Check mcview_sample_property scalar (names which cell vector to use)
+    # 2. Fall back to literal "samp_id" vector
+    # 3. If neither exists, build tibble without samp_id (Samples tab disabled)
+    sample_property <- NULL
+    if (dafr::has_scalar(daf_obj, "mcview_sample_property")) {
+        sample_property <- dafr::get_scalar(daf_obj, "mcview_sample_property")
     }
 
-    # Build the base tibble with cell identifier, metacell, and samp_id
+    samp_id_vec <- NULL
+    if (!is.null(sample_property)) {
+        samp_id_vec <- daf_vec(daf_obj, "cell", sample_property, required = FALSE)
+        if (is.null(samp_id_vec)) {
+            cli_warn("mcview_sample_property = '{sample_property}' but cell vector '{sample_property}' not found; falling back to 'samp_id'")
+            samp_id_vec <- daf_vec(daf_obj, "cell", "samp_id", required = FALSE)
+        }
+    } else {
+        samp_id_vec <- daf_vec(daf_obj, "cell", "samp_id", required = FALSE)
+    }
+
+    # Build the base tibble with cell identifier and metacell
     result <- tibble(
         cell_id = cell_names,
-        metacell = as.character(mc_vec),
-        samp_id = as.character(samp_id_vec)
+        metacell = as.character(mc_vec)
     )
+
+    # Add samp_id column if we found a source vector
+    if (!is.null(samp_id_vec)) {
+        result$samp_id <- as.character(samp_id_vec)
+    }
 
     # Discover and add any additional cell-level vectors
     cell_props <- tryCatch(
@@ -986,8 +1059,12 @@ convert_daf_cell_metadata <- function(daf_obj) {
         }
     )
 
-    # Fields already handled above
+    # Fields already handled above (samp_id always listed to avoid duplication,
+    # plus the original source property name if different)
     handled_fields <- c("metacell", "samp_id")
+    if (!is.null(sample_property) && sample_property != "samp_id") {
+        handled_fields <- c(handled_fields, sample_property)
+    }
 
     extra_fields <- setdiff(cell_props, handled_fields)
 
@@ -1015,16 +1092,61 @@ convert_daf_mc_qc_metadata <- function(daf_obj) {
         "max_inner_stdev_log", "zero_fold", "rare_gene_module", "is_rare"
     ))
 
-    # Compute max_inner_fold per metacell using DAF aggregation if not present
+    # Compute max_inner_fold per metacell from inner_fold matrix if not present
     if (!"max_inner_fold" %in% colnames(result) && dafr::has_matrix(daf_obj, "gene", "metacell", "inner_fold")) {
         max_if <- tryCatch(
-            daf_obj["@ gene @ metacell :: inner_fold >> Max"],
+            {
+                mat <- dafr::get_matrix(daf_obj, "gene", "metacell", "inner_fold")
+                matrixStats::colMaxs(as.matrix(mat))
+            },
             error = function(e) NULL
         )
         if (!is.null(max_if)) {
-            # Assign directly; DAF aggregation returns numeric jlview — skip
-            # as.numeric() to avoid copying the ALTREP view.
             result$max_inner_fold <- max_if
+        }
+    }
+
+    # Compute max_inner_fold_no_lateral if not present
+    if (!"max_inner_fold_no_lateral" %in% colnames(result) && dafr::has_matrix(daf_obj, "gene", "metacell", "inner_fold")) {
+        max_if_nl <- tryCatch(
+            {
+                mat <- dafr::get_matrix(daf_obj, "gene", "metacell", "inner_fold")
+                # Exclude lateral genes if available
+                lateral <- if (dafr::has_vector(daf_obj, "gene", "is_lateral")) {
+                    dafr::get_vector(daf_obj, "gene", "is_lateral")
+                } else {
+                    rep(FALSE, nrow(mat))
+                }
+                mat_nl <- mat[!lateral, , drop = FALSE]
+                matrixStats::colMaxs(as.matrix(mat_nl))
+            },
+            error = function(e) NULL
+        )
+        if (!is.null(max_if_nl)) {
+            result$max_inner_fold_no_lateral <- max_if_nl
+        }
+    }
+
+    # Compute max_inner_stdev_log per metacell from inner_std_log/inner_stdev_log matrix
+    if (!"max_inner_stdev_log" %in% colnames(result)) {
+        mat_name <- if (dafr::has_matrix(daf_obj, "gene", "metacell", "inner_stdev_log")) {
+            "inner_stdev_log"
+        } else if (dafr::has_matrix(daf_obj, "gene", "metacell", "inner_std_log")) {
+            "inner_std_log"
+        } else {
+            NULL
+        }
+        if (!is.null(mat_name)) {
+            max_isl <- tryCatch(
+                {
+                    mat <- dafr::get_matrix(daf_obj, "gene", "metacell", mat_name)
+                    matrixStats::colMaxs(as.matrix(mat))
+                },
+                error = function(e) NULL
+            )
+            if (!is.null(max_isl)) {
+                result$max_inner_stdev_log <- max_isl
+            }
         }
     }
 
@@ -1042,12 +1164,14 @@ convert_daf_gene_qc <- function(daf_obj) {
     result <- add_optional_vec_with_fallback(result, daf_obj, "gene", "max_expr", "mcview_cache_gene_max_umis")
     if (!"max_expr" %in% colnames(result) && dafr::has_matrix(daf_obj, "metacell", "gene", "UMIs")) {
         max_umis <- tryCatch(
-            daf_obj["@ metacell @ gene :: UMIs >> Max"],
+            {
+                # Compute per-gene max from UMIs matrix (gene x metacell after transpose)
+                umat <- dafr::get_matrix(daf_obj, "gene", "metacell", "UMIs")
+                matrixStats::rowMaxs(as.matrix(umat))
+            },
             error = function(e) NULL
         )
         if (!is.null(max_umis)) {
-            # Assign directly; DAF aggregation returns numeric jlview — skip
-            # as.numeric() to avoid copying the ALTREP view.
             result$max_expr <- max_umis
         }
     }
@@ -1058,18 +1182,33 @@ convert_daf_gene_qc <- function(daf_obj) {
         "is_lateral", "is_noisy", "module", "correction_factor"
     ))
 
-    # Try precomputed vector first, then DAF aggregation, then full matrix fallback
+    # Synthesize 'type' column from is_lateral/is_noisy if the pre-computed
+    # type vector is absent.  Downstream QC scatter plots colour genes by type,
+    # so the column must exist even if only as "other".
+    if (!"type" %in% colnames(result)) {
+        is_lat <- if ("is_lateral" %in% colnames(result)) result$is_lateral else rep(FALSE, nrow(result))
+        is_noi <- if ("is_noisy" %in% colnames(result)) result$is_noisy else rep(FALSE, nrow(result))
+        result$type <- dplyr::case_when(
+            is_lat & is_noi ~ "lateral, noisy",
+            is_lat ~ "lateral",
+            is_noi ~ "noisy",
+            TRUE ~ "other"
+        )
+    }
+
+    # Try precomputed vector first, then compute per-gene max from inner_fold matrix
     max_if <- daf_vec(daf_obj, "gene", "max_inner_fold", required = FALSE)
     if (!is.null(max_if)) {
         result$max_inner_fold <- max_if
     } else if (dafr::has_matrix(daf_obj, "gene", "metacell", "inner_fold")) {
         max_if <- tryCatch(
-            daf_obj["@ metacell @ gene :: inner_fold >> Max"],
+            {
+                mat <- dafr::get_matrix(daf_obj, "gene", "metacell", "inner_fold")
+                matrixStats::rowMaxs(as.matrix(mat))
+            },
             error = function(e) NULL
         )
         if (!is.null(max_if)) {
-            # Assign directly; DAF aggregation returns numeric jlview — skip
-            # as.numeric() to avoid copying the ALTREP view.
             result$max_inner_fold <- max_if
         }
     }
@@ -1304,6 +1443,35 @@ convert_daf_query_cell_type_fracs <- function(daf_obj) {
         },
         error = function(e) {
             cli_warn("Failed to parse query cell type fractions JSON: {e$message}")
+            NULL
+        }
+    )
+}
+
+#' Read per-type marker genes from DAF
+#'
+#' Reads the mcview_type_markers axis and its vectors from the DAF.
+#'
+#' @param daf_obj DAF object (typically a complete_daf chain)
+#' @return Tibble with columns: cell_type, gene, rank, fold_change.
+#'   Returns NULL if the axis does not exist.
+#' @export
+convert_daf_type_markers <- function(daf_obj) {
+    if (!dafr::has_axis(daf_obj, "mcview_type_markers")) {
+        return(NULL)
+    }
+
+    tryCatch(
+        {
+            tibble(
+                cell_type = dafr::get_vector(daf_obj, "mcview_type_markers", "cell_type"),
+                gene = dafr::get_vector(daf_obj, "mcview_type_markers", "gene"),
+                rank = dafr::get_vector(daf_obj, "mcview_type_markers", "rank"),
+                fold_change = dafr::get_vector(daf_obj, "mcview_type_markers", "fold_change")
+            )
+        },
+        error = function(e) {
+            cli_warn("Failed to read type markers from DAF: {e$message}")
             NULL
         }
     )

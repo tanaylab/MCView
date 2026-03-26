@@ -41,18 +41,18 @@ init_single_daf_mode <- function(daf_obj, dataset_name, config_file = NULL, prof
         cache_config$enabled <- isTRUE(config$cache_in_daf)
     }
 
-    # Get base path for cache
+    # Get base path for derived DAF
     base_path <- daf_storage_path(daf_obj)
 
-    # Initialize cache DAF using new system
-    cache_result <- init_cache_daf(
+    # Initialize derived DAF
+    cache_result <- init_derived_daf(
         base_daf = daf_obj,
         dataset_name = dataset_name,
         cache_config = cache_config,
         base_path = base_path
     )
 
-    # Update config with cache status
+    # Update config with derived/cache status
     config$cache_in_daf <- cache_config$enabled
     config$cache_config <- cache_config
     mcv_set("config", config)
@@ -152,11 +152,11 @@ init_multi_daf_mode <- function(daf_list, config_file = NULL, profile = FALSE,
             ds_cache_config$enabled <- isTRUE(config$cache_in_daf)
         }
 
-        # Get base path for cache
+        # Get base path for derived DAF
         base_path <- daf_storage_path(daf_obj)
 
-        # Initialize cache DAF
-        cache_result <- init_cache_daf(
+        # Initialize derived DAF
+        cache_result <- init_derived_daf(
             base_daf = daf_obj,
             dataset_name = dataset_name,
             cache_config = ds_cache_config,
@@ -351,6 +351,7 @@ extract_config_for_daf <- function(daf_obj, dataset_name, config_file = NULL) {
     daf_excluded <- get_if_exists("mcview_excluded_tabs")
     daf_cache <- get_if_exists("mcview_cache_in_daf")
     daf_cache_root <- get_if_exists("mcview_cache_daf_root")
+    daf_sample_property <- get_if_exists("mcview_sample_property")
 
     # Apply DAF scalars if not overridden by YAML
     if (is.null(config$title) && !is.null(daf_title)) {
@@ -378,6 +379,9 @@ extract_config_for_daf <- function(daf_obj, dataset_name, config_file = NULL) {
     }
     if (is.null(config$cache_daf_root) && !is.null(daf_cache_root)) {
         config$cache_daf_root <- daf_cache_root
+    }
+    if (is.null(config$sample_property) && !is.null(daf_sample_property)) {
+        config$sample_property <- daf_sample_property
     }
 
     # Priority 3: Auto-detection (lowest priority)
@@ -537,8 +541,8 @@ detect_available_tabs <- function(daf_obj) {
         tabs <- c(tabs, "Inner-fold")
     }
 
-    # Stdev-fold - requires gene,metacell.inner_stdev_log matrix
-    if (has_mat("gene", "metacell", "inner_stdev_log")) {
+    # Stdev-fold - requires gene,metacell.inner_stdev_log or inner_std_log matrix
+    if (has_mat("gene", "metacell", "inner_stdev_log") || has_mat("gene", "metacell", "inner_std_log")) {
         tabs <- c(tabs, "Stdev-fold")
     }
 
@@ -551,15 +555,21 @@ detect_available_tabs <- function(daf_obj) {
     # Annotate - always available if core passes
     tabs <- c(tabs, "Annotate")
 
-    # Samples - always include; runtime has_samples() controls actual visibility.
-    # Cell data may come from the metacells DAF (cell axis) or a separate cells DAF
-    # that is loaded after tab detection.
-    tabs <- c(tabs, "Samples")
-
-    # Gene correlation - requires gg_mc_top_cor axis
-    if (has_ax("gg_mc_top_cor")) {
-        tabs <- c(tabs, "Gene correlation")
+    # Samples - include optimistically when cell data is available.
+    # Cell data may live in the main DAF or in a separate cells DAF loaded
+    # after tab detection. The runtime has_samples() check in app_server.R
+    # will remove the tab if no grouping fields are actually available.
+    if (has_ax("cell") && has_vec("cell", "metacell")) {
+        tabs <- c(tabs, "Samples")
+    } else {
+        # Cell data may come from a separate cells DAF loaded after tab detection
+        tabs <- c(tabs, "Samples")
     }
+
+    # Gene correlation - always available with core data (UMIs + genes).
+    # Pre-computed correlations (gg_mc_top_cor or mcview_marker_correlations axes)
+    # are optional; correlations can be computed on-the-fly.
+    tabs <- c(tabs, "Gene correlation")
 
     # Flow - requires metacell.time (custom rule)
     if (has_vec("metacell", "time")) {

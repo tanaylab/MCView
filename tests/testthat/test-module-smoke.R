@@ -196,11 +196,11 @@ test_that("mod_inner_fold_server initializes without error", {
 test_that("mod_stdev_fold_server initializes without error", {
     state <- setup_app_state()
 
-    # Stdev-fold requires gene x metacell inner_stdev_log matrix in the DAF
+    # Stdev-fold requires gene x metacell inner_stdev_log or inner_std_log matrix in the DAF
     daf_obj <- get_dataset_daf("test_data")
     skip_if(
-        is.null(daf_obj) || !dafr::has_matrix(daf_obj, "gene", "metacell", "inner_stdev_log"),
-        "inner_stdev_log matrix not available in DAF"
+        is.null(daf_obj) || (!dafr::has_matrix(daf_obj, "gene", "metacell", "inner_stdev_log") && !dafr::has_matrix(daf_obj, "gene", "metacell", "inner_std_log")),
+        "inner_stdev_log / inner_std_log matrix not available in DAF"
     )
 
     args <- build_module_args(state)

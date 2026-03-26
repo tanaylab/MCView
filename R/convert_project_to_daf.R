@@ -269,7 +269,7 @@ convert_dataset_to_daf <- function(cache_dir,
     add_about_markdown(daf, about_markdown)
 
     if (isTRUE(precompute_cache)) {
-        precompute_daf_cache(daf)
+        precompute_daf_derived(daf)
     }
 
     cli_alert_success("Created DAF at {.path {output_path}}")

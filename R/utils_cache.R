@@ -173,6 +173,8 @@ get_mc_data <- function(dataset, var_name, atlas = FALSE) {
     static_vars <- c(
         "mc_mat", "mc2d",
         "marker_genes", "gene_modules",
+        "marker_genes_inner_fold", "marker_genes_inner_stdev",
+        "marker_genes_deviant_fold", "marker_genes_projected",
         "mc_qc_metadata", "gene_qc", "gg_mc_top_cor", "gene_zero_fold",
         "metacell_graphs", "qc_stats", "cell_metadata",
         "mc_mat_corrected", "projected_mat",
@@ -244,10 +246,18 @@ has_cell_metadata <- function(dataset) {
 }
 
 has_samples <- function(dataset) {
-    # Check DAF cell.samp_id vector existence instead of loading full cell metadata
+    # Check DAF cell vector existence: mcview_sample_property scalar names the
+    # source vector, falling back to literal "samp_id".
     daf_obj <- get_dataset_daf(dataset)
-    if (!is.null(daf_obj)) {
-        if (dafr::has_axis(daf_obj, "cell") && dafr::has_vector(daf_obj, "cell", "samp_id")) {
+    if (!is.null(daf_obj) && dafr::has_axis(daf_obj, "cell")) {
+        # Check mcview_sample_property scalar first
+        if (dafr::has_scalar(daf_obj, "mcview_sample_property")) {
+            prop_name <- dafr::get_scalar(daf_obj, "mcview_sample_property")
+            if (dafr::has_vector(daf_obj, "cell", prop_name)) {
+                return(TRUE)
+            }
+        }
+        if (dafr::has_vector(daf_obj, "cell", "samp_id")) {
             return(TRUE)
         }
     }

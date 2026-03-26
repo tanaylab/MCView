@@ -202,14 +202,16 @@ top_correlated_selector <- function(gene_id, id, type_id, input, output, session
             }
         )
 
+        markers_only_val <- isTRUE(input[[glue("markers_only_{id}")]] %||% TRUE)
         si <- selectInput(
             ns(glue("selected_top_{id}")),
             glue("Top correlated to {gene}:"),
-            choices = get_top_cor_gene(dataset(), gene, type = "both", data_vec = data_vec, exclude = exclude, metacell_filter = metacell_filter),
+            choices = get_top_cor_gene(dataset(), gene, type = "both", data_vec = data_vec, exclude = exclude, metacell_filter = metacell_filter, markers_only = markers_only_val),
             selected = NULL,
             size = 10,
             selectize = FALSE
         )
+        markers_cb <- checkboxInput(ns(glue("markers_only_{id}")), "Markers only", value = markers_only_val)
         btn <- shinyWidgets::actionGroupButtons(
             input_ids[1:length(button_labels)],
             labels = button_labels, size = "sm", fullwidth = FALSE
@@ -217,6 +219,7 @@ top_correlated_selector <- function(gene_id, id, type_id, input, output, session
 
         if (input[[type_id]] == "Gene") {
             tagList(
+                markers_cb,
                 si,
                 btn,
                 shiny::actionButton(
@@ -226,6 +229,7 @@ top_correlated_selector <- function(gene_id, id, type_id, input, output, session
             )
         } else {
             tagList(
+                markers_cb,
                 si,
                 btn
             )

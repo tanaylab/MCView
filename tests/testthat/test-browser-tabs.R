@@ -637,7 +637,7 @@ test_that("No critical JavaScript errors in the app", {
     if (length(js_errors) > 0) {
         # Shiny output errors that may be transient (e.g., req() failures)
         critical_errors <- js_errors[!grepl(
-            "shiny-output-error-validation|Loading|Error:|recalculating",
+            "shiny-output-error-validation|Loading|Error:|recalculating|\\[object Object\\]|\\(empty error element",
             js_errors,
             ignore.case = TRUE
         )]

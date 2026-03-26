@@ -167,9 +167,16 @@ get_cell_grouping_fields <- function(dataset, max_cardinality = 1000) {
         return(character(0))
     }
 
+    # Use the raw (non-chained) cells DAF for vector listing and cardinality
+    # checks. The chained DAF merges axes from metacells and cells, which can
+    # confuse Julia's cardinality checker. We only need cell-level vectors.
+    mc_data <- mcv_get("mc_data")
+    raw_cells_daf <- mc_data[[dataset]][["cells_daf"]]
+    query_daf <- raw_cells_daf %||% cells_daf
+
     # Get all vector properties on the cell axis
     all_vectors <- tryCatch(
-        dafr::vectors_set(cells_daf, "cell"),
+        dafr::vectors_set(query_daf, "cell"),
         error = function(e) character(0)
     )
 
@@ -189,7 +196,7 @@ get_cell_grouping_fields <- function(dataset, max_cardinality = 1000) {
         # Phase 2: Check cardinality via a single Julia call (avoids per-vector
         # R<->Julia round-trips and never transfers full vectors to R).
         julia_result <- julia_get_grouping_fields(
-            cells_daf, "cell", string_candidates, max_cardinality
+            query_daf, "cell", string_candidates, max_cardinality
         )
         if (!is.null(julia_result)) {
             return(julia_result)
@@ -204,7 +211,7 @@ get_cell_grouping_fields <- function(dataset, max_cardinality = 1000) {
     for (field in candidates) {
         tryCatch(
             {
-                vec <- dafr::get_vector(cells_daf, "cell", field)
+                vec <- dafr::get_vector(query_daf, "cell", field)
                 if (is.character(vec)) {
                     n_unique <- length(unique(vec))
                     if (n_unique > 1 && n_unique <= max_cardinality) {
@@ -713,11 +720,23 @@ get_group_qc_stats <- function(dataset, group_field) {
 #' @return Field name (character), or NULL if none available
 #' @export
 get_default_sample_field <- function(dataset) {
-    # First check the metacells DAF for samp_id (original pattern)
+    # First check mcview_sample_property scalar in the metacells DAF
     daf_obj <- get_dataset_daf(dataset)
-    if (!is.null(daf_obj) && dafr::has_axis(daf_obj, "cell") &&
-        dafr::has_vector(daf_obj, "cell", "samp_id")) {
-        return("samp_id")
+    if (!is.null(daf_obj)) {
+        if (dafr::has_scalar(daf_obj, "mcview_sample_property")) {
+            prop_name <- dafr::get_scalar(daf_obj, "mcview_sample_property")
+            # The cell_metadata tibble renames the source vector to "samp_id",
+            # so return "samp_id" if the property was used to populate it.
+            if (dafr::has_axis(daf_obj, "cell") &&
+                dafr::has_vector(daf_obj, "cell", prop_name)) {
+                return("samp_id")
+            }
+        }
+        # Fall back to literal samp_id
+        if (dafr::has_axis(daf_obj, "cell") &&
+            dafr::has_vector(daf_obj, "cell", "samp_id")) {
+            return("samp_id")
+        }
     }
 
     # Check the cells DAF for common sample-like fields

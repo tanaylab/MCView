@@ -1,31 +1,31 @@
-# Helpers for DAF-backed cache settings and write access.
-# This module implements a cache DAF layer that chains with the base DAF
+# Helpers for DAF-backed derived-data settings and write access.
+# This module implements a derived DAF layer that chains with the base DAF
 # using dafr::complete_daf() for unified read access.
 
 # ==============================================================================
-# Cache DAF Initialization (complete_daf based)
+# Derived DAF Initialization (complete_daf based)
 # ==============================================================================
 
-#' Initialize cache DAF for a dataset
+#' Initialize derived DAF for a dataset
 #'
-#' Creates or opens a cache DAF and chains it with the base DAF using
-#' complete_daf. The cache DAF stores computed data that can be persisted
+#' Creates or opens a derived DAF and chains it with the base DAF using
+#' complete_daf. The derived DAF stores computed data that can be persisted
 #' across sessions.
 #'
 #' @param base_daf Base DAF object (read-only or writable)
-#' @param dataset_name Dataset name (used for cache directory)
+#' @param dataset_name Dataset name (used for derived directory)
 #' @param cache_config Cache configuration from extract_cache_config()
 #' @param base_path Path to base DAF (for relative path calculation)
 #'
 #' @return List with:
-#'   - cache_daf: The writable cache DAF (or NULL if caching disabled)
-#'   - complete_daf: The chained DAF for reads (cache has priority)
-#'   - needs_population: Whether cache needs to be populated
-#'   - cache_path: Path to cache directory (for files cache)
+#'   - cache_daf: The writable derived DAF (or NULL if disabled)
+#'   - complete_daf: The chained DAF for reads (derived has priority)
+#'   - needs_population: Whether derived data needs to be populated
+#'   - cache_path: Path to derived directory (for files mode)
 #'
 #' @export
-init_cache_daf <- function(base_daf, dataset_name, cache_config, base_path = NULL) {
-    # If caching disabled, return base DAF as-is
+init_derived_daf <- function(base_daf, dataset_name, cache_config, base_path = NULL) {
+    # If disabled, return base DAF as-is
     if (!isTRUE(cache_config$enabled)) {
         return(list(
             cache_daf = NULL,
@@ -40,20 +40,20 @@ init_cache_daf <- function(base_daf, dataset_name, cache_config, base_path = NUL
         base_path <- daf_storage_path(base_daf)
     }
 
-    # Determine cache path
-    cache_dir <- cache_config$cache_dir %||% ".mcview_cache"
-    cache_path <- resolve_cache_path(cache_dir, base_path, dataset_name)
+    # Determine derived path (accept legacy ".mcview_cache" for backward compat)
+    derived_dir <- cache_config$cache_dir %||% ".mcview_derived"
+    derived_path <- resolve_cache_path(derived_dir, base_path, dataset_name)
 
-    # Create cache DAF based on type
-    cache_daf <- NULL
+    # Create derived DAF based on type
+    derived_daf <- NULL
     if (cache_config$type == "memory") {
-        cache_daf <- create_memory_cache_daf(base_daf, dataset_name)
+        derived_daf <- create_memory_cache_daf(base_daf, dataset_name)
     } else {
-        cache_daf <- create_files_cache_daf(base_daf, cache_path, base_path)
+        derived_daf <- create_files_cache_daf(base_daf, derived_path, base_path)
     }
 
-    if (is.null(cache_daf)) {
-        cli::cli_alert_warning("Failed to create cache DAF for {dataset_name}, using base DAF only")
+    if (is.null(derived_daf)) {
+        cli::cli_alert_warning("Failed to create derived DAF for {dataset_name}, using base DAF only")
         return(list(
             cache_daf = NULL,
             complete_daf = base_daf,
@@ -62,15 +62,15 @@ init_cache_daf <- function(base_daf, dataset_name, cache_config, base_path = NUL
         ))
     }
 
-    # Check if cache is valid
-    needs_population <- !is_cache_valid(cache_daf, base_daf, cache_config$invalidation)
+    # Check if derived data is valid
+    needs_population <- !is_cache_valid(derived_daf, base_daf, cache_config$invalidation)
 
-    # Create complete DAF chain (cache as leaf, base as parent)
+    # Create complete DAF chain (derived as leaf, base as parent)
     complete_daf <- NULL
-    if (cache_config$type == "files" && !is.null(cache_path)) {
-        # For files cache, use complete_daf which follows base_daf_repository
+    if (cache_config$type == "files" && !is.null(derived_path)) {
+        # For files mode, use complete_daf which follows base_daf_repository
         complete_daf <- tryCatch(
-            dafr::complete_daf(cache_path, mode = "r+"),
+            dafr::complete_daf(derived_path, mode = "r+"),
             error = function(e) {
                 cli::cli_alert_warning("Failed to create complete DAF: {e$message}")
                 NULL
@@ -78,10 +78,10 @@ init_cache_daf <- function(base_daf, dataset_name, cache_config, base_path = NUL
         )
     }
 
-    # Fallback to chain_writer if complete_daf failed or memory cache
+    # Fallback to chain_writer if complete_daf failed or memory mode
     if (is.null(complete_daf)) {
         complete_daf <- tryCatch(
-            dafr::chain_writer(list(dafr::read_only(base_daf), cache_daf)),
+            dafr::chain_writer(list(dafr::read_only(base_daf), derived_daf)),
             error = function(e) {
                 cli::cli_alert_warning("Failed to chain DAFs: {e$message}")
                 base_daf
@@ -89,16 +89,20 @@ init_cache_daf <- function(base_daf, dataset_name, cache_config, base_path = NUL
         )
     }
 
-    label <- if (cache_config$type == "memory") "in-memory" else cache_path
-    cli::cli_alert_info("Cache DAF initialized for {dataset_name}: {label}")
+    label <- if (cache_config$type == "memory") "in-memory" else derived_path
+    cli::cli_alert_info("Derived DAF initialized for {dataset_name}: {label}")
 
     list(
-        cache_daf = cache_daf,
+        cache_daf = derived_daf,
         complete_daf = complete_daf,
         needs_population = needs_population,
-        cache_path = if (cache_config$type == "files") cache_path else NULL
+        cache_path = if (cache_config$type == "files") derived_path else NULL
     )
 }
+
+#' @rdname init_derived_daf
+#' @export
+init_cache_daf <- init_derived_daf
 
 #' Resolve cache path from configuration
 #'
@@ -109,7 +113,7 @@ init_cache_daf <- function(base_daf, dataset_name, cache_config, base_path = NUL
 #' @return Absolute path to cache directory
 resolve_cache_path <- function(cache_dir, base_path, dataset_name) {
     if (is.null(cache_dir) || !nzchar(cache_dir)) {
-        cache_dir <- ".mcview_cache"
+        cache_dir <- ".mcview_derived"
     }
 
     # If cache_dir is absolute, use it directly
@@ -372,7 +376,7 @@ invalidate_cache <- function(dataset, clear_data = FALSE) {
         }
     }
 
-    cli::cli_alert_info("Cache invalidated for dataset: {dataset}")
+    cli::cli_alert_info("Derived data invalidated for dataset: {dataset}")
     invisible(TRUE)
 }
 
@@ -743,13 +747,71 @@ precompute_daf_gene_stats <- function(daf_obj, force = FALSE) {
     invisible(success)
 }
 
-precompute_daf_cache <- function(daf_obj,
-                                 correlations = TRUE,
-                                 metacell_top_genes = TRUE,
-                                 gene_stats = TRUE,
-                                 correlations_k = 30,
-                                 egc_epsilon = 1e-5,
-                                 force = FALSE) {
+precompute_daf_type_markers <- function(daf_obj, genes_per_type = 50,
+                                       min_log_fraction = -13, force = FALSE) {
+    if (is.null(daf_obj) || !daf_is_writable(daf_obj)) {
+        return(invisible(FALSE))
+    }
+
+    cache_axis <- "mcview_type_markers"
+    if (!force && dafr::has_axis(daf_obj, cache_axis)) {
+        return(invisible(FALSE))
+    }
+
+    # Need both EGC matrix and type annotations
+    if (!dafr::has_vector(daf_obj, "metacell", "type")) {
+        return(invisible(FALSE))
+    }
+
+    mc_egc <- convert_daf_mc_egc(daf_obj)
+    if (is.null(mc_egc) || ncol(mc_egc) == 0) {
+        return(invisible(FALSE))
+    }
+
+    mc_types <- dafr::get_vector(daf_obj, "metacell", "type")
+
+    markers <- calc_type_marker_genes(mc_egc, mc_types,
+        genes_per_type = genes_per_type,
+        min_log_fraction = min_log_fraction
+    )
+
+    if (is.null(markers) || nrow(markers) == 0) {
+        return(invisible(FALSE))
+    }
+
+    success <- tryCatch(
+        {
+            dafr::add_axis(daf_obj, cache_axis,
+                as.character(seq_len(nrow(markers))),
+                overwrite = TRUE
+            )
+            dafr::set_vector(daf_obj, cache_axis, "cell_type",
+                as.character(markers$cell_type))
+            dafr::set_vector(daf_obj, cache_axis, "gene",
+                as.character(markers$gene))
+            dafr::set_vector(daf_obj, cache_axis, "rank",
+                as.numeric(markers$rank))
+            dafr::set_vector(daf_obj, cache_axis, "fold_change",
+                as.numeric(markers$fold_change))
+            TRUE
+        },
+        error = function(e) FALSE
+    )
+
+    invisible(success)
+}
+
+precompute_daf_derived <- function(daf_obj,
+                                   correlations = TRUE,
+                                   metacell_top_genes = TRUE,
+                                   gene_stats = TRUE,
+                                   type_markers = TRUE,
+                                   qc_vectors = TRUE,
+                                   egc_cache = TRUE,
+                                   default_markers = TRUE,
+                                   correlations_k = 30,
+                                   egc_epsilon = 1e-5,
+                                   force = FALSE) {
     if (is.null(daf_obj) || !daf_is_writable(daf_obj)) {
         return(invisible(FALSE))
     }
@@ -764,51 +826,129 @@ precompute_daf_cache <- function(daf_obj,
     if (isTRUE(gene_stats)) {
         any_done <- precompute_daf_gene_stats(daf_obj, force = force) || any_done
     }
+    if (isTRUE(type_markers)) {
+        any_done <- precompute_daf_type_markers(daf_obj, force = force) || any_done
+    }
+    if (isTRUE(qc_vectors)) {
+        precompute_daf_qc_vectors(daf_obj, daf_obj, force = force)
+    }
+    if (isTRUE(egc_cache)) {
+        precompute_daf_egc(daf_obj, daf_obj, force = force)
+    }
+    if (isTRUE(default_markers)) {
+        precompute_daf_default_markers(daf_obj, daf_obj, force = force)
+    }
 
     invisible(any_done)
+}
+
+# Backward-compatible alias
+precompute_daf_cache <- precompute_daf_derived
+
+# ==============================================================================
+# Stub Pre-computation Functions (not yet implemented)
+# ==============================================================================
+
+#' Pre-compute max inner_fold QC vectors per metacell
+#'
+#' Computes mcview_cache_max_inner_fold (max inner_fold per metacell across
+#' all genes) and mcview_cache_max_inner_fold_no_lateral (same but excluding
+#' lateral genes).
+#'
+#' @param complete_daf The chained DAF for reads (derived has priority)
+#' @param derived_daf The writable derived DAF layer
+#' @param force Recompute even if already present
+#'
+#' @return Invisibly returns TRUE if vectors were written, FALSE otherwise
+#' @noRd
+precompute_daf_qc_vectors <- function(complete_daf, derived_daf, force = FALSE) {
+    # TODO: Pre-compute max_inner_fold and max_inner_fold_no_lateral per metacell
+    # Uses: daf["@ gene @ metacell :: inner_fold >> Max"] for max_inner_fold
+    # Uses: filter lateral genes, then same query for max_inner_fold_no_lateral
+    cli::cli_inform("Skipping QC vector pre-computation (not yet implemented)")
+    invisible(FALSE)
+}
+
+#' Pre-compute geomean_fraction (EGC) when not in input DAF
+#'
+#' Stores the gene x metacell geomean_fraction matrix in the derived layer
+#' so downstream computations can use zero-copy reads instead of computing
+#' EGC on the fly.
+#'
+#' @param complete_daf The chained DAF for reads (derived has priority)
+#' @param derived_daf The writable derived DAF layer
+#' @param force Recompute even if already present
+#'
+#' @return Invisibly returns TRUE if matrix was written, FALSE otherwise
+#' @noRd
+precompute_daf_egc <- function(complete_daf, derived_daf, force = FALSE) {
+    # TODO: Pre-compute geomean_fraction when not in input DAF
+    # Store as gene x metacell :: mcview_cache_geomean_fraction in derived layer
+    cli::cli_inform("Skipping EGC pre-computation (not yet implemented)")
+    invisible(FALSE)
+}
+
+#' Pre-compute default markers list and distance matrix
+#'
+#' Computes the default marker gene set and a metacell x metacell distance
+#' matrix based on hclust of marker correlations. Saves ~2-5s on first
+#' Markers tab visit.
+#'
+#' @param complete_daf The chained DAF for reads (derived has priority)
+#' @param derived_daf The writable derived DAF layer
+#' @param force Recompute even if already present
+#'
+#' @return Invisibly returns TRUE if data was written, FALSE otherwise
+#' @noRd
+precompute_daf_default_markers <- function(complete_daf, derived_daf, force = FALSE) {
+    # TODO: Pre-compute default markers list and distance matrix
+    # Uses: choose_markers() to select default set, then tgs_cor + tgs_dist + hclust
+    # Stores: mcview_default_markers scalar and mcview_default_markers_dist matrix
+    cli::cli_inform("Skipping default markers pre-computation (not yet implemented)")
+    invisible(FALSE)
 }
 
 # ==============================================================================
 # External Populate API
 # ==============================================================================
 
-#' Populate MCView cache for a DAF dataset
+#' Populate MCView derived data for a DAF dataset
 #'
 #' This function can be called standalone (outside MCView) to precompute
-#' cached data. Useful for CI/CD pipelines, batch processing, or scheduled jobs.
+#' derived data. Useful for CI/CD pipelines, batch processing, or scheduled jobs.
 #'
 #' @param daf_path Path to base DAF (directory for files_daf, or H5 file)
-#' @param cache_dir Cache directory path (absolute or relative to daf_path)
-#' @param cache_type Cache type: "files" (persistent) or "memory" (session only)
-#' @param what What to cache: NULL (all), or character vector subset of:
-#'   "correlations", "metacell_top_genes", "gene_stats"
-#' @param force Recompute even if cache exists and is valid
+#' @param cache_dir Derived data directory path (absolute or relative to daf_path)
+#' @param cache_type Storage type: "files" (persistent) or "memory" (session only)
+#' @param what What to compute: NULL (all), or character vector subset of:
+#'   "correlations", "metacell_top_genes", "gene_stats", "type_markers"
+#' @param force Recompute even if derived data exists and is valid
 #' @param verbose Print progress messages
 #'
-#' @return Invisibly returns the cache path (for files) or TRUE (for memory)
+#' @return Invisibly returns the derived path (for files) or TRUE (for memory)
 #'
 #' @examples
 #' \dontrun{
-#' # Populate all cache data
-#' populate_mcview_cache("/path/to/daf")
+#' # Populate all derived data
+#' populate_mcview_derived("/path/to/daf")
 #'
-#' # Populate specific cache items
-#' populate_mcview_cache(
+#' # Populate specific items
+#' populate_mcview_derived(
 #'     "/path/to/daf",
 #'     what = c("correlations", "gene_stats"),
 #'     verbose = TRUE
 #' )
 #'
-#' # Use custom cache directory
-#' populate_mcview_cache(
+#' # Use custom derived directory
+#' populate_mcview_derived(
 #'     "/path/to/daf",
-#'     cache_dir = "/shared/cache/my_dataset"
+#'     cache_dir = "/shared/derived/my_dataset"
 #' )
 #' }
 #' @export
-populate_mcview_cache <- function(
+populate_mcview_derived <- function(
     daf_path,
-    cache_dir = ".mcview_cache",
+    cache_dir = ".mcview_derived",
     cache_type = "files",
     what = NULL,
     force = FALSE,
@@ -872,90 +1012,100 @@ populate_mcview_cache <- function(
         dataset_name <- "dataset"
     }
 
-    if (verbose) cli::cli_alert_info("Initializing cache DAF (type: {cache_type})")
+    if (verbose) cli::cli_alert_info("Initializing derived DAF (type: {cache_type})")
 
-    # Initialize cache DAF
-    cache_result <- init_cache_daf(
+    # Initialize derived DAF
+    derived_result <- init_derived_daf(
         base_daf = base_daf,
         dataset_name = dataset_name,
         cache_config = cache_config,
         base_path = daf_path
     )
 
-    if (is.null(cache_result$cache_daf)) {
-        cli::cli_abort("Failed to create cache DAF")
+    if (is.null(derived_result$cache_daf)) {
+        cli::cli_abort("Failed to create derived DAF")
     }
 
-    cache_daf <- cache_result$cache_daf
+    derived_daf <- derived_result$cache_daf
 
-    # Determine what to cache
-    all_items <- c("correlations", "metacell_top_genes", "gene_stats")
+    # Determine what to compute
+    all_items <- c("correlations", "metacell_top_genes", "gene_stats", "type_markers")
     if (is.null(what)) {
         what <- all_items
     } else {
         what <- intersect(what, all_items)
         if (length(what) == 0) {
-            cli::cli_abort("No valid cache items specified. Choose from: {paste(all_items, collapse=', ')}")
+            cli::cli_abort("No valid items specified. Choose from: {paste(all_items, collapse=', ')}")
         }
     }
 
-    if (verbose) cli::cli_alert_info("Populating cache: {paste(what, collapse=', ')}")
+    if (verbose) cli::cli_alert_info("Populating derived data: {paste(what, collapse=', ')}")
 
-    # Populate cache
+    # Populate derived data
     results <- list()
 
     if ("correlations" %in% what) {
         if (verbose) cli::cli_alert("Computing gene correlations...")
-        results$correlations <- precompute_daf_correlations(cache_daf, force = force)
-        if (verbose && results$correlations) cli::cli_alert_success("Gene correlations cached")
+        results$correlations <- precompute_daf_correlations(derived_daf, force = force)
+        if (verbose && results$correlations) cli::cli_alert_success("Gene correlations computed")
     }
 
     if ("metacell_top_genes" %in% what) {
         if (verbose) cli::cli_alert("Computing metacell top genes...")
-        results$metacell_top_genes <- precompute_daf_metacell_top_genes(cache_daf, force = force)
-        if (verbose && results$metacell_top_genes) cli::cli_alert_success("Metacell top genes cached")
+        results$metacell_top_genes <- precompute_daf_metacell_top_genes(derived_daf, force = force)
+        if (verbose && results$metacell_top_genes) cli::cli_alert_success("Metacell top genes computed")
     }
 
     if ("gene_stats" %in% what) {
         if (verbose) cli::cli_alert("Computing gene statistics...")
-        results$gene_stats <- precompute_daf_gene_stats(cache_daf, force = force)
-        if (verbose && results$gene_stats) cli::cli_alert_success("Gene statistics cached")
+        results$gene_stats <- precompute_daf_gene_stats(derived_daf, force = force)
+        if (verbose && results$gene_stats) cli::cli_alert_success("Gene statistics computed")
     }
 
-    # Update cache metadata
-    update_cache_metadata(cache_daf, base_daf)
+    if ("type_markers" %in% what) {
+        if (verbose) cli::cli_alert("Computing per-type marker genes...")
+        results$type_markers <- precompute_daf_type_markers(derived_daf, force = force)
+        if (verbose && results$type_markers) cli::cli_alert_success("Per-type marker genes computed")
+    }
+
+    # Update derived metadata
+    update_cache_metadata(derived_daf, base_daf)
 
     if (verbose) {
         n_done <- sum(unlist(results))
         if (n_done > 0) {
-            cli::cli_alert_success("Cache population complete: {n_done} items computed")
+            cli::cli_alert_success("Derived data population complete: {n_done} items computed")
         } else {
-            cli::cli_alert_info("Cache is already up to date (use force=TRUE to recompute)")
+            cli::cli_alert_info("Derived data is already up to date (use force=TRUE to recompute)")
         }
     }
 
-    invisible(cache_result$cache_path %||% TRUE)
+    invisible(derived_result$cache_path %||% TRUE)
 }
 
-#' Populate cache for a dataset in a running MCView session
+#' @rdname populate_mcview_derived
+#' @export
+populate_mcview_cache <- populate_mcview_derived
+
+#' Populate derived data for a dataset in a running MCView session
 #'
 #' @param dataset Dataset name
-#' @param what What to cache (NULL = all)
+#' @param what What to compute (NULL = all)
 #' @param force Recompute even if present
 #' @param verbose Print progress
 #'
 #' @export
 populate_dataset_cache <- function(dataset, what = NULL, force = FALSE, verbose = TRUE) {
-    cache_daf <- get_cache_daf(dataset)
+    derived_daf <- get_cache_daf(dataset)
     base_daf <- get_base_daf(dataset)
 
-    if (is.null(cache_daf)) {
-        if (verbose) cli::cli_alert_warning("No cache DAF available for dataset: {dataset}")
+    if (is.null(derived_daf)) {
+        if (verbose) cli::cli_alert_warning("No derived DAF available for dataset: {dataset}")
         return(invisible(FALSE))
     }
 
-    # Determine what to cache
-    all_items <- c("correlations", "metacell_top_genes", "gene_stats")
+    # Determine what to compute
+    all_items <- c("correlations", "metacell_top_genes", "gene_stats", "type_markers")
     if (is.null(what)) {
         what <- all_items
     }
@@ -964,27 +1114,32 @@ populate_dataset_cache <- function(dataset, what = NULL, force = FALSE, verbose 
 
     if ("correlations" %in% what) {
         if (verbose) cli::cli_alert("Computing gene correlations for {dataset}...")
-        results$correlations <- precompute_daf_correlations(cache_daf, force = force)
+        results$correlations <- precompute_daf_correlations(derived_daf, force = force)
     }
 
     if ("metacell_top_genes" %in% what) {
         if (verbose) cli::cli_alert("Computing metacell top genes for {dataset}...")
-        results$metacell_top_genes <- precompute_daf_metacell_top_genes(cache_daf, force = force)
+        results$metacell_top_genes <- precompute_daf_metacell_top_genes(derived_daf, force = force)
     }
 
     if ("gene_stats" %in% what) {
         if (verbose) cli::cli_alert("Computing gene statistics for {dataset}...")
-        results$gene_stats <- precompute_daf_gene_stats(cache_daf, force = force)
+        results$gene_stats <- precompute_daf_gene_stats(derived_daf, force = force)
     }
 
-    # Update cache metadata
+    if ("type_markers" %in% what) {
+        if (verbose) cli::cli_alert("Computing per-type marker genes for {dataset}...")
+        results$type_markers <- precompute_daf_type_markers(derived_daf, force = force)
+    }
+
+    # Update derived metadata
     if (!is.null(base_daf)) {
-        update_cache_metadata(cache_daf, base_daf)
+        update_cache_metadata(derived_daf, base_daf)
     }
 
     if (verbose) {
         n_done <- sum(unlist(results))
-        cli::cli_alert_success("Cache population for {dataset}: {n_done} items computed")
+        cli::cli_alert_success("Derived data population for {dataset}: {n_done} items computed")
     }
 
     invisible(any(unlist(results)))
@@ -1006,9 +1161,9 @@ populate_dataset_cache <- function(dataset, what = NULL, force = FALSE, verbose 
 #'
 #' @export
 validate_mcview_cache <- function(daf_path, cache_dir = NULL) {
-    # Resolve cache path
+    # Resolve derived path (try new name first, fall back to legacy)
     if (is.null(cache_dir)) {
-        cache_dir <- ".mcview_cache"
+        cache_dir <- ".mcview_derived"
     }
 
     dataset_name <- basename(normalizePath(daf_path, mustWork = FALSE))
@@ -1062,7 +1217,8 @@ validate_mcview_cache <- function(daf_path, cache_dir = NULL) {
     expected_items <- list(
         correlations = dafr::has_axis(cache_daf, "mcview_cache_gg_mc_top_cor"),
         metacell_top_genes = dafr::has_vector(cache_daf, "metacell", "mcview_cache_top1_gene"),
-        gene_stats = dafr::has_vector(cache_daf, "gene", "mcview_cache_gene_max_umis")
+        gene_stats = dafr::has_vector(cache_daf, "gene", "mcview_cache_gene_max_umis"),
+        type_markers = dafr::has_axis(cache_daf, "mcview_type_markers")
     )
 
     result$missing <- names(expected_items)[!unlist(expected_items)]

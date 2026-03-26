@@ -76,6 +76,76 @@ select_top_fold_genes_per_metacell <- function(fold_matrix, genes_per_metacell =
     return(mc_top_genes)
 }
 
+#' Calculate top marker genes per cell type
+#'
+#' For each cell type, finds genes most enriched compared to the global mean.
+#' Uses log2 fold-change of type mean EGC vs global mean EGC.
+#'
+#' @param mc_egc EGC matrix (genes x metacells), e.g. from convert_daf_mc_egc()
+#' @param mc_types Named character vector: names = metacell IDs, values = cell type labels
+#' @param genes_per_type Number of top marker genes to keep per type (default 50)
+#' @param min_log_fraction Minimum log2 expression threshold for a gene to be
+#'   considered (default -13); genes whose type-mean log2 EGC is below this
+#'   are excluded from that type's ranking
+#'
+#' @return Tibble with columns: cell_type, gene, rank, fold_change
+#' @noRd
+calc_type_marker_genes <- function(mc_egc,
+                                   mc_types,
+                                   genes_per_type = 50,
+                                   min_log_fraction = -13) {
+    # Subset to metacells present in both EGC matrix and type annotation
+    common_mcs <- intersect(colnames(mc_egc), names(mc_types))
+    if (length(common_mcs) == 0) {
+        cli_abort("No metacells in common between EGC matrix and mc_types")
+    }
+    mc_egc <- mc_egc[, common_mcs, drop = FALSE]
+    mc_types <- mc_types[common_mcs]
+
+    # Global mean EGC per gene (across all metacells)
+    global_mean <- rowMeans(mc_egc)
+
+    # Unique cell types
+    types <- sort(unique(mc_types))
+
+    results <- vector("list", length(types))
+    for (i in seq_along(types)) {
+        ct <- types[i]
+        ct_mcs <- names(mc_types)[mc_types == ct]
+
+        # Type mean EGC per gene
+        if (length(ct_mcs) == 1) {
+            type_mean <- mc_egc[, ct_mcs, drop = TRUE]
+        } else {
+            type_mean <- rowMeans(mc_egc[, ct_mcs, drop = FALSE])
+        }
+
+        # Log2 fold-change vs global (with epsilon to avoid log(0))
+        eps <- 1e-5
+        log2_fc <- log2(type_mean + eps) - log2(global_mean + eps)
+
+        # Filter: gene must have sufficient expression in this type
+        log2_expr <- log2(type_mean + eps)
+        keep <- log2_expr >= min_log_fraction
+        if (sum(keep) == 0) next
+
+        log2_fc_filtered <- log2_fc[keep]
+
+        # Take top genes_per_type by absolute fold change
+        k <- min(genes_per_type, length(log2_fc_filtered))
+        top_idx <- order(-abs(log2_fc_filtered))[seq_len(k)]
+
+        results[[i]] <- tibble(
+            cell_type = ct,
+            gene = names(log2_fc_filtered)[top_idx],
+            rank = seq_len(k),
+            fold_change = as.numeric(log2_fc_filtered[top_idx])
+        )
+    }
+
+    bind_rows(results)
+}
+
 choose_markers <- function(marker_genes, max_markers, dataset = NULL) {
     if (is.null(marker_genes)) {
         return(character(0))
@@ -470,7 +540,7 @@ get_marker_genes <- function(dataset, mode = "Markers") {
         }
         return(get_mc_data(dataset, "marker_genes_inner_fold"))
     } else if (mode == "Stdev") {
-        if (is.null(daf_obj) || !dafr::has_matrix(daf_obj, "gene", "metacell", "inner_stdev_log")) {
+        if (is.null(daf_obj) || (!dafr::has_matrix(daf_obj, "gene", "metacell", "inner_stdev_log") && !dafr::has_matrix(daf_obj, "gene", "metacell", "inner_std_log"))) {
             if ("Stdev-fold" %in% app_config("original_tabs")) {
                 showNotification(glue("Inner-stdev matrix was not computed. Please compute it in python using the metacells package and rerun the import"), type = "error")
             }
