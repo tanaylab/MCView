@@ -140,7 +140,10 @@ resolve_cache_path <- function(cache_dir, base_path, dataset_name) {
 create_memory_cache_daf <- function(base_daf, name = "cache") {
     cache_daf <- tryCatch(
         dafr::memory_daf(name = paste0(name, "_cache")),
-        error = function(e) NULL
+        error = function(e) {
+            cli::cli_alert_warning("Cache operation failed: {e$message}")
+            NULL
+        }
     )
 
     if (is.null(cache_daf)) {
@@ -172,14 +175,20 @@ create_files_cache_daf <- function(base_daf, cache_path, base_path) {
     if (dir.exists(cache_path) && file.exists(fs::path(cache_path, "daf.json"))) {
         cache_daf <- tryCatch(
             dafr::files_daf(cache_path, mode = "r+"),
-            error = function(e) NULL
+            error = function(e) {
+                cli::cli_alert_warning("Cache operation failed: {e$message}")
+                NULL
+            }
         )
     } else {
         # Create new cache directory
         fs::dir_create(cache_path, recurse = TRUE)
         cache_daf <- tryCatch(
             dafr::files_daf(cache_path, mode = "w+"),
-            error = function(e) NULL
+            error = function(e) {
+                cli::cli_alert_warning("Cache operation failed: {e$message}")
+                NULL
+            }
         )
     }
 
@@ -196,7 +205,10 @@ create_files_cache_daf <- function(base_daf, cache_path, base_path) {
             )
             tryCatch(
                 dafr::set_scalar(cache_daf, "base_daf_repository", as.character(rel_path)),
-                error = function(e) NULL
+                error = function(e) {
+                    cli::cli_alert_warning("Cache operation failed: {e$message}")
+                    NULL
+                }
             )
         }
     }
@@ -221,12 +233,18 @@ copy_axes_to_cache <- function(base_daf, cache_daf) {
         if (!dafr::has_axis(cache_daf, axis_name) && dafr::has_axis(base_daf, axis_name)) {
             entries <- tryCatch(
                 dafr::axis_entries(base_daf, axis_name),
-                error = function(e) NULL
+                error = function(e) {
+                    cli::cli_alert_warning("Cache operation failed: {e$message}")
+                    NULL
+                }
             )
             if (!is.null(entries)) {
                 tryCatch(
                     dafr::add_axis(cache_daf, axis_name, entries),
-                    error = function(e) NULL
+                    error = function(e) {
+                        cli::cli_alert_warning("Cache operation failed: {e$message}")
+                        NULL
+                    }
                 )
             }
         }
@@ -242,7 +260,10 @@ set_cache_metadata <- function(cache_daf, base_daf) {
     if (!dafr::has_scalar(cache_daf, "mcview_cache_created")) {
         tryCatch(
             dafr::set_scalar(cache_daf, "mcview_cache_created", as.numeric(Sys.time())),
-            error = function(e) NULL
+            error = function(e) {
+                cli::cli_alert_warning("Cache operation failed: {e$message}")
+                NULL
+            }
         )
     }
 
@@ -251,7 +272,10 @@ set_cache_metadata <- function(cache_daf, base_daf) {
     if (!is.null(base_version) && !dafr::has_scalar(cache_daf, "mcview_cache_base_version")) {
         tryCatch(
             dafr::set_scalar(cache_daf, "mcview_cache_base_version", base_version),
-            error = function(e) NULL
+            error = function(e) {
+                cli::cli_alert_warning("Cache operation failed: {e$message}")
+                NULL
+            }
         )
     }
 
@@ -260,7 +284,10 @@ set_cache_metadata <- function(cache_daf, base_daf) {
     if (!dafr::has_scalar(cache_daf, "mcview_cache_base_hash")) {
         tryCatch(
             dafr::set_scalar(cache_daf, "mcview_cache_base_hash", base_hash),
-            error = function(e) NULL
+            error = function(e) {
+                cli::cli_alert_warning("Cache operation failed: {e$message}")
+                NULL
+            }
         )
     }
 }
@@ -392,7 +419,10 @@ update_cache_metadata <- function(cache_daf, base_daf) {
     # Update creation timestamp
     tryCatch(
         dafr::set_scalar(cache_daf, "mcview_cache_created", as.numeric(Sys.time()), overwrite = TRUE),
-        error = function(e) NULL
+        error = function(e) {
+            cli::cli_alert_warning("Cache operation failed: {e$message}")
+            NULL
+        }
     )
 
     # Update base version
@@ -400,7 +430,10 @@ update_cache_metadata <- function(cache_daf, base_daf) {
     if (!is.null(base_version)) {
         tryCatch(
             dafr::set_scalar(cache_daf, "mcview_cache_base_version", base_version, overwrite = TRUE),
-            error = function(e) NULL
+            error = function(e) {
+                cli::cli_alert_warning("Cache operation failed: {e$message}")
+                NULL
+            }
         )
     }
 
@@ -408,7 +441,10 @@ update_cache_metadata <- function(cache_daf, base_daf) {
     base_hash <- compute_base_hash(base_daf)
     tryCatch(
         dafr::set_scalar(cache_daf, "mcview_cache_base_hash", base_hash, overwrite = TRUE),
-        error = function(e) NULL
+        error = function(e) {
+            cli::cli_alert_warning("Cache operation failed: {e$message}")
+            NULL
+        }
     )
 
     invisible(TRUE)
@@ -612,6 +648,7 @@ cache_correlations_daf <- function(daf_obj, gene1, df) {
             TRUE
         },
         error = function(e) {
+            cli::cli_alert_warning("Cache operation failed: {e$message}")
             FALSE
         }
     )
@@ -654,7 +691,10 @@ precompute_daf_correlations <- function(daf_obj, k = 30, egc_epsilon = 1e-5, for
             dafr::set_vector(daf_obj, cache_axis, "type", as.character(gg_df$type))
             TRUE
         },
-        error = function(e) FALSE
+        error = function(e) {
+            cli::cli_alert_warning("Cache operation failed: {e$message}")
+            FALSE
+        }
     )
 
     invisible(success)
@@ -709,7 +749,10 @@ precompute_daf_metacell_top_genes <- function(daf_obj, egc_epsilon = 1e-5, force
             dafr::set_vector(daf_obj, "metacell", "mcview_cache_top2_lfp", as.numeric(top2_lfp), overwrite = TRUE)
             TRUE
         },
-        error = function(e) FALSE
+        error = function(e) {
+            cli::cli_alert_warning("Cache operation failed: {e$message}")
+            FALSE
+        }
     )
 
     invisible(success)
@@ -741,7 +784,10 @@ precompute_daf_gene_stats <- function(daf_obj, force = FALSE) {
             dafr::set_vector(daf_obj, "gene", "mcview_cache_gene_sum_umis", as.numeric(sum_umis), overwrite = TRUE)
             TRUE
         },
-        error = function(e) FALSE
+        error = function(e) {
+            cli::cli_alert_warning("Cache operation failed: {e$message}")
+            FALSE
+        }
     )
 
     invisible(success)
@@ -871,7 +917,10 @@ cache_type_markers_daf_legacy <- function(daf_obj, markers) {
                 as.numeric(markers$fold_change))
             TRUE
         },
-        error = function(e) FALSE
+        error = function(e) {
+            cli::cli_alert_warning("Cache operation failed: {e$message}")
+            FALSE
+        }
     )
 }
 
