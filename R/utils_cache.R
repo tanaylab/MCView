@@ -231,7 +231,11 @@ has_network <- function(dataset) {
 }
 
 has_time <- function(dataset) {
-    !is.null(get_mc_data(dataset, "time_annot"))
+    daf_obj <- get_dataset_daf(dataset)
+    if (is.null(daf_obj)) return(FALSE)
+    tryCatch({
+        dafr::has_vector(daf_obj, "metacell", "time")
+    }, error = function(e) FALSE)
 }
 
 has_metadata <- function(dataset, atlas = FALSE) {
