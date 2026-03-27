@@ -246,30 +246,38 @@ has_cell_metadata <- function(dataset) {
 }
 
 has_samples <- function(dataset) {
+    cached <- mcv_cache_get(dataset, ".has_samples")
+    if (!is.null(cached)) {
+        return(cached)
+    }
+
     # Check DAF cell vector existence: mcview_sample_property scalar names the
     # source vector, falling back to literal "samp_id".
+    result <- FALSE
     daf_obj <- get_dataset_daf(dataset)
     if (!is.null(daf_obj) && dafr::has_axis(daf_obj, "cell")) {
         # Check mcview_sample_property scalar first
         if (dafr::has_scalar(daf_obj, "mcview_sample_property")) {
             prop_name <- dafr::get_scalar(daf_obj, "mcview_sample_property")
             if (dafr::has_vector(daf_obj, "cell", prop_name)) {
-                return(TRUE)
+                result <- TRUE
             }
         }
-        if (dafr::has_vector(daf_obj, "cell", "samp_id")) {
-            return(TRUE)
+        if (!result && dafr::has_vector(daf_obj, "cell", "samp_id")) {
+            result <- TRUE
         }
     }
     # Also check for cell-level grouping fields from the cells DAF
-    if (has_cell_gene_umis(dataset) && length(get_cell_grouping_fields(dataset)) > 0) {
-        return(TRUE)
+    if (!result && has_cell_gene_umis(dataset) && length(get_cell_grouping_fields(dataset)) > 0) {
+        result <- TRUE
     }
-    if (!has_cell_metadata(dataset)) {
-        return(FALSE)
+    if (!result && has_cell_metadata(dataset)) {
+        cell_md <- get_mc_data(dataset, "cell_metadata")
+        result <- rlang::has_name(cell_md, "samp_id")
     }
-    cell_md <- get_mc_data(dataset, "cell_metadata")
-    return(rlang::has_name(cell_md, "samp_id"))
+
+    mcv_cache_set(dataset, ".has_samples", result)
+    result
 }
 
 has_projection <- function(dataset) {
