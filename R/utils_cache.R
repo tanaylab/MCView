@@ -92,10 +92,15 @@ get_metacell_types_data <- function(dataset, atlas = FALSE) {
         mutate(cell_type = as.character(forcats::fct_na_value_to_level(cell_type, "(Missing)"))) %>%
         mutate(metacell = as.character(metacell))
 
-    cell_type_colors <- get_cell_type_data(dataset, atlas = atlas)
-
-    metacell_types <- metacell_types %>%
-        left_join(cell_type_colors %>% select(cell_type, mc_col = color), by = "cell_type")
+    # convert_daf_metacell_types() already populates mc_col from the DAF
+    # (either per-metacell mc_col vector or type-level color vector).
+    # Only fetch cell_type_colors and join if mc_col is missing, avoiding
+    # a redundant DAF round-trip.
+    if (!has_name(metacell_types, "mc_col")) {
+        cell_type_colors <- get_cell_type_data(dataset, atlas = atlas)
+        metacell_types <- metacell_types %>%
+            left_join(cell_type_colors %>% select(cell_type, mc_col = color), by = "cell_type")
+    }
 
     metacell_types <- ensure_metacell_types_fields(metacell_types)
 
