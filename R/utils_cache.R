@@ -392,7 +392,7 @@ dataset_metadata_fields <- function(dataset, atlas = FALSE) {
         if (is.null(fields)) {
             fields <- tryCatch(dafr::vectors_set(daf_obj, "metacell"), error = function(e) character(0))
         }
-        core_fields <- c("type", "x", "y", "u", "v", "total_UMIs", "n_cell")
+        core_fields <- c("type", "x", "y", "u", "v", "umap_x", "umap_y", "total_UMIs", "n_cells", "n_cell")
         fields <- setdiff(fields, core_fields)
         fields <- filter_metadata_field_names(fields)
         fields <- fields[!grepl("^mcview_cache_", fields)]

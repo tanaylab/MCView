@@ -72,11 +72,12 @@ calc_gene_modules <- function(mat, k = NULL, n_genes = 1000, minimal_max_log_fra
         select(gene = id, clust) %>%
         arrange(clust, gene)
 
-    # name every gene module by it's top gene (according to the order given by 'select_top_fold_genes')
+    # Name every gene module by its top gene (according to the order given by 'select_top_fold_genes').
+    # Uses "M<cluster>.<top_gene>" convention (Metacells.jl style) instead of "mod_<gene>".
     gene_modules <- gene_modules %>%
         left_join(tibble(gene = cand_genes, rank = 1:length(cand_genes)), by = "gene") %>%
         group_by(clust) %>%
-        mutate(module = paste0("mod_", gene[which.min(rank)])) %>%
+        mutate(module = paste0("M", clust, ".", gene[which.min(rank)])) %>%
         ungroup() %>%
         add_count(module) %>%
         arrange(desc(n), rank) %>%

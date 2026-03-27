@@ -164,6 +164,72 @@ add_optional_vec_with_fallback <- function(tbl, daf_obj, axis, primary, fallback
     tbl
 }
 
+#' Try multiple DAF names and return the first found
+#'
+#' Generic helper that tries a sequence of names for a DAF vector and returns
+#' the value for the first name that exists. Useful for backward-compatible
+#' reading where the canonical name changed across Metacells.jl versions.
+#'
+#' @param daf_obj DAF object
+#' @param axis Axis name (e.g. "metacell", "gene", "type")
+#' @param names_vec Character vector of names to try, in priority order
+#' @param required If TRUE and no name is found, throws an error
+#' @return The vector for the first name found, or NULL if none found
+#' @export
+try_daf_names <- function(daf_obj, axis, names_vec, required = FALSE) {
+    for (nm in names_vec) {
+        vec <- daf_vec(daf_obj, axis, nm, required = FALSE)
+        if (!is.null(vec)) {
+            return(vec)
+        }
+    }
+    if (required) {
+        cli_abort("Missing required vector: {axis}.{paste(names_vec, collapse = '|')}")
+    }
+    NULL
+}
+
+#' Try multiple DAF scalar names and return the first found
+#'
+#' Like try_daf_names but for scalars.
+#'
+#' @param daf_obj DAF object
+#' @param names_vec Character vector of scalar names to try, in priority order
+#' @param default Default value if no name is found
+#' @return The scalar value for the first name found, or default
+#' @export
+try_daf_scalar_names <- function(daf_obj, names_vec, default = NULL) {
+    for (nm in names_vec) {
+        if (dafr::has_scalar(daf_obj, nm)) {
+            return(dafr::get_scalar(daf_obj, nm))
+        }
+    }
+    default
+}
+
+#' Try multiple DAF matrix names and return the first found
+#'
+#' Like try_daf_names but for matrices.
+#'
+#' @param daf_obj DAF object
+#' @param axis1 First axis name
+#' @param axis2 Second axis name
+#' @param names_vec Character vector of matrix names to try, in priority order
+#' @param required If TRUE and no name is found, throws an error
+#' @return The matrix for the first name found, or NULL if none found
+#' @export
+try_daf_matrix_names <- function(daf_obj, axis1, axis2, names_vec, required = FALSE) {
+    for (nm in names_vec) {
+        if (dafr::has_matrix(daf_obj, axis1, axis2, nm)) {
+            return(dafr::get_matrix(daf_obj, axis1, axis2, nm))
+        }
+    }
+    if (required) {
+        cli_abort("Missing required matrix: {axis1},{axis2}.{paste(names_vec, collapse = '|')}")
+    }
+    NULL
+}
+
 #' Get DAF object for query (dataset or atlas)
 #'
 #' Consolidates the repeated pattern of selecting between dataset and atlas DAF.
@@ -456,15 +522,9 @@ daf_query_2d_coords <- function(daf_obj, metacells = NULL) {
     # Get axis entries
     metacell_names <- dafr::axis_entries(daf_obj, "metacell")
 
-    # Try x,y coordinates first
-    if (dafr::has_vector(daf_obj, "metacell", "x") && dafr::has_vector(daf_obj, "metacell", "y")) {
-        x_coords <- dafr::get_vector(daf_obj, "metacell", "x")
-        y_coords <- dafr::get_vector(daf_obj, "metacell", "y")
-    } else {
-        # Fall back to u,v coordinates
-        x_coords <- dafr::get_vector(daf_obj, "metacell", "u")
-        y_coords <- dafr::get_vector(daf_obj, "metacell", "v")
-    }
+    # Try coordinate names in priority order: x/y, then umap_x/umap_y, then u/v
+    x_coords <- try_daf_names(daf_obj, "metacell", c("x", "umap_x", "u"), required = TRUE)
+    y_coords <- try_daf_names(daf_obj, "metacell", c("y", "umap_y", "v"), required = TRUE)
 
     # Create data frame
     result <- tibble(
@@ -610,16 +670,23 @@ daf_query_noisy_genes <- function(daf_obj) {
 #' @return Matrix with modules as rows and metacells as columns, or NULL
 #' @export
 daf_query_module_umis <- function(daf_obj, modules = NULL) {
-    if (!dafr::has_vector(daf_obj, "gene", "module")) {
+    # Try canonical "primary_module" first, fall back to legacy "module"
+    module_prop <- NULL
+    if (dafr::has_vector(daf_obj, "gene", "primary_module")) {
+        module_prop <- "primary_module"
+    } else if (dafr::has_vector(daf_obj, "gene", "module")) {
+        module_prop <- "module"
+    }
+    if (is.null(module_prop)) {
         return(NULL)
     }
 
     # Use DAF query for efficient grouping by module
-    # Query: @ gene @ metacell :: UMIs -/ module >- Sum
-    # GroupRowsBy module (gene axis) and reduce columns with Sum
+    # GroupRowsBy module property (gene axis) and reduce columns with Sum
+    query <- glue::glue("@ gene @ metacell :: UMIs -/ {module_prop} >- Sum")
     mod_mat <- tryCatch(
         {
-            daf_obj["@ gene @ metacell :: UMIs -/ module >- Sum"]
+            daf_obj[query]
         },
         error = function(e) {
             return(NULL)
@@ -715,16 +782,26 @@ convert_daf_mc_sum <- function(daf_obj) {
 }
 
 convert_daf_mc_egc <- function(daf_obj) {
-    # Prefer pre-computed geomean_fraction when available in the DAF.
-    # This is a geometric-mean normalization (different from linear UMIs/total_UMIs)
-    # but is the preferred EGC representation when the data provider supplies it.
-    if (dafr::has_matrix(daf_obj, "gene", "metacell", "geomean_fraction")) {
-        cli::cli_inform("Using pre-computed {.field geomean_fraction} matrix from DAF")
-        return(dafr::get_matrix(daf_obj, "gene", "metacell", "geomean_fraction"))
+    # Try pre-computed fraction matrices in priority order:
+    # 1. linear_fraction (Metacells.jl canonical: UMIs / total_UMIs)
+    # 2. geomean_fraction (MCView/older pipelines: geometric mean of per-cell fractions)
+    # Note: these are DIFFERENT computations, but both serve as EGC representation.
+    egc_mat <- try_daf_matrix_names(
+        daf_obj, "gene", "metacell",
+        c("linear_fraction", "geomean_fraction")
+    )
+    if (!is.null(egc_mat)) {
+        which_name <- if (dafr::has_matrix(daf_obj, "gene", "metacell", "linear_fraction")) {
+            "linear_fraction"
+        } else {
+            "geomean_fraction"
+        }
+        cli::cli_inform("Using pre-computed {.field {which_name}} matrix from DAF")
+        return(egc_mat)
     }
 
     # Fall back: compute linear fraction from UMIs / total_UMIs
-    cli::cli_inform("Computing EGC as UMIs / total_UMIs (no {.field geomean_fraction} in DAF)")
+    cli::cli_inform("Computing EGC as UMIs / total_UMIs (no fraction matrix in DAF)")
     mc_mat <- convert_daf_mc_mat(daf_obj)
     mc_sum <- convert_daf_mc_sum(daf_obj)
 
@@ -737,13 +814,12 @@ convert_daf_mc_egc <- function(daf_obj) {
 convert_daf_mc2d <- function(daf_obj) {
     metacell_names <- dafr::axis_entries(daf_obj, "metacell")
 
-    # Try different coordinate systems
-    x_coords <- daf_vec(daf_obj, "metacell", "x", required = FALSE)
-    y_coords <- daf_vec(daf_obj, "metacell", "y", required = FALSE)
+    # Try coordinate names in priority order: x/y, then umap_x/umap_y, then u/v
+    x_coords <- try_daf_names(daf_obj, "metacell", c("x", "umap_x", "u"))
+    y_coords <- try_daf_names(daf_obj, "metacell", c("y", "umap_y", "v"))
 
     if (is.null(x_coords) || is.null(y_coords)) {
-        x_coords <- daf_vec(daf_obj, "metacell", "u")
-        y_coords <- daf_vec(daf_obj, "metacell", "v")
+        cli_abort("No 2D coordinates found in DAF (tried x/y, umap_x/umap_y, u/v)")
     }
 
     # Return as list with named vectors (expected format by mc2d_to_df)
@@ -777,8 +853,8 @@ convert_daf_metacell_types <- function(daf_obj) {
         cell_type = cell_types
     )
 
-    # Add optional cell count
-    n_cell <- daf_vec(daf_obj, "metacell", "n_cell", required = FALSE)
+    # Add optional cell count: try canonical "n_cells" first, fall back to legacy "n_cell"
+    n_cell <- try_daf_names(daf_obj, "metacell", c("n_cells", "n_cell"))
     if (!is.null(n_cell)) {
         mc_types$n_cell <- n_cell
     }
@@ -850,11 +926,24 @@ convert_daf_cell_type_colors <- function(daf_obj) {
     type_names <- dafr::axis_entries(daf_obj, "type")
     colors <- daf_vec(daf_obj, "type", "color")
 
-    tibble(
+    # Use ("type", "order") from DAF if available; otherwise default to axis order
+    type_order <- daf_vec(daf_obj, "type", "order", required = FALSE)
+    if (!is.null(type_order)) {
+        ord <- as.integer(type_order)
+    } else {
+        ord <- seq_along(type_names)
+    }
+
+    result <- tibble(
         cell_type = type_names,
         color = colors,
-        order = seq_along(type_names)
+        order = ord
     )
+
+    # Sort by order so that downstream code respects the DAF ordering
+    result <- result[order(result$order), ]
+
+    result
 }
 
 # ==============================================================================
@@ -881,6 +970,28 @@ convert_daf_marker_genes <- function(daf_obj) {
     gene_names <- dafr::axis_entries(daf_obj, "gene")
     marker_genes <- gene_names[marker_flags]
 
+    # Use marker_rank from DAF if available (Metacells.jl provides this)
+    marker_rank <- daf_vec(daf_obj, "gene", "marker_rank", required = FALSE)
+    if (!is.null(marker_rank)) {
+        # Extract ranks for marker genes only, then sort by rank
+        marker_ranks <- marker_rank[marker_flags]
+        names(marker_ranks) <- marker_genes
+        # Remove any NAs/zeros (unranked genes)
+        valid <- !is.na(marker_ranks) & marker_ranks > 0
+        if (sum(valid) > 0) {
+            marker_ranks <- marker_ranks[valid]
+            ord <- order(marker_ranks)
+            marker_genes_sorted <- names(marker_ranks)[ord]
+            return(tibble(
+                gene = marker_genes_sorted,
+                metacell = "all",
+                rank = seq_along(marker_genes_sorted),
+                fp = 1.0
+            ))
+        }
+    }
+
+    # Fallback: no marker_rank, use original order
     tibble(
         gene = marker_genes,
         metacell = "all",
@@ -890,7 +1001,8 @@ convert_daf_marker_genes <- function(daf_obj) {
 }
 
 convert_daf_gene_modules <- function(daf_obj) {
-    modules <- daf_vec(daf_obj, "gene", "module", required = FALSE)
+    # Try canonical "primary_module" first, fall back to legacy "module"
+    modules <- try_daf_names(daf_obj, "gene", c("primary_module", "module"))
     if (is.null(modules)) {
         return(NULL)
     }
@@ -944,7 +1056,7 @@ convert_daf_metadata <- function(daf_obj) {
     metacell_names <- dafr::axis_entries(daf_obj, "metacell")
 
     # Core fields that are handled elsewhere
-    core_fields <- c("type", "x", "y", "u", "v", "total_UMIs", "n_cell")
+    core_fields <- c("type", "x", "y", "u", "v", "umap_x", "umap_y", "total_UMIs", "n_cells", "n_cell")
 
     # Get list of available metacell properties
     props <- tryCatch(
@@ -1062,7 +1174,11 @@ convert_daf_mc_qc_metadata <- function(daf_obj) {
 
     # Handle fields with fallback names
     result <- add_optional_vec_with_fallback(result, daf_obj, "metacell", "umis", "total_UMIs")
-    result <- add_optional_vec_with_fallback(result, daf_obj, "metacell", "cells", "n_cell")
+    # Try canonical "n_cells" first, then legacy "n_cell"
+    n_cells_vec <- try_daf_names(daf_obj, "metacell", c("n_cells", "n_cell"))
+    if (!is.null(n_cells_vec)) {
+        result[["cells"]] <- n_cells_vec
+    }
 
     # Add standard QC vectors
     result <- add_optional_vecs(result, daf_obj, "metacell", c(
@@ -1098,8 +1214,14 @@ convert_daf_gene_qc <- function(daf_obj) {
     # Add standard gene QC vectors
     result <- add_optional_vecs(result, daf_obj, "gene", c(
         "type", "is_marker",
-        "is_lateral", "is_noisy", "module", "correction_factor"
+        "is_lateral", "is_noisy", "correction_factor"
     ))
+
+    # Add module: try canonical "primary_module" first, fall back to "module"
+    mod_vec <- try_daf_names(daf_obj, "gene", c("primary_module", "module"))
+    if (!is.null(mod_vec)) {
+        result[["module"]] <- mod_vec
+    }
 
     # Synthesize 'type' column from is_lateral/is_noisy if the pre-computed
     # type vector is absent.  Downstream QC scatter plots colour genes by type,
@@ -1181,19 +1303,23 @@ convert_daf_metacell_graphs <- function(daf_obj) {
 }
 
 convert_daf_qc_stats <- function(daf_obj) {
-    fields <- c(
-        "n_outliers",
-        "n_cells",
-        "n_umis",
-        "median_umis_per_metacell",
-        "median_cells_per_metacell"
+    # Map from result field name to (canonical, legacy) scalar names.
+    # Try canonical names first (no qc_stats_ prefix), fall back to legacy.
+    # Special case: "n_cells" uses "n_cells_total" canonically to avoid
+    # collision with the ("metacell", "n_cells") vector name.
+    field_aliases <- list(
+        n_outliers = c("n_outliers", "qc_stats_n_outliers"),
+        n_cells    = c("n_cells_total", "qc_stats_n_cells"),
+        n_umis     = c("n_umis", "qc_stats_n_umis"),
+        median_umis_per_metacell  = c("median_umis_per_metacell", "qc_stats_median_umis_per_metacell"),
+        median_cells_per_metacell = c("median_cells_per_metacell", "qc_stats_median_cells_per_metacell")
     )
 
     stats <- list()
-    for (field in fields) {
-        scalar_name <- glue("qc_stats_{field}")
-        if (dafr::has_scalar(daf_obj, scalar_name)) {
-            stats[[field]] <- dafr::get_scalar(daf_obj, scalar_name)
+    for (field in names(field_aliases)) {
+        val <- try_daf_scalar_names(daf_obj, field_aliases[[field]])
+        if (!is.null(val)) {
+            stats[[field]] <- val
         }
     }
 
@@ -1261,8 +1387,8 @@ convert_daf_query_metadata <- function(daf_obj) {
         result$projected_type <- projected_type
     }
 
-    # Similarity flag
-    similar <- daf_vec(daf_obj, "metacell", "similar", required = FALSE)
+    # Similarity flag: try "similar" first, then "is_similar" as alias
+    similar <- try_daf_names(daf_obj, "metacell", c("similar", "is_similar"))
     if (!is.null(similar)) {
         result$similar <- similar
     }
@@ -1330,13 +1456,68 @@ convert_daf_query_cell_type_fracs <- function(daf_obj) {
 
 #' Read per-type marker genes from DAF
 #'
-#' Reads the mcview_type_markers axis and its vectors from the DAF.
+#' Reads type markers from DAF. Tries the new sparse matrix format first:
+#' ("type","gene","mcview_marker_rank") and ("type","gene","mcview_marker_fold_change"),
+#' then falls back to the legacy mcview_type_markers axis+vectors format.
 #'
 #' @param daf_obj DAF object (typically a complete_daf chain)
 #' @return Tibble with columns: cell_type, gene, rank, fold_change.
-#'   Returns NULL if the axis does not exist.
+#'   Returns NULL if neither format exists.
 #' @export
 convert_daf_type_markers <- function(daf_obj) {
+    # Try new sparse matrix format first
+    if (dafr::has_matrix(daf_obj, "type", "gene", "mcview_marker_rank")) {
+        result <- tryCatch(
+            {
+                rank_mat <- dafr::get_matrix(daf_obj, "type", "gene", "mcview_marker_rank")
+                fc_mat <- NULL
+                if (dafr::has_matrix(daf_obj, "type", "gene", "mcview_marker_fold_change")) {
+                    fc_mat <- dafr::get_matrix(daf_obj, "type", "gene", "mcview_marker_fold_change")
+                }
+
+                # Convert sparse matrices to tibble
+                type_names <- rownames(rank_mat)
+                gene_names <- colnames(rank_mat)
+                if (is.null(type_names)) type_names <- dafr::axis_entries(daf_obj, "type")
+                if (is.null(gene_names)) gene_names <- dafr::axis_entries(daf_obj, "gene")
+
+                # Extract non-zero entries from rank matrix
+                if (is(rank_mat, "sparseMatrix")) {
+                    sm <- Matrix::summary(rank_mat)
+                    rows <- list()
+                    for (k in seq_len(nrow(sm))) {
+                        ct <- type_names[sm$i[k]]
+                        gn <- gene_names[sm$j[k]]
+                        rk <- sm$x[k]
+                        fc <- if (!is.null(fc_mat)) fc_mat[sm$i[k], sm$j[k]] else NA_real_
+                        rows[[k]] <- list(cell_type = ct, gene = gn, rank = as.integer(rk), fold_change = as.numeric(fc))
+                    }
+                    if (length(rows) > 0) {
+                        do.call(rbind, lapply(rows, as_tibble)) %>% arrange(cell_type, rank)
+                    } else {
+                        NULL
+                    }
+                } else {
+                    # Dense matrix: extract non-zero entries
+                    nz <- which(rank_mat != 0, arr.ind = TRUE)
+                    if (nrow(nz) == 0) return(NULL)
+                    tibble(
+                        cell_type = type_names[nz[, 1]],
+                        gene = gene_names[nz[, 2]],
+                        rank = as.integer(rank_mat[nz]),
+                        fold_change = if (!is.null(fc_mat)) as.numeric(fc_mat[nz]) else NA_real_
+                    ) %>% arrange(cell_type, rank)
+                }
+            },
+            error = function(e) {
+                cli_warn("Failed to read type markers from sparse matrices: {e$message}")
+                NULL
+            }
+        )
+        if (!is.null(result)) return(result)
+    }
+
+    # Fall back to legacy axis+vectors format
     if (!dafr::has_axis(daf_obj, "mcview_type_markers")) {
         return(NULL)
     }

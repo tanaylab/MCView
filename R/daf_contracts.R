@@ -31,6 +31,20 @@
 # Note: dafr now exposes contract validation. We keep the MCView contract
 # definitions here and convert them to dafr contracts for verification.
 # The Julia-side contracts are in inst/julia/mcview_contracts.jl.
+#
+# AUDIT CHANGES (2026-03-27)
+# ==========================
+# - Data classification: mcview_type_markers restructured from axis+vectors
+#   to sparse matrices on (type, gene). mcview_marker_correlations kept as
+#   axis (pragmatic compromise for 3D gene x gene x type data).
+# - Naming: n_cells (Metacells.jl canonical), inner_std_log (canonical),
+#   umap_x/umap_y aliases, primary_module, is_similar, etc.
+# - QC stats: removed qc_stats_ prefix, added aliases for backward compat.
+# - Removed MC x MC matrices (outgoing_weights, obs_balanced_ranks,
+#   umap_distances) -- no R code reads these.
+# - New entries: type order, marker_rank, significant_inner_folds_count,
+#   linear_fraction.
+# - gg_mc_top_cor deprecated (kept for backward compat only).
 
 # ==============================================================================
 # Canonical Tab Names
@@ -200,6 +214,25 @@ mcview_contract_to_dafr <- function(contract) {
 #' vector to use as the sample identifier (e.g. "embryo", "batch_set_id").
 #' There is no hardcoded `samp_id` vector -- the cell vector name is dynamic.
 #'
+#' Inner stdev note: the pipeline may produce either `inner_stdev_log` or
+#' `inner_std_log`. MCView accepts both names; the R layer normalizes to
+#' whichever is present. `inner_std_log` is the canonical Metacells.jl name;
+#' `inner_stdev_log` is kept as a backward-compatible alias.
+#'
+#' n_cells note: Metacells.jl uses ("metacell", "n_cells"). MCView also accepts
+#' the legacy names ("metacell", "n_cell"). The old ("metacell", "cells") alias
+#' has been removed.
+#'
+#' geomean_fraction vs linear_fraction: these are DIFFERENT computations.
+#'   - linear_fraction = UMIs / total_UMIs (Metacells.jl canonical)
+#'   - geomean_fraction = geometric mean of per-cell fractions within a metacell
+#' Both are accepted as OptionalInput; the R layer uses whichever is present.
+#'
+#' Gene module note: Metacells.jl has a separate "module" axis for gene modules.
+#' The ("gene", "module") vector assigns genes to modules. We add
+#' ("gene", "primary_module") as the canonical name to avoid collision with the
+#' Metacells.jl module axis. ("gene", "module") is kept as a deprecated alias.
+#'
 #' @return List containing axes, vectors, matrices, and scalars specifications
 #' @export
 mcview_core_contract <- function() {
@@ -216,16 +249,20 @@ mcview_core_contract <- function() {
             cell = axis_spec(CONTRACT_OPTIONAL,
                 "Cell identifiers (enables Samples tab and per-cell metadata)"),
 
-            # Marker correlations: pipeline CAN pre-compute these.
-            # MCView's derived layer computes them as a fallback.
+            # Marker correlations: kept as axis (pragmatic compromise).
+            # The data is inherently 3D (gene x gene x type) which does not map
+            # cleanly to DAF's 2D matrix model. Flattening into an axis with
+            # vectors (gene1, gene2, cor, type) is the most practical representation.
+            # Pipeline CAN pre-compute these; MCView's derived layer computes
+            # them as a fallback.
             mcview_marker_correlations = axis_spec(CONTRACT_OPTIONAL,
                 "Pre-computed marker gene correlation pairs (preferred axis name)"),
-            gg_mc_top_cor = axis_spec(CONTRACT_OPTIONAL,
-                "Pre-computed marker gene correlation pairs (legacy axis name)"),
 
-            # Per-type marker gene rankings (from derived layer)
-            mcview_type_markers = axis_spec(CONTRACT_OPTIONAL,
-                "Per-type marker gene rankings with fold changes (from derived layer)")
+            # DEPRECATED: gg_mc_top_cor -- kept only for backward compatibility
+            # with older pipeline outputs. New pipelines should use
+            # mcview_marker_correlations instead.
+            gg_mc_top_cor = axis_spec(CONTRACT_OPTIONAL,
+                "DEPRECATED: Pre-computed marker gene correlation pairs (legacy axis name)")
         ),
         vectors = list(
             # ==================================================================
@@ -267,18 +304,43 @@ mcview_core_contract <- function() {
                 "metacell", "w", CONTRACT_OPTIONAL, "numeric",
                 "W coordinate (3rd dimension, rarely used)"
             ),
+            # Aliases matching Metacells.jl naming convention
+            vector_spec(
+                "metacell", "umap_x", CONTRACT_OPTIONAL, "numeric",
+                "Alias for x (Metacells.jl canonical name)"
+            ),
+            vector_spec(
+                "metacell", "umap_y", CONTRACT_OPTIONAL, "numeric",
+                "Alias for y (Metacells.jl canonical name)"
+            ),
+            vector_spec(
+                "metacell", "umap_u", CONTRACT_OPTIONAL, "numeric",
+                "Alias for u (Metacells.jl canonical name)"
+            ),
+            vector_spec(
+                "metacell", "umap_v", CONTRACT_OPTIONAL, "numeric",
+                "Alias for v (Metacells.jl canonical name)"
+            ),
+            vector_spec(
+                "metacell", "umap_w", CONTRACT_OPTIONAL, "numeric",
+                "Alias for w (Metacells.jl canonical name)"
+            ),
 
             # ==================================================================
             # Optional metacell vectors
             # ==================================================================
+            # n_cells: Metacells.jl canonical name (preferred)
+            vector_spec(
+                "metacell", "n_cells", CONTRACT_OPTIONAL, "numeric",
+                "Number of cells per metacell (Metacells.jl canonical: n_cells)"
+            ),
+            # n_cell: backward-compatible alias
             vector_spec(
                 "metacell", "n_cell", CONTRACT_OPTIONAL, "numeric",
-                "Number of cells per metacell"
+                "ALIAS for n_cells (legacy MCView name, kept for backward compat)"
             ),
-            vector_spec(
-                "metacell", "cells", CONTRACT_OPTIONAL, "numeric",
-                "Alias for n_cell (some pipelines use this name)"
-            ),
+            # NOTE: ("metacell", "cells") removed -- was never in Metacells.jl
+
             vector_spec(
                 "metacell", "is_rare", CONTRACT_OPTIONAL, "logical",
                 "Whether metacell is rare"
@@ -299,9 +361,18 @@ mcview_core_contract <- function() {
                 "gene", "is_noisy", CONTRACT_OPTIONAL, "logical",
                 "Whether gene is noisy (colors marker heatmap)"
             ),
+
+            # Gene module: primary_module is canonical, module is deprecated alias
+            # (collision risk with Metacells.jl "module" axis)
+            vector_spec(
+                "gene", "primary_module", CONTRACT_OPTIONAL, "character",
+                "Gene module assignment (enables Gene Modules tab; canonical name)"
+            ),
+            # DEPRECATED: ("gene", "module") -- kept for backward compat with
+            # existing DAF files. New pipelines should use primary_module.
             vector_spec(
                 "gene", "module", CONTRACT_OPTIONAL, "character",
-                "Gene module assignment (enables Gene Modules tab)"
+                "DEPRECATED alias for primary_module (collision with Metacells.jl module axis)"
             ),
 
             # Gene boolean flags from cells_clean (informational)
@@ -320,6 +391,27 @@ mcview_core_contract <- function() {
             vector_spec(
                 "gene", "is_regulator", CONTRACT_OPTIONAL, "logical",
                 "Whether gene is a regulator"
+            ),
+
+            # NEW: marker_rank from Metacells.jl
+            vector_spec(
+                "gene", "marker_rank", CONTRACT_OPTIONAL, "integer",
+                "Marker gene ranking from Metacells.jl (1=top marker, typemax=non-marker)"
+            ),
+
+            # NEW: significant_inner_folds_count from Metacells.jl anndata import
+            vector_spec(
+                "gene", "significant_inner_folds_count", CONTRACT_OPTIONAL, "integer",
+                "Count of significant inner folds per gene"
+            ),
+
+            # ==================================================================
+            # Optional per-type vectors
+            # ==================================================================
+            # NEW: type display order
+            vector_spec(
+                "type", "order", CONTRACT_OPTIONAL, "integer",
+                "Display order of cell types in plots (1=first)"
             ),
 
             # ==================================================================
@@ -345,9 +437,14 @@ mcview_core_contract <- function() {
                 "metacell", "projected_correlation", CONTRACT_OPTIONAL, "numeric",
                 "Correlation with atlas projection"
             ),
+            # similar / is_similar: both accepted
             vector_spec(
                 "metacell", "similar", CONTRACT_OPTIONAL, "logical",
                 "Whether similar to atlas"
+            ),
+            vector_spec(
+                "metacell", "is_similar", CONTRACT_OPTIONAL, "logical",
+                "Alias for similar (alternative naming convention)"
             ),
             vector_spec(
                 "metacell", "atlas_metacell", CONTRACT_OPTIONAL, "character",
@@ -374,42 +471,22 @@ mcview_core_contract <- function() {
                 "Cell type context for correlation"
             ),
 
-            # Legacy axis name for same data
+            # DEPRECATED: Legacy axis name for same data
             vector_spec(
                 "gg_mc_top_cor", "gene1", CONTRACT_OPTIONAL, "character",
-                "First gene in correlation pair (legacy axis)"
+                "DEPRECATED: First gene in correlation pair (legacy axis)"
             ),
             vector_spec(
                 "gg_mc_top_cor", "gene2", CONTRACT_OPTIONAL, "character",
-                "Second gene in correlation pair (legacy axis)"
+                "DEPRECATED: Second gene in correlation pair (legacy axis)"
             ),
             vector_spec(
                 "gg_mc_top_cor", "cor", CONTRACT_OPTIONAL, "numeric",
-                "Correlation value (legacy axis)"
+                "DEPRECATED: Correlation value (legacy axis)"
             ),
             vector_spec(
                 "gg_mc_top_cor", "type", CONTRACT_OPTIONAL, "character",
-                "Cell type for correlation (legacy axis)"
-            ),
-
-            # ==================================================================
-            # Per-type marker vectors (from derived layer)
-            # ==================================================================
-            vector_spec(
-                "mcview_type_markers", "cell_type", CONTRACT_OPTIONAL, "character",
-                "Cell type for this marker entry"
-            ),
-            vector_spec(
-                "mcview_type_markers", "gene", CONTRACT_OPTIONAL, "character",
-                "Gene name for this marker entry"
-            ),
-            vector_spec(
-                "mcview_type_markers", "rank", CONTRACT_OPTIONAL, "numeric",
-                "Rank of this gene within its cell type (1 = top marker)"
-            ),
-            vector_spec(
-                "mcview_type_markers", "fold_change", CONTRACT_OPTIONAL, "numeric",
-                "Fold change of this gene in its cell type vs. background"
+                "DEPRECATED: Cell type for correlation (legacy axis)"
             )
         ),
         matrices = list(
@@ -425,29 +502,43 @@ mcview_core_contract <- function() {
             # Optional gene x metacell matrices
             # ==================================================================
             matrix_spec(
-                "gene", "metacell", "geomean_fraction", CONTRACT_OPTIONAL, "numeric",
-                "Geometric mean fraction per gene-metacell (avoids runtime EGC computation)"
+                "gene", "metacell", "inner_fold", CONTRACT_OPTIONAL, "numeric",
+                "Inner fold per gene-metacell (enables Inner-fold / QC tabs)"
             ),
+
+            # inner_std_log: Metacells.jl canonical name (preferred)
+            matrix_spec(
+                "gene", "metacell", "inner_std_log", CONTRACT_OPTIONAL, "numeric",
+                "Inner std log per gene-metacell (Metacells.jl canonical name)"
+            ),
+            # inner_stdev_log: backward-compatible alias
+            matrix_spec(
+                "gene", "metacell", "inner_stdev_log", CONTRACT_OPTIONAL, "numeric",
+                "ALIAS for inner_std_log (legacy name, kept for backward compat)"
+            ),
+
+            # geomean_fraction: MCView's own computation (geometric mean of per-cell fractions)
+            matrix_spec(
+                "gene", "metacell", "geomean_fraction", CONTRACT_OPTIONAL, "numeric",
+                "Geometric mean fraction per gene-metacell (MCView computation)"
+            ),
+            # linear_fraction: Metacells.jl canonical (UMIs / total_UMIs, different from geomean)
+            matrix_spec(
+                "gene", "metacell", "linear_fraction", CONTRACT_OPTIONAL, "numeric",
+                "Linear fraction per gene-metacell (Metacells.jl canonical; UMIs/total_UMIs)"
+            ),
+
             matrix_spec(
                 "gene", "metacell", "zeros", CONTRACT_OPTIONAL, "numeric",
-                "Zero counts per gene-metacell"
+                "Zero counts per gene-metacell (enables Zero-fold tab)"
             ),
 
             # ==================================================================
-            # Metacell x metacell matrices (graph / manifold)
+            # MC x MC matrices -- REMOVED
             # ==================================================================
-            matrix_spec(
-                "metacell", "metacell", "outgoing_weights", CONTRACT_OPTIONAL, "numeric",
-                "Outgoing edge weights for manifold graph"
-            ),
-            matrix_spec(
-                "metacell", "metacell", "obs_balanced_ranks", CONTRACT_OPTIONAL, "numeric",
-                "Observed balanced ranks (alternative manifold graph)"
-            ),
-            matrix_spec(
-                "metacell", "metacell", "umap_distances", CONTRACT_OPTIONAL, "numeric",
-                "UMAP distances between metacells"
-            ),
+            # NOTE: The following MC x MC matrices were removed because no R code
+            # in MCView reads them:
+            #   outgoing_weights, obs_balanced_ranks, umap_distances
 
             # ==================================================================
             # Projection / Atlas matrices (all optional)
@@ -456,13 +547,25 @@ mcview_core_contract <- function() {
                 "gene", "metacell", "projected_fold", CONTRACT_OPTIONAL, "numeric",
                 "Projected fold from atlas"
             ),
+
+            # projected_fraction / projected_geomean_fraction: both accepted
             matrix_spec(
                 "metacell", "gene", "projected_fraction", CONTRACT_OPTIONAL, "numeric",
                 "Projected expression fraction from atlas"
             ),
             matrix_spec(
+                "metacell", "gene", "projected_geomean_fraction", CONTRACT_OPTIONAL, "numeric",
+                "Alias for projected_fraction"
+            ),
+
+            # corrected_fraction / corrected_geomean_fraction: both accepted
+            matrix_spec(
                 "metacell", "gene", "corrected_fraction", CONTRACT_OPTIONAL, "numeric",
                 "Corrected expression fraction from atlas projection"
+            ),
+            matrix_spec(
+                "metacell", "gene", "corrected_geomean_fraction", CONTRACT_OPTIONAL, "numeric",
+                "Alias for corrected_fraction"
             )
         ),
         scalars = list(
@@ -483,10 +586,6 @@ mcview_core_contract <- function() {
                         "Name of the cell vector to use as sample ID (e.g. embryo, batch_set_id, set)"),
             scalar_spec("mcview_available_tabs", CONTRACT_OPTIONAL, "character",
                         "Pre-stored comma-separated list of available tabs (skips runtime detection)"),
-            scalar_spec("mcview_cache_in_daf", CONTRACT_OPTIONAL, "logical",
-                        "Store runtime cache in writable DAF layer"),
-            scalar_spec("mcview_cache_daf_root", CONTRACT_OPTIONAL, "character",
-                        "Path to writable cache DAF directory"),
             scalar_spec("metacells_algorithm", CONTRACT_OPTIONAL, "character",
                         "Metacells algorithm version (e.g. metacells2)"),
 
@@ -498,17 +597,29 @@ mcview_core_contract <- function() {
             scalar_spec("query_cell_type_fracs_json", CONTRACT_OPTIONAL, "character",
                         "Query cell type fractions as JSON"),
 
-            # QC statistics
-            scalar_spec("qc_stats_n_outliers", CONTRACT_OPTIONAL, "numeric",
+            # QC statistics -- canonical names (no qc_stats_ prefix)
+            scalar_spec("n_outliers", CONTRACT_OPTIONAL, "numeric",
                         "Number of outlier cells"),
-            scalar_spec("qc_stats_n_cells", CONTRACT_OPTIONAL, "numeric",
-                        "Total number of cells"),
-            scalar_spec("qc_stats_n_umis", CONTRACT_OPTIONAL, "numeric",
+            scalar_spec("n_cells_total", CONTRACT_OPTIONAL, "numeric",
+                        "Total number of cells (renamed from qc_stats_n_cells to avoid collision with vector name n_cells)"),
+            scalar_spec("n_umis", CONTRACT_OPTIONAL, "numeric",
                         "Total UMI count"),
-            scalar_spec("qc_stats_median_umis_per_metacell", CONTRACT_OPTIONAL, "numeric",
+            scalar_spec("median_umis_per_metacell", CONTRACT_OPTIONAL, "numeric",
                         "Median UMIs per metacell"),
+            scalar_spec("median_cells_per_metacell", CONTRACT_OPTIONAL, "numeric",
+                        "Median cells per metacell"),
+
+            # QC statistics -- backward-compatible aliases (old qc_stats_ prefix)
+            scalar_spec("qc_stats_n_outliers", CONTRACT_OPTIONAL, "numeric",
+                        "ALIAS for n_outliers (legacy name)"),
+            scalar_spec("qc_stats_n_cells", CONTRACT_OPTIONAL, "numeric",
+                        "ALIAS for n_cells_total (legacy name)"),
+            scalar_spec("qc_stats_n_umis", CONTRACT_OPTIONAL, "numeric",
+                        "ALIAS for n_umis (legacy name)"),
+            scalar_spec("qc_stats_median_umis_per_metacell", CONTRACT_OPTIONAL, "numeric",
+                        "ALIAS for median_umis_per_metacell (legacy name)"),
             scalar_spec("qc_stats_median_cells_per_metacell", CONTRACT_OPTIONAL, "numeric",
-                        "Median cells per metacell")
+                        "ALIAS for median_cells_per_metacell (legacy name)")
         ),
 
         # Special validation rules
@@ -535,6 +646,13 @@ mcview_core_contract <- function() {
 # ==============================================================================
 
 #' Contract for Manifold tab
+#'
+#' 2D projection with cell type coloring.
+#' - Requires: core + at least one coordinate pair (x,y) or (u,v)
+#' - Enriched by: w coordinate, n_cells
+#' - Accepts umap_x/umap_y/umap_u/umap_v/umap_w aliases
+#' - NOTE: MC x MC outgoing_weights removed -- not read by R code
+#'
 #' @export
 mcview_manifold_contract <- function() {
     list(
@@ -542,39 +660,46 @@ mcview_manifold_contract <- function() {
         description = "2D projection and cell type visualization",
         extends = "core",
         vectors = list(
-            # Optional enhancements
+            # Coordinate aliases for Metacells.jl naming
             vector_spec(
-                "metacell", "n_cell", CONTRACT_OPTIONAL, "integer",
-                "Number of cells per metacell"
+                "metacell", "umap_x", CONTRACT_OPTIONAL, "numeric",
+                "Alias for x (Metacells.jl canonical name)"
             ),
             vector_spec(
-                "metacell", "mc_col", CONTRACT_OPTIONAL, "character",
-                "Per-metacell color override"
-            )
-        ),
-        axes = list(
-            metacell_graph = axis_spec(CONTRACT_OPTIONAL, "Metacell graph edges for visualization")
-        ),
-
-        # Graph edge data
-        graph_vectors = list(
-            vector_spec(
-                "metacell_graph", "from", CONTRACT_OPTIONAL, "character",
-                "Source metacell of edge"
+                "metacell", "umap_y", CONTRACT_OPTIONAL, "numeric",
+                "Alias for y (Metacells.jl canonical name)"
             ),
             vector_spec(
-                "metacell_graph", "to", CONTRACT_OPTIONAL, "character",
-                "Target metacell of edge"
+                "metacell", "umap_u", CONTRACT_OPTIONAL, "numeric",
+                "Alias for u (Metacells.jl canonical name)"
             ),
             vector_spec(
-                "metacell_graph", "weight", CONTRACT_OPTIONAL, "numeric",
-                "Edge weight"
+                "metacell", "umap_v", CONTRACT_OPTIONAL, "numeric",
+                "Alias for v (Metacells.jl canonical name)"
+            ),
+            vector_spec(
+                "metacell", "umap_w", CONTRACT_OPTIONAL, "numeric",
+                "Alias for w (Metacells.jl canonical name)"
+            ),
+            # n_cells / n_cell
+            vector_spec(
+                "metacell", "n_cells", CONTRACT_OPTIONAL, "numeric",
+                "Cells per metacell (Metacells.jl canonical)"
+            ),
+            vector_spec(
+                "metacell", "n_cell", CONTRACT_OPTIONAL, "numeric",
+                "Alias for n_cells (legacy)"
             )
         )
     )
 }
 
 #' Contract for Genes tab
+#'
+#' Per-gene expression across metacells.
+#' - Requires: core
+#' - Enriched by: top-2 genes [derived], is_lateral/is_noisy [input]
+#'
 #' @export
 mcview_genes_contract <- function() {
     list(
@@ -583,28 +708,29 @@ mcview_genes_contract <- function() {
         extends = "core",
         vectors = list(
             vector_spec(
-                "metacell", "top1_gene", CONTRACT_OPTIONAL, "character",
-                "Top expressed gene per metacell"
-            ),
-            vector_spec(
-                "metacell", "top2_gene", CONTRACT_OPTIONAL, "character",
-                "Second top expressed gene per metacell"
-            ),
-            vector_spec(
-                "metacell", "top1_lfp", CONTRACT_OPTIONAL, "numeric",
-                "Log fold-enrichment of top gene"
-            ),
-            vector_spec(
-                "metacell", "top2_lfp", CONTRACT_OPTIONAL, "numeric",
-                "Log fold-enrichment of second top gene"
-            ),
-            vector_spec(
                 "gene", "is_lateral", CONTRACT_OPTIONAL, "logical",
-                "Whether gene is lateral (excluded from analysis)"
+                "Lateral gene [input]"
             ),
             vector_spec(
                 "gene", "is_noisy", CONTRACT_OPTIONAL, "logical",
-                "Whether gene is noisy"
+                "Noisy gene [input]"
+            ),
+            # Top genes come from derived layer
+            vector_spec(
+                "metacell", "mcview_cache_top1_gene", CONTRACT_OPTIONAL, "character",
+                "Top gene [derived]"
+            ),
+            vector_spec(
+                "metacell", "mcview_cache_top2_gene", CONTRACT_OPTIONAL, "character",
+                "Second gene [derived]"
+            ),
+            vector_spec(
+                "metacell", "mcview_cache_top1_lfp", CONTRACT_OPTIONAL, "numeric",
+                "Top gene LFP [derived]"
+            ),
+            vector_spec(
+                "metacell", "mcview_cache_top2_lfp", CONTRACT_OPTIONAL, "numeric",
+                "Second gene LFP [derived]"
             )
         )
     )
@@ -639,14 +765,24 @@ mcview_cell_types_contract <- function() {
         extends = "core",
         vectors = list(
             vector_spec(
-                "metacell", "n_cell", CONTRACT_OPTIONAL, "integer",
-                "Number of cells per metacell"
+                "metacell", "n_cells", CONTRACT_OPTIONAL, "numeric",
+                "Number of cells per metacell (Metacells.jl canonical)"
+            ),
+            vector_spec(
+                "metacell", "n_cell", CONTRACT_OPTIONAL, "numeric",
+                "Alias for n_cells (legacy)"
             )
         )
     )
 }
 
 #' Contract for QC tab
+#'
+#' Quality control metrics.
+#' - Requires: core
+#' - Enriched by: n_cells, inner_fold, QC scalars [input]
+#' - QC scalars accept both new names (no prefix) and old qc_stats_ prefix.
+#'
 #' @export
 mcview_qc_contract <- function() {
     list(
@@ -655,52 +791,77 @@ mcview_qc_contract <- function() {
         extends = "core",
         vectors = list(
             vector_spec(
-                "metacell", "n_cell", CONTRACT_OPTIONAL, "integer",
-                "Number of cells per metacell"
+                "metacell", "n_cells", CONTRACT_OPTIONAL, "numeric",
+                "Cells per metacell (Metacells.jl canonical)"
             ),
             vector_spec(
-                "metacell", "cells", CONTRACT_OPTIONAL, "integer",
-                "Alias for n_cell"
+                "metacell", "n_cell", CONTRACT_OPTIONAL, "numeric",
+                "Alias for n_cells (legacy)"
             ),
             vector_spec(
-                "metacell", "umis", CONTRACT_OPTIONAL, "numeric",
-                "Alias for total_UMIs"
-            ),
-            vector_spec(
-                "metacell", "rare_metacell", CONTRACT_OPTIONAL, "logical",
-                "Whether metacell is rare"
-            ),
-            vector_spec(
-                "metacell", "metacells_rare_gene_module", CONTRACT_OPTIONAL, "integer",
-                "Rare gene module assignment"
+                "metacell", "is_rare", CONTRACT_OPTIONAL, "logical",
+                "Rare metacell flag"
+            )
+        ),
+        matrices = list(
+            matrix_spec(
+                "gene", "metacell", "inner_fold", CONTRACT_OPTIONAL, "numeric",
+                "Inner fold"
             )
         ),
         scalars = list(
+            # Canonical QC scalar names
             scalar_spec(
-                "qc_stats_n_outliers", CONTRACT_OPTIONAL, "integer",
-                "Number of outlier cells"
+                "n_outliers", CONTRACT_OPTIONAL, "numeric",
+                "Outlier count"
             ),
             scalar_spec(
-                "qc_stats_n_cells", CONTRACT_OPTIONAL, "integer",
-                "Total number of cells"
+                "n_cells_total", CONTRACT_OPTIONAL, "numeric",
+                "Total cells"
             ),
             scalar_spec(
-                "qc_stats_n_umis", CONTRACT_OPTIONAL, "integer",
-                "Total UMI count"
+                "n_umis", CONTRACT_OPTIONAL, "numeric",
+                "Total UMIs"
             ),
             scalar_spec(
-                "qc_stats_median_umis_per_metacell", CONTRACT_OPTIONAL, "numeric",
+                "median_umis_per_metacell", CONTRACT_OPTIONAL, "numeric",
                 "Median UMIs per metacell"
             ),
             scalar_spec(
-                "qc_stats_median_cells_per_metacell", CONTRACT_OPTIONAL, "numeric",
+                "median_cells_per_metacell", CONTRACT_OPTIONAL, "numeric",
                 "Median cells per metacell"
+            ),
+            # Legacy aliases
+            scalar_spec(
+                "qc_stats_n_outliers", CONTRACT_OPTIONAL, "numeric",
+                "ALIAS: Outlier count"
+            ),
+            scalar_spec(
+                "qc_stats_n_cells", CONTRACT_OPTIONAL, "numeric",
+                "ALIAS: Total cells"
+            ),
+            scalar_spec(
+                "qc_stats_n_umis", CONTRACT_OPTIONAL, "numeric",
+                "ALIAS: Total UMIs"
+            ),
+            scalar_spec(
+                "qc_stats_median_umis_per_metacell", CONTRACT_OPTIONAL, "numeric",
+                "ALIAS: Median UMIs/mc"
+            ),
+            scalar_spec(
+                "qc_stats_median_cells_per_metacell", CONTRACT_OPTIONAL, "numeric",
+                "ALIAS: Median cells/mc"
             )
         )
     )
 }
 
 #' Contract for Markers tab
+#'
+#' Marker gene heatmap.
+#' - Requires: core + is_marker [input]
+#' - Enriched by: is_lateral, is_noisy [input], marker_rank [input]
+#'
 #' @export
 mcview_markers_contract <- function() {
     list(
@@ -710,13 +871,30 @@ mcview_markers_contract <- function() {
         vectors = list(
             vector_spec(
                 "gene", "is_marker", CONTRACT_REQUIRED, "logical",
-                "Whether gene is a marker"
+                "Marker gene flag [input] -- required for this tab"
+            ),
+            vector_spec(
+                "gene", "is_lateral", CONTRACT_OPTIONAL, "logical",
+                "Lateral flag [input]"
+            ),
+            vector_spec(
+                "gene", "is_noisy", CONTRACT_OPTIONAL, "logical",
+                "Noisy flag [input]"
+            ),
+            vector_spec(
+                "gene", "marker_rank", CONTRACT_OPTIONAL, "integer",
+                "Marker rank from Metacells.jl [input]"
             )
         )
     )
 }
 
 #' Contract for Gene Modules tab
+#'
+#' Gene module heatmap.
+#' - Requires: core + gene module assignment [input]
+#' - Accepts both primary_module (canonical) and module (deprecated)
+#'
 #' @export
 mcview_gene_modules_contract <- function() {
     list(
@@ -724,15 +902,27 @@ mcview_gene_modules_contract <- function() {
         description = "Gene module analysis",
         extends = "core",
         vectors = list(
+            # Accept both names; R layer checks which is present
             vector_spec(
-                "gene", "module", CONTRACT_REQUIRED, "character",
-                "Gene module assignment"
+                "gene", "primary_module", CONTRACT_OPTIONAL, "character",
+                "Gene module assignment [input] (canonical name)"
+            ),
+            # DEPRECATED alias
+            vector_spec(
+                "gene", "module", CONTRACT_OPTIONAL, "character",
+                "DEPRECATED alias for primary_module [input]"
             )
         )
     )
 }
 
 #' Contract for Projection QC tab
+#'
+#' Atlas projection quality control.
+#' - Requires: core + projection vectors [input]
+#' - Accepts both similar and is_similar
+#' - Accepts both projected_fraction and projected_geomean_fraction
+#'
 #' @export
 mcview_projection_qc_contract <- function() {
     list(
@@ -742,47 +932,59 @@ mcview_projection_qc_contract <- function() {
         vectors = list(
             vector_spec(
                 "metacell", "projected_type", CONTRACT_OPTIONAL, "character",
-                "Projected type from atlas"
+                "Projected type"
             ),
             vector_spec(
                 "metacell", "projected_correlation", CONTRACT_OPTIONAL, "numeric",
-                "Correlation with atlas projection"
+                "Projection corr"
             ),
             vector_spec(
                 "metacell", "similar", CONTRACT_OPTIONAL, "logical",
-                "Whether similar to atlas"
+                "Similar to atlas"
+            ),
+            vector_spec(
+                "metacell", "is_similar", CONTRACT_OPTIONAL, "logical",
+                "Alias for similar"
             ),
             vector_spec(
                 "metacell", "atlas_metacell", CONTRACT_OPTIONAL, "character",
-                "Most similar atlas metacell"
+                "Atlas MC"
             )
         ),
         matrices = list(
             matrix_spec(
                 "gene", "metacell", "projected_fold", CONTRACT_OPTIONAL, "numeric",
-                "Projected fold from atlas"
+                "Projected fold"
             ),
             matrix_spec(
                 "metacell", "gene", "projected_fraction", CONTRACT_OPTIONAL, "numeric",
-                "Projected expression fraction from atlas"
+                "Projected frac"
+            ),
+            matrix_spec(
+                "metacell", "gene", "projected_geomean_fraction", CONTRACT_OPTIONAL, "numeric",
+                "Alias for projected_fraction"
             ),
             matrix_spec(
                 "metacell", "gene", "corrected_fraction", CONTRACT_OPTIONAL, "numeric",
-                "Corrected expression fraction from atlas projection"
+                "Corrected frac"
+            ),
+            matrix_spec(
+                "metacell", "gene", "corrected_geomean_fraction", CONTRACT_OPTIONAL, "numeric",
+                "Alias for corrected_fraction"
             )
         ),
         scalars = list(
             scalar_spec(
                 "project_max_projection_fold_factor", CONTRACT_OPTIONAL, "numeric",
-                "Maximum projection fold factor"
+                "Max fold factor"
             ),
             scalar_spec(
                 "projection_weights_json", CONTRACT_OPTIONAL, "character",
-                "Projection weights as JSON (query-atlas metacell mapping)"
+                "Weights JSON"
             ),
             scalar_spec(
                 "query_cell_type_fracs_json", CONTRACT_OPTIONAL, "character",
-                "Query cell type fractions as JSON"
+                "Type fracs JSON"
             )
         )
     )
@@ -790,8 +992,10 @@ mcview_projection_qc_contract <- function() {
 
 #' Contract for Atlas tab
 #'
-#' The query DAF should contain projection metadata, while the atlas DAF
-#' (loaded via init_atlas) contains the reference data.
+#' Atlas comparison visualization.
+#' - Requires: core + projection metadata [input]
+#' - Accepts both similar and is_similar
+#' - Accepts both projected_fraction and projected_geomean_fraction
 #'
 #' @export
 mcview_atlas_contract <- function() {
@@ -804,35 +1008,47 @@ mcview_atlas_contract <- function() {
         vectors = list(
             vector_spec(
                 "metacell", "projected_type", CONTRACT_OPTIONAL, "character",
-                "Projected type from atlas"
+                "Projected type"
             ),
             vector_spec(
                 "metacell", "projected_correlation", CONTRACT_OPTIONAL, "numeric",
-                "Correlation with atlas projection"
+                "Projection corr"
             ),
             vector_spec(
                 "metacell", "similar", CONTRACT_OPTIONAL, "logical",
-                "Whether similar to atlas"
+                "Similar to atlas"
+            ),
+            vector_spec(
+                "metacell", "is_similar", CONTRACT_OPTIONAL, "logical",
+                "Alias for similar"
             )
         ),
         matrices = list(
             matrix_spec(
                 "metacell", "gene", "corrected_fraction", CONTRACT_OPTIONAL, "numeric",
-                "Corrected fraction from atlas projection"
+                "Corrected frac"
+            ),
+            matrix_spec(
+                "metacell", "gene", "corrected_geomean_fraction", CONTRACT_OPTIONAL, "numeric",
+                "Alias for corrected_fraction"
             ),
             matrix_spec(
                 "metacell", "gene", "projected_fraction", CONTRACT_OPTIONAL, "numeric",
-                "Projected expression fraction from atlas"
+                "Projected frac"
+            ),
+            matrix_spec(
+                "metacell", "gene", "projected_geomean_fraction", CONTRACT_OPTIONAL, "numeric",
+                "Alias for projected_fraction"
             )
         ),
         scalars = list(
             scalar_spec(
                 "projection_weights_json", CONTRACT_OPTIONAL, "character",
-                "Projection weights as JSON (query-atlas metacell mapping)"
+                "Weights JSON"
             ),
             scalar_spec(
                 "query_cell_type_fracs_json", CONTRACT_OPTIONAL, "character",
-                "Query cell type fractions as JSON"
+                "Type fracs JSON"
             )
         )
     )
@@ -851,6 +1067,10 @@ mcview_annotate_contract <- function() {
 
 #' Contract for gene correlations data
 #'
+#' Gene-gene correlations per type.
+#' - Requires: core + marker correlations [either input or derived]
+#' - gg_mc_top_cor is DEPRECATED but still accepted
+#'
 #' Accepts either the preferred `mcview_marker_correlations` axis name or the
 #' legacy `gg_mc_top_cor` axis. MCView's derived layer computes as a fallback
 #' if neither is present in the input DAF.
@@ -862,9 +1082,10 @@ mcview_gene_correlations_contract <- function() {
         description = "Gene-gene correlation data (from input or derived layer)",
         axes = list(
             mcview_marker_correlations = axis_spec(CONTRACT_OPTIONAL,
-                "Marker gene correlation pairs (preferred axis name)"),
+                "Correlation pairs [either]"),
+            # DEPRECATED
             gg_mc_top_cor = axis_spec(CONTRACT_OPTIONAL,
-                "Marker gene correlation pairs (legacy axis name)")
+                "DEPRECATED: Correlation pairs legacy axis [either]")
         ),
         vectors = list(
             # Preferred axis name
@@ -885,22 +1106,22 @@ mcview_gene_correlations_contract <- function() {
                 "Cell type context for correlation"
             ),
 
-            # Legacy axis name
+            # DEPRECATED legacy axis vectors
             vector_spec(
                 "gg_mc_top_cor", "gene1", CONTRACT_OPTIONAL, "character",
-                "First gene in correlation pair (legacy axis)"
+                "DEPRECATED: Gene 1 (legacy)"
             ),
             vector_spec(
                 "gg_mc_top_cor", "gene2", CONTRACT_OPTIONAL, "character",
-                "Second gene in correlation pair (legacy axis)"
+                "DEPRECATED: Gene 2 (legacy)"
             ),
             vector_spec(
                 "gg_mc_top_cor", "cor", CONTRACT_OPTIONAL, "numeric",
-                "Correlation value (legacy axis)"
+                "DEPRECATED: Correlation (legacy)"
             ),
             vector_spec(
                 "gg_mc_top_cor", "type", CONTRACT_OPTIONAL, "character",
-                "Cell type for correlation (legacy axis)"
+                "DEPRECATED: Cell type (legacy)"
             )
         )
     )
@@ -942,14 +1163,6 @@ mcview_config_contract <- function() {
                 "Pre-stored comma-separated list of available tabs (skips runtime detection)"
             ),
             scalar_spec(
-                "mcview_cache_in_daf", CONTRACT_OPTIONAL, "logical",
-                "Whether to cache computed data in writable DAF layer"
-            ),
-            scalar_spec(
-                "mcview_cache_daf_root", CONTRACT_OPTIONAL, "character",
-                "Root directory for cache DAF"
-            ),
-            scalar_spec(
                 "metacells_algorithm", CONTRACT_OPTIONAL, "character",
                 "Metacells algorithm version (e.g. metacells2)"
             ),
@@ -968,26 +1181,48 @@ mcview_config_contract <- function() {
                 "Query cell type fractions as JSON"
             ),
 
-            # QC statistics
+            # QC statistics -- canonical names (no qc_stats_ prefix)
             scalar_spec(
-                "qc_stats_n_outliers", CONTRACT_OPTIONAL, "numeric",
+                "n_outliers", CONTRACT_OPTIONAL, "numeric",
                 "Number of outlier cells"
             ),
             scalar_spec(
-                "qc_stats_n_cells", CONTRACT_OPTIONAL, "numeric",
-                "Total number of cells"
+                "n_cells_total", CONTRACT_OPTIONAL, "numeric",
+                "Total number of cells (renamed from qc_stats_n_cells to avoid collision with vector name n_cells)"
             ),
             scalar_spec(
-                "qc_stats_n_umis", CONTRACT_OPTIONAL, "numeric",
+                "n_umis", CONTRACT_OPTIONAL, "numeric",
                 "Total UMI count"
             ),
             scalar_spec(
-                "qc_stats_median_umis_per_metacell", CONTRACT_OPTIONAL, "numeric",
+                "median_umis_per_metacell", CONTRACT_OPTIONAL, "numeric",
                 "Median UMIs per metacell"
             ),
             scalar_spec(
-                "qc_stats_median_cells_per_metacell", CONTRACT_OPTIONAL, "numeric",
+                "median_cells_per_metacell", CONTRACT_OPTIONAL, "numeric",
                 "Median cells per metacell"
+            ),
+
+            # QC statistics -- backward-compatible aliases (old qc_stats_ prefix)
+            scalar_spec(
+                "qc_stats_n_outliers", CONTRACT_OPTIONAL, "numeric",
+                "ALIAS for n_outliers (legacy name)"
+            ),
+            scalar_spec(
+                "qc_stats_n_cells", CONTRACT_OPTIONAL, "numeric",
+                "ALIAS for n_cells_total (legacy name)"
+            ),
+            scalar_spec(
+                "qc_stats_n_umis", CONTRACT_OPTIONAL, "numeric",
+                "ALIAS for n_umis (legacy name)"
+            ),
+            scalar_spec(
+                "qc_stats_median_umis_per_metacell", CONTRACT_OPTIONAL, "numeric",
+                "ALIAS for median_umis_per_metacell (legacy name)"
+            ),
+            scalar_spec(
+                "qc_stats_median_cells_per_metacell", CONTRACT_OPTIONAL, "numeric",
+                "ALIAS for median_cells_per_metacell (legacy name)"
             )
         )
     )
@@ -1083,6 +1318,11 @@ mcview_flow_contract <- function() {
 #' pre-computed by the pipeline) will NOT be overwritten -- the derived layer
 #' only fills in what is missing.
 #'
+#' Type markers note: Per-type marker data is stored as two sparse matrices on
+#' (type, gene) axes rather than as an axis with vectors. This is the correct
+#' DAF data model: the data is naturally indexed by (type, gene) and sparse
+#' matrices handle the sparsity (most gene x type pairs are not markers).
+#'
 #' @export
 mcview_cache_contract <- function() {
     list(
@@ -1093,12 +1333,10 @@ mcview_cache_contract <- function() {
             "Input data takes precedence via the chain lookup order."
         ),
         axes = list(
-            # Per-type marker gene rankings (computed by MCView)
-            mcview_type_markers = axis_spec(
-                CONTRACT_OPTIONAL,
-                "Per-type marker gene rankings with fold changes"
-            ),
             # Marker correlations (fallback -- only computed if not in input)
+            # Kept as axis: pragmatic compromise because the data is inherently
+            # 3D (gene x gene x type). Flattening into an axis with vectors
+            # (gene1, gene2, cor, type) is the most practical DAF representation.
             mcview_marker_correlations = axis_spec(
                 CONTRACT_OPTIONAL,
                 "Marker gene correlation pairs (fallback if not in input DAF)"
@@ -1142,27 +1380,10 @@ mcview_cache_contract <- function() {
             ),
 
             # ==================================================================
-            # Per-type marker genes
-            # ==================================================================
-            vector_spec(
-                "mcview_type_markers", "cell_type", CONTRACT_OPTIONAL, "character",
-                "Cell type for this marker entry"
-            ),
-            vector_spec(
-                "mcview_type_markers", "gene", CONTRACT_OPTIONAL, "character",
-                "Gene name for this marker entry"
-            ),
-            vector_spec(
-                "mcview_type_markers", "rank", CONTRACT_OPTIONAL, "numeric",
-                "Rank of this gene within its cell type (1 = top marker)"
-            ),
-            vector_spec(
-                "mcview_type_markers", "fold_change", CONTRACT_OPTIONAL, "numeric",
-                "Fold change of this gene in its cell type vs. background"
-            ),
-
-            # ==================================================================
             # Marker correlations (fallback computation)
+            # If the input DAF already provides mcview_marker_correlations or
+            # gg_mc_top_cor, the derived layer does NOT recompute -- the input
+            # data takes precedence via the chain lookup order.
             # ==================================================================
             vector_spec(
                 "mcview_marker_correlations", "gene1", CONTRACT_OPTIONAL, "character",
@@ -1179,9 +1400,43 @@ mcview_cache_contract <- function() {
             vector_spec(
                 "mcview_marker_correlations", "type", CONTRACT_OPTIONAL, "character",
                 "Cell type context for correlation"
+            ),
+
+            # ==================================================================
+            # QC vectors (max inner fold per metacell)
+            # ==================================================================
+            vector_spec(
+                "metacell", "mcview_cache_max_inner_fold", CONTRACT_OPTIONAL, "numeric",
+                "Max inner_fold per metacell across all genes"
+            ),
+            vector_spec(
+                "metacell", "mcview_cache_max_inner_fold_no_lateral", CONTRACT_OPTIONAL, "numeric",
+                "Max inner_fold per metacell excluding lateral genes"
+            ),
+
+            # ==================================================================
+            # Per-gene max inner fold (optional derived)
+            # ==================================================================
+            vector_spec(
+                "gene", "mcview_cache_gene_max_inner_fold", CONTRACT_OPTIONAL, "numeric",
+                "Max inner_fold per gene across metacells"
             )
         ),
         matrices = list(
+            # ==================================================================
+            # Per-type marker genes -- sparse matrices on (type, gene)
+            # Replaces the old mcview_type_markers axis + vectors approach.
+            # Sparse because most (type, gene) pairs are not markers.
+            # ==================================================================
+            matrix_spec(
+                "type", "gene", "mcview_marker_rank", CONTRACT_OPTIONAL, "integer",
+                "Per-type marker rank (1=top marker for that type; 0 or missing=not a marker)"
+            ),
+            matrix_spec(
+                "type", "gene", "mcview_marker_fold_change", CONTRACT_OPTIONAL, "numeric",
+                "Per-type marker fold change (gene expression in type vs. background)"
+            ),
+
             # ==================================================================
             # Pre-computed EGC (geomean_fraction fallback)
             # ==================================================================

@@ -753,8 +753,10 @@ precompute_daf_type_markers <- function(daf_obj, genes_per_type = 50,
         return(invisible(FALSE))
     }
 
-    cache_axis <- "mcview_type_markers"
-    if (!force && dafr::has_axis(daf_obj, cache_axis)) {
+    # Check both new sparse matrix format and legacy axis format
+    if (!force &&
+        (dafr::has_matrix(daf_obj, "type", "gene", "mcview_marker_rank") ||
+         dafr::has_axis(daf_obj, "mcview_type_markers"))) {
         return(invisible(FALSE))
     }
 
@@ -779,7 +781,81 @@ precompute_daf_type_markers <- function(daf_obj, genes_per_type = 50,
         return(invisible(FALSE))
     }
 
+    # Write as sparse matrices ("type","gene","mcview_marker_rank") and
+    # ("type","gene","mcview_marker_fold_change")
     success <- tryCatch(
+        {
+            cache_type_markers_daf(daf_obj, markers)
+        },
+        error = function(e) {
+            # Fall back to legacy axis+vectors format
+            cli::cli_alert_warning("Sparse matrix write failed ({e$message}), using legacy axis format")
+            cache_type_markers_daf_legacy(daf_obj, markers)
+        }
+    )
+
+    invisible(success)
+}
+
+#' Write type markers as sparse matrices to DAF
+#'
+#' Writes ("type","gene","mcview_marker_rank") and
+#' ("type","gene","mcview_marker_fold_change") sparse matrices.
+#'
+#' @param daf_obj Writable DAF object
+#' @param markers Tibble with columns: cell_type, gene, rank, fold_change
+#' @return TRUE on success, FALSE on failure
+#' @noRd
+cache_type_markers_daf <- function(daf_obj, markers) {
+    type_names <- dafr::axis_entries(daf_obj, "type")
+    gene_names <- dafr::axis_entries(daf_obj, "gene")
+
+    # Build sparse matrices from markers tibble
+    type_idx <- match(markers$cell_type, type_names)
+    gene_idx <- match(markers$gene, gene_names)
+
+    # Filter out any unmatched entries
+    valid <- !is.na(type_idx) & !is.na(gene_idx)
+    if (sum(valid) == 0) return(FALSE)
+
+    type_idx <- type_idx[valid]
+    gene_idx <- gene_idx[valid]
+    ranks <- as.numeric(markers$rank[valid])
+    folds <- as.numeric(markers$fold_change[valid])
+
+    n_types <- length(type_names)
+    n_genes <- length(gene_names)
+
+    rank_mat <- Matrix::sparseMatrix(
+        i = type_idx, j = gene_idx, x = ranks,
+        dims = c(n_types, n_genes),
+        dimnames = list(type_names, gene_names)
+    )
+
+    fc_mat <- Matrix::sparseMatrix(
+        i = type_idx, j = gene_idx, x = folds,
+        dims = c(n_types, n_genes),
+        dimnames = list(type_names, gene_names)
+    )
+
+    dafr::set_matrix(daf_obj, "type", "gene", "mcview_marker_rank", rank_mat, overwrite = TRUE)
+    dafr::set_matrix(daf_obj, "type", "gene", "mcview_marker_fold_change", fc_mat, overwrite = TRUE)
+
+    TRUE
+}
+
+#' Write type markers using legacy axis+vectors format
+#'
+#' Fallback for DAF backends that don't support sparse matrices between
+#' existing axes.
+#'
+#' @param daf_obj Writable DAF object
+#' @param markers Tibble with columns: cell_type, gene, rank, fold_change
+#' @return TRUE on success, FALSE on failure
+#' @noRd
+cache_type_markers_daf_legacy <- function(daf_obj, markers) {
+    cache_axis <- "mcview_type_markers"
+    tryCatch(
         {
             dafr::add_axis(daf_obj, cache_axis,
                 as.character(seq_len(nrow(markers))),
@@ -797,8 +873,6 @@ precompute_daf_type_markers <- function(daf_obj, genes_per_type = 50,
         },
         error = function(e) FALSE
     )
-
-    invisible(success)
 }
 
 precompute_daf_derived <- function(daf_obj,
