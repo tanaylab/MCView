@@ -159,6 +159,7 @@ get_default_gene <- function(which = 1) {
     # If genes need optimization, compute them now (one-time cost on first access)
     if (isTRUE(mcv_get("default_genes_need_optimization"))) {
         mcv_set("default_genes_need_optimization", FALSE)
+        cli::cli_alert_info("Computing optimal default genes (one-time)...")
         tryCatch(
             {
                 optimal_genes <- compute_optimal_default_genes()
