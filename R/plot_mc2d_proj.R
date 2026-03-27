@@ -66,9 +66,10 @@ mc2d_plot_gene_ggp <- function(dataset,
         stop("gene paramater should have at least one gene")
     }
 
-    metacell_names <- mc2d_to_df(mc2d)$metacell
+    mc2d_df <- mc2d_to_df(mc2d)
+    metacell_names <- mc2d_df$metacell
 
-    mc2d_df <- mc2d_to_df(mc2d) %>%
+    mc2d_df <- mc2d_df %>%
         left_join(metacell_types, by = "metacell") %>%
         mutate(
             !!gene := lfp[metacell_names],
