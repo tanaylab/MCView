@@ -545,16 +545,11 @@ detect_available_tabs <- function(daf_obj) {
     # Annotate - always available if core passes
     tabs <- c(tabs, "Annotate")
 
-    # Samples - include optimistically when cell data is available.
-    # Cell data may live in the main DAF or in a separate cells DAF loaded
-    # after tab detection. The runtime has_samples() check in app_server.R
-    # will remove the tab if no grouping fields are actually available.
-    if (has_ax("cell") && has_vec("cell", "metacell")) {
-        tabs <- c(tabs, "Samples")
-    } else {
-        # Cell data may come from a separate cells DAF loaded after tab detection
-        tabs <- c(tabs, "Samples")
-    }
+    # Samples - always include optimistically. Cell data may live in the main
+    # DAF or in a separate cells DAF loaded after tab detection. The runtime
+    # has_samples() check in app_server.R removes the tab if no grouping
+    # fields are actually available.
+    tabs <- c(tabs, "Samples")
 
     # Gene correlation - always available with core data (UMIs + genes).
     # Pre-computed correlations (gg_mc_top_cor or mcview_marker_correlations axes)
