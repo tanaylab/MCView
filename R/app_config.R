@@ -21,7 +21,7 @@ init_defs <- function() {
     # This shifts ~48s of JIT overhead from first user click to startup
     tryCatch(
         {
-            daf_obj <- get_dataset_daf(dataset_ls()[1])
+            daf_obj <- get_dataset_daf(dataset_names()[1])
             if (!is.null(daf_obj)) {
                 prewarm_julia_cors(daf_obj, mcv_get("egc_epsilon"))
             }
@@ -55,18 +55,18 @@ init_defs <- function() {
 #' @return Character vector of length 2 with gene names
 #' @noRd
 compute_optimal_default_genes <- function() {
-    mc_egc <- get_mc_egc(dataset_ls()[1])
-    if (has_atlas(dataset_ls()[1])) {
-        mc_egc_atlas <- get_mc_egc(dataset_ls()[1], atlas = TRUE)
+    mc_egc <- get_mc_egc(dataset_names()[1])
+    if (has_atlas(dataset_names()[1])) {
+        mc_egc_atlas <- get_mc_egc(dataset_names()[1], atlas = TRUE)
         mc_egc <- mc_egc[intersect(rownames(mc_egc), rownames(mc_egc_atlas)), ]
     }
 
     f <- rep(TRUE, nrow(mc_egc))
-    lateral_genes <- get_mc_data(dataset_ls()[1], "lateral_genes")
+    lateral_genes <- get_mc_data(dataset_names()[1], "lateral_genes")
     if (!is.null(lateral_genes)) {
         f <- f & !(rownames(mc_egc) %in% lateral_genes)
     }
-    noisy_genes <- get_mc_data(dataset_ls()[1], "noisy_genes")
+    noisy_genes <- get_mc_data(dataset_names()[1], "noisy_genes")
     if (!is.null(noisy_genes)) {
         f <- f & !(rownames(mc_egc) %in% noisy_genes)
     }
@@ -82,7 +82,7 @@ compute_optimal_default_genes <- function() {
     if (cache_enabled) {
         tryCatch(
             {
-                daf_obj <- get_dataset_daf(dataset_ls()[1])
+                daf_obj <- get_dataset_daf(dataset_names()[1])
                 dafr::set_scalar(daf_obj, "mcview_cache_default_gene1", genes[1])
                 dafr::set_scalar(daf_obj, "mcview_cache_default_gene2", genes[2])
             },
@@ -120,7 +120,7 @@ init_selected_genes <- function() {
     genes <- NULL
 
     # Source 1: Check DAF cache scalars (single roundtrip each)
-    daf_obj <- get_dataset_daf(dataset_ls()[1])
+    daf_obj <- get_dataset_daf(dataset_names()[1])
     if (!is.null(daf_obj)) {
         cached_gene1 <- daf_scalar(daf_obj, "mcview_cache_default_gene1", default = NULL)
         cached_gene2 <- daf_scalar(daf_obj, "mcview_cache_default_gene2", default = NULL)

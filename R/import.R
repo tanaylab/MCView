@@ -34,6 +34,7 @@ dataset_rm <- function(dataset) {
 #'
 #' @export
 dataset_ls <- function() {
+    .Deprecated("dataset_names")
     dataset_names()
 }
 

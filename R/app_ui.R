@@ -64,7 +64,7 @@ app_ui <- function(request) {
             ),
             shinydashboardPlus::controlbarItem(
                 "Datasets",
-                selectInput("dataset", label = "Dataset", choices = dataset_ls(), selected = dataset_ls()[1], multiple = FALSE, selectize = FALSE)
+                selectInput("dataset", label = "Dataset", choices = dataset_names(), selected = dataset_names()[1], multiple = FALSE, selectize = FALSE)
             ),
             shinydashboardPlus::controlbarItem(
                 "Options",
@@ -108,8 +108,8 @@ app_ui <- function(request) {
 
     app_title <- config$title
     if (is.null(app_title) || app_title == "MCView") {
-        if (length(dataset_ls()) == 1) {
-            app_title <- dataset_ls()[1]
+        if (length(dataset_names()) == 1) {
+            app_title <- dataset_names()[1]
             config$title <- app_title
         } else {
             app_title <- glue("MCView {version}", version = utils::packageVersion("MCView"))
