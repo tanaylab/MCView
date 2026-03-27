@@ -1484,19 +1484,13 @@ convert_daf_type_markers <- function(daf_obj) {
                 # Extract non-zero entries from rank matrix
                 if (is(rank_mat, "sparseMatrix")) {
                     sm <- Matrix::summary(rank_mat)
-                    rows <- list()
-                    for (k in seq_len(nrow(sm))) {
-                        ct <- type_names[sm$i[k]]
-                        gn <- gene_names[sm$j[k]]
-                        rk <- sm$x[k]
-                        fc <- if (!is.null(fc_mat)) fc_mat[sm$i[k], sm$j[k]] else NA_real_
-                        rows[[k]] <- list(cell_type = ct, gene = gn, rank = as.integer(rk), fold_change = as.numeric(fc))
-                    }
-                    if (length(rows) > 0) {
-                        do.call(rbind, lapply(rows, as_tibble)) %>% arrange(cell_type, rank)
-                    } else {
-                        NULL
-                    }
+                    if (nrow(sm) == 0) return(NULL)
+                    tibble(
+                        cell_type = type_names[sm$i],
+                        gene = gene_names[sm$j],
+                        rank = as.integer(sm$x),
+                        fold_change = if (!is.null(fc_mat)) as.numeric(fc_mat[cbind(sm$i, sm$j)]) else NA_real_
+                    ) %>% arrange(cell_type, rank)
                 } else {
                     # Dense matrix: extract non-zero entries
                     nz <- which(rank_mat != 0, arr.ind = TRUE)
