@@ -758,7 +758,10 @@ convert_daf_to_mcview <- function(daf_obj, var_name, atlas = FALSE) {
         "proj_weights" = convert_daf_proj_weights(daf_obj),
         "query_atlas_cell_type_fracs" = convert_daf_query_cell_type_fracs(daf_obj),
         "query_md" = convert_daf_query_metadata(daf_obj),
-        NULL # Return NULL for unsupported data types
+        {
+            cli::cli_warn("Unknown MCView conversion type: {var_name}")
+            NULL
+        }
     )
 }
 

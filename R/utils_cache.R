@@ -218,10 +218,10 @@ get_mc_config <- function(dataset, var_name) {
 has_network <- function(dataset) {
     # Check DAF axis instead of loading full graph data
     daf_obj <- get_dataset_daf(dataset)
-    if (!is.null(daf_obj)) {
-        return(dafr::has_axis(daf_obj, "metacell_graph"))
+    if (is.null(daf_obj)) {
+        return(FALSE)
     }
-    !is.null(get_mc_data(dataset, "mc_network"))
+    dafr::has_axis(daf_obj, "metacell_graph")
 }
 
 has_time <- function(dataset) {
