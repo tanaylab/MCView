@@ -22,14 +22,12 @@ get_mc_egc <- function(dataset, genes = NULL, atlas = FALSE, metacells = NULL) {
     # For the full unfiltered EGC matrix, use session-level cache to avoid
     # repeated ~1.2s Julia round-trips for the 28K x 2.4K UMI matrix
     if (is.null(genes) && is.null(metacells) && !atlas) {
-        mc_data <- mcv_get("mc_data")
-        cached <- mc_data[[dataset]][["mc_egc_full"]]
+        cached <- mcv_cache_get(dataset, "mc_egc_full")
         if (!is.null(cached)) {
             return(cached)
         }
         mc_egc <- compute_egc_from_daf(daf_obj, genes = NULL, metacells = NULL)
-        mc_data[[dataset]][["mc_egc_full"]] <- mc_egc
-        mcv_set("mc_data", mc_data)
+        mcv_cache_set(dataset, "mc_egc_full", mc_egc)
         return(mc_egc)
     }
 
@@ -160,8 +158,7 @@ get_gene_egc <- function(gene, dataset, projected = FALSE, atlas = FALSE, correc
 
     # Fast path 1: check session-level mc_egc_full cache (instant extraction)
     if (!atlas) {
-        mc_data <- mcv_get("mc_data")
-        cached_egc <- mc_data[[dataset]][["mc_egc_full"]]
+        cached_egc <- mcv_cache_get(dataset, "mc_egc_full")
         if (!is.null(cached_egc) && gene %in% rownames(cached_egc)) {
             return(cached_egc[gene, ])
         }

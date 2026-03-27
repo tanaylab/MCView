@@ -68,8 +68,7 @@ ensure_metacell_types_fields <- function(metacell_types) {
 get_metacell_types_data <- function(dataset, atlas = FALSE) {
     # Return cached result if available (metacell_types is static per session)
     cache_key <- if (atlas) "metacell_types_atlas" else "metacell_types"
-    mc_data <- mcv_get("mc_data")
-    cached <- mc_data[[dataset]][[cache_key]]
+    cached <- mcv_cache_get(dataset, cache_key)
     if (!is.null(cached)) {
         return(cached)
     }
@@ -105,9 +104,7 @@ get_metacell_types_data <- function(dataset, atlas = FALSE) {
     metacell_types <- ensure_metacell_types_fields(metacell_types)
 
     # Cache the result for subsequent calls
-    mc_data <- mcv_get("mc_data")
-    mc_data[[dataset]][[cache_key]] <- metacell_types
-    mcv_set("mc_data", mc_data)
+    mcv_cache_set(dataset, cache_key, metacell_types)
 
     return(metacell_types)
 }
@@ -185,8 +182,7 @@ get_mc_data <- function(dataset, var_name, atlas = FALSE) {
 
     cache_key <- if (atlas) paste0(var_name, "_atlas") else var_name
     if (var_name %in% static_vars) {
-        mc_data <- mcv_get("mc_data")
-        cached <- mc_data[[dataset]][[cache_key]]
+        cached <- mcv_cache_get(dataset, cache_key)
         if (!is.null(cached)) {
             return(cached)
         }
@@ -201,9 +197,7 @@ get_mc_data <- function(dataset, var_name, atlas = FALSE) {
 
     # Store in mc_data cache for static variables
     if (!is.null(result) && var_name %in% static_vars) {
-        mc_data <- mcv_get("mc_data")
-        mc_data[[dataset]][[cache_key]] <- result
-        mcv_set("mc_data", mc_data)
+        mcv_cache_set(dataset, cache_key, result)
     }
 
     result
@@ -314,9 +308,7 @@ calc_samp_mc_count <- function(dataset) {
         spread(metacell, n, fill = 0) %>%
         column_to_rownames("samp_id") %>%
         as.matrix()
-    mc_data <- mcv_get("mc_data")
-    mc_data[[dataset]][["samp_mc_count"]] <- samp_mc_count
-    mcv_set("mc_data", mc_data)
+    mcv_cache_set(dataset, "samp_mc_count", samp_mc_count)
     return(samp_mc_count)
 }
 
@@ -327,9 +319,7 @@ get_samp_mc_count <- function(dataset) {
 calc_samp_mc_frac <- function(dataset) {
     samp_mc_count <- get_samp_mc_count(dataset)
     samp_mc_frac <- samp_mc_count / rowSums(samp_mc_count)
-    mc_data <- mcv_get("mc_data")
-    mc_data[[dataset]][["samp_mc_frac"]] <- samp_mc_frac
-    mcv_set("mc_data", mc_data)
+    mcv_cache_set(dataset, "samp_mc_frac", samp_mc_frac)
     return(samp_mc_frac)
 }
 
@@ -352,9 +342,7 @@ calc_samp_metadata <- function(dataset) {
         arrange(samp_id) %>%
         distinct(samp_id, .keep_all = TRUE)
 
-    mc_data <- mcv_get("mc_data")
-    mc_data[[dataset]][["samp_metadata"]] <- samp_md
-    mcv_set("mc_data", mc_data)
+    mcv_cache_set(dataset, "samp_metadata", samp_md)
     return(samp_md)
 }
 
@@ -371,9 +359,7 @@ calc_samples_list <- function(dataset) {
     }
     samp_md <- get_samp_metadata(dataset)
     samp_list <- sort(unique(samp_md$samp_id))
-    mc_data <- mcv_get("mc_data")
-    mc_data[[dataset]][["samp_list"]] <- samp_list
-    mcv_set("mc_data", mc_data)
+    mcv_cache_set(dataset, "samp_list", samp_list)
     return(samp_list)
 }
 
@@ -390,9 +376,9 @@ filter_metadata_field_names <- function(fields) {
 
 dataset_metadata_fields <- function(dataset, atlas = FALSE) {
     cache_key <- if (atlas) "metadata_fields_atlas" else "metadata_fields"
-    mc_data <- mcv_get("mc_data")
-    if (!is.null(mc_data[[dataset]][[cache_key]])) {
-        return(mc_data[[dataset]][[cache_key]])
+    cached <- mcv_cache_get(dataset, cache_key)
+    if (!is.null(cached)) {
+        return(cached)
     }
 
     daf_obj <- if (atlas) get_atlas_daf() else get_dataset_daf(dataset)
@@ -405,8 +391,7 @@ dataset_metadata_fields <- function(dataset, atlas = FALSE) {
         fields <- setdiff(fields, core_fields)
         fields <- filter_metadata_field_names(fields)
         fields <- fields[!grepl("^mcview_cache_", fields)]
-        mc_data[[dataset]][[cache_key]] <- fields
-        mcv_set("mc_data", mc_data)
+        mcv_cache_set(dataset, cache_key, fields)
         return(fields)
     }
 
@@ -417,31 +402,29 @@ dataset_metadata_fields <- function(dataset, atlas = FALSE) {
     fields <- colnames(metadata)
     fields <- fields[fields != "metacell"]
     fields <- filter_metadata_field_names(fields)
-    mc_data[[dataset]][[cache_key]] <- fields
-    mcv_set("mc_data", mc_data)
+    mcv_cache_set(dataset, cache_key, fields)
     return(fields)
 }
 
 dataset_metadata_fields_numeric <- function(dataset, atlas = FALSE) {
     cache_key <- if (atlas) "metadata_fields_numeric_atlas" else "metadata_fields_numeric"
-    mc_data <- mcv_get("mc_data")
-    if (!is.null(mc_data[[dataset]][[cache_key]])) {
-        return(mc_data[[dataset]][[cache_key]])
+    cached <- mcv_cache_get(dataset, cache_key)
+    if (!is.null(cached)) {
+        return(cached)
     }
     fields <- dataset_metadata_fields(dataset, atlas = atlas)
     df <- get_mc_data(dataset, "metadata", atlas = atlas)
     numeric_f <- purrr::map_lgl(fields, ~ is_numeric_field(df, .x))
     fields <- fields[numeric_f]
-    mc_data[[dataset]][[cache_key]] <- fields
-    mcv_set("mc_data", mc_data)
+    mcv_cache_set(dataset, cache_key, fields)
     return(fields)
 }
 
 dataset_metadata_fields_categorical <- function(dataset, atlas = FALSE) {
     cache_key <- if (atlas) "metadata_fields_categorical_atlas" else "metadata_fields_categorical"
-    mc_data <- mcv_get("mc_data")
-    if (!is.null(mc_data[[dataset]][[cache_key]])) {
-        return(mc_data[[dataset]][[cache_key]])
+    cached <- mcv_cache_get(dataset, cache_key)
+    if (!is.null(cached)) {
+        return(cached)
     }
 
     fields <- dataset_metadata_fields(dataset, atlas = atlas)
@@ -462,8 +445,7 @@ dataset_metadata_fields_categorical <- function(dataset, atlas = FALSE) {
         length(unique(clean_values)) > 1
     })
 
-    mc_data[[dataset]][[cache_key]] <- categorical_fields
-    mcv_set("mc_data", mc_data)
+    mcv_cache_set(dataset, cache_key, categorical_fields)
     return(categorical_fields)
 }
 

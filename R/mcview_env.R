@@ -63,6 +63,42 @@ mcv_exists <- function(var_name) {
     exists(var_name, envir = mcview_env, inherits = FALSE)
 }
 
+#' Get value from mc_data cache for a dataset
+#'
+#' Reads directly from the mcview_env$mc_data environment slot,
+#' avoiding the copy-on-modify overhead of mcv_get/mcv_set round-trips.
+#'
+#' @param dataset Dataset name
+#' @param key Cache key within the dataset
+#' @param default Value to return if not found (default NULL)
+#' @return Cached value or default
+#' @export
+mcv_cache_get <- function(dataset, key, default = NULL) {
+    mc_data <- mcview_env$mc_data
+    if (is.null(mc_data[[dataset]])) {
+        return(default)
+    }
+    mc_data[[dataset]][[key]] %||% default
+}
+
+#' Set value in mc_data cache for a dataset
+#'
+#' Writes directly into the mcview_env$mc_data environment slot,
+#' avoiding the copy-on-modify overhead of mcv_get/mcv_set round-trips.
+#'
+#' @param dataset Dataset name
+#' @param key Cache key within the dataset
+#' @param value Value to store
+#' @return The value, invisibly
+#' @export
+mcv_cache_set <- function(dataset, key, value) {
+    if (is.null(mcview_env$mc_data[[dataset]])) {
+        mcview_env$mc_data[[dataset]] <- list()
+    }
+    mcview_env$mc_data[[dataset]][[key]] <- value
+    invisible(value)
+}
+
 #' Clean up MCView environment for orderly shutdown
 #'
 #' Iterates over all datasets, clears in-memory caches (top_cor_genes),
