@@ -300,8 +300,7 @@ compute_egc_from_daf <- function(daf_obj, genes = NULL, metacells = NULL) {
     }
 
     # Divide each column by the corresponding mc_sum value.
-    # jlview_sweep returns a lazy ALTREP view -- no allocation until materialized.
-    jlview::jlview_sweep(mc_mat, 2, mc_sum, "/")
+    sweep(mc_mat, 2, mc_sum, "/")
 }
 
 # ==============================================================================
@@ -810,8 +809,7 @@ convert_daf_mc_egc <- function(daf_obj) {
 
     # Compute EGC (normalized expression) - gene x metacell
     # Divide each column by its total to get fractions summing to 1.
-    # jlview_sweep returns a lazy ALTREP view -- no allocation until materialized.
-    jlview::jlview_sweep(mc_mat, 2, mc_sum, "/")
+    sweep(mc_mat, 2, mc_sum, "/")
 }
 
 convert_daf_mc2d <- function(daf_obj) {
