@@ -21,7 +21,6 @@ calc_marker_genes <- function(mc_egc,
     # (benchmarked: Julia ~45s vs R ~5s on 28K genes x 2.4K metacells).
     # The R implementation using matrixStats is already vectorized and fast.
 
-    # R path -- fuse log2 + epsilon via lazy ALTREP view, then densify
     mc_egc <- log2(mc_egc + 1e-5)
 
     max_log_fractions_of_genes <- matrixStats::rowMaxs(mc_egc)
