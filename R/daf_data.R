@@ -344,8 +344,7 @@ daf_query_named_vector <- function(daf_obj, axis, property, filter = NULL) {
 daf_query_gene_agg <- function(daf_obj, agg_op) {
     query <- paste0("@ metacell @ gene :: UMIs >> ", agg_op)
     result <- daf_obj[query]
-    # dafr may return named vectors from NamedArrays (zero-copy jlview);
-    # skip post-hoc names assignment to avoid COW materialization.
+    # dafr may return a named vector; skip redundant names assignment.
     if (is.null(names(result)) && length(result) > 1) {
         names(result) <- dafr::axis_entries(daf_obj, "gene")
     }
@@ -453,10 +452,9 @@ daf_query_mc_mat <- function(daf_obj, genes = NULL, metacells = NULL) {
         # Fall through to full matrix if per-metacell queries failed
     }
 
-    # Full matrix retrieval (needed when genes=NULL or per-gene queries failed)
-    # Request gene x metacell directly - DAF handles relayout internally
-    # dafr::get_matrix() returns named matrices from NamedArrays (zero-copy jlview);
-    # avoid post-hoc dimnames assignment which triggers COW materialization.
+    # Full matrix retrieval (needed when genes=NULL or per-gene queries failed).
+    # Request gene x metacell directly - DAF handles relayout internally.
+    # dafr::get_matrix() returns a named matrix when axes exist; skip redundant dimnames.
     gene_names <- dafr::axis_entries(daf_obj, "gene")
     mc_mat <- tryCatch(
         {
@@ -775,8 +773,7 @@ convert_daf_mc_mat <- function(daf_obj) {
 
 convert_daf_mc_sum <- function(daf_obj) {
     mc_sum <- daf_vec(daf_obj, "metacell", "total_UMIs")
-    # dafr::get_vector() returns named vectors from NamedArrays (zero-copy jlview);
-    # skip post-hoc names assignment to avoid COW materialization.
+    # dafr::get_vector() returns a named vector; skip redundant names assignment.
     if (is.null(names(mc_sum))) {
         names(mc_sum) <- dafr::axis_entries(daf_obj, "metacell")
     }
@@ -1074,10 +1071,8 @@ convert_daf_metadata <- function(daf_obj) {
         return(NULL)
     }
 
-    # Load each metadata vector individually via daf_vec (returns zero-copy
-    # jlview views) instead of get_frame() which serializes all fields through
-    # Julia DataFrames.  This avoids the overhead of DataFrame construction on
-    # the Julia side and keeps each column as a lightweight ALTREP view.
+    # Load each metadata vector individually via daf_vec rather than build a
+    # full DataFrame up front via get_frame().
     result <- tibble(metacell = metacell_names)
     for (field in metadata_fields) {
         vec <- daf_vec(daf_obj, "metacell", field, required = FALSE)

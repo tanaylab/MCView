@@ -128,9 +128,7 @@ get_metadata <- function(dataset, atlas = FALSE) {
         mc_qc_metadata <- convert_daf_to_mcview(daf_obj, "mc_qc_metadata", atlas)
         if (!is.null(mc_qc_metadata) && ncol(mc_qc_metadata) > 1) {
             # Both tibbles share the same metacell axis in the same order,
-            # so we can bind columns directly instead of left_join().
-            # left_join forces materialization of jlview ALTREP columns;
-            # direct column assignment preserves zero-copy views.
+            # so bind columns directly instead of paying for a left_join().
             existing_cols <- colnames(metadata)
             for (col in colnames(mc_qc_metadata)) {
                 if (col != "metacell" && !(col %in% existing_cols)) {
@@ -522,8 +520,7 @@ has_gg_mc_top_cor <- function(dataset) {
 
 get_mc_sum <- function(dataset, atlas = FALSE) {
     mc_sum <- get_mc_data(dataset, "mc_sum", atlas = atlas)
-    # convert_daf_mc_sum() already returns a named vector from dafr;
-    # skip redundant names assignment to avoid COW materialization of jlview.
+    # convert_daf_mc_sum() already returns a named vector from dafr.
     if (is.null(names(mc_sum))) {
         daf_obj <- get_daf_for_query(dataset, atlas)
         if (!is.null(daf_obj)) {
