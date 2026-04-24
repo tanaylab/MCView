@@ -3,10 +3,10 @@
 #' Convert MCView project to DAF format
 #'
 #' Converts all datasets in an MCView project cache directory to DAF format.
+#' Outputs to files_daf format (native dafr has no h5df writer).
 #'
 #' @param project Path to MCView project
 #' @param output Path to output directory for DAF data
-#' @param format DAF format: "files" for directory-based, "h5" for HDF5
 #' @param datasets Optional vector of dataset names to convert (default: all)
 #' @param precompute_cache Whether to precompute cache after conversion
 #' @param cache_daf_root Optional path to write auxiliary DAF caches (default: project/cache_daf)
@@ -14,11 +14,9 @@
 #' @export
 convert_project_to_daf <- function(project,
                                    output,
-                                   format = c("files", "h5"),
                                    datasets = NULL,
                                    precompute_cache = FALSE,
                                    cache_daf_root = NULL) {
-    format <- match.arg(format)
 
     cache_dir <- project_cache_dir(project)
     if (!fs::dir_exists(cache_dir)) {
@@ -44,16 +42,11 @@ convert_project_to_daf <- function(project,
             next
         }
 
-        output_path <- if (format == "h5") {
-            fs::path(output, paste0(dataset, ".h5"))
-        } else {
-            fs::path(output, dataset)
-        }
+        output_path <- fs::path(output, dataset)
 
         convert_dataset_to_daf(
             dataset_cache,
             output_path,
-            format,
             about_markdown = about_markdown,
             precompute_cache = precompute_cache,
             cache_daf_root = cache_daf_root
@@ -63,15 +56,10 @@ convert_project_to_daf <- function(project,
         atlas_cache <- fs::path(cache_dir, dataset, "atlas")
         if (fs::dir_exists(atlas_cache)) {
             cli_alert_info("Converting atlas for dataset: {dataset}")
-            atlas_output <- if (format == "h5") {
-                fs::path(output, paste0(dataset, "_atlas.h5"))
-            } else {
-                fs::path(output, paste0(dataset, "_atlas"))
-            }
+            atlas_output <- fs::path(output, paste0(dataset, "_atlas"))
             convert_dataset_to_daf(
                 atlas_cache,
                 atlas_output,
-                format,
                 about_markdown = about_markdown,
                 precompute_cache = precompute_cache,
                 cache_daf_root = cache_daf_root
@@ -85,13 +73,11 @@ convert_project_to_daf <- function(project,
 #' Convert a single dataset cache to DAF
 #'
 #' @param cache_dir Path to dataset cache directory
-#' @param output_path Path to output DAF
-#' @param format DAF format: "files" or "h5"
+#' @param output_path Path to output DAF (files_daf directory)
 #'
 #' @noRd
 convert_dataset_to_daf <- function(cache_dir,
                                    output_path,
-                                   format,
                                    about_markdown = NULL,
                                    precompute_cache = FALSE,
                                    cache_daf_root = NULL) {
@@ -137,13 +123,9 @@ convert_dataset_to_daf <- function(cache_dir,
         }
     }
 
-    # Create DAF object
-    daf <- if (format == "h5") {
-        dafr::h5df(output_path, mode = "w+")
-    } else {
-        fs::dir_create(output_path)
-        dafr::files_daf(output_path, mode = "w+")
-    }
+    # Create DAF object (files_daf directory only; native dafr has no h5df writer)
+    fs::dir_create(output_path)
+    daf <- dafr::files_daf(output_path, mode = "w+")
 
     # Add axes
     daf <- dafr::add_axis(daf, "gene", gene_names)
