@@ -1311,6 +1311,9 @@ validate_mcview_cache <- function(daf_path, cache_dir = NULL) {
         {
             if (dir.exists(daf_path)) {
                 dafr::files_daf(daf_path, mode = "r")
+            } else if (file.exists(daf_path) &&
+                       grepl("\\.h5ad$|\\.h5$", daf_path, ignore.case = TRUE)) {
+                dafr::h5ad_as_daf(daf_path)
             } else {
                 dafr::open_daf(daf_path, mode = "r")
             }
