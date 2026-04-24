@@ -12,6 +12,13 @@ extern "C" SEXP _MCView_mcview_sanity_cpp() {
     return cpp11::as_sexp(mcview_sanity_cpp());
   END_CPP11
 }
+// kernel_streaming_top_k_cor.cpp
+data_frame streaming_top_k_cor_cpp(doubles_matrix<> X, int k, bool diag, double min_cor, strings row_names, int block_rows);
+extern "C" SEXP _MCView_streaming_top_k_cor_cpp(SEXP X, SEXP k, SEXP diag, SEXP min_cor, SEXP row_names, SEXP block_rows) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(streaming_top_k_cor_cpp(cpp11::as_cpp<cpp11::decay_t<doubles_matrix<>>>(X), cpp11::as_cpp<cpp11::decay_t<int>>(k), cpp11::as_cpp<cpp11::decay_t<bool>>(diag), cpp11::as_cpp<cpp11::decay_t<double>>(min_cor), cpp11::as_cpp<cpp11::decay_t<strings>>(row_names), cpp11::as_cpp<cpp11::decay_t<int>>(block_rows)));
+  END_CPP11
+}
 // kernel_top_fold_per_col.cpp
 data_frame top_fold_per_col_cpp(doubles_matrix<> fp, int k, double min_val, double fold_reg, bool use_abs, strings row_names, strings col_names);
 extern "C" SEXP _MCView_top_fold_per_col_cpp(SEXP fp, SEXP k, SEXP min_val, SEXP fold_reg, SEXP use_abs, SEXP row_names, SEXP col_names) {
@@ -22,8 +29,9 @@ extern "C" SEXP _MCView_top_fold_per_col_cpp(SEXP fp, SEXP k, SEXP min_val, SEXP
 
 extern "C" {
 static const R_CallMethodDef CallEntries[] = {
-    {"_MCView_mcview_sanity_cpp",    (DL_FUNC) &_MCView_mcview_sanity_cpp,    0},
-    {"_MCView_top_fold_per_col_cpp", (DL_FUNC) &_MCView_top_fold_per_col_cpp, 7},
+    {"_MCView_mcview_sanity_cpp",       (DL_FUNC) &_MCView_mcview_sanity_cpp,       0},
+    {"_MCView_streaming_top_k_cor_cpp", (DL_FUNC) &_MCView_streaming_top_k_cor_cpp, 6},
+    {"_MCView_top_fold_per_col_cpp",    (DL_FUNC) &_MCView_top_fold_per_col_cpp,    7},
     {NULL, NULL, 0}
 };
 }

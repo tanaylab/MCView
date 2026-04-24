@@ -4,6 +4,10 @@ mcview_sanity_cpp <- function() {
   .Call(`_MCView_mcview_sanity_cpp`)
 }
 
+streaming_top_k_cor_cpp <- function(X, k, diag, min_cor, row_names, block_rows) {
+  .Call(`_MCView_streaming_top_k_cor_cpp`, X, k, diag, min_cor, row_names, block_rows)
+}
+
 top_fold_per_col_cpp <- function(fp, k, min_val, fold_reg, use_abs, row_names, col_names) {
   .Call(`_MCView_top_fold_per_col_cpp`, fp, k, min_val, fold_reg, use_abs, row_names, col_names)
 }

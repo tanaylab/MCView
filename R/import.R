@@ -47,49 +47,8 @@ dataset_ls <- function() {
 #'
 #' @noRd
 calc_gg_mc_top_cor <- function(egc, k = 30, egc_epsilon = 1e-5, daf_obj = NULL) {
-    # Full N×N correlation matrix (BLAS-backed via tgs_cross_cor_blas)
     lfp <- log2(egc + egc_epsilon)
-
-    cm <- tryCatch(
-        .Call(
-            "tgs_cross_cor_blas",
-            t(lfp),
-            t(lfp),
-            TRUE,
-            FALSE,
-            FALSE,
-            0,
-            new.env(parent = parent.frame()),
-            PACKAGE = "tgstat"
-        ),
-        error = function(e) {
-            prev_blas <- getOption("tgs_use.blas")
-            if (!isTRUE(prev_blas)) {
-                options(tgs_use.blas = TRUE)
-                on.exit(options(tgs_use.blas = prev_blas), add = TRUE)
-            }
-            tgs_cor(t(lfp), y = t(lfp), pairwise.complete.obs = TRUE, spearman = FALSE)
-        }
+    streaming_top_k_cor(
+        X = lfp, k = k, diag = FALSE, min_cor = 0
     )
-
-    prev_max_proc <- getOption("tgs_max.processes")
-    if (is.null(prev_max_proc) || prev_max_proc != 1) {
-        options(tgs_max.processes = 1)
-        on.exit(options(tgs_max.processes = prev_max_proc), add = TRUE)
-    }
-
-    top_cor <- tgs_knn(cm, knn = k, diag = FALSE) %>%
-        rename(gene1 = col1, gene2 = col2, cor = val) %>%
-        mutate(type = "pos")
-    anti_cor <- tgs_knn(-cm, knn = k, diag = FALSE) %>%
-        rename(gene1 = col1, gene2 = col2, cor = val) %>%
-        mutate(cor = -cor) %>%
-        mutate(type = "neg")
-
-    gg_mc_top_cor <- bind_rows(top_cor, anti_cor)
-
-    gg_mc_top_cor <- gg_mc_top_cor %>%
-        filter(!is.na(cor))
-
-    return(gg_mc_top_cor)
 }
