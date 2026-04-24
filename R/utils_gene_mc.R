@@ -100,10 +100,15 @@ get_cached_cor <- function(gg_mc_top_cor, gene, type, exclude = NULL) {
 calc_top_cors <- function(dataset, gene, type, data_vec, metacell_filter, exclude, atlas = FALSE) {
     # BLAS-accelerated correlation
     # Push metacell filter down to DAF query to avoid loading full matrix
-    mc_egc <- get_mc_egc(dataset, atlas = atlas,
-        metacells = if (is.null(data_vec)) metacell_filter else NULL)
-
-    lfp <- log2(mc_egc + mcv_get("egc_epsilon"))
+    # Unfiltered non-atlas path: reuse the cached lfp_full to avoid the ~500 MB
+    # log2 alloc on every gene click. Filtered / atlas paths recompute.
+    if (is.null(metacell_filter) && is.null(data_vec) && !atlas) {
+        lfp <- get_mc_lfp(dataset)
+    } else {
+        mc_egc <- get_mc_egc(dataset, atlas = atlas,
+            metacells = if (is.null(data_vec)) metacell_filter else NULL)
+        lfp <- log2(mc_egc + mcv_get("egc_epsilon"))
+    }
     if (!is.null(exclude)) {
         exclude_idx <- which(rownames(lfp) %in% exclude)
         if (length(exclude_idx) > 0) {

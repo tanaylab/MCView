@@ -32,6 +32,31 @@ get_mc_egc <- function(dataset, genes = NULL, atlas = FALSE, metacells = NULL) {
     compute_egc_from_daf(daf_obj, genes = genes, metacells = metacells)
 }
 
+#' Get the cached log-fold-point (lfp) matrix for a dataset
+#'
+#' Returns `log2(mc_egc_full + egc_epsilon)` with a session-level cache keyed
+#' alongside `mc_egc_full`. Filtered subsets (with `genes`/`metacells`) are
+#' not cached — callers should compute directly on those.
+#'
+#' @param dataset Dataset name
+#' @param atlas Whether to use atlas data (no cache — small / rare path)
+#' @return lfp matrix (genes x metacells)
+#' @export
+get_mc_lfp <- function(dataset, atlas = FALSE) {
+    if (atlas) {
+        return(log2(get_mc_egc(dataset, atlas = TRUE) + mcv_get("egc_epsilon")))
+    }
+    cached <- mcv_cache_get(dataset, "lfp_full")
+    if (!is.null(cached)) return(cached)
+
+    mc_egc <- get_mc_egc(dataset)
+    if (is.null(mc_egc)) return(NULL)
+
+    lfp <- log2(mc_egc + mcv_get("egc_epsilon"))
+    mcv_cache_set(dataset, "lfp_full", lfp)
+    lfp
+}
+
 get_mc_fp <- function(dataset, genes = NULL, atlas = FALSE, metacells = NULL) {
     mc_egc <- get_mc_egc(dataset, genes = genes, atlas = atlas, metacells = metacells)
     return(egc_to_fp(mc_egc))
