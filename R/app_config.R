@@ -359,9 +359,15 @@ gene_names_label <- function(dataset, atlas = FALSE, gene_modules = NULL) {
 #'
 #' @export
 extract_cache_config <- function(config = NULL, daf_obj = NULL, dataset_name = NULL) {
-    # Default cache configuration
+    # Default cache configuration.
+    # `enabled = TRUE`: the derived chain is additive, not destructive — it
+    # creates a `.mcview_cache` sibling directory next to the base DAF. Without
+    # it, every cold session pays ~6 s to recompute top1/top2 gene vectors in
+    # `convert_daf_metacell_types` because the fast-path vectors are never
+    # persisted. Users who want the pre-April-2026 behavior can set
+    # `mcview_cache_enabled = FALSE` as a DAF scalar or in YAML config.
     defaults <- list(
-        enabled = FALSE,
+        enabled = TRUE,
         type = "files",
         cache_dir = ".mcview_cache",
         precompute_on_startup = TRUE,

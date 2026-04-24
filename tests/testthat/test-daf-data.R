@@ -236,7 +236,10 @@ test_that("extract_cache_config returns defaults when no config", {
     config <- extract_cache_config(NULL, NULL, NULL)
 
     expect_true(is.list(config))
-    expect_false(config$enabled) # Default is disabled
+    # Default flipped to enabled (2026-04-24 perf pass): avoids the ~6 s cold
+    # hit in convert_daf_metacell_types() on first tab render when the derived
+    # cache layer would otherwise never be populated.
+    expect_true(config$enabled)
     expect_equal(config$type, "files")
     expect_equal(config$cache_dir, ".mcview_cache")
 })

@@ -14,11 +14,14 @@
 #' @return TRUE invisibly
 #' @noRd
 .assert_dafr_mmap <- function() {
-    mmap_enabled <- tryCatch(
-        isTRUE(dafr::dafr_opt("dafr.mmap")),
-        error = function(e) FALSE
-    )
-    if (!mmap_enabled) {
+    # dafr's .onLoad sets getOption("dafr.mmap") = TRUE (see dafr-native
+    # R/zzz.R + R/options.R). We read via getOption rather than
+    # dafr::dafr_opt — the latter is internal (not exported) so calling it
+    # from a subprocess that hasn't pulled MCView's full import surface
+    # raises a namespace error. requireNamespace forces .onLoad to fire even
+    # if dafr hasn't been attached yet.
+    requireNamespace("dafr", quietly = TRUE)
+    if (!isTRUE(getOption("dafr.mmap"))) {
         cli::cli_abort(c(
             "MCView requires {.code dafr.mmap = TRUE}.",
             "i" = "Set via {.code options(dafr.mmap = TRUE)} before {.code library(MCView)}."

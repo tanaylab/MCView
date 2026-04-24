@@ -541,6 +541,15 @@ daf_description_fields <- function(daf_obj, deep = TRUE) {
 }
 
 daf_is_writable <- function(daf_obj) {
+    # Native dafr tags every writable DAF with the `dafr::DafWriter` S7 class;
+    # read-only wrappers (`dafr::read_only(...)`) strip it. Inherit check is
+    # both cheaper and more reliable than parsing the description text, which
+    # omits a `mode:` line for FilesDaf and would fall through to FALSE.
+    if (inherits(daf_obj, "dafr::DafWriter")) {
+        return(TRUE)
+    }
+    # Fall back to description parsing for any non-native / legacy DAF object
+    # that still exposes `mode` / `type` fields.
     fields <- daf_description_fields(daf_obj, deep = TRUE)
     if (!is.null(fields$mode)) {
         return(!identical(fields$mode, "r"))
@@ -1115,6 +1124,11 @@ populate_mcview_derived <- function(
     }
 
     derived_daf <- derived_result$cache_daf
+    # Precompute functions read source matrices (UMIs, total_UMIs) and write
+    # derived vectors back. The complete chain satisfies both — reads fall
+    # through to base, writes land in derived via chain_writer. Passing the
+    # bare derived_daf aborts on missing UMIs.
+    chain_daf <- derived_result$complete_daf %||% derived_daf
 
     # Determine what to compute
     all_items <- c("correlations", "metacell_top_genes", "gene_stats", "type_markers")
@@ -1134,25 +1148,25 @@ populate_mcview_derived <- function(
 
     if ("correlations" %in% what) {
         if (verbose) cli::cli_alert("Computing gene correlations...")
-        results$correlations <- precompute_daf_correlations(derived_daf, force = force)
+        results$correlations <- precompute_daf_correlations(chain_daf, force = force)
         if (verbose && results$correlations) cli::cli_alert_success("Gene correlations computed")
     }
 
     if ("metacell_top_genes" %in% what) {
         if (verbose) cli::cli_alert("Computing metacell top genes...")
-        results$metacell_top_genes <- precompute_daf_metacell_top_genes(derived_daf, force = force)
+        results$metacell_top_genes <- precompute_daf_metacell_top_genes(chain_daf, force = force)
         if (verbose && results$metacell_top_genes) cli::cli_alert_success("Metacell top genes computed")
     }
 
     if ("gene_stats" %in% what) {
         if (verbose) cli::cli_alert("Computing gene statistics...")
-        results$gene_stats <- precompute_daf_gene_stats(derived_daf, force = force)
+        results$gene_stats <- precompute_daf_gene_stats(chain_daf, force = force)
         if (verbose && results$gene_stats) cli::cli_alert_success("Gene statistics computed")
     }
 
     if ("type_markers" %in% what) {
         if (verbose) cli::cli_alert("Computing per-type marker genes...")
-        results$type_markers <- precompute_daf_type_markers(derived_daf, force = force)
+        results$type_markers <- precompute_daf_type_markers(chain_daf, force = force)
         if (verbose && results$type_markers) cli::cli_alert_success("Per-type marker genes computed")
     }
 
@@ -1186,6 +1200,9 @@ populate_mcview_cache <- populate_mcview_derived
 populate_dataset_cache <- function(dataset, what = NULL, force = FALSE, verbose = TRUE) {
     derived_daf <- get_cache_daf(dataset)
     base_daf <- get_base_daf(dataset)
+    # `get_dataset_daf` returns the complete chain (base + derived) — reads
+    # hit base (UMIs, total_UMIs), writes land in the derived layer.
+    chain_daf <- get_dataset_daf(dataset) %||% derived_daf
 
     if (is.null(derived_daf)) {
         if (verbose) cli::cli_alert_warning("No derived DAF available for dataset: {dataset}")
@@ -1202,22 +1219,22 @@ populate_dataset_cache <- function(dataset, what = NULL, force = FALSE, verbose 
 
     if ("correlations" %in% what) {
         if (verbose) cli::cli_alert("Computing gene correlations for {dataset}...")
-        results$correlations <- precompute_daf_correlations(derived_daf, force = force)
+        results$correlations <- precompute_daf_correlations(chain_daf, force = force)
     }
 
     if ("metacell_top_genes" %in% what) {
         if (verbose) cli::cli_alert("Computing metacell top genes for {dataset}...")
-        results$metacell_top_genes <- precompute_daf_metacell_top_genes(derived_daf, force = force)
+        results$metacell_top_genes <- precompute_daf_metacell_top_genes(chain_daf, force = force)
     }
 
     if ("gene_stats" %in% what) {
         if (verbose) cli::cli_alert("Computing gene statistics for {dataset}...")
-        results$gene_stats <- precompute_daf_gene_stats(derived_daf, force = force)
+        results$gene_stats <- precompute_daf_gene_stats(chain_daf, force = force)
     }
 
     if ("type_markers" %in% what) {
         if (verbose) cli::cli_alert("Computing per-type marker genes for {dataset}...")
-        results$type_markers <- precompute_daf_type_markers(derived_daf, force = force)
+        results$type_markers <- precompute_daf_type_markers(chain_daf, force = force)
     }
 
     # Update derived metadata

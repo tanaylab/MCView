@@ -96,11 +96,12 @@ init_single_daf_mode <- function(daf_obj, dataset_name, config_file = NULL, prof
 
     cli_alert_success("DAF dataset '{dataset_name}' loaded successfully")
 
-    # Precompute top genes into cache DAF if vectors are missing.
-    # This avoids a costly EGC-based fallback in convert_daf_metacell_types()
-    # on first access (saves ~3.8s per call).
-    if (!is.null(cache_result$cache_daf)) {
-        precompute_daf_metacell_top_genes(cache_result$cache_daf)
+    # Precompute top genes into cache DAF if vectors are missing. Reads go
+    # through the complete chain (UMIs live in base); writes land in the
+    # derived layer via chain_writer. Saves ~6 s per cold `metacell_types`
+    # access on subsequent sessions.
+    if (!is.null(cache_result$cache_daf) && !is.null(cache_result$complete_daf)) {
+        precompute_daf_metacell_top_genes(cache_result$complete_daf)
     }
 
     # Return cache population status for caller to handle
@@ -398,7 +399,10 @@ extract_config_for_daf <- function(daf_obj, dataset_name, config_file = NULL) {
         config$light_version <- FALSE
     }
     if (is.null(config$cache_in_daf)) {
-        config$cache_in_daf <- FALSE
+        # Default to enabled: see extract_cache_config() for rationale. Users
+        # can opt out via mcview_cache_in_daf DAF scalar, YAML config, or the
+        # cache_in_daf= argument of init_*_daf_mode().
+        config$cache_in_daf <- TRUE
     }
 
     # Add metacells version if available (uses the already-fetched scalar set)
