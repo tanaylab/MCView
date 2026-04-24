@@ -250,11 +250,10 @@ connect_browser <- function(port, width = 1400, height = 900) {
 #' This indicates that all reactive outputs have finished rendering.
 #'
 #' @param session A ChromoteSession object
-#' @param timeout Maximum seconds to wait (default: 180 — bumped from 90 after
-#'   the Julia-removal migration; tracked for follow-up perf pass)
+#' @param timeout Maximum seconds to wait (default: 90)
 #' @param poll_interval Seconds between polls (default: 1)
 #' @return TRUE if Shiny became idle, FALSE if timeout expired
-wait_for_shiny_idle <- function(session, timeout = 180, poll_interval = 1) {
+wait_for_shiny_idle <- function(session, timeout = 90, poll_interval = 1) {
     tryCatch(
         {
             start_time <- Sys.time()
@@ -297,10 +296,9 @@ wait_for_shiny_idle <- function(session, timeout = 180, poll_interval = 1) {
 #'
 #' @param session A ChromoteSession object
 #' @param tab_name The visible text of the tab to click
-#' @param timeout Seconds to wait for Shiny idle after clicking (default: 180
-#'   — bumped from 60 after the Julia-removal migration; tracked for perf pass)
+#' @param timeout Seconds to wait for Shiny idle after clicking (default: 60)
 #' @return TRUE if click succeeded and Shiny became idle, FALSE otherwise
-click_tab <- function(session, tab_name, timeout = 180) {
+click_tab <- function(session, tab_name, timeout = 60) {
     tryCatch(
         {
             # Find and click the sidebar link matching the tab name.
