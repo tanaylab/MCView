@@ -724,12 +724,14 @@ precompute_daf_metacell_top_genes <- function(daf_obj, egc_epsilon = 1e-5, force
     metacell_names <- dafr::axis_entries(daf_obj, "metacell")
     gene_names <- rownames(mc_egc)
 
-    # Top-2 genes per metacell (mc_egc is gene x metacell).
-    tops <- top2_per_col(mc_egc)
-    top1_gene <- gene_names[tops$top1_idx]
-    top1_lfp <- log2(tops$top1_val + egc_epsilon)
-    top2_gene <- gene_names[tops$top2_idx]
-    top2_lfp <- log2(tops$top2_val + egc_epsilon)
+    # Top-2 genes per metacell via dafr::top_k_per_col (OpenMP, dense +
+    # sparse paths). mc_egc is gene × metacell, so per-column top-K picks
+    # the top genes per metacell.
+    tops <- dafr::top_k_per_col(mc_egc, k = 2L)
+    top1_gene <- gene_names[tops$indices[1L, ]]
+    top2_gene <- gene_names[tops$indices[2L, ]]
+    top1_lfp <- log2(tops$values[1L, ] + egc_epsilon)
+    top2_lfp <- log2(tops$values[2L, ] + egc_epsilon)
 
     if (any(is.na(top1_gene)) || any(is.na(top2_gene)) ||
         any(is.na(top1_lfp)) || any(is.na(top2_lfp))) {
