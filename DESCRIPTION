@@ -54,6 +54,7 @@ Imports:
     rclipboard,
     rlang,
     rmarkdown,
+    RhpcBLASctl,
     scales,
     slanter,
     shiny (>= 1.6.0),
@@ -80,6 +81,8 @@ Imports:
     utils,
     umap,
     graphics
+LinkingTo:
+    cpp11
 Suggests:
     knitr,
     R.utils,
@@ -88,8 +91,9 @@ Suggests:
     withr,
     metacell,
     profvis
-VignetteBuilder: 
+VignetteBuilder:
     knitr
+SystemRequirements: C++11
 Remotes:
     tanaylab/tgutil,
     tanaylab/metacell,

@@ -59,7 +59,8 @@ calc_gg_mc_top_cor <- function(egc, k = 30, egc_epsilon = 1e-5, daf_obj = NULL) 
             FALSE,
             FALSE,
             0,
-            new.env(parent = parent.frame())
+            new.env(parent = parent.frame()),
+            PACKAGE = "tgstat"
         ),
         error = function(e) {
             prev_blas <- getOption("tgs_use.blas")

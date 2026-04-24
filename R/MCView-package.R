@@ -1,4 +1,5 @@
 #' @keywords internal
+#' @useDynLib MCView, .registration = TRUE
 "_PACKAGE"
 
 #' @import dplyr

@@ -133,7 +133,8 @@ calc_top_cors <- function(dataset, gene, type, data_vec, metacell_filter, exclud
             FALSE,
             FALSE,
             0,
-            new.env(parent = parent.frame())
+            new.env(parent = parent.frame()),
+            PACKAGE = "tgstat"
         ),
         error = function(e) {
             prev_blas <- getOption("tgs_use.blas")
@@ -423,7 +424,7 @@ calc_gene_gene_correlations <- function(dataset, genes, cell_type_filter = NULL,
     # Calculate all pairwise correlations between genes (BLAS-accelerated)
     t_expr <- t(expr_data)
     cor_matrix <- tryCatch(
-        .Call("tgs_cross_cor_blas", t_expr, t_expr, TRUE, FALSE, FALSE, 0, new.env(parent = parent.frame())),
+        .Call("tgs_cross_cor_blas", t_expr, t_expr, TRUE, FALSE, FALSE, 0, new.env(parent = parent.frame()), PACKAGE = "tgstat"),
         error = function(e) tgs_cor(t_expr, pairwise.complete.obs = TRUE, spearman = FALSE)
     )
 
@@ -492,7 +493,7 @@ plot_correlation_heatmap <- function(correlation_results, input_genes, dataset,
     expr_subset <- mc_egc[genes_in_data, , drop = FALSE]
     t_expr <- t(expr_subset)
     cor_matrix <- tryCatch(
-        .Call("tgs_cross_cor_blas", t_expr, t_expr, TRUE, FALSE, FALSE, 0, new.env(parent = parent.frame())),
+        .Call("tgs_cross_cor_blas", t_expr, t_expr, TRUE, FALSE, FALSE, 0, new.env(parent = parent.frame()), PACKAGE = "tgstat"),
         error = function(e) tgs_cor(t_expr, pairwise.complete.obs = TRUE, spearman = FALSE)
     )
 
