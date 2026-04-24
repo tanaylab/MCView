@@ -162,9 +162,17 @@ get_cell_field_map <- function(dataset, field_name) {
 #' @return Character vector of field names, or character(0) if none available
 #' @export
 get_cell_grouping_fields <- function(dataset, max_cardinality = 1000) {
+    cache_key <- sprintf("grouping_fields::%d", as.integer(max_cardinality))
+    cached <- mcv_cache_get(dataset, cache_key)
+    if (!is.null(cached)) {
+        return(cached)
+    }
+
     cells_daf <- get_cells_daf(dataset)
     if (is.null(cells_daf)) {
-        return(character(0))
+        result <- character(0)
+        mcv_cache_set(dataset, cache_key, result)
+        return(result)
     }
 
     # Use the raw (non-chained) cells DAF for vector listing and cardinality
@@ -181,7 +189,9 @@ get_cell_grouping_fields <- function(dataset, max_cardinality = 1000) {
     )
 
     if (length(all_vectors) == 0) {
-        return(character(0))
+        result <- character(0)
+        mcv_cache_set(dataset, cache_key, result)
+        return(result)
     }
 
     # Exclude internal/identity fields
@@ -197,23 +207,30 @@ get_cell_grouping_fields <- function(dataset, max_cardinality = 1000) {
         candidates <- string_candidates
     }
 
-    # Fallback: load each candidate vector in R to check type and cardinality
+    # Check cardinality via a DAF count query: result length == number of
+    # distinct values, so we avoid materializing the full string vector in R.
+    # Fall back to the classic get_vector + unique() path if the query fails.
     grouping_fields <- character(0)
     for (field in candidates) {
-        tryCatch(
-            {
+        n_unique <- tryCatch({
+            q <- sprintf("@ cell : %s / %s >> Count", field, field)
+            counts <- query_daf[q]
+            length(counts)
+        }, error = function(e) {
+            tryCatch({
                 vec <- dafr::get_vector(query_daf, "cell", field)
-                if (is.character(vec)) {
-                    n_unique <- length(unique(vec))
-                    if (n_unique > 1 && n_unique <= max_cardinality) {
-                        grouping_fields <- c(grouping_fields, field)
-                    }
-                }
-            },
-            error = function(e) NULL
-        )
+                if (is.character(vec)) length(unique(vec)) else NA_integer_
+            }, error = function(e2) NA_integer_)
+        })
+
+        if (is.na(n_unique)) next
+
+        if (n_unique > 1 && n_unique <= max_cardinality) {
+            grouping_fields <- c(grouping_fields, field)
+        }
     }
 
+    mcv_cache_set(dataset, cache_key, grouping_fields)
     return(grouping_fields)
 }
 
