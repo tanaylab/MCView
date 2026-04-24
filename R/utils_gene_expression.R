@@ -17,14 +17,19 @@ get_mc_egc <- function(dataset, genes = NULL, atlas = FALSE, metacells = NULL) {
         return(NULL)
     }
 
-    # For the full unfiltered EGC matrix, use session-level cache to avoid
-    # repeated ~1.2s Julia round-trips for the 28K x 2.4K UMI matrix
+    # Full unfiltered matrix: prefer a pre-computed fraction matrix
+    # (`linear_fraction` then `geomean_fraction`) over rebuilding via
+    # `sweep(UMIs, 2, total_UMIs, "/")`. When a fraction matrix is present
+    # in the base DAF, `convert_daf_mc_egc` returns it via mmap ALTREP —
+    # ~200 ms cold instead of ~2 s for the sweep. When no fraction matrix
+    # is present, `convert_daf_mc_egc` falls through to the same
+    # UMIs/total_UMIs computation as `compute_egc_from_daf`.
     if (is.null(genes) && is.null(metacells) && !atlas) {
         cached <- mcv_cache_get(dataset, "mc_egc_full")
         if (!is.null(cached)) {
             return(cached)
         }
-        mc_egc <- compute_egc_from_daf(daf_obj, genes = NULL, metacells = NULL)
+        mc_egc <- convert_daf_mc_egc(daf_obj)
         mcv_cache_set(dataset, "mc_egc_full", mc_egc)
         return(mc_egc)
     }
