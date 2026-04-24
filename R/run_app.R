@@ -75,13 +75,6 @@ ensure_future_plan <- function() {
 #' run_app(daf_obj, config_file = "config.yaml")
 #' }
 #'
-#' @section Signal handling note:
-#' When Julia is embedded (via dafr/JuliaCall), Julia's signal handler can
-#' interfere with R's interrupt handling. The app registers onStop() and
-#' .onUnload() hooks for orderly shutdown, which significantly reduces
-#' segfaults. However, Ctrl+C may still be unreliable while Julia is
-#' actively processing a query.
-#'
 #' @inheritDotParams shiny::shinyApp
 #'
 #' @export
@@ -204,8 +197,7 @@ load_daf_from_path <- function(path) {
 #' Orderly shutdown callback for MCView
 #'
 #' Called by shiny::onStop() when the app is shutting down.
-#' Resets the future plan, cleans up MCView state, and attempts
-#' Julia cleanup to avoid segfaults from jl_atexit_hook during GC.
+#' Resets the future plan and cleans up MCView state.
 #'
 #' @noRd
 mcview_on_stop <- function() {
@@ -230,21 +222,6 @@ mcview_on_stop <- function() {
         cleanup_mcview_env(),
         error = function(e) {
             # Suppress errors during shutdown
-        }
-    )
-
-    # Attempt Julia GC to reduce finalizer pressure at exit
-    tryCatch(
-        {
-            if (requireNamespace("JuliaCall", quietly = TRUE)) {
-                # Trigger Julia GC while the process is still intact,
-                # reducing the chance of segfaults from jl_atexit_hook
-                # running during R's GC-at-exit phase
-                JuliaCall::julia_eval("GC.gc()")
-            }
-        },
-        error = function(e) {
-            # Julia may not be initialized or already shut down; suppress errors
         }
     )
 
