@@ -285,12 +285,6 @@ filter_genes_by_flags <- function(df, lateral_genes = NULL, noisy_genes = NULL,
 #' @return EGC matrix (genes x metacells) with columns summing to 1
 #' @export
 compute_egc_from_daf <- function(daf_obj, genes = NULL, metacells = NULL) {
-    # NOTE: Julia EGC matrix path disabled -- JuliaCall serialization overhead
-    # for a full 28K x 2.4K dense matrix (~68M elements) is much slower than
-    # the R path using per-gene DAF queries + sparse matrix construction.
-    # The Julia path could be re-enabled once JuliaCall has efficient shared-
-    # memory transfer or for very small gene subsets.
-
     mc_mat <- daf_query_mc_mat(daf_obj, genes = genes, metacells = metacells)
     mc_sum <- daf_query_mc_sum(daf_obj, metacells = metacells)
 
@@ -379,8 +373,8 @@ daf_query_mc_mat <- function(daf_obj, genes = NULL, metacells = NULL) {
             return(mat)
         }
 
-        # For large gene sets (>50), per-gene JuliaCall overhead (~1-3ms each) exceeds
-        # full matrix load + subset cost (~100ms). Only use per-gene path for small sets.
+        # For small gene sets, per-gene queries beat full matrix load + subset.
+        # Threshold chosen empirically on the OBK dataset.
         if (length(valid_genes) <= 50) {
             # Query each gene individually - avoids loading full gene x metacell matrix
             vecs <- lapply(valid_genes, function(gene) {
