@@ -7,5 +7,7 @@
 mcview_markers_contract()
 }
 \description{
-Contract for Markers tab
+Marker gene heatmap.
+- Requires: core + is_marker [input]
+- Enriched by: is_lateral, is_noisy [input], marker_rank [input]
 }

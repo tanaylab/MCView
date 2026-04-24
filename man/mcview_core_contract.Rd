@@ -2,7 +2,7 @@
 % Please edit documentation in R/daf_contracts.R
 \name{mcview_core_contract}
 \alias{mcview_core_contract}
-\title{Get the core MCView contract}
+\title{Get the core MCView contract (INPUT layer)}
 \usage{
 mcview_core_contract()
 }
@@ -10,5 +10,35 @@ mcview_core_contract()
 List containing axes, vectors, matrices, and scalars specifications
 }
 \description{
-This contract specifies the minimum required data for MCView to function.
+This contract specifies what MCView expects from the input DAF (read-only,
+from the metacells pipeline). Items marked RequiredInput must exist;
+items marked OptionalInput enrich specific tabs when present.
+}
+\details{
+Coordinate note: at least one pair of (x,y) or (u,v) is required for the
+Manifold tab. The contract marks all four as OptionalInput because the
+"at least one pair" constraint is enforced by a custom rule.
+
+Sample ID note: `mcview_sample_property` is a scalar that names which cell
+vector to use as the sample identifier (e.g. "embryo", "batch_set_id").
+There is no hardcoded `samp_id` vector -- the cell vector name is dynamic.
+
+Inner stdev note: the pipeline may produce either `inner_stdev_log` or
+`inner_std_log`. MCView accepts both names; the R layer normalizes to
+whichever is present. `inner_std_log` is the canonical Metacells.jl name;
+`inner_stdev_log` is kept as a backward-compatible alias.
+
+n_cells note: Metacells.jl uses ("metacell", "n_cells"). MCView also accepts
+the legacy names ("metacell", "n_cell"). The old ("metacell", "cells") alias
+has been removed.
+
+geomean_fraction vs linear_fraction: these are DIFFERENT computations.
+  - linear_fraction = UMIs / total_UMIs (Metacells.jl canonical)
+  - geomean_fraction = geometric mean of per-cell fractions within a metacell
+Both are accepted as OptionalInput; the R layer uses whichever is present.
+
+Gene module note: Metacells.jl has a separate "module" axis for gene modules.
+The ("gene", "module") vector assigns genes to modules. We add
+("gene", "primary_module") as the canonical name to avoid collision with the
+Metacells.jl module axis. ("gene", "module") is kept as a deprecated alias.
 }

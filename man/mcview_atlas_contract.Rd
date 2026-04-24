@@ -7,6 +7,8 @@
 mcview_atlas_contract()
 }
 \description{
-The query DAF should contain projection metadata, while the atlas DAF
-(loaded via init_atlas) contains the reference data.
+Atlas comparison visualization.
+- Requires: core + projection metadata [input]
+- Accepts both similar and is_similar
+- Accepts both projected_fraction and projected_geomean_fraction
 }

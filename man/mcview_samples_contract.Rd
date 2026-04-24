@@ -8,5 +8,8 @@ mcview_samples_contract()
 }
 \description{
 The Samples tab requires cell-level metadata with sample assignments.
-This is optional as not all datasets have cell-level data.
+The sample ID vector is named by the `mcview_sample_property` scalar
+(e.g. "embryo", "batch_set_id", "set"). There is no hardcoded `samp_id`
+vector -- the cell vector name is dynamic. The legacy `samp_id` name
+is accepted as a fallback.
 }

@@ -74,15 +74,6 @@ for more information on bookmarking your app.}
 \description{
 Run the MCView application with DAF data.
 }
-\section{Signal handling note}{
-
-When Julia is embedded (via dafr/JuliaCall), Julia's signal handler can
-interfere with R's interrupt handling. The app registers onStop() and
-.onUnload() hooks for orderly shutdown, which significantly reduces
-segfaults. However, Ctrl+C may still be unreliable while Julia is
-actively processing a query.
-}
-
 \examples{
 \dontrun{
 # Single DAF object

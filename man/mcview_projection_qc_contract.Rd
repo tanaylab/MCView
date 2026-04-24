@@ -7,5 +7,8 @@
 mcview_projection_qc_contract()
 }
 \description{
-Contract for Projection QC tab
+Atlas projection quality control.
+- Requires: core + projection vectors [input]
+- Accepts both similar and is_similar
+- Accepts both projected_fraction and projected_geomean_fraction
 }

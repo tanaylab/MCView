@@ -7,7 +7,6 @@
 convert_project_to_daf(
   project,
   output,
-  format = c("files", "h5"),
   datasets = NULL,
   precompute_cache = FALSE,
   cache_daf_root = NULL
@@ -18,8 +17,6 @@ convert_project_to_daf(
 
 \item{output}{Path to output directory for DAF data}
 
-\item{format}{DAF format: "files" for directory-based, "h5" for HDF5}
-
 \item{datasets}{Optional vector of dataset names to convert (default: all)}
 
 \item{precompute_cache}{Whether to precompute cache after conversion}
@@ -28,4 +25,5 @@ convert_project_to_daf(
 }
 \description{
 Converts all datasets in an MCView project cache directory to DAF format.
+Outputs to files_daf format (native dafr has no h5df writer).
 }

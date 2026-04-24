@@ -31,7 +31,7 @@ populate_mcview_cache(
 \item{cache_type}{Storage type: "files" (persistent) or "memory" (session only)}
 
 \item{what}{What to compute: NULL (all), or character vector subset of:
-"correlations", "metacell_top_genes", "gene_stats"}
+"correlations", "metacell_top_genes", "gene_stats", "type_markers"}
 
 \item{force}{Recompute even if derived data exists and is valid}
 

@@ -7,5 +7,7 @@
 mcview_genes_contract()
 }
 \description{
-Contract for Genes tab
+Per-gene expression across metacells.
+- Requires: core
+- Enriched by: top-2 genes [derived], is_lateral/is_noisy [input]
 }

@@ -7,5 +7,9 @@
 mcview_manifold_contract()
 }
 \description{
-Contract for Manifold tab
+2D projection with cell type coloring.
+- Requires: core + at least one coordinate pair (x,y) or (u,v)
+- Enriched by: w coordinate, n_cells
+- Accepts umap_x/umap_y/umap_u/umap_v/umap_w aliases
+- NOTE: MC x MC outgoing_weights removed -- not read by R code
 }

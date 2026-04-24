@@ -7,5 +7,8 @@
 mcview_qc_contract()
 }
 \description{
-Contract for QC tab
+Quality control metrics.
+- Requires: core
+- Enriched by: n_cells, inner_fold, QC scalars [input]
+- QC scalars accept both new names (no prefix) and old qc_stats_ prefix.
 }

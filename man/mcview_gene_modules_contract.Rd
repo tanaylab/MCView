@@ -7,5 +7,7 @@
 mcview_gene_modules_contract()
 }
 \description{
-Contract for Gene Modules tab
+Gene module heatmap.
+- Requires: core + gene module assignment [input]
+- Accepts both primary_module (canonical) and module (deprecated)
 }

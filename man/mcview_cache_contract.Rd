@@ -2,12 +2,22 @@
 % Please edit documentation in R/daf_contracts.R
 \name{mcview_cache_contract}
 \alias{mcview_cache_contract}
-\title{Contract for precomputed cache vectors}
+\title{Contract for the mcview_derived layer (DERIVED contract)}
 \usage{
 mcview_cache_contract()
 }
 \description{
-These vectors are computed by MCView and cached for faster loading.
-They are optional - MCView will compute them at runtime if missing,
-but precomputing them improves first-load performance.
+What the mcview_derived writable layer guarantees to provide on top of the
+input DAF. These are computed during MCView's cache-building phase.
+}
+\details{
+The derived layer is a writable DAF that chains on top of the read-only
+input DAF. Any data already present in the input (e.g. marker correlations
+pre-computed by the pipeline) will NOT be overwritten -- the derived layer
+only fills in what is missing.
+
+Type markers note: Per-type marker data is stored as two sparse matrices on
+(type, gene) axes rather than as an axis with vectors. This is the correct
+DAF data model: the data is naturally indexed by (type, gene) and sparse
+matrices handle the sparsity (most gene x type pairs are not markers).
 }

@@ -7,5 +7,12 @@
 mcview_gene_correlations_contract()
 }
 \description{
-Contract for gene correlations data
+Gene-gene correlations per type.
+- Requires: core + marker correlations [either input or derived]
+- gg_mc_top_cor is DEPRECATED but still accepted
+}
+\details{
+Accepts either the preferred `mcview_marker_correlations` axis name or the
+legacy `gg_mc_top_cor` axis. MCView's derived layer computes as a fallback
+if neither is present in the input DAF.
 }
