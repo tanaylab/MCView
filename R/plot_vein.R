@@ -1,5 +1,5 @@
 mctnetwork_g_t_types <- function(net, min_time, max_time, g, mc_egc, mc_colors) {
-    gene_e <- log2(1e-5 + mc_egc[g, ])
+    gene_e <- dafr::fast_log(mc_egc[g, ], eps = 1e-5, base = 2)
 
     all_types <- unique(mc_colors)
 

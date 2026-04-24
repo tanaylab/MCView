@@ -58,7 +58,7 @@ calc_gene_modules <- function(mat, k = NULL, n_genes = 1000, minimal_max_log_fra
     m <- mat[cand_genes, , drop = FALSE]
 
     egc <- t(t(m) / colSums(m))
-    legc <- log2(egc + egc_epsilon)
+    legc <- dafr::fast_log(egc, eps = egc_epsilon, base = 2)
     legc_norm <- sweep(legc, 1, matrixStats::rowMedians(legc, na.rm = TRUE))
     # legc_norm <- sweep(legc, 1, matrixStats::rowSds(legc, na.rm = TRUE))
 
@@ -91,7 +91,7 @@ select_top_fold_genes <- function(mat, n_genes = 1000,
                                   egc_epsilon = 1e-5) {
     egc <- t(t(mat) / colSums(mat))
 
-    legc <- log2(egc + egc_epsilon)
+    legc <- dafr::fast_log(egc, eps = egc_epsilon, base = 2)
     fold_matrix <- sweep(legc, 1, matrixStats::rowMedians(legc, na.rm = TRUE))
     fold_matrix <- abs(fold_matrix)
 

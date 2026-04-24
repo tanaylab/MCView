@@ -9,7 +9,7 @@ compute_umap <- function(mc_egc, anchors, min_dist = 0.96, n_neighbors = 10, n_e
     # Set random seed for reproducibility
     set.seed(random_seed)
 
-    legc <- log2(mc_egc + 1e-5)
+    legc <- dafr::fast_log(mc_egc, eps = 1e-5, base = 2)
 
     f_gcov <- matrixStats::rowMaxs(legc) >= min_log_expr
     legc <- legc[f_gcov, ]

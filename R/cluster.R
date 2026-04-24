@@ -1,5 +1,5 @@
 cluster_egc <- function(egc, k = NULL, filter_genes = FALSE, min_max_thresh = 3, min_gene_expr = -12, verbose = FALSE) {
-    legc <- log2(egc + 1e-5)
+    legc <- dafr::fast_log(egc, eps = 1e-5, base = 2)
     if (filter_genes) {
         gmax <- matrixStats::rowMaxs(legc, na.rm = TRUE)
         gmin <- matrixStats::rowMins(legc, na.rm = TRUE)

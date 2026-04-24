@@ -1517,8 +1517,8 @@ precompute_mcview_cache <- function(daf_obj, verbose = TRUE) {
     egc <- sweep(mc_mat, 1, mc_sum, "/")
     gene_means <- colMeans(egc)
     gene_means[gene_means == 0] <- 1e-10
-    lfp <- log2(sweep(egc, 2, gene_means, "/") + 1e-5)
-    lfp <- as.matrix(lfp)
+    lfp <- dafr::fast_log(as.matrix(sweep(egc, 2, gene_means, "/")),
+                          eps = 1e-5, base = 2)
 
     gene_names <- colnames(mc_mat)
 

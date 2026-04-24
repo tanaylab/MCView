@@ -21,7 +21,7 @@ get_top_var_genes <- function(dataset, metacell) {
     if (is.null(mc_egc_t) || nrow(mc_egc_t) == 0) {
         return(NULL)
     }
-    vec <- log2(mc_egc_t + 3e-4)
+    vec <- dafr::fast_log(mc_egc_t, eps = 3e-4, base = 2)
     diff <- matrixStats::rowMaxs(vec, na.rm = TRUE) - matrixStats::rowMins(vec, na.rm = TRUE)
     names(diff) <- rownames(mc_egc_t)
     top_var_genes <- names(sort(diff, decreasing = TRUE)[1:4])
