@@ -28,13 +28,15 @@ calc_marker_genes <- function(mc_egc,
 
     mc_fp <- sweep(mc_egc, 1, matrixStats::rowMedians(mc_egc, na.rm = TRUE))
 
-    mc_top_genes <- select_top_fold_genes_per_metacell(
-        mc_fp[interesting_genes_mask, , drop = FALSE],
-        genes_per_metacell = genes_per_metacell,
-        minimal_relative_log_fraction = minimal_relative_log_fraction,
-        fold_change_reg = fold_change_reg,
+    mc_top_genes <- top_fold_per_col(
+        fp = mc_fp[interesting_genes_mask, , drop = FALSE],
+        k = genes_per_metacell,
+        min_val = minimal_relative_log_fraction,
+        fold_reg = fold_change_reg,
         use_abs = use_abs
     )
+    # Drop NA-padded rows (happens when n_rows < k for some metacell)
+    mc_top_genes <- mc_top_genes[!is.na(mc_top_genes$gene), , drop = FALSE]
 
     return(mc_top_genes)
 }

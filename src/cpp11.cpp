@@ -12,10 +12,18 @@ extern "C" SEXP _MCView_mcview_sanity_cpp() {
     return cpp11::as_sexp(mcview_sanity_cpp());
   END_CPP11
 }
+// kernel_top_fold_per_col.cpp
+data_frame top_fold_per_col_cpp(doubles_matrix<> fp, int k, double min_val, double fold_reg, bool use_abs, strings row_names, strings col_names);
+extern "C" SEXP _MCView_top_fold_per_col_cpp(SEXP fp, SEXP k, SEXP min_val, SEXP fold_reg, SEXP use_abs, SEXP row_names, SEXP col_names) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(top_fold_per_col_cpp(cpp11::as_cpp<cpp11::decay_t<doubles_matrix<>>>(fp), cpp11::as_cpp<cpp11::decay_t<int>>(k), cpp11::as_cpp<cpp11::decay_t<double>>(min_val), cpp11::as_cpp<cpp11::decay_t<double>>(fold_reg), cpp11::as_cpp<cpp11::decay_t<bool>>(use_abs), cpp11::as_cpp<cpp11::decay_t<strings>>(row_names), cpp11::as_cpp<cpp11::decay_t<strings>>(col_names)));
+  END_CPP11
+}
 
 extern "C" {
 static const R_CallMethodDef CallEntries[] = {
-    {"_MCView_mcview_sanity_cpp", (DL_FUNC) &_MCView_mcview_sanity_cpp, 0},
+    {"_MCView_mcview_sanity_cpp",    (DL_FUNC) &_MCView_mcview_sanity_cpp,    0},
+    {"_MCView_top_fold_per_col_cpp", (DL_FUNC) &_MCView_top_fold_per_col_cpp, 7},
     {NULL, NULL, 0}
 };
 }
