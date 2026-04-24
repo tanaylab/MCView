@@ -47,19 +47,7 @@ dataset_ls <- function() {
 #'
 #' @noRd
 calc_gg_mc_top_cor <- function(egc, k = 30, egc_epsilon = 1e-5, daf_obj = NULL) {
-    # Try Julia acceleration when a DAF object is available
-    if (!is.null(daf_obj)) {
-        julia_result <- julia_calc_gg_mc_top_cor(
-            daf_obj,
-            egc_epsilon = egc_epsilon,
-            k = k
-        )
-        if (!is.null(julia_result) && nrow(julia_result) > 0) {
-            return(julia_result)
-        }
-    }
-
-    # R fallback: full N×N correlation matrix
+    # Full N×N correlation matrix (BLAS-backed via tgs_cross_cor_blas)
     lfp <- log2(egc + egc_epsilon)
 
     cm <- tryCatch(

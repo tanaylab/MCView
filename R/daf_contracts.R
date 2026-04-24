@@ -1510,60 +1510,42 @@ mcview_cache_contract <- function() {
 precompute_mcview_cache <- function(daf_obj, verbose = TRUE) {
     if (verbose) cli::cli_alert_info("Precomputing MCView cache vectors...")
 
-    # Try Julia-accelerated path for top genes
-    jl_top <- julia_precompute_top_genes(daf_obj, egc_epsilon = 1e-5)
-    if (!is.null(jl_top)) {
-        if (verbose) cli::cli_alert_info("Using Julia for top genes computation")
-        daf_obj <- dafr::set_vector(daf_obj, "metacell", "mcview_cache_top1_gene", jl_top$top1_gene)
-        daf_obj <- dafr::set_vector(daf_obj, "metacell", "mcview_cache_top2_gene", jl_top$top2_gene)
-        daf_obj <- dafr::set_vector(daf_obj, "metacell", "mcview_cache_top1_lfp", jl_top$top1_lfp)
-        daf_obj <- dafr::set_vector(daf_obj, "metacell", "mcview_cache_top2_lfp", jl_top$top2_lfp)
-    } else {
-        # R fallback for top genes
+    # Compute top genes from lfp
+    mc_mat <- dafr::get_matrix(daf_obj, "metacell", "gene", "UMIs")
+    mc_sum <- dafr::get_vector(daf_obj, "metacell", "total_UMIs")
+
+    egc <- sweep(mc_mat, 1, mc_sum, "/")
+    gene_means <- colMeans(egc)
+    gene_means[gene_means == 0] <- 1e-10
+    lfp <- log2(sweep(egc, 2, gene_means, "/") + 1e-5)
+    lfp <- as.matrix(lfp)
+
+    gene_names <- colnames(mc_mat)
+
+    # Top-2 genes per metacell (lfp is metacell x gene).
+    tops <- top2_per_row(lfp)
+    top1_gene <- gene_names[tops$top1_idx]
+    top2_gene <- gene_names[tops$top2_idx]
+    top1_lfp <- tops$top1_val
+    top2_lfp <- tops$top2_val
+
+    daf_obj <- dafr::set_vector(daf_obj, "metacell", "mcview_cache_top1_gene", top1_gene)
+    daf_obj <- dafr::set_vector(daf_obj, "metacell", "mcview_cache_top2_gene", top2_gene)
+    daf_obj <- dafr::set_vector(daf_obj, "metacell", "mcview_cache_top1_lfp", top1_lfp)
+    daf_obj <- dafr::set_vector(daf_obj, "metacell", "mcview_cache_top2_lfp", top2_lfp)
+
+    # Compute gene statistics
+    if (!exists("egc", inherits = FALSE)) {
         mc_mat <- dafr::get_matrix(daf_obj, "metacell", "gene", "UMIs")
         mc_sum <- dafr::get_vector(daf_obj, "metacell", "total_UMIs")
-
         egc <- sweep(mc_mat, 1, mc_sum, "/")
-        gene_means <- colMeans(egc)
-        gene_means[gene_means == 0] <- 1e-10
-        lfp <- log2(sweep(egc, 2, gene_means, "/") + 1e-5)
-        lfp <- as.matrix(lfp)
-
         gene_names <- colnames(mc_mat)
-
-        # Top-2 genes per metacell (lfp is metacell x gene).
-        tops <- top2_per_row(lfp)
-        top1_gene <- gene_names[tops$top1_idx]
-        top2_gene <- gene_names[tops$top2_idx]
-        top1_lfp <- tops$top1_val
-        top2_lfp <- tops$top2_val
-
-        daf_obj <- dafr::set_vector(daf_obj, "metacell", "mcview_cache_top1_gene", top1_gene)
-        daf_obj <- dafr::set_vector(daf_obj, "metacell", "mcview_cache_top2_gene", top2_gene)
-        daf_obj <- dafr::set_vector(daf_obj, "metacell", "mcview_cache_top1_lfp", top1_lfp)
-        daf_obj <- dafr::set_vector(daf_obj, "metacell", "mcview_cache_top2_lfp", top2_lfp)
     }
-
-    # Try Julia-accelerated path for gene statistics
-    jl_stats <- julia_precompute_gene_stats(daf_obj)
-    if (!is.null(jl_stats)) {
-        if (verbose) cli::cli_alert_info("Using Julia for gene statistics computation")
-        daf_obj <- dafr::set_vector(daf_obj, "gene", "mcview_cache_max_expr", jl_stats$max_expr)
-        daf_obj <- dafr::set_vector(daf_obj, "gene", "mcview_cache_total_expr", jl_stats$total_expr)
-    } else {
-        # R fallback for gene statistics
-        if (!exists("egc", inherits = FALSE)) {
-            mc_mat <- dafr::get_matrix(daf_obj, "metacell", "gene", "UMIs")
-            mc_sum <- dafr::get_vector(daf_obj, "metacell", "total_UMIs")
-            egc <- sweep(mc_mat, 1, mc_sum, "/")
-            gene_names <- colnames(mc_mat)
-        }
-        max_expr <- matrixStats::colMaxs(egc)
-        names(max_expr) <- gene_names
-        total_expr <- colSums(egc)
-        daf_obj <- dafr::set_vector(daf_obj, "gene", "mcview_cache_max_expr", max_expr)
-        daf_obj <- dafr::set_vector(daf_obj, "gene", "mcview_cache_total_expr", total_expr)
-    }
+    max_expr <- matrixStats::colMaxs(egc)
+    names(max_expr) <- gene_names
+    total_expr <- colSums(egc)
+    daf_obj <- dafr::set_vector(daf_obj, "gene", "mcview_cache_max_expr", max_expr)
+    daf_obj <- dafr::set_vector(daf_obj, "gene", "mcview_cache_total_expr", total_expr)
 
     if (verbose) cli::cli_alert_success("Cache vectors precomputed")
 

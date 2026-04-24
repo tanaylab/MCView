@@ -15,12 +15,6 @@ calc_marker_genes <- function(mc_egc,
                               fold_change_reg = 0.1,
                               use_abs = TRUE,
                               daf_obj = NULL) {
-    # NOTE: The Julia path (julia_calc_marker_genes) is intentionally NOT used
-    # here. It rebuilds the full EGC matrix from DAF on every call, making it
-    # ~10x slower than the R path when mc_egc is already cached in R memory
-    # (benchmarked: Julia ~45s vs R ~5s on 28K genes x 2.4K metacells).
-    # The R implementation using matrixStats is already vectorized and fast.
-
     mc_egc <- log2(mc_egc + 1e-5)
 
     max_log_fractions_of_genes <- matrixStats::rowMaxs(mc_egc)

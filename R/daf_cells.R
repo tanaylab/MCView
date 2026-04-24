@@ -193,16 +193,7 @@ get_cell_grouping_fields <- function(dataset, max_cardinality = 1000) {
     string_candidates <- get_string_vectors_from_metadata(dataset, candidates)
 
     if (!is.null(string_candidates)) {
-        # Phase 2: Check cardinality via a single Julia call (avoids per-vector
-        # R<->Julia round-trips and never transfers full vectors to R).
-        julia_result <- julia_get_grouping_fields(
-            query_daf, "cell", string_candidates, max_cardinality
-        )
-        if (!is.null(julia_result)) {
-            return(julia_result)
-        }
-
-        # Julia unavailable: fall back to R, but only for string candidates
+        # Phase 2: restrict candidates to the string-typed vectors identified above
         candidates <- string_candidates
     }
 
@@ -665,13 +656,7 @@ get_group_qc_stats <- function(dataset, group_field) {
         cli_abort("Cells DAF not available for dataset '{dataset}'")
     }
 
-    # Try batched Julia helper first (single R<->Julia call instead of 3)
-    julia_result <- julia_group_qc_stats(cells_daf, group_field)
-    if (!is.null(julia_result)) {
-        return(julia_result)
-    }
-
-    # Fallback: 3 sequential DAF GroupBy queries
+    # 3 sequential DAF GroupBy queries
     has_total_umis <- dafr::has_vector(cells_daf, "cell", "total_UMIs")
 
     # Count cells per group
