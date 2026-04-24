@@ -1108,8 +1108,9 @@ populate_mcview_derived <- function(
         {
             if (dir.exists(daf_path)) {
                 dafr::files_daf(daf_path, mode = "r")
-            } else if (file.exists(daf_path) && grepl("\\.h5$", daf_path)) {
-                dafr::h5df(daf_path, mode = "r")
+            } else if (file.exists(daf_path) &&
+                       grepl("\\.h5ad$|\\.h5$", daf_path, ignore.case = TRUE)) {
+                dafr::h5ad_as_daf(daf_path)
             } else {
                 dafr::open_daf(daf_path, mode = "r")
             }

@@ -183,15 +183,14 @@ load_daf_from_path <- function(path) {
         cli_abort("Path does not exist: {.path {path}}")
     }
 
-    # Check if it's an H5 file
-    if (grepl("\\.h5$", path, ignore.case = TRUE)) {
-        cli_alert_info("Loading DAF from H5 file: {.path {path}}")
-        return(dafr::h5df(path, mode = "r"))
+    # h5ad (AnnData-shaped HDF5)
+    if (grepl("\\.h5ad$|\\.h5$", path, ignore.case = TRUE)) {
+        cli_alert_info("Loading DAF from h5ad file: {.path {path}}")
+        return(dafr::h5ad_as_daf(path))
     }
 
-    # Check if it's a directory (files_daf)
+    # files_daf directory
     if (dir.exists(path)) {
-        # Check for daf.json marker file
         if (file.exists(file.path(path, "daf.json"))) {
             cli_alert_info("Loading DAF from directory: {.path {path}}")
             return(dafr::files_daf(path, mode = "r"))
