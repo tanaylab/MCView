@@ -33,3 +33,6 @@ dev/
 benchmarks/results/*.json
 AGENTS.md
 test_output/
+src/*.o
+src/*.so
+src/*.dll
