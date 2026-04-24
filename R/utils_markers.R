@@ -22,7 +22,7 @@ calc_marker_genes <- function(mc_egc,
     # The R implementation using matrixStats is already vectorized and fast.
 
     # R path -- fuse log2 + epsilon via lazy ALTREP view, then densify
-    mc_egc <- jlview::jlview_log2p(mc_egc, 1e-5)
+    mc_egc <- log2(mc_egc + 1e-5)
 
     max_log_fractions_of_genes <- matrixStats::rowMaxs(mc_egc)
 

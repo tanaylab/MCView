@@ -126,8 +126,7 @@ calc_top_cors <- function(dataset, gene, type, data_vec, metacell_filter, exclud
     mc_egc <- get_mc_egc(dataset, atlas = atlas,
         metacells = if (is.null(data_vec)) metacell_filter else NULL)
 
-    # log2(egc + epsilon) as lazy ALTREP view, then densify for tgs_cor
-    lfp <- jlview::jlview_log2p(mc_egc, mcv_get("egc_epsilon"))
+    lfp <- log2(mc_egc + mcv_get("egc_epsilon"))
     if (!is.null(exclude)) {
         exclude_idx <- which(rownames(lfp) %in% exclude)
         if (length(exclude_idx) > 0) {
