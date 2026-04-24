@@ -656,39 +656,52 @@ get_group_qc_stats <- function(dataset, group_field) {
         cli_abort("Cells DAF not available for dataset '{dataset}'")
     }
 
-    # 3 sequential DAF GroupBy queries
-    has_total_umis <- dafr::has_vector(cells_daf, "cell", "total_UMIs")
+    cache_key <- paste0("group_qc_stats::", group_field)
+    cached <- mcv_cache_get(dataset, cache_key)
+    if (!is.null(cached)) return(cached)
 
-    # Count cells per group
-    count_query <- glue::glue("@ cell : {group_field} / {group_field} >> Count")
-    counts <- tryCatch(cells_daf[count_query], error = function(e) NULL)
-    if (is.null(counts)) {
-        cli_abort("Failed to compute cell counts by '{group_field}'")
+    labels <- dafr::get_vector(cells_daf, "cell", group_field)
+    if (is.null(labels) || length(labels) == 0L) {
+        cli_abort("group field '{group_field}' is empty")
     }
 
+    has_total_umis <- dafr::has_vector(cells_daf, "cell", "total_UMIs")
+
     if (!has_total_umis) {
-        return(tibble::tibble(
+        counts <- table(labels)
+        out <- tibble::tibble(
             group_id = names(counts),
             n_cells = as.integer(counts),
             total_umis = NA_real_,
             median_umis_per_cell = NA_real_
-        ) %>% dplyr::arrange(group_id))
+        ) %>% dplyr::arrange(group_id)
+        mcv_cache_set(dataset, cache_key, out)
+        return(out)
     }
 
-    # Sum and median of total_UMIs per group
-    sum_query <- glue::glue("@ cell : total_UMIs / {group_field} >> Sum")
-    med_query <- glue::glue("@ cell : total_UMIs / {group_field} >> Median")
-    total_sums <- cells_daf[sum_query]
-    medians <- cells_daf[med_query]
+    umis <- as.numeric(dafr::get_vector(cells_daf, "cell", "total_UMIs"))
+    if (length(umis) != length(labels)) {
+        cli_abort(
+            "cell-axis length mismatch: labels={length(labels)} vs total_UMIs={length(umis)}"
+        )
+    }
 
-    # Align by group name
-    groups <- names(counts)
-    tibble::tibble(
-        group_id = groups,
-        n_cells = as.integer(counts[groups]),
-        total_umis = as.numeric(total_sums[groups]),
-        median_umis_per_cell = as.numeric(medians[groups])
-    ) %>% dplyr::arrange(group_id)
+    splits <- split(umis, labels)
+    ord <- order(names(splits))
+    splits <- splits[ord]
+    group_ids <- names(splits)
+    n_cells <- vapply(splits, length, integer(1L))
+    total_umis <- vapply(splits, sum, numeric(1L))
+    median_umis <- vapply(splits, stats::median, numeric(1L))
+
+    out <- tibble::tibble(
+        group_id = group_ids,
+        n_cells = as.integer(n_cells),
+        total_umis = as.numeric(total_umis),
+        median_umis_per_cell = as.numeric(median_umis)
+    )
+    mcv_cache_set(dataset, cache_key, out)
+    out
 }
 
 # ==============================================================================
