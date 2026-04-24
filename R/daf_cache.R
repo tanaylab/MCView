@@ -1079,28 +1079,6 @@ populate_mcview_derived <- function(
         cli::cli_abort("dafr package is required for cache population")
     }
 
-    # Ensure Julia is set up (use sysimage if available for faster startup)
-    tryCatch(
-        {
-            setup_args <- list()
-            sysimage <- Sys.getenv("JULIA_SYSIMAGE", "")
-            if (!nzchar(sysimage)) {
-                conda_prefix <- Sys.getenv("CONDA_PREFIX", "")
-                if (nzchar(conda_prefix)) {
-                    candidate <- file.path(conda_prefix, "share", "julia", "sysimage_daf.so")
-                    if (file.exists(candidate)) sysimage <- candidate
-                }
-            }
-            if (nzchar(sysimage) && file.exists(sysimage)) {
-                setup_args$sysimage_path <- sysimage
-            }
-            do.call(dafr::setup_daf, setup_args)
-        },
-        error = function(e) {
-            cli::cli_abort("Failed to initialize dafr: {e$message}")
-        }
-    )
-
     if (verbose) cli::cli_alert_info("Opening DAF: {daf_path}")
 
     # Open base DAF
