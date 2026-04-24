@@ -1523,10 +1523,8 @@ precompute_mcview_cache <- function(daf_obj, verbose = TRUE) {
 
         gene_names <- colnames(mc_mat)
 
-        # Find top-2 genes per metacell without mutation.
-        # lfp is metacell x gene; jlview_top2_per_row finds top-2 columns
-        # (genes) per row (metacell).
-        tops <- jlview::jlview_top2_per_row(lfp)
+        # Top-2 genes per metacell (lfp is metacell x gene).
+        tops <- top2_per_row(lfp)
         top1_gene <- gene_names[tops$top1_idx]
         top2_gene <- gene_names[tops$top2_idx]
         top1_lfp <- tops$top1_val

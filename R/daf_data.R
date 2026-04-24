@@ -902,11 +902,9 @@ convert_daf_metacell_types <- function(daf_obj) {
         )
 
         if (!is.null(mc_egc) && ncol(mc_egc) > 0) {
-            # Find top-2 genes per metacell without transpose or mutation.
-            # mc_egc is gene x metacell; jlview_top2_per_col finds top-2 rows
-            # (genes) per column (metacell) entirely in Julia on the pinned array.
+            # Top-2 genes per metacell (mc_egc is gene x metacell).
             gene_names_egc <- rownames(mc_egc)
-            tops <- jlview::jlview_top2_per_col(mc_egc)
+            tops <- top2_per_col(mc_egc)
             mc_types$top1_gene <- gene_names_egc[tops$top1_idx]
             mc_types$top1_lfp <- log2(tops$top1_val + 1e-5)
             mc_types$top2_gene <- gene_names_egc[tops$top2_idx]

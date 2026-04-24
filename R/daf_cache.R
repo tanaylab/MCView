@@ -727,10 +727,8 @@ precompute_daf_metacell_top_genes <- function(daf_obj, egc_epsilon = 1e-5, force
     metacell_names <- dafr::axis_entries(daf_obj, "metacell")
     gene_names <- rownames(mc_egc)
 
-    # Find top-2 genes per metacell without transpose or mutation.
-    # mc_egc is gene x metacell; jlview_top2_per_col finds top-2 rows (genes)
-    # per column (metacell) entirely in Julia on the pinned array.
-    tops <- jlview::jlview_top2_per_col(mc_egc)
+    # Top-2 genes per metacell (mc_egc is gene x metacell).
+    tops <- top2_per_col(mc_egc)
     top1_gene <- gene_names[tops$top1_idx]
     top1_lfp <- log2(tops$top1_val + egc_epsilon)
     top2_gene <- gene_names[tops$top2_idx]
