@@ -6,6 +6,27 @@
 .future_plan_state <- new.env(parent = emptyenv())
 .future_plan_state$initialized <- FALSE
 
+#' Assert that dafr memory-mapping is enabled
+#'
+#' MCView requires `dafr.mmap = TRUE` to avoid materializing full matrices
+#' through R copies. Aborts with a helpful message if the option is not set.
+#'
+#' @return TRUE invisibly
+#' @noRd
+.assert_dafr_mmap <- function() {
+    mmap_enabled <- tryCatch(
+        isTRUE(dafr::dafr_opt("dafr.mmap")),
+        error = function(e) FALSE
+    )
+    if (!mmap_enabled) {
+        cli::cli_abort(c(
+            "MCView requires {.code dafr.mmap = TRUE}.",
+            "i" = "Set via {.code options(dafr.mmap = TRUE)} before {.code library(MCView)}."
+        ))
+    }
+    invisible(TRUE)
+}
+
 #' Ensure future plan is set to multisession (lazy, one-time)
 #'
 #' Called on first use of future_promise (e.g., Flow tab's plot_vein).
@@ -106,6 +127,9 @@ run_app <- function(daf,
 
     # Initialize environment
     init_mcview_env()
+
+    # Enforce dafr memory-mapping before opening any DAF
+    .assert_dafr_mmap()
 
     # Handle path input - convert to DAF object
     if (is.character(daf)) {
