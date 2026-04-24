@@ -107,7 +107,7 @@ calc_top_cors <- function(dataset, gene, type, data_vec, metacell_filter, exclud
     } else {
         mc_egc <- get_mc_egc(dataset, atlas = atlas,
             metacells = if (is.null(data_vec)) metacell_filter else NULL)
-        lfp <- log2(mc_egc + mcv_get("egc_epsilon"))
+        lfp <- dafr::fast_log(mc_egc, eps = mcv_get("egc_epsilon"), base = 2)
     }
     if (!is.null(exclude)) {
         exclude_idx <- which(rownames(lfp) %in% exclude)

@@ -15,7 +15,7 @@ calc_marker_genes <- function(mc_egc,
                               fold_change_reg = 0.1,
                               use_abs = TRUE,
                               daf_obj = NULL) {
-    mc_egc <- log2(mc_egc + 1e-5)
+    mc_egc <- dafr::fast_log(mc_egc, eps = 1e-5, base = 2)
 
     max_log_fractions_of_genes <- matrixStats::rowMaxs(mc_egc)
 

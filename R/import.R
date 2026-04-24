@@ -47,7 +47,7 @@ dataset_ls <- function() {
 #'
 #' @noRd
 calc_gg_mc_top_cor <- function(egc, k = 30, egc_epsilon = 1e-5, daf_obj = NULL) {
-    lfp <- log2(egc + egc_epsilon)
+    lfp <- dafr::fast_log(egc, eps = egc_epsilon, base = 2)
     streaming_top_k_cor(
         X = lfp, k = k, diag = FALSE, min_cor = 0
     )
