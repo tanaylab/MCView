@@ -41,7 +41,7 @@ test_that("get_cells_daf returns a chained Daf object", {
 
     chained <- get_cells_daf("test_data")
     expect_true(!is.null(chained))
-    expect_true(inherits(chained, "Daf"))
+    expect_true(dafr::is_daf(chained))
 })
 
 test_that("get_cells_daf auto-detects sibling cells DAF", {
@@ -56,7 +56,7 @@ test_that("get_cells_daf auto-detects sibling cells DAF", {
     cells_path <- gsub("metacells", "cells", get_test_daf_path())
     if (dir.exists(cells_path)) {
         expect_true(!is.null(result))
-        expect_true(inherits(result, "Daf"))
+        expect_true(dafr::is_daf(result))
     } else {
         expect_null(result)
     }

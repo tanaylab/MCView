@@ -148,12 +148,12 @@ mcview_contract_to_dafr <- function(contract) {
         }
     }
 
-    data <- list()
+    vectors <- list()
     all_vectors <- c(contract$vectors %||% list(), contract$graph_vectors %||% list())
     for (spec in all_vectors) {
-        data <- c(
-            data,
-            list(dafr::vector_contract(
+        vectors <- c(
+            vectors,
+            list(dafr::contract_vector(
                 spec$axis,
                 spec$name,
                 mcview_expectation_to_dafr(spec$expectation),
@@ -163,11 +163,12 @@ mcview_contract_to_dafr <- function(contract) {
         )
     }
 
+    matrices <- list()
     if (!is.null(contract$matrices)) {
         for (spec in contract$matrices) {
-            data <- c(
-                data,
-                list(dafr::matrix_contract(
+            matrices <- c(
+                matrices,
+                list(dafr::contract_matrix(
                     spec$rows_axis,
                     spec$cols_axis,
                     spec$name,
@@ -179,11 +180,12 @@ mcview_contract_to_dafr <- function(contract) {
         }
     }
 
+    scalars <- list()
     if (!is.null(contract$scalars)) {
         for (spec in contract$scalars) {
-            data <- c(
-                data,
-                list(dafr::scalar_contract(
+            scalars <- c(
+                scalars,
+                list(dafr::contract_scalar(
                     spec$name,
                     mcview_expectation_to_dafr(spec$expectation),
                     spec$type,
@@ -193,7 +195,13 @@ mcview_contract_to_dafr <- function(contract) {
         }
     }
 
-    dafr::create_contract(axes = axes, data = data, is_relaxed = TRUE)
+    dafr::create_contract(
+        scalars = scalars,
+        vectors = vectors,
+        matrices = matrices,
+        axes = axes,
+        is_relaxed = TRUE
+    )
 }
 
 # ==============================================================================
@@ -1651,17 +1659,17 @@ validate_mcview_contract <- function(daf_obj,
     }
 
     daf_contract <- mcview_contract_to_dafr(contract)
-    computation <- if (!is.null(contract$name)) contract$name else "MCView"
-    contract_daf <- dafr::contractor(paste0("MCView.", computation), daf_contract, daf_obj)
 
-    verify_result <- dafr::verify_contract(contract_daf$daf, contract_daf$contract)
-    if (!verify_result$valid) {
-        result$valid <- FALSE
-        result$errors <- c(result$errors, verify_result$errors)
-    }
-    if (length(verify_result$warnings) > 0) {
-        result$warnings <- c(result$warnings, verify_result$warnings)
-    }
+    # native dafr's verify_contract(contract, daf) stops on violation and
+    # returns `daf` invisibly on success. Capture any error into result$errors
+    # instead of letting it propagate.
+    tryCatch(
+        dafr::verify_contract(daf_contract, daf_obj),
+        error = function(e) {
+            result$valid <<- FALSE
+            result$errors <<- c(result$errors, conditionMessage(e))
+        }
+    )
 
     if (!is.null(contract$axes)) {
         for (axis_name in names(contract$axes)) {

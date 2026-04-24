@@ -157,7 +157,7 @@ test_that("init_single_daf_mode() works with the OBK DAF", {
 
     # DAF object should be retrievable
     daf_obj <- get_dataset_daf("obk_test")
-    expect_true(inherits(daf_obj, "Daf"))
+    expect_true(dafr::is_daf(daf_obj))
 })
 
 test_that("config is properly populated after init_single_daf_mode", {
@@ -234,8 +234,8 @@ test_that("multi-dataset mode works with same DAF under two names", {
     expect_true("dataset_b" %in% ds_names)
 
     # Both should have DAF objects
-    expect_true(inherits(get_dataset_daf("dataset_a"), "Daf"))
-    expect_true(inherits(get_dataset_daf("dataset_b"), "Daf"))
+    expect_true(dafr::is_daf(get_dataset_daf("dataset_a")))
+    expect_true(dafr::is_daf(get_dataset_daf("dataset_b")))
 
     # Config should be populated
     config <- mcv_get("config")

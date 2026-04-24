@@ -557,21 +557,9 @@ daf_is_writable <- function(daf_obj) {
 }
 
 daf_storage_path <- function(daf_obj) {
-    fields <- daf_description_fields(daf_obj, deep = TRUE)
-    if (!is.null(fields$path) && nzchar(fields$path)) {
-        return(fields$path)
-    }
-    if (!is.null(fields$base) && nzchar(fields$base)) {
-        base_path <- sub("^\\S+\\s+", "", fields$base)
-        if (nzchar(base_path)) {
-            return(base_path)
-        }
-    }
-    if (!is.null(fields$root) && nzchar(fields$root)) {
-        match <- regexpr("/[^ ]+\\.h5[^ ]*", fields$root)
-        if (match > 0) {
-            return(regmatches(fields$root, match))
-        }
+    path <- tryCatch(dafr::complete_path(daf_obj), error = function(e) NULL)
+    if (!is.null(path) && nzchar(path)) {
+        return(path)
     }
     NULL
 }

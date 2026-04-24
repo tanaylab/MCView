@@ -15,7 +15,7 @@ test_that("DAF initialization works", {
     skip_if_no_daf()
     daf <- dafr::open_daf(get_test_daf_path())
 
-    expect_true(inherits(daf, "Daf"))
+    expect_true(dafr::is_daf(daf))
 
     # Check axes exist using axis_entries
     expect_true(length(dafr::axis_entries(daf, "metacell")) > 0)
@@ -354,7 +354,7 @@ test_that("get_cache_daf returns NULL when no cache", {
     cache_daf <- get_cache_daf("test_data")
 
     # May or may not be NULL depending on config, but shouldn't error
-    expect_true(is.null(cache_daf) || inherits(cache_daf, "Daf"))
+    expect_true(is.null(cache_daf) || dafr::is_daf(cache_daf))
 })
 
 test_that("get_base_daf returns original DAF", {
@@ -370,7 +370,7 @@ test_that("get_base_daf returns original DAF", {
     base_daf <- get_base_daf("test_with_cache")
 
     expect_true(!is.null(base_daf))
-    expect_true(inherits(base_daf, "Daf"))
+    expect_true(dafr::is_daf(base_daf))
 })
 
 test_that("get_complete_daf returns chained DAF", {
@@ -384,7 +384,7 @@ test_that("get_complete_daf returns chained DAF", {
     complete_daf <- get_complete_daf("test_complete")
 
     expect_true(!is.null(complete_daf))
-    expect_true(inherits(complete_daf, "Daf"))
+    expect_true(dafr::is_daf(complete_daf))
 })
 
 # ==============================================================================
@@ -522,7 +522,7 @@ test_that("get_daf_for_query returns dataset DAF when atlas=FALSE", {
     result <- get_daf_for_query("test_data", atlas = FALSE)
 
     expect_true(!is.null(result))
-    expect_true(inherits(result, "Daf"))
+    expect_true(dafr::is_daf(result))
 })
 
 test_that("get_daf_for_query returns NULL for missing dataset", {
