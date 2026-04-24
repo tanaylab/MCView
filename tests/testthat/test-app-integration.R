@@ -295,29 +295,14 @@ test_that("run_app() starts and responds with HTTP 200", {
     # Launch the app in a background R process
     bg <- callr::r_bg(
         function(daf_path, port, pkg_root) {
-            # Set up Julia environment for dafr
-            Sys.setenv(JULIA_PROJECT = "@dafr-mcview")
-            Sys.setenv(JULIA_LOAD_PATH = "@:@dafr-mcview:@stdlib")
-            conda_prefix <- Sys.getenv("CONDA_PREFIX", "")
-            if (nzchar(conda_prefix)) {
-                Sys.setenv(JULIA_DEPOT_PATH = paste0(conda_prefix, "/share/julia:"))
-                options(dafr.JULIA_HOME = file.path(conda_prefix, "bin"))
-            }
-
-            # Load package from source in dev mode
             devtools::load_all(pkg_root, quiet = TRUE)
-            # Use sysimage if available for faster Julia startup
-            sysimage <- Sys.getenv("JULIA_SYSIMAGE", "")
-            if (!nzchar(sysimage) && nzchar(conda_prefix)) {
-                candidate <- file.path(conda_prefix, "share", "julia", "sysimage_daf.so")
-                if (file.exists(candidate)) sysimage <- candidate
+            daf <- if (dir.exists(daf_path)) {
+                dafr::files_daf(daf_path, mode = "r")
+            } else if (grepl("\\.h5ad$|\\.h5$", daf_path, ignore.case = TRUE)) {
+                dafr::h5ad_as_daf(daf_path)
+            } else {
+                dafr::open_daf(daf_path)
             }
-            setup_args <- list(pkg_check = FALSE, julia_environment = "custom")
-            if (nzchar(sysimage) && file.exists(sysimage)) {
-                setup_args$sysimage_path <- sysimage
-            }
-            do.call(dafr::setup_daf, setup_args)
-            daf <- dafr::open_daf(daf_path)
             run_app(
                 daf,
                 name = "integration_test",
@@ -326,12 +311,7 @@ test_that("run_app() starts and responds with HTTP 200", {
                 launch.browser = FALSE
             )
         },
-        args = list(daf_path = get_test_daf_path(), port = port, pkg_root = pkg_root),
-        env = c(
-            JULIA_PROJECT = "@dafr-mcview",
-            JULIA_LOAD_PATH = "@:@dafr-mcview:@stdlib",
-            CONDA_PREFIX = Sys.getenv("CONDA_PREFIX", "")
-        )
+        args = list(daf_path = get_test_daf_path(), port = port, pkg_root = pkg_root)
     )
 
     # Ensure we clean up the background process

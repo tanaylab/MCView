@@ -118,10 +118,10 @@ cleanup_mcview_env <- function() {
                     if (!is.null(mc_data[[ds_name]][["top_cor_genes"]])) {
                         mc_data[[ds_name]][["top_cor_genes"]] <- list()
                     }
-                    # Empty DAF internal caches (releases Julia-side memory)
+                    # Empty DAF internal caches
                     for (daf_field in c("daf_obj", "cache_daf", "base_daf", "cells_daf", "chained_cells_daf")) {
                         daf_ref <- mc_data[[ds_name]][[daf_field]]
-                        if (!is.null(daf_ref) && inherits(daf_ref, "Daf")) {
+                        if (!is.null(daf_ref) && dafr::is_daf(daf_ref)) {
                             tryCatch(
                                 dafr::empty_cache(daf_ref),
                                 error = function(e) NULL
@@ -144,7 +144,7 @@ cleanup_mcview_env <- function() {
 
     # Clear atlas DAF cache
     atlas <- mcv_get("atlas")
-    if (!is.null(atlas) && inherits(atlas, "Daf")) {
+    if (!is.null(atlas) && dafr::is_daf(atlas)) {
         tryCatch(
             dafr::empty_cache(atlas),
             error = function(e) NULL

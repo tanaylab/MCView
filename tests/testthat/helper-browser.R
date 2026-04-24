@@ -73,9 +73,9 @@ skip_if_no_browser <- function() {
 
 #' Launch MCView in a background R process
 #'
-#' Starts the app via callr::r_bg() with all Julia environment variables
-#' configured. Uses devtools::load_all() for source loading, then calls
-#' run_app() and explicitly starts the server with shiny::runApp().
+#' Starts the app via callr::r_bg(). Uses devtools::load_all() for source
+#' loading, then calls run_app() and explicitly starts the server with
+#' shiny::runApp().
 #'
 #' @param daf_path Path to the DAF dataset
 #' @param port Port number for the Shiny server
@@ -92,41 +92,25 @@ launch_mcview_bg <- function(daf_path = get_test_daf_path(),
         }
     }
 
-    conda_prefix <- Sys.getenv("CONDA_PREFIX", "")
-
     tryCatch(
         {
             bg <- callr::r_bg(
-                function(daf_path, port, pkg_root, conda_prefix) {
-                    # Set up Julia environment for dafr
-                    Sys.setenv(JULIA_PROJECT = "@dafr-mcview")
-                    Sys.setenv(JULIA_LOAD_PATH = "@:@dafr-mcview:@stdlib")
-                    if (nzchar(conda_prefix)) {
-                        Sys.setenv(JULIA_DEPOT_PATH = paste0(conda_prefix, "/share/julia:"))
-                        options(dafr.JULIA_HOME = file.path(conda_prefix, "bin"))
-                    }
-
+                function(daf_path, port, pkg_root) {
                     # Load package from source in dev mode
                     devtools::load_all(pkg_root, quiet = TRUE)
 
-                    # Initialize Julia/DAF (use sysimage if available)
-                    sysimage <- Sys.getenv("JULIA_SYSIMAGE", "")
-                    if (!nzchar(sysimage) && nzchar(conda_prefix)) {
-                        candidate <- file.path(conda_prefix, "share", "julia", "sysimage_daf.so")
-                        if (file.exists(candidate)) sysimage <- candidate
+                    # Open DAF dataset (dir → files_daf; .h5/.h5ad → h5ad_as_daf)
+                    daf <- if (dir.exists(daf_path)) {
+                        dafr::files_daf(daf_path, mode = "r")
+                    } else if (grepl("\\.h5ad$|\\.h5$", daf_path, ignore.case = TRUE)) {
+                        dafr::h5ad_as_daf(daf_path)
+                    } else {
+                        dafr::open_daf(daf_path)
                     }
-                    setup_args <- list(pkg_check = FALSE, julia_environment = "custom")
-                    if (nzchar(sysimage) && file.exists(sysimage)) {
-                        setup_args$sysimage_path <- sysimage
-                    }
-                    do.call(dafr::setup_daf, setup_args)
 
-                    # Open DAF dataset
-                    daf <- dafr::open_daf(daf_path)
-
-                    # Create the Shiny app object
-                    # CRITICAL: run_app() returns a Shiny app object. In non-interactive
-                    # mode, we must explicitly call shiny::runApp() to start the server.
+                    # Create the Shiny app object.
+                    # run_app() returns a Shiny app object; in non-interactive mode
+                    # we must explicitly call shiny::runApp() to start the server.
                     app <- run_app(
                         daf,
                         name = "browser_test",
@@ -139,13 +123,7 @@ launch_mcview_bg <- function(daf_path = get_test_daf_path(),
                 args = list(
                     daf_path = daf_path,
                     port = port,
-                    pkg_root = pkg_root,
-                    conda_prefix = conda_prefix
-                ),
-                env = c(
-                    JULIA_PROJECT = "@dafr-mcview",
-                    JULIA_LOAD_PATH = "@:@dafr-mcview:@stdlib",
-                    CONDA_PREFIX = conda_prefix
+                    pkg_root = pkg_root
                 )
             )
 

@@ -113,10 +113,10 @@ run_app <- function(daf,
     }
 
     # Initialize based on input type
-    if (inherits(daf, "Daf")) {
+    if (dafr::is_daf(daf)) {
         # Single DAF object
         timed("init_single_daf_mode", init_single_daf_mode(daf, name, config_file, profile, cache_in_daf = cache_in_daf))
-    } else if (is.list(daf) && length(daf) > 0 && all(sapply(daf, function(x) inherits(x, "Daf")))) {
+    } else if (is.list(daf) && length(daf) > 0 && all(sapply(daf, dafr::is_daf))) {
         # Multiple DAF objects (must be named)
         if (is.null(names(daf)) || any(names(daf) == "")) {
             cli_abort("When providing multiple DAF objects, the list must be named")
@@ -130,7 +130,7 @@ run_app <- function(daf,
     if (!is.null(cells_daf)) {
         cells_daf_path <- if (is.character(cells_daf)) cells_daf else NULL
         if (!is.null(cells_daf_path) && dir.exists(cells_daf_path)) {
-            dataset_name <- if (inherits(daf, "Daf")) name else names(daf)[1]
+            dataset_name <- if (dafr::is_daf(daf)) name else names(daf)[1]
             set_cells_daf(dataset_name, cells_daf_path)
             cli::cli_alert_success("Cells DAF set for '{dataset_name}': {cells_daf_path}")
         }

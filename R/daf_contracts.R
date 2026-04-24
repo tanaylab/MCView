@@ -1644,7 +1644,7 @@ validate_mcview_contract <- function(daf_obj,
         info = character()
     )
 
-    if (!inherits(daf_obj, "Daf")) {
+    if (!dafr::is_daf(daf_obj)) {
         result$valid <- FALSE
         result$errors <- c(result$errors, "Object is not a valid DAF object")
         return(result)
