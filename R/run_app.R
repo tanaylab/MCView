@@ -6,6 +6,21 @@
 .future_plan_state <- new.env(parent = emptyenv())
 .future_plan_state$initialized <- FALSE
 
+#' Ensure ggplotly's measurement device can open
+#'
+#' `plotly::ggplotly()` opens a temporary PNG device to measure panel sizes.
+#' On R builds without X11 capability, the default `bitmapType = "Xlib"`
+#' makes that device fail. Switch to cairo when it's available.
+#' @return TRUE invisibly
+#' @noRd
+.ensure_safe_bitmap_type <- function() {
+    if (identical(getOption("bitmapType"), "Xlib") &&
+        isFALSE(capabilities("X11")) && isTRUE(capabilities("cairo"))) {
+        options(bitmapType = "cairo")
+    }
+    invisible(TRUE)
+}
+
 #' Assert that dafr memory-mapping is enabled
 #'
 #' MCView requires `dafr.mmap = TRUE` to avoid materializing full matrices
@@ -130,6 +145,12 @@ run_app <- function(daf,
 
     # Initialize environment
     init_mcview_env()
+
+    # Force a usable bitmap device for ggplotly() panel-size measurement.
+    # callr/Docker/plain Rscript don't load ~/.Rprofile, so the child can
+    # inherit `bitmapType = "Xlib"` while the R build lacks X11 — every
+    # renderPlotly() then errors with "unable to start device PNG".
+    .ensure_safe_bitmap_type()
 
     # Enforce dafr memory-mapping before opening any DAF
     .assert_dafr_mmap()
