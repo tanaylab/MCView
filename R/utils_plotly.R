@@ -97,7 +97,7 @@ prepare_plotly_scatter <- function(p, tooltip = "tooltip_text", source = NULL,
     fig <- fig %>%
         sanitize_for_WebGL() %>%
         plotly::toWebGL() %>%
-        plotly::partial_bundle(type = "basic") %>%
+        plotly::partial_bundle() %>%
         sanitize_plotly_buttons(buttons = buttons)
 
     if (!is.null(globals)) {
