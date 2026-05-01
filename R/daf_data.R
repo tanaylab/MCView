@@ -1189,16 +1189,10 @@ convert_daf_gene_qc <- function(daf_obj) {
     # Handle max_expr: try precomputed vectors, then compute from UMIs matrix
     result <- add_optional_vec_with_fallback(result, daf_obj, "gene", "max_expr", "mcview_cache_gene_max_umis")
     if (!"max_expr" %in% colnames(result) && dafr::has_matrix(daf_obj, "metacell", "gene", "UMIs")) {
-        max_umis <- tryCatch(
-            {
-                # Compute per-gene max from UMIs matrix (gene x metacell after transpose)
-                umat <- dafr::get_matrix(daf_obj, "gene", "metacell", "UMIs")
-                matrixStats::rowMaxs(as.matrix(umat))
-            },
-            error = function(e) NULL
-        )
+        # Per-gene max via DAF reduction (OpenMP, no R-side densification).
+        max_umis <- tryCatch(daf_query_gene_max_umis(daf_obj), error = function(e) NULL)
         if (!is.null(max_umis)) {
-            result$max_expr <- max_umis
+            result$max_expr <- as.numeric(max_umis[result$gene])
         }
     }
 
