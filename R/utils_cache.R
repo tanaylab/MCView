@@ -338,6 +338,11 @@ calc_samp_metadata <- function(dataset) {
     if (is.null(metadata)) {
         return(NULL)
     }
+    if (!"samp_id" %in% colnames(metadata)) {
+        # cell_metadata has no samp_id source vector (e.g. OBK-style DAFs).
+        # Sample-level aggregations are unavailable in that case.
+        return(NULL)
+    }
     metadata <- metadata %>% select(-any_of(c("metacell", "cell_id", "outlier")))
     samp_columns <- metadata %>%
         group_by(samp_id) %>%
