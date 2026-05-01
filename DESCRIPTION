@@ -89,14 +89,12 @@ Suggests:
     processx,
     testthat,
     withr,
-    metacell,
     profvis
 VignetteBuilder:
     knitr
 SystemRequirements: C++11
 Remotes:
     tanaylab/tgutil,
-    tanaylab/metacell,
     tanaylab/dafr
 Encoding: UTF-8
 LazyData: true
