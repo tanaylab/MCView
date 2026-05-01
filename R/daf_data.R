@@ -336,9 +336,12 @@ daf_query_named_vector <- function(daf_obj, axis, property, filter = NULL) {
 #' @return Named vector with gene names
 #' @noRd
 daf_query_gene_agg <- function(daf_obj, agg_op) {
-    query <- paste0("@ metacell @ gene :: UMIs >> ", agg_op)
+    # `>-` (ReduceToRow) reduces along the row axis, returning one value per
+    # column-axis entry. For `@ metacell @ gene :: UMIs` that's per-gene.
+    # `>>` would collapse the whole matrix to a scalar (matches Julia
+    # DataAxesFormats.jl semantics), which is not what callers want here.
+    query <- paste0("@ metacell @ gene :: UMIs >- ", agg_op)
     result <- daf_obj[query]
-    # dafr may return a named vector; skip redundant names assignment.
     if (is.null(names(result)) && length(result) > 1) {
         names(result) <- dafr::axis_entries(daf_obj, "gene")
     }
