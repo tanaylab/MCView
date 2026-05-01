@@ -117,8 +117,6 @@ globalVariables(unique(c(
     "d", "dx", "dy", "from", "mc1", "mc2", "metacell", "range_x", "range_y", "to", "weight", "x", "x_mc1", "x_mc2", "y", "y_mc1", "y_mc2",
     # mc_mc_gene_scatter_df_reactive:
     "cell_type", "metacell",
-    # mctnetwork_g_t_types:
-    "flow", "g_src", "g_targ", "mc_t1", "mc_t2", "src_g", "targ_g", "time1", "time2", "type1", "type2",
     # metacell_colors_reactive:
     "mc_col", "metacell",
     # metacell_from_coords_proj:
@@ -222,7 +220,5 @@ globalVariables(unique(c(
     # verify_gene_modules:
     "gene",
     ":=", "sec_ord", "metacell_names",
-    "ord_mean",
-    # mctnetwork_mc_rank_from_color_ord (metacell v1 legacy):
-    "scdb_mctnetwork", "scdb_mc", "mctnetwork_get_flow_mat"
+    "ord_mean"
 )))
