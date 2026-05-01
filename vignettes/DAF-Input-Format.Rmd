@@ -156,7 +156,7 @@ with associated vectors. If missing, MCView computes correlations on-the-fly
 
 Additional cell-level vectors are auto-discovered and displayed.
 
-### Atlas Projection (enables **Atlas**, **Query**, **Projected-fold** tabs)
+### Atlas Projection (enables **Atlas**, **Query** tabs)
 
 These vectors/matrices on the query DAF enable atlas projection features.
 A separate atlas DAF must also be provided.
@@ -221,7 +221,7 @@ MCView automatically enables tabs based on the data present in the DAF:
 | **Gene modules** | `gene.module` vector |
 | **Samples** | `cell` axis + `cell.metacell` + `cell.samp_id` |
 | **Flow** | Time annotation data in metacell metadata |
-| **Atlas** / **Query** / **Projected-fold** | Atlas projection data + separate atlas DAF |
+| **Atlas** / **Query** | Atlas projection data + separate atlas DAF |
 
 ## Validation
 
