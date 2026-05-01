@@ -69,21 +69,6 @@ get_mc_lfp <- function(dataset, atlas = FALSE) {
 }
 
 get_mc_fp <- function(dataset, genes = NULL, atlas = FALSE, metacells = NULL) {
-    # Unfiltered non-atlas path: reuse the paired session cache so we don't
-    # re-run rowMedians + sweep on a 28K x 2.4K matrix every call. Filtered
-    # subsets always recompute; see get_mc_lfp for the same pattern.
-    if (is.null(genes) && is.null(metacells) && !atlas) {
-        cached <- mcv_cache_get(dataset, "fp_full")
-        if (!is.null(cached)) return(cached)
-
-        mc_egc <- get_mc_egc(dataset)
-        if (is.null(mc_egc)) return(NULL)
-
-        fp <- egc_to_fp(mc_egc)
-        mcv_cache_set(dataset, "fp_full", fp)
-        return(fp)
-    }
-
     mc_egc <- get_mc_egc(dataset, genes = genes, atlas = atlas, metacells = metacells)
     egc_to_fp(mc_egc)
 }
