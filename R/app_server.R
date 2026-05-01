@@ -124,17 +124,16 @@ app_server <- function(input, output, session) {
         }
     })
 
-    load_tab <- function(tab_name) {
-        func_name <- glue("mod_{tab_name}_server")
-        if (exists(func_name)) {
-            module <- get(func_name)
-            module(tab_name, dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors, gene_modules = gene_modules, globals = globals)
+    load_tab <- function(tab_def) {
+        server_fn <- tab_def$server_fn
+        if (!is.null(server_fn)) {
+            server_fn(tab_def$module_name, dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors, gene_modules = gene_modules, globals = globals)
         } else {
-            warning(paste0("Tab ", tab_name, " not found"))
+            warning(paste0("Tab ", tab_def$module_name, " has no server_fn"))
         }
     }
 
-    purrr::map(mcv_get("tab_defs"), ~ load_tab(.x$module_name))
+    purrr::walk(mcv_get("tab_defs"), load_tab)
 
     clipboard_reactives(dataset, input, output, session, metacell_types, cell_type_colors, gene_modules, globals)
 

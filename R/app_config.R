@@ -157,82 +157,130 @@ init_tab_defs <- function() {
         "About" = list(
             title = "About",
             module_name = "about",
-            icon = "info"
+            icon = "info",
+            ui_fn = mod_about_ui,
+            sidebar_ui_fn = mod_about_sidebar_ui,
+            server_fn = mod_about_server
         ),
         "QC" = list(
             title = "QC",
             module_name = "qc",
-            icon = "check"
+            icon = "check",
+            ui_fn = mod_qc_ui,
+            sidebar_ui_fn = mod_qc_sidebar_ui,
+            server_fn = mod_qc_server
         ),
         "Projection QC" = list(
             title = "Projection QC",
             module_name = "projection_qc",
-            icon = "clipboard-check"
+            icon = "clipboard-check",
+            ui_fn = mod_projection_qc_ui,
+            sidebar_ui_fn = mod_projection_qc_sidebar_ui,
+            server_fn = mod_projection_qc_server
         ),
         "Manifold" = list(
             title = "Manifold",
             module_name = "manifold",
-            icon = "project-diagram"
+            icon = "project-diagram",
+            ui_fn = mod_manifold_ui,
+            sidebar_ui_fn = mod_manifold_sidebar_ui,
+            server_fn = mod_manifold_server
         ),
         "Genes" = list(
             title = "Genes",
             module_name = "gene_mc",
-            icon = "wind"
+            icon = "wind",
+            ui_fn = mod_gene_mc_ui,
+            sidebar_ui_fn = mod_gene_mc_sidebar_ui,
+            server_fn = mod_gene_mc_server
         ),
         "Markers" = list(
             title = "Markers",
             module_name = "markers",
-            icon = "map-marker"
+            icon = "map-marker",
+            ui_fn = mod_markers_ui,
+            sidebar_ui_fn = mod_markers_sidebar_ui,
+            server_fn = mod_markers_server
         ),
         "Diff. Expression" = list(
             title = "Diff. Expression",
             module_name = "mc_mc",
-            icon = "chart-bar"
+            icon = "chart-bar",
+            ui_fn = mod_mc_mc_ui,
+            sidebar_ui_fn = mod_mc_mc_sidebar_ui,
+            server_fn = mod_mc_mc_server
         ),
         "Gene modules" = list(
             title = "Gene modules",
             module_name = "gene_modules",
-            icon = "layer-group"
+            icon = "layer-group",
+            ui_fn = mod_gene_modules_ui,
+            sidebar_ui_fn = mod_gene_modules_sidebar_ui,
+            server_fn = mod_gene_modules_server
         ),
         "Cell types" = list(
             title = "Cell types",
             module_name = "cell_type",
-            icon = "bacteria"
+            icon = "bacteria",
+            ui_fn = mod_cell_type_ui,
+            sidebar_ui_fn = mod_cell_type_sidebar_ui,
+            server_fn = mod_cell_type_server
         ),
         "Annotate" = list(
             title = "Annotate",
             module_name = "annotate",
-            icon = "pen"
+            icon = "pen",
+            ui_fn = mod_annotate_ui,
+            sidebar_ui_fn = mod_annotate_sidebar_ui,
+            server_fn = mod_annotate_server
         ),
         "Projected-fold" = list(
             title = "Projected-fold",
             module_name = "proj_fold",
-            icon = "cloud-moon-rain"
+            icon = "cloud-moon-rain",
+            ui_fn = mod_proj_fold_ui,
+            sidebar_ui_fn = mod_proj_fold_sidebar_ui,
+            server_fn = mod_proj_fold_server
         ),
         "Flow" = list(
             title = "Flow",
             module_name = "flow",
-            icon = "water"
+            icon = "water",
+            ui_fn = mod_flow_ui,
+            sidebar_ui_fn = mod_flow_sidebar_ui,
+            server_fn = mod_flow_server
         ),
         "Samples" = list(
             title = "Samples",
             module_name = "samples",
-            icon = "vials"
+            icon = "vials",
+            ui_fn = mod_samples_ui,
+            sidebar_ui_fn = mod_samples_sidebar_ui,
+            server_fn = mod_samples_server
         ),
         "Query" = list(
             title = "Query",
             module_name = "query",
-            icon = "video"
+            icon = "video",
+            ui_fn = mod_query_ui,
+            sidebar_ui_fn = mod_query_sidebar_ui,
+            server_fn = mod_query_server
         ),
         "Atlas" = list(
             title = "Atlas",
             module_name = "atlas",
-            icon = "atlas"
+            icon = "atlas",
+            ui_fn = mod_atlas_ui,
+            sidebar_ui_fn = mod_atlas_sidebar_ui,
+            server_fn = mod_atlas_server
         ),
         "Gene correlation" = list(
             title = "Gene correlation",
             module_name = "gene_correlation",
-            icon = "exchange-alt"
+            icon = "exchange-alt",
+            ui_fn = mod_gene_correlation_ui,
+            sidebar_ui_fn = NULL,
+            server_fn = mod_gene_correlation_server
         )
     )
     mcv_set("tab_defs", tab_defs)

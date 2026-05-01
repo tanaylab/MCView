@@ -13,14 +13,7 @@ app_ui <- function(request) {
 
     modules <- purrr::map_chr(tab_defs, "module_name")
 
-    ui_sidebar_funcs <- purrr::map(modules, ~ {
-        func_name <- glue("mod_{.x}_sidebar_ui")
-        if (!exists(func_name)) {
-            return(NULL)
-        } else {
-            return(get(func_name))
-        }
-    })
+    ui_sidebar_funcs <- purrr::map(tab_defs, "sidebar_ui_fn")
 
     cond_panels <- purrr::map2(
         modules,
@@ -80,14 +73,7 @@ app_ui <- function(request) {
         )
     )
 
-    ui_funcs <- purrr::map(modules, ~ {
-        func_name <- glue("mod_{.x}_ui")
-        if (!exists(func_name)) {
-            return(NULL)
-        } else {
-            return(get(func_name))
-        }
-    })
+    ui_funcs <- purrr::map(tab_defs, "ui_fn")
 
     tab_items <- div( # shinydashboard::tabItems
         class = "tab-content",
