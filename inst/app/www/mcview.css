@@ -1,0 +1,99 @@
+/* MCView visual identity — Phase 3 design tokens.
+ * Loaded automatically via golem::bundle_resources() (R/app_ui.R).
+ * Pairs with R/plot_theme.R and R/plot_palette.R.
+ */
+
+:root {
+    /* Brand */
+    --mcview-color-bg: #ffffff;
+    --mcview-color-surface: #f7f9fb;
+    --mcview-color-divider: #e5e9ee;
+    --mcview-color-text: #1f2933;
+    --mcview-color-text-muted: #5b6770;
+    --mcview-color-primary: #2c3e50;
+    --mcview-color-primary-hover: #1f2d3d;
+    --mcview-color-accent: #1ab394;
+    --mcview-color-warning: #d97706;
+    --mcview-color-danger: #dc2626;
+    --mcview-color-success: #15803d;
+
+    /* Typography */
+    --mcview-font-sans: "Inter", "Helvetica Neue", Arial, sans-serif;
+    --mcview-font-numeric: "IBM Plex Sans", "Inter", system-ui, sans-serif;
+    --mcview-font-size-xs: 0.75rem;
+    --mcview-font-size-sm: 0.875rem;
+    --mcview-font-size-md: 0.9375rem;
+    --mcview-font-size-lg: 1.0625rem;
+    --mcview-font-size-xl: 1.25rem;
+
+    /* Spacing */
+    --mcview-space-1: 4px;
+    --mcview-space-2: 8px;
+    --mcview-space-3: 12px;
+    --mcview-space-4: 16px;
+    --mcview-space-5: 24px;
+    --mcview-space-6: 32px;
+}
+
+body {
+    font-family: var(--mcview-font-sans);
+    font-size: var(--mcview-font-size-md);
+    color: var(--mcview-color-text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.mcview-numeric, .mcview-numeric * {
+    font-family: var(--mcview-font-numeric);
+    font-variant-numeric: tabular-nums;
+}
+
+.box.box-solid > .box-header,
+.box > .box-header {
+    background: var(--mcview-color-surface);
+    color: var(--mcview-color-text);
+    border-bottom: 1px solid var(--mcview-color-divider);
+    padding: var(--mcview-space-2) var(--mcview-space-4);
+}
+.box.box-solid > .box-header > .box-title,
+.box > .box-header > .box-title {
+    font-weight: 600;
+    font-size: var(--mcview-font-size-md);
+    color: var(--mcview-color-text);
+    letter-spacing: 0.01em;
+}
+.box {
+    border-top: 0;
+    border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.modebar-container .modebar {
+    opacity: 0.35;
+    transition: opacity 0.15s ease;
+}
+.plotly:hover .modebar-container .modebar,
+.modebar-container .modebar:hover {
+    opacity: 1;
+}
+
+.mcview-header-btn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+    border-radius: 4px;
+    padding: var(--mcview-space-1) var(--mcview-space-3);
+    font-family: var(--mcview-font-sans);
+    font-size: var(--mcview-font-size-sm);
+    font-weight: 500;
+    margin-left: var(--mcview-space-2);
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+.mcview-header-btn:hover, .mcview-header-btn:focus {
+    background: rgba(255, 255, 255, 0.10);
+    border-color: rgba(255, 255, 255, 0.45);
+    color: #ffffff;
+}
+.mcview-header-btn .fa, .mcview-header-btn .fas {
+    margin-right: var(--mcview-space-1);
+}
