@@ -62,6 +62,7 @@ plot_gg_over_mc <- function(dataset, g1, g2, metacell_types = get_mc_data(datase
         scale_fill_manual(values = col_to_ct) +
         xlab(glue("{g1} Expression")) +
         ylab(glue("{g2} Expression")) +
+        theme_mcview() +
         theme(axis.text.x = element_text(angle = 30, vjust = 0.5, hjust = 1))
 
     if (plot_text) {
@@ -124,7 +125,8 @@ plot_gene_time_over_mc <- function(dataset, gene, metacell_types = get_mc_data(d
         scale_fill_manual(values = col_to_ct) +
         xlab("Metacell age (E[t])") +
         ylab(glue("{gene} Expression")) +
-        guides(color = "none")
+        guides(color = "none") +
+        theme_mcview()
 
     if (plot_text) {
         p <- p + geom_text(size = 1, color = "black")

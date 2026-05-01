@@ -157,11 +157,12 @@ mcview_heatmap_geom <- function(mtrx, col_names = NULL, interleave = FALSE) {
 
     ggp <- ggplot2::ggplot(df, ggplot2::aes(x = .data$x, y = .data$y, fill = .data$val)) +
         ggplot2::geom_raster() +
-        ggplot2::theme_bw() +
+        theme_mcview() +
         ggplot2::theme(
             axis.ticks = ggplot2::element_blank(),
             axis.title.x = ggplot2::element_blank(),
-            axis.title.y = ggplot2::element_blank()
+            axis.title.y = ggplot2::element_blank(),
+            panel.grid = ggplot2::element_blank()
         )
 
     if (!is.null(col_names)) {

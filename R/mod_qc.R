@@ -238,7 +238,7 @@ qc_ecdf <- function(qc_df, field, xlab, ylab, globals, log_scale = FALSE) {
         scale_y_continuous(labels = scales::percent) +
         geom_vline(xintercept = quants[2], color = "red", linetype = "dashed") +
         geom_vline(xintercept = quants[c(1, 3)], color = "gray", linetype = "dashed") +
-        theme_bw()
+        theme_mcview()
 
     quants_text <- c(
         glue("bottom 10%: {round(quants[1], digits = 2)}"),

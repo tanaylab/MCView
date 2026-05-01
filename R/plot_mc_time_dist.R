@@ -38,7 +38,8 @@ plot_mc_time_dist <- function(dataset, metacell, ylab = "# of cells") {
         geom_col(fill = "black") +
         xlab("Metacell age (E[t])") +
         ylab(ylab) +
-        coord_cartesian(ylim = c(0, max(mc_ag)), xlim = xlim)
+        coord_cartesian(ylim = c(0, max(mc_ag)), xlim = xlim) +
+        theme_mcview()
 
     return(p)
 }

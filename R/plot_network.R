@@ -88,7 +88,7 @@ plot_propagation_net_metacell <- function(dataset,
         ylab("") +
         annotate("segment", x = 1, xend = max(nn$time2) - 1, y = as.numeric(mc_rank[as.character(metacell)]), yend = as.numeric(mc_rank[as.character(metacell)]), linetype = "dashed") +
         annotate("text", x = max(nn$time2), y = as.numeric(mc_rank[as.character(metacell)]), label = paste0("MC ", metacell)) +
-        theme_classic(15) +
+        theme_mcview(base_size = 15) +
         theme(axis.ticks.y = element_blank(), axis.text.y = element_blank(), axis.line.y = element_blank()) +
         guides(size = "none", color = guide_legend(override.aes = list(size = 5))) +
         theme(legend.position = "bottom")

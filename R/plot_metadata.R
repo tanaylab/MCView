@@ -598,6 +598,8 @@ plot_mc_scatter <- function(dataset,
         p <- p + geom_text(size = 1, color = "black")
     }
 
+    p <- p + theme_mcview()
+
     return(p)
 }
 
@@ -817,6 +819,8 @@ plot_sample_scatter <- function(dataset,
         p <- p + geom_text(size = 1, color = "black")
     }
 
+    p <- p + theme_mcview()
+
     return(p)
 }
 
@@ -986,6 +990,8 @@ plot_obs_proj_scatter <- function(dataset,
     if (plot_text) {
         p <- p + geom_text(size = 1, color = "black")
     }
+
+    p <- p + theme_mcview()
 
     return(p)
 }

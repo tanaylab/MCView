@@ -87,7 +87,8 @@ plot_gene_trajectory <- function(dataset, genes, metacell, anchor_genes = NULL) 
         ) +
         xlab("Time (E[t])") +
         ylab(glue("Gene expression levels")) +
-        scale_linetype_discrete(name = "")
+        scale_linetype_discrete(name = "") +
+        theme_mcview()
 
     return(p)
 }
