@@ -396,8 +396,17 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
     if (mode == "Proj") {
         mc_fp <- get_mc_data(dataset, "projected_fold")
         req(mc_fp)
-        valid_rows <- intersect(markers, rownames(mc_fp)[abs(Matrix::rowSums(mc_fp)) > 0])
-        mc_fp <- as.matrix(mc_fp[valid_rows, , drop = FALSE])
+        # Subset to markers first, then drop zero-only rows. Avoids a full-matrix
+        # rowSums pass on the (typically sparse) projected_fold and keeps the
+        # densification scoped to the marker subset.
+        candidate_rows <- intersect(markers, rownames(mc_fp))
+        sub <- mc_fp[candidate_rows, , drop = FALSE]
+        nz <- if (methods::is(sub, "sparseMatrix")) {
+            Matrix::rowSums(abs(sub)) > 0
+        } else {
+            matrixStats::rowSums2(abs(sub)) > 0
+        }
+        mc_fp <- as.matrix(sub[nz, , drop = FALSE])
         epsilon <- 1e-5
         log_transform <- FALSE
     } else if (mode == "Markers") {
