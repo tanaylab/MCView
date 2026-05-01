@@ -238,6 +238,18 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
             last_chosen_cell_type <- reactiveVal("(Missing)")
 
             observeEvent(input$reset_metacell_types, {
+                shinyWidgets::ask_confirmation(
+                    inputId = "confirm_reset_metacell_types",
+                    title = "Reset metacell annotations?",
+                    text = "This discards every cell-type assignment you have made and restores the dataset's saved annotations. The change cannot be undone.",
+                    type = "warning",
+                    btn_labels = c("Cancel", "Reset"),
+                    btn_colors = c("#6c757d", "#dc3545")
+                )
+            })
+
+            observeEvent(input$confirm_reset_metacell_types, {
+                req(isTRUE(input$confirm_reset_metacell_types))
                 metacell_types(get_metacell_types_data(dataset()))
                 selected_metacell_types(tibble(metacell = character(), cell_type = character()))
                 to_show(NULL)
@@ -270,6 +282,18 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
             })
 
             observeEvent(input$reset_cell_type_colors, {
+                shinyWidgets::ask_confirmation(
+                    inputId = "confirm_reset_cell_type_colors",
+                    title = "Reset cell-type colors?",
+                    text = "This discards every color you have edited and restores the dataset's saved palette. The change cannot be undone.",
+                    type = "warning",
+                    btn_labels = c("Cancel", "Reset"),
+                    btn_colors = c("#6c757d", "#dc3545")
+                )
+            })
+
+            observeEvent(input$confirm_reset_cell_type_colors, {
+                req(isTRUE(input$confirm_reset_cell_type_colors))
                 cell_type_colors(get_cell_type_data(dataset()))
             })
 

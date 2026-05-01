@@ -396,6 +396,18 @@ mod_gene_module_controllers <- function(ns, dataset, input, output, session, gen
 
     # 'Reset' button
     observeEvent(input$reset_gene_modules, {
+        shinyWidgets::ask_confirmation(
+            inputId = "confirm_reset_gene_modules",
+            title = "Reset all gene modules?",
+            text = "This discards every gene-module edit you have made and restores the dataset's saved modules. The change cannot be undone.",
+            type = "warning",
+            btn_labels = c("Cancel", "Reset"),
+            btn_colors = c("#6c757d", "#dc3545")
+        )
+    })
+
+    observeEvent(input$confirm_reset_gene_modules, {
+        req(isTRUE(input$confirm_reset_gene_modules))
         req(dataset())
         gene_modules(get_mc_data(dataset(), "gene_modules"))
         values$file_status <- NULL
