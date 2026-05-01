@@ -30,6 +30,31 @@ app_ui <- function(request) {
         }
     )
 
+    dataset_picker <- if (length(dataset_names()) > 1) {
+        list(div(
+            id = "dataset_picker",
+            style = "padding: 8px 16px;",
+            selectInput(
+                "dataset",
+                label = "Dataset",
+                choices = dataset_names(),
+                selected = dataset_names()[1],
+                multiple = FALSE,
+                selectize = FALSE,
+                width = "100%"
+            )
+        ), tags$hr())
+    } else {
+        list(
+            # Single dataset: still register the input (downstream code reads it)
+            # but don't show the picker.
+            tags$div(
+                style = "display: none;",
+                selectInput("dataset", label = NULL, choices = dataset_names(), selected = dataset_names()[1])
+            )
+        )
+    }
+
     sidebar <- do.call(
         shinydashboard::dashboardSidebar,
         c(
@@ -38,6 +63,7 @@ app_ui <- function(request) {
                 shinydashboard::sidebarMenuOutput("menu")
             )),
             list(tags$hr()),
+            dataset_picker,
             cond_panels
         )
     )
@@ -54,10 +80,6 @@ app_ui <- function(request) {
                     selected = intersect(config$tabs, names(tab_defs)),
                 ),
                 actionButton("update_tabs", "Update Tabs")
-            ),
-            shinydashboardPlus::controlbarItem(
-                "Datasets",
-                selectInput("dataset", label = "Dataset", choices = dataset_names(), selected = dataset_names()[1], multiple = FALSE, selectize = FALSE)
             ),
             shinydashboardPlus::controlbarItem(
                 "Options",
