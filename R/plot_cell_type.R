@@ -388,7 +388,7 @@ cell_type_metadata_confusion <- function(var,
         )) +
         geom_tile() +
         scale_fill_gradientn(
-            colors = c("white", "#F4A582", "#D6604D", "#B2182B", "#67001F", "black"),
+            colors = mcview_palette$cell_type_score,
             name = label,
             limits = c(0, 1)
         ) +

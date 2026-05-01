@@ -103,7 +103,7 @@ mc2d_plot_gene_ggp <- function(dataset,
     }
 
     # define colors
-    colspec <- c("#053061", "#2166AC", "#4393C3", "#92C5DE", "#D1E5F0", "#F7F7F7", "#FDDBC7", "#F4A582", "#D6604D", "#B2182B", "#67001F")
+    colspec <- mcview_palette$expression
 
     mc2d_df <- mc2d_df %>%
         mutate(
@@ -377,7 +377,7 @@ handle_2d_query_proj <- function(input, dataset, atlas, mc2d, metacell_types,
         fig <- render_2d_metadata_fig("Weight", input, dataset, atlas, mc2d,
             metacell_types, selected_cell_types,
             metadata = metadata,
-            colors = c("white", viridis::viridis_pal()(6)),
+            colors = mcview_palette$expression_with_zero,
             color_breaks = c(0, seq(input$query_threshold, 1, length.out = 6)))
     } else {
         metadata <- metadata %>%
