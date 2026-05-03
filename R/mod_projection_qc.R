@@ -247,7 +247,7 @@ gene_correction_factor_scatter_plot <- function(dataset, input, globals, state, 
             plotly::toWebGL() %>%
             sanitize_plotly_buttons() %>%
             sanitize_plotly_download(globals, state)
-    }) %>% bindCache(dataset(), globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
+    }) %>% bindCache(dataset(), state$session_ui$plotly_format, state$session_ui$plotly_width, state$session_ui$plotly_height, state$session_ui$plotly_scale)
 }
 
 gene_correction_factor_table <- function(dataset, input) {
@@ -412,5 +412,5 @@ fitted_genes_per_cell_type_plot <- function(dataset, input, globals, state, tab_
         plotly::ggplotly(p) %>%
             sanitize_plotly_buttons() %>%
             sanitize_plotly_download(globals, state)
-    }) %>% bindCache(dataset(), globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
+    }) %>% bindCache(dataset(), state$session_ui$plotly_format, state$session_ui$plotly_width, state$session_ui$plotly_height, state$session_ui$plotly_scale)
 }

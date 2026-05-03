@@ -793,10 +793,10 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                         }
                     },
                     state$manifold_state$mc2d,
-                    globals$plotly_format,
-                    globals$plotly_width,
-                    globals$plotly_height,
-                    globals$plotly_scale
+                    state$session_ui$plotly_format,
+                    state$session_ui$plotly_width,
+                    state$session_ui$plotly_height,
+                    state$session_ui$plotly_scale
                 )
 
             # Use the already defined selected_cell_types reactiveVal (defined at the top of the server) so that it is shared across the module

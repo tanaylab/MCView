@@ -152,5 +152,5 @@ setup_samples_composition <- function(input, output, session, ns,
             sanitize_plotly_download(globals, state)
 
         fig
-    }) %>% bindCache(dataset(), group_field(), metacell_types(), cell_type_colors(), input$samp1, input$samp2, globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
+    }) %>% bindCache(dataset(), group_field(), metacell_types(), cell_type_colors(), input$samp1, input$samp2, state$session_ui$plotly_format, state$session_ui$plotly_width, state$session_ui$plotly_height, state$session_ui$plotly_scale)
 }

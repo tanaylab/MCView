@@ -92,7 +92,7 @@ setup_samples_qc <- function(input, output, session, ns,
             sanitize_plotly_download(globals, state)
 
         fig
-    }) %>% bindCache(dataset(), group_field(), input$samp1, input$samp2, globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
+    }) %>% bindCache(dataset(), group_field(), input$samp1, input$samp2, state$session_ui$plotly_format, state$session_ui$plotly_width, state$session_ui$plotly_height, state$session_ui$plotly_scale)
 
     output$plot_qc_umis_per_group <- plotly::renderPlotly({
         req(state$tab_state$current_tab == "samples")
@@ -141,7 +141,7 @@ setup_samples_qc <- function(input, output, session, ns,
             sanitize_plotly_download(globals, state)
 
         fig
-    }) %>% bindCache(dataset(), group_field(), input$samp1, input$samp2, globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
+    }) %>% bindCache(dataset(), group_field(), input$samp1, input$samp2, state$session_ui$plotly_format, state$session_ui$plotly_width, state$session_ui$plotly_height, state$session_ui$plotly_scale)
 
     output$qc_summary_table <- DT::renderDT(
         {

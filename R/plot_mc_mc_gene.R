@@ -204,7 +204,7 @@ render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, global
         if (!is.null(cell_type_colors)) cell_type_colors(),
         if (!is.null(metacell_names)) metacell_names(),
         source_suffix, dragmode,
-        globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale
+        state$session_ui$plotly_format, state$session_ui$plotly_width, state$session_ui$plotly_height, state$session_ui$plotly_scale
     )
 }
 

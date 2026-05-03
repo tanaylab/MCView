@@ -58,7 +58,7 @@ sanitize_plotly_buttons <- function(p,
 }
 
 sanitize_plotly_download <- function(p, globals, state) {
-    to_image_options <- list(format = globals$plotly_format, width = globals$plotly_width, height = globals$plotly_height, scale = globals$plotly_scale)
+    to_image_options <- list(format = state$session_ui$plotly_format, width = state$session_ui$plotly_width, height = state$session_ui$plotly_height, scale = state$session_ui$plotly_scale)
     p %>% plotly::config(
         toImageButtonOptions = to_image_options
     )

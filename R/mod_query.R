@@ -339,11 +339,11 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
 
 
                 return(fig)
-            }) %>% bindCache(dataset(), input$axis_var, input$axis_type, input$color_by_type, input$color_by_var, metacell_types(), cell_type_colors(), input$gene_gene_point_size, input$gene_gene_stroke, input$mode, globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
+            }) %>% bindCache(dataset(), input$axis_var, input$axis_type, input$color_by_type, input$color_by_var, metacell_types(), cell_type_colors(), input$gene_gene_point_size, input$gene_gene_stroke, input$mode, state$session_ui$plotly_format, state$session_ui$plotly_width, state$session_ui$plotly_height, state$session_ui$plotly_scale)
 
             # Point size selector
             output$point_size_ui <- renderUI({
-                numericInput(ns("point_size"), label = "Point size", value = initial_proj_point_size(dataset(), globals$screen_width, globals$screen_height, weight = 0.6), min = 0.1, max = 3, step = 0.1)
+                numericInput(ns("point_size"), label = "Point size", value = initial_proj_point_size(dataset(), state$session_ui$screen_width, state$session_ui$screen_height, weight = 0.6), min = 0.1, max = 3, step = 0.1)
             })
 
             # Minimal edge length selector

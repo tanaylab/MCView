@@ -26,8 +26,8 @@ app_server <- function(input, output, session) {
     )
 
     observe({
-        globals$screen_width <- input$screen_width
-        globals$screen_height <- input$screen_height
+        state$session_ui$screen_width <- input$screen_width
+        state$session_ui$screen_height <- input$screen_height
     })
 
     observe({
@@ -37,16 +37,16 @@ app_server <- function(input, output, session) {
 
     globals$clipboard <- character(0)
     state$tab_state$active_tabs <- app_config("tabs")
-    globals$plotly_scale <- 1
-    globals$plotly_format <- "svg"
-    globals$plotly_width <- NULL
-    globals$plotly_height <- NULL
+    state$session_ui$plotly_scale <- 1
+    state$session_ui$plotly_format <- "svg"
+    state$session_ui$plotly_width <- NULL
+    state$session_ui$plotly_height <- NULL
 
     observe({
-        globals$plotly_format <- input$plotly_format
-        globals$plotly_width <- input$plotly_width
-        globals$plotly_height <- input$plotly_height
-        globals$plotly_scale <- input$plotly_scale
+        state$session_ui$plotly_format <- input$plotly_format
+        state$session_ui$plotly_width <- input$plotly_width
+        state$session_ui$plotly_height <- input$plotly_height
+        state$session_ui$plotly_scale <- input$plotly_scale
     })
 
     # Track current sidebar tab so modules can defer computation until visited

@@ -676,7 +676,7 @@ mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, 
                 input$facet_by, input$facet_metadata_var,
                 input$custom_ylim, input$ylim_min, input$ylim_max,
                 input$coord_flip, input$log_scale, input$confusion_color_by,
-                globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale
+                state$session_ui$plotly_format, state$session_ui$plotly_width, state$session_ui$plotly_height, state$session_ui$plotly_scale
             )
         }
     )

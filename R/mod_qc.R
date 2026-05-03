@@ -165,7 +165,7 @@ qc_stat_plot <- function(field, xlab, dataset, input, plot_type_id, globals, sta
         p <- sanitize_plotly_download(p, globals, state)
 
         return(p)
-    }) %>% bindCache(dataset(), input[[plot_type_id]], field, plot_type_id, globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
+    }) %>% bindCache(dataset(), input[[plot_type_id]], field, plot_type_id, state$session_ui$plotly_format, state$session_ui$plotly_width, state$session_ui$plotly_height, state$session_ui$plotly_scale)
 }
 
 qc_density <- function(qc_df, field, xlab, ylab, globals, state, log_scale = FALSE) {

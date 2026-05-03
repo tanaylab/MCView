@@ -112,10 +112,10 @@ mod_gene_mc_server <- function(id, dataset, metacell_types, cell_type_colors, ge
                         }
                     },
                     state$manifold_state$mc2d,
-                    globals$plotly_format,
-                    globals$plotly_width,
-                    globals$plotly_height,
-                    globals$plotly_scale
+                    state$session_ui$plotly_format,
+                    state$session_ui$plotly_width,
+                    state$session_ui$plotly_height,
+                    state$session_ui$plotly_scale
                 )
 
             connect_gene_plots(input, output, session, ns, source = "proj_mc_plot_gene_tab")
@@ -308,5 +308,5 @@ atlas_gene_gene <- function(input, output, session, dataset, metacell_types, cel
         }
 
         return(fig)
-    }) %>% bindCache(dataset(), input$atlas_x_axis_var, input$atlas_x_axis_type, input$atlas_y_axis_var, input$atlas_y_axis_type, input$atlas_color_by_type, input$atlas_color_by_var, input$atlas_gene_gene_point_size, input$atlas_gene_gene_stroke, input$use_query_limits, input$atlas_gene_gene_fixed_limits, input$atlas_gene_gene_xyline, globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
+    }) %>% bindCache(dataset(), input$atlas_x_axis_var, input$atlas_x_axis_type, input$atlas_y_axis_var, input$atlas_y_axis_type, input$atlas_color_by_type, input$atlas_color_by_var, input$atlas_gene_gene_point_size, input$atlas_gene_gene_stroke, input$use_query_limits, input$atlas_gene_gene_fixed_limits, input$atlas_gene_gene_xyline, state$session_ui$plotly_format, state$session_ui$plotly_width, state$session_ui$plotly_height, state$session_ui$plotly_scale)
 }

@@ -174,10 +174,10 @@ projection_selectors <- function(ns, dataset, output, input, gene_modules, globa
 
     # Point size selectors
     output$point_size_ui <- renderUI({
-        req(globals$screen_height)
-        req(globals$screen_width)
+        req(state$session_ui$screen_height)
+        req(state$session_ui$screen_width)
         req(dataset())
-        numericInput(ns("point_size"), label = "Point size", value = initial_proj_point_size(dataset(), globals$screen_width, globals$screen_height, weight = weight, atlas = atlas), min = 0.1, max = 3, step = 0.1)
+        numericInput(ns("point_size"), label = "Point size", value = initial_proj_point_size(dataset(), state$session_ui$screen_width, state$session_ui$screen_height, weight = weight, atlas = atlas), min = 0.1, max = 3, step = 0.1)
     })
 
     output$stroke_ui <- renderUI({

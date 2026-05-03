@@ -51,7 +51,14 @@ setup_app_state <- function() {
     )
 
     state <- list(
-        session_ui = shiny::reactiveValues(),
+        session_ui = shiny::reactiveValues(
+            screen_width = 1200,
+            screen_height = 800,
+            plotly_scale = 1,
+            plotly_format = "svg",
+            plotly_width = NULL,
+            plotly_height = NULL
+        ),
         tab_state = shiny::reactiveValues(
             active_tabs = app_config("tabs")
         ),

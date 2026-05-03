@@ -119,5 +119,5 @@ plot_sample_stacked_types <- function(dataset, globals, state, metacell_types, c
             plotly::event_register("plotly_click")
 
         return(p)
-    }) %>% bindCache(dataset, metacell_types, cell_type_colors, input$sample_types_ordering, group_field, globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
+    }) %>% bindCache(dataset, metacell_types, cell_type_colors, input$sample_types_ordering, group_field, state$session_ui$plotly_format, state$session_ui$plotly_width, state$session_ui$plotly_height, state$session_ui$plotly_scale)
 }
