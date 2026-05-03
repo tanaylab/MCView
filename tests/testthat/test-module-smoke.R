@@ -63,14 +63,17 @@ setup_app_state <- function() {
         plotly_height = NULL
     )
 
-    # Phase 2.2 — domain-scoped reactiveValues plumbed alongside globals.
-    # During the foundation commit these stay empty; per-domain commits
-    # migrate slots from globals into the matching domain.
+    # Phase 2.2 — domain-scoped reactiveValues. Per-domain commits migrate
+    # slots from globals into the matching domain; the fixture mirrors them
+    # so each test exercises the post-migration path.
     state <- list(
         session_ui = shiny::reactiveValues(),
         tab_state = shiny::reactiveValues(),
         selection = shiny::reactiveValues(),
-        manifold_state = shiny::reactiveValues()
+        manifold_state = shiny::reactiveValues(
+            mc2d = get_mc_data("test_data", "mc2d"),
+            anchor_genes = get_mc_data("test_data", "umap_anchors")
+        )
     )
 
     list(

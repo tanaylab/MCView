@@ -120,11 +120,11 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
 
             # 2D projection re-calculations
             observeEvent(input$recompute, {
-                req(globals$anchor_genes)
+                req(state$manifold_state$anchor_genes)
                 showNotification("Recomputing 2D projection")
                 mc_egc <- get_mc_egc(dataset())
 
-                mc2d <- compute_umap(mc_egc, globals$anchor_genes,
+                mc2d <- compute_umap(mc_egc, state$manifold_state$anchor_genes,
                     n_neighbors = input$n_neighbors, min_dist = input$min_dist,
                     n_epoch = input$n_epoch, min_log_expr = input$min_log_expr,
                     genes_per_anchor = input$genes_per_anchor, random_seed = input$random_seed
@@ -133,18 +133,18 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
                     showNotification("Recomputing 2D projection failed", type = "error")
                 }
                 req(mc2d)
-                globals$mc2d <- mc2d
+                state$manifold_state$mc2d <- mc2d
                 shinyjs::show("reset")
             })
 
             observeEvent(input$reset, {
-                globals$mc2d <- get_mc_data(dataset(), "mc2d")
+                state$manifold_state$mc2d <- get_mc_data(dataset(), "mc2d")
                 shinyjs::hide("reset")
             })
 
             observe({
                 shinyjs::hide("reset")
-                updateSelectInput(session, "selected_anchor_genes", choices = globals$anchor_genes, label = glue("Anchor Genes ({length(globals$anchor_genes)})"))
+                updateSelectInput(session, "selected_anchor_genes", choices = state$manifold_state$anchor_genes, label = glue("Anchor Genes ({length(state$manifold_state$anchor_genes)})"))
             })
 
             output$add_genes_ui <- renderUI({
@@ -166,15 +166,15 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
             })
 
             observeEvent(input$add_genes, {
-                new_anchors <- sort(unique(c(globals$anchor_genes, input$genes_to_add)))
+                new_anchors <- sort(unique(c(state$manifold_state$anchor_genes, input$genes_to_add)))
                 names(new_anchors) <- add_gene_modules(new_anchors, dataset(), gene_modules())
-                globals$anchor_genes <- new_anchors
+                state$manifold_state$anchor_genes <- new_anchors
                 shinyWidgets::updateVirtualSelect(session = session, inputId = "genes_to_add", selected = character(0))
             })
 
             observeEvent(input$remove_genes, {
-                new_anchors <- setdiff(globals$anchor_genes, input$selected_anchor_genes)
-                globals$anchor_genes <- new_anchors
+                new_anchors <- setdiff(state$manifold_state$anchor_genes, input$selected_anchor_genes)
+                state$manifold_state$anchor_genes <- new_anchors
             })
 
             output$add_gene_modules_ui <- renderUI({
@@ -195,16 +195,16 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
 
             observeEvent(input$add_gene_modules, {
                 req(input$gene_modules_to_add)
-                new_anchors <- sort(unique(c(globals$anchor_genes, gene_modules()$gene[gene_modules()$module %in% input$gene_modules_to_add])))
+                new_anchors <- sort(unique(c(state$manifold_state$anchor_genes, gene_modules()$gene[gene_modules()$module %in% input$gene_modules_to_add])))
                 names(new_anchors) <- add_gene_modules(new_anchors, dataset(), gene_modules())
-                globals$anchor_genes <- new_anchors
+                state$manifold_state$anchor_genes <- new_anchors
                 shinyWidgets::updateVirtualSelect(session = session, inputId = "gene_modules_to_add", selected = character(0))
             })
 
             observeEvent(input$remove_gene_modules, {
                 req(input$gene_modules_to_add)
-                new_anchors <- setdiff(globals$anchor_genes, gene_modules()$gene[gene_modules()$module %in% input$gene_modules_to_add])
-                globals$anchor_genes <- new_anchors
+                new_anchors <- setdiff(state$manifold_state$anchor_genes, gene_modules()$gene[gene_modules()$module %in% input$gene_modules_to_add])
+                state$manifold_state$anchor_genes <- new_anchors
                 shinyWidgets::updateVirtualSelect(session = session, inputId = "gene_modules_to_add", selected = character(0))
             })
 
@@ -213,7 +213,7 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
                     paste0("anchor_genes_", dataset(), "_", Sys.Date(), ".csv")
                 },
                 content = function(file) {
-                    fwrite(tibble(gene = globals$anchor_genes), file, row.names = FALSE, col.names = FALSE)
+                    fwrite(tibble(gene = state$manifold_state$anchor_genes), file, row.names = FALSE, col.names = FALSE)
                 }
             )
 
@@ -231,7 +231,7 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 }
 
                 req(length(new_anchors) > 0)
-                globals$anchor_genes <- new_anchors
+                state$manifold_state$anchor_genes <- new_anchors
             })
 
             output$download_projection <- downloadHandler(
@@ -239,7 +239,7 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
                     paste0("2d_layout_", dataset(), "_", Sys.Date(), ".csv")
                 },
                 content = function(file) {
-                    mc2d <- globals$mc2d
+                    mc2d <- state$manifold_state$mc2d
                     req(mc2d)
                     fwrite(mc2d_to_df(mc2d), file, row.names = FALSE)
                 }
@@ -248,13 +248,13 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
             observeEvent(input$load_projection, {
                 req(input$load_projection)
                 req(input$load_projection$datapath)
-                mc2d <- layout_and_graph_to_mc2d(input$load_projection$datapath, globals$mc2d$graph %>% rename(from = mc1, to = mc2), metacells = get_metacell_ids(dataset()), warn_function = function(msg) {
+                mc2d <- layout_and_graph_to_mc2d(input$load_projection$datapath, state$manifold_state$mc2d$graph %>% rename(from = mc1, to = mc2), metacells = get_metacell_ids(dataset()), warn_function = function(msg) {
                     showNotification(msg, type = "error")
                 }, error_function = function(msg) {
                     showNotification(msg, type = "error")
                 })
                 req(mc2d)
-                globals$mc2d <- mc2d
+                state$manifold_state$mc2d <- mc2d
             })
 
 
@@ -263,7 +263,7 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
                     paste0("graph_", dataset(), "_", Sys.Date(), ".csv")
                 },
                 content = function(file) {
-                    mc2d <- globals$mc2d
+                    mc2d <- state$manifold_state$mc2d
                     req(mc2d)
                     fwrite(mc2d$graph %>% rename(from = mc1, to = mc2), file, row.names = FALSE)
                 }
@@ -272,13 +272,13 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
             observeEvent(input$load_graph, {
                 req(input$load_graph)
                 req(input$load_graph$datapath)
-                mc2d <- layout_and_graph_to_mc2d(mc2d_to_df(globals$mc2d), input$load_graph$datapath, metacells = get_metacell_ids(dataset()), warn_function = function(msg) {
+                mc2d <- layout_and_graph_to_mc2d(mc2d_to_df(state$manifold_state$mc2d), input$load_graph$datapath, metacells = get_metacell_ids(dataset()), warn_function = function(msg) {
                     showNotification(msg, type = "error")
                 }, error_function = function(msg) {
                     showNotification(msg, type = "error")
                 })
                 req(mc2d)
-                globals$mc2d <- mc2d
+                state$manifold_state$mc2d <- mc2d
             })
 
             # Projection plots
@@ -304,7 +304,7 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
                     input$graph_name,
                     input$legend_orientation,
                     input$show_legend_projection,
-                    globals$mc2d,
+                    state$manifold_state$mc2d,
                     globals$plotly_format,
                     globals$plotly_width,
                     globals$plotly_height,

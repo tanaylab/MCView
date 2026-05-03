@@ -792,7 +792,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                             selected_metacell_types()
                         }
                     },
-                    globals$mc2d,
+                    state$manifold_state$mc2d,
                     globals$plotly_format,
                     globals$plotly_width,
                     globals$plotly_height,

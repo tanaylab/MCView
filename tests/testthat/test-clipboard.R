@@ -54,7 +54,10 @@ setup_app_state <- function() {
         session_ui = shiny::reactiveValues(),
         tab_state = shiny::reactiveValues(),
         selection = shiny::reactiveValues(),
-        manifold_state = shiny::reactiveValues()
+        manifold_state = shiny::reactiveValues(
+            mc2d = get_mc_data("test_data", "mc2d"),
+            anchor_genes = get_mc_data("test_data", "umap_anchors")
+        )
     )
 
     list(

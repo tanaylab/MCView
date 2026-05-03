@@ -31,8 +31,8 @@ app_server <- function(input, output, session) {
     })
 
     observe({
-        globals$mc2d <- get_mc_data(dataset(), "mc2d")
-        globals$anchor_genes <- get_mc_data(dataset(), "umap_anchors")
+        state$manifold_state$mc2d <- get_mc_data(dataset(), "mc2d")
+        state$manifold_state$anchor_genes <- get_mc_data(dataset(), "umap_anchors")
     })
 
     globals$clipboard <- character(0)

@@ -111,7 +111,7 @@ mod_gene_mc_server <- function(id, dataset, metacell_types, cell_type_colors, ge
                             }
                         }
                     },
-                    globals$mc2d,
+                    state$manifold_state$mc2d,
                     globals$plotly_format,
                     globals$plotly_width,
                     globals$plotly_height,
