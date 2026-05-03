@@ -89,7 +89,7 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
     output$plot_gene_gene_mc <- plotly::renderPlotly({
         # Defer computation until the tab is active (when tab_guard is specified)
         if (!is.null(tab_guard)) {
-            req(globals$current_tab == tab_guard)
+            req(state$tab_state$current_tab == tab_guard)
         }
         req(input$x_axis_var)
         req(input$y_axis_var)

@@ -309,7 +309,7 @@ mod_samples_server <- function(id, dataset, metacell_types, cell_type_colors, ge
             }
 
             output$plot_gene_gene_mc <- plotly::renderPlotly({
-                req(globals$current_tab == "samples")
+                req(state$tab_state$current_tab == "samples")
                 req(input$x_axis_var)
                 req(input$y_axis_var)
                 req(input$color_by_var)

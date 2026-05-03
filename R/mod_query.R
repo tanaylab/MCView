@@ -290,7 +290,7 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
             )
 
             output$plot_gene_gene_mc <- plotly::renderPlotly({
-                req(globals$current_tab == "query")
+                req(state$tab_state$current_tab == "query")
                 req(input$axis_var)
                 req(input$color_by_var)
                 req(input$axis_type)

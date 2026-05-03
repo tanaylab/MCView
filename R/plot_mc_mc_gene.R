@@ -54,7 +54,7 @@ render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, global
     plotly::renderPlotly({
         # Defer computation until the tab is active (when tab_guard is specified)
         if (!is.null(tab_guard)) {
-            req(globals$current_tab == tab_guard)
+            req(state$tab_state$current_tab == tab_guard)
         }
         req(mc_mc_gene_scatter_df)
 

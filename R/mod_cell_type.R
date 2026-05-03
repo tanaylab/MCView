@@ -501,7 +501,7 @@ mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, 
             })
 
             output$cell_type_boxplot <- plotly::renderPlotly({
-                req(globals$current_tab == "cell_type")
+                req(state$tab_state$current_tab == "cell_type")
                 req(input$boxplot_axis_type)
                 req(dataset())
                 req(metacell_types())

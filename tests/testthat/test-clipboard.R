@@ -52,7 +52,9 @@ setup_app_state <- function() {
 
     state <- list(
         session_ui = shiny::reactiveValues(),
-        tab_state = shiny::reactiveValues(),
+        tab_state = shiny::reactiveValues(
+            active_tabs = app_config("tabs")
+        ),
         selection = shiny::reactiveValues(),
         manifold_state = shiny::reactiveValues(
             mc2d = get_mc_data("test_data", "mc2d"),

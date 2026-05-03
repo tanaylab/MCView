@@ -148,7 +148,7 @@ mod_flow_server <- function(id, dataset, metacell_types, cell_type_colors, gene_
 
             output$gene_vein_plot <- renderPlot(
                 {
-                    req(globals$current_tab == "flow")
+                    req(state$tab_state$current_tab == "flow")
                     req(input$color_gene_vein)
                     req(input$vein_gene_foc_type)
 
@@ -182,7 +182,7 @@ mod_flow_server <- function(id, dataset, metacell_types, cell_type_colors, gene_
             # Metacell flow
             output$plot_metacell_flow <- renderPlot(
                 {
-                    req(globals$current_tab == "flow")
+                    req(state$tab_state$current_tab == "flow")
                     req(has_network(dataset()))
                     req(input$selected_metacell)
 
@@ -216,7 +216,7 @@ mod_flow_server <- function(id, dataset, metacell_types, cell_type_colors, gene_
             })
 
             output$plot_mc_traj <- plotly::renderPlotly({
-                req(globals$current_tab == "flow")
+                req(state$tab_state$current_tab == "flow")
                 req(input$traj_genes)
                 req(has_network(dataset()))
                 req(input$selected_metacell)

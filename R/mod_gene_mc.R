@@ -238,7 +238,7 @@ atlas_gene_gene <- function(input, output, session, dataset, metacell_types, cel
     render_axis_select_ui("atlas_color_by", "Color", "atlas_color_by_select", md_choices = c("Cell type", dataset_metadata_fields_numeric(dataset(), atlas = TRUE)), md_selected = "Cell type", selected_gene = mcv_get("default_gene1"), input = input, output = output, ns = ns, dataset = dataset, gene_modules = gene_modules, session = session, atlas = TRUE)
 
     output$atlas_plot_gene_gene_mc <- plotly::renderPlotly({
-        req(globals$current_tab == "gene_mc")
+        req(state$tab_state$current_tab == "gene_mc")
         req(has_atlas(dataset()))
         req(input$atlas_x_axis_var)
         req(input$atlas_y_axis_var)

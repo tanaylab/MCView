@@ -70,7 +70,7 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
             ns <- session$ns
 
             output$num_metacells_atlas <- shinydashboard::renderValueBox({
-                req(globals$current_tab == "projection_qc")
+                req(state$tab_state$current_tab == "projection_qc")
                 # Use DAF axis length instead of loading full atlas matrix
                 atlas_daf <- get_atlas_daf()
                 req(atlas_daf)
@@ -83,7 +83,7 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
             })
             output$num_metacells_query <- qc_value_box("n_metacells", "Number of query metacells", dataset, color = "purple", globals = globals, state = state, tab_id = "projection_qc")
             output$num_metacells_similar <- shinydashboard::renderValueBox({
-                req(globals$current_tab == "projection_qc")
+                req(state$tab_state$current_tab == "projection_qc")
                 # Use DAF axis length instead of loading full matrix
                 daf_obj <- get_dataset_daf(dataset())
                 req(daf_obj)
@@ -111,7 +111,7 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
             })
 
             output$common_genes <- shinydashboard::renderValueBox({
-                req(globals$current_tab == "projection_qc")
+                req(state$tab_state$current_tab == "projection_qc")
                 # Use DAF axis entries instead of loading full matrices
                 query_daf <- get_dataset_daf(dataset())
                 atlas_daf <- get_atlas_daf()
@@ -133,7 +133,7 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
             })
 
             output$fitted_genes <- shinydashboard::renderValueBox({
-                req(globals$current_tab == "projection_qc")
+                req(state$tab_state$current_tab == "projection_qc")
                 gene_md <- get_mc_data(dataset(), "gene_metadata")
                 req(gene_md)
                 req(has_name(gene_md, "fitted_gene_any"))
@@ -162,7 +162,7 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
             })
 
             output$avg_projection_cor <- shinydashboard::renderValueBox({
-                req(globals$current_tab == "projection_qc")
+                req(state$tab_state$current_tab == "projection_qc")
                 qc_df <- as_tibble(get_mc_data(dataset(), "mc_qc_metadata"))
                 req(qc_df)
                 req(qc_df$projected_correlation)
@@ -197,7 +197,7 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
 gene_correction_factor_stat_box <- function(ns, id, dataset, title, output_id, width = 12, height = "35vh", globals = NULL, state = NULL) {
     renderUI({
         if (!is.null(globals)) {
-            req(globals$current_tab == "projection_qc")
+            req(state$tab_state$current_tab == "projection_qc")
         }
         gene_qc <- get_gene_qc(dataset())
         req(gene_qc)
@@ -221,7 +221,7 @@ gene_correction_factor_stat_box <- function(ns, id, dataset, title, output_id, w
 
 gene_correction_factor_scatter_plot <- function(dataset, input, globals, state, tab_id = "projection_qc") {
     plotly::renderPlotly({
-        req(globals$current_tab == tab_id)
+        req(state$tab_state$current_tab == tab_id)
         gene_qc <- get_gene_qc(dataset())
         if (is.null(gene_qc) || is.null(gene_qc$correction_factor)) {
             return(plotly_text_plot("Please recompute the metacells\nusing the latest version\nin order to see this plot."))
@@ -369,7 +369,7 @@ fitted_genes_per_cell_type_table <- function(dataset, input) {
 
 fitted_genes_per_cell_type_plot <- function(dataset, input, globals, state, tab_id = "projection_qc") {
     plotly::renderPlotly({
-        req(globals$current_tab == tab_id)
+        req(state$tab_state$current_tab == tab_id)
         gene_qc <- get_gene_qc(dataset())
         if (is.null(gene_qc)) {
             return(plotly_text_plot("Please recompute the metacells\nusing the latest version\nin order to see this plot."))

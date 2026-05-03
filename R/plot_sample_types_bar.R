@@ -1,6 +1,6 @@
 plot_sample_stacked_types <- function(dataset, globals, state, metacell_types, cell_type_colors, input, group_field = NULL, composition_reactive = NULL) {
     plotly::renderPlotly({
-        req(globals$current_tab == "samples")
+        req(state$tab_state$current_tab == "samples")
         gf <- if (!is.null(group_field)) group_field() else "samp_id"
         use_cells <- has_cell_gene_umis(dataset()) && !is.null(group_field)
 

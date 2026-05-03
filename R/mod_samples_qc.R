@@ -48,7 +48,7 @@ setup_samples_qc <- function(input, output, session, ns,
     })
 
     output$plot_qc_cells_per_group <- plotly::renderPlotly({
-        req(globals$current_tab == "samples")
+        req(state$tab_state$current_tab == "samples")
         stats_df <- qc_stats()
         req(nrow(stats_df) > 0)
 
@@ -95,7 +95,7 @@ setup_samples_qc <- function(input, output, session, ns,
     }) %>% bindCache(dataset(), group_field(), input$samp1, input$samp2, globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
 
     output$plot_qc_umis_per_group <- plotly::renderPlotly({
-        req(globals$current_tab == "samples")
+        req(state$tab_state$current_tab == "samples")
         stats_df <- qc_stats()
         req(nrow(stats_df) > 0)
         req(!all(is.na(stats_df$median_umis_per_cell)))

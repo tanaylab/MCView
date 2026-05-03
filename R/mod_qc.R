@@ -59,7 +59,7 @@ mod_qc_server <- function(id, dataset, metacell_types, cell_type_colors, gene_mo
             output$num_metacells <- qc_value_box("n_metacells", "Number of metacells", dataset, color = "black", globals = globals, state = state)
             output$num_cells <- qc_value_box("n_cells", "Number of cells", dataset, color = "purple", globals = globals, state = state)
             output$num_outliers <- shinydashboard::renderValueBox({
-                req(globals$current_tab == "qc")
+                req(state$tab_state$current_tab == "qc")
                 qc_stats <- get_mc_data(dataset(), "qc_stats")
                 num_cells <- qc_stats$n_cells
                 num_outliers <- qc_stats$n_outliers
@@ -95,7 +95,7 @@ qc_value_box <- function(field, title, dataset, color = "black", globals = NULL,
     shinydashboard::renderValueBox({
         # Defer computation until the tab is active
         if (!is.null(globals)) {
-            req(globals$current_tab == tab_id)
+            req(state$tab_state$current_tab == tab_id)
         }
         if (field == "n_metacells") {
             # Use DAF axis length instead of loading full matrix
@@ -149,7 +149,7 @@ qc_stat_box <- function(ns, id, title, output_id, width = 12, height = "27vh", .
 qc_stat_plot <- function(field, xlab, dataset, input, plot_type_id, globals, state, ylab = NULL, log_scale = FALSE, tab_id = "qc") {
     plotly::renderPlotly({
         # Defer computation until the tab is active
-        req(globals$current_tab == tab_id)
+        req(state$tab_state$current_tab == tab_id)
         qc_df <- as_tibble(get_mc_data(dataset(), "mc_qc_metadata"))
 
         req(qc_df[[field]])

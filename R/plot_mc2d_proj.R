@@ -569,7 +569,7 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
     plotly::renderPlotly({
         # Defer computation until the tab is active (when tab_guard is specified)
         if (!is.null(tab_guard)) {
-            req(globals$current_tab == tab_guard)
+            req(state$tab_state$current_tab == tab_guard)
         }
         req(input$color_proj)
         req(input$point_size)

@@ -36,7 +36,7 @@ app_server <- function(input, output, session) {
     })
 
     globals$clipboard <- character(0)
-    globals$active_tabs <- app_config("tabs")
+    state$tab_state$active_tabs <- app_config("tabs")
     globals$plotly_scale <- 1
     globals$plotly_format <- "svg"
     globals$plotly_width <- NULL
@@ -51,11 +51,11 @@ app_server <- function(input, output, session) {
 
     # Track current sidebar tab so modules can defer computation until visited
     observe({
-        globals$current_tab <- input$tab_sidebar
+        state$tab_state$current_tab <- input$tab_sidebar
     })
 
     output$menu <- shinydashboard::renderMenu({
-        items_list <- purrr::map(mcv_get("tab_defs")[globals$active_tabs], ~ {
+        items_list <- purrr::map(mcv_get("tab_defs")[state$tab_state$active_tabs], ~ {
             shinydashboard::menuSubItem(.x$title, tabName = .x$module_name, icon = icon(.x$icon))
         })
 
@@ -70,9 +70,9 @@ app_server <- function(input, output, session) {
     })
 
     observeEvent(input$update_tabs, {
-        globals$active_tabs <- c(app_config("tabs"), setdiff(input$selected_tabs, app_config("tabs")))
-        globals$active_tabs <- globals$active_tabs[globals$active_tabs %in% input$selected_tabs]
-        globals$active_tabs <- order_tabs(globals$active_tabs)
+        state$tab_state$active_tabs <- c(app_config("tabs"), setdiff(input$selected_tabs, app_config("tabs")))
+        state$tab_state$active_tabs <- state$tab_state$active_tabs[state$tab_state$active_tabs %in% input$selected_tabs]
+        state$tab_state$active_tabs <- order_tabs(state$tab_state$active_tabs)
     })
 
     observe({
@@ -88,7 +88,7 @@ app_server <- function(input, output, session) {
         }
         updateCheckboxGroupInput(
             inputId = "selected_tabs",
-            selected = globals$active_tabs,
+            selected = state$tab_state$active_tabs,
             choices = available_tabs
         )
     })

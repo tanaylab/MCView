@@ -68,7 +68,7 @@ setup_samples_composition <- function(input, output, session, ns,
     })
 
     output$plot_composition_ci <- plotly::renderPlotly({
-        req(globals$current_tab == "samples")
+        req(state$tab_state$current_tab == "samples")
         comp_df <- composition_ci_data()
         req(nrow(comp_df) > 0)
 
