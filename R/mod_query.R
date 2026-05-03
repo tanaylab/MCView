@@ -436,24 +436,39 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
 }
 
 mod_query_globals_observers <- function(input, session, globals, dataset, notification_suffix = " in \"Query\" tab") {
-    observe({
-        req(globals$selected_query_gene)
-        req(input$axis_type == "Gene")
-        req(input$axis_var)
-        shinyWidgets::updatePickerInput(session, "axis_var", selected = globals$selected_query_gene)
+    # Deferred-action observers: globals$selected_query_* is set from other
+    # tabs; re-fire on the relevant axis_type / mode change so the selection
+    # lands once the target picker exists.
+    observeEvent(
+        {
+            input$axis_type
+            globals$selected_query_gene
+        },
+        {
+            req(globals$selected_query_gene)
+            req(input$axis_type == "Gene")
+            req(input$axis_var)
+            shinyWidgets::updatePickerInput(session, "axis_var", selected = globals$selected_query_gene)
 
-        showNotification(glue("Selected {globals$selected_query_gene}{notification_suffix}"))
-        globals$selected_query_gene <- NULL
-    })
+            showNotification(glue("Selected {globals$selected_query_gene}{notification_suffix}"))
+            globals$selected_query_gene <- NULL
+        }
+    )
 
-    observe({
-        req(input$mode == "MC")
-        req(input$metacell1)
-        req(globals$selected_query_metacell)
-        shinyWidgets::updatePickerInput(session, "metacell1", selected = globals$selected_query_metacell)
-        showNotification(glue("Selected {globals$selected_query_metacell}{notification_suffix}"))
-        globals$selected_query_metacell <- NULL
-    })
+    observeEvent(
+        {
+            input$mode
+            globals$selected_query_metacell
+        },
+        {
+            req(input$mode == "MC")
+            req(input$metacell1)
+            req(globals$selected_query_metacell)
+            shinyWidgets::updatePickerInput(session, "metacell1", selected = globals$selected_query_metacell)
+            showNotification(glue("Selected {globals$selected_query_metacell}{notification_suffix}"))
+            globals$selected_query_metacell <- NULL
+        }
+    )
 }
 
 

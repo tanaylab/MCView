@@ -140,33 +140,48 @@ mod_gene_mc_plotly_observers <- function(input, session, source = "mc_mc_plot", 
 }
 
 mod_gene_mc_globals_observers <- function(input, session, globals, dataset, notification_suffix = " in \"Genes\" tab") {
-    observe({
-        req(globals$selected_gene_x_axis)
-        req(input$x_axis_type == "Gene")
-        req(input$x_axis_var)
-        shinyWidgets::updatePickerInput(session, "x_axis_var", selected = globals$selected_gene_x_axis)
+    # Deferred-action observers: globals$selected_gene_*_axis is set from other
+    # tabs (e.g. heatmap dblclick); we re-attempt application when input$*_type
+    # changes so the selection lands once the target picker exists.
+    observeEvent(
+        {
+            input$x_axis_type
+            globals$selected_gene_x_axis
+        },
+        {
+            req(globals$selected_gene_x_axis)
+            req(input$x_axis_type == "Gene")
+            req(input$x_axis_var)
+            shinyWidgets::updatePickerInput(session, "x_axis_var", selected = globals$selected_gene_x_axis)
 
-        if (has_atlas(dataset())) {
-            shinyWidgets::updatePickerInput(session, "atlas_x_axis_var", selected = globals$selected_gene_x_axis)
+            if (has_atlas(dataset())) {
+                shinyWidgets::updatePickerInput(session, "atlas_x_axis_var", selected = globals$selected_gene_x_axis)
+            }
+
+            showNotification(glue("Selected {globals$selected_gene_x_axis}{notification_suffix}"))
+            globals$selected_gene_x_axis <- NULL
         }
+    )
 
-        showNotification(glue("Selected {globals$selected_gene_x_axis}{notification_suffix}"))
-        globals$selected_gene_x_axis <- NULL
-    })
+    observeEvent(
+        {
+            input$y_axis_type
+            globals$selected_gene_y_axis
+        },
+        {
+            req(globals$selected_gene_y_axis)
+            req(input$y_axis_type == "Gene")
+            req(input$y_axis_var)
+            shinyWidgets::updatePickerInput(session, "y_axis_var", selected = globals$selected_gene_y_axis)
 
-    observe({
-        req(globals$selected_gene_y_axis)
-        req(input$y_axis_type == "Gene")
-        req(input$y_axis_var)
-        shinyWidgets::updatePickerInput(session, "y_axis_var", selected = globals$selected_gene_y_axis)
+            if (has_atlas(dataset())) {
+                shinyWidgets::updatePickerInput(session, "atlas_y_axis_var", selected = globals$selected_gene_y_axis)
+            }
 
-        if (has_atlas(dataset())) {
-            shinyWidgets::updatePickerInput(session, "atlas_y_axis_var", selected = globals$selected_gene_y_axis)
+            showNotification(glue("Selected {globals$selected_gene_y_axis}{notification_suffix}"))
+            globals$selected_gene_y_axis <- NULL
         }
-
-        showNotification(glue("Selected {globals$selected_gene_y_axis}{notification_suffix}"))
-        globals$selected_gene_y_axis <- NULL
-    })
+    )
 }
 
 atlas_gene_gene <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals, ns) {
