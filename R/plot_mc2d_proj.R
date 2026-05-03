@@ -287,7 +287,7 @@ handle_2d_gene_b <- function(input, dataset, atlas, mc2d, metacell_types,
 
 #' @noRd
 handle_2d_metadata <- function(input, dataset, atlas, mc2d, metacell_types,
-                               selected_cell_types, globals,
+                               selected_cell_types, globals, state,
                                color_proj_metadata) {
     req(color_proj_metadata)
     metadata <- get_mc_data(dataset(), "metadata")
@@ -479,7 +479,7 @@ handle_2d_selected <- function(input, dataset, atlas, mc2d, metacell_types,
 #' @noRd
 dispatch_2d_color_proj <- function(color_proj, input, dataset, atlas, mc2d,
                                    metacell_types, cell_type_colors,
-                                   gene_modules, globals, selected_cell_types,
+                                   gene_modules, globals, state, selected_cell_types,
                                    proj_stat, color_proj_gene,
                                    color_proj_metadata, color_proj_gene_module,
                                    query_types, group, groupA, groupB,
@@ -492,7 +492,7 @@ dispatch_2d_color_proj <- function(color_proj, input, dataset, atlas, mc2d,
         "Gene B" = handle_2d_gene_b(input, dataset, atlas, mc2d,
             metacell_types, selected_cell_types, proj_stat),
         "Metadata" = handle_2d_metadata(input, dataset, atlas, mc2d,
-            metacell_types, selected_cell_types, globals, color_proj_metadata),
+            metacell_types, selected_cell_types, globals, state, color_proj_metadata),
         "Gene" = handle_2d_gene(input, dataset, atlas, mc2d,
             metacell_types, selected_cell_types, proj_stat, color_proj_gene),
         "Gene module" = handle_2d_gene_module(input, dataset, atlas, mc2d,
@@ -522,7 +522,7 @@ dispatch_2d_color_proj <- function(color_proj, input, dataset, atlas, mc2d,
 #' legend orientation, WebGL conversion, and grid cleanup.
 #'
 #' @noRd
-finalize_2d_plotly <- function(fig, input, globals, source, buttons, dragmode) {
+finalize_2d_plotly <- function(fig, input, globals, state, source, buttons, dragmode) {
     fig <- fig %>%
         plotly::event_register("plotly_restyle") %>%
         plotly::event_register("plotly_click") %>%
@@ -539,7 +539,7 @@ finalize_2d_plotly <- function(fig, input, globals, source, buttons, dragmode) {
 
     fig <- fig %>%
         sanitize_plotly_buttons(buttons = buttons) %>%
-        sanitize_plotly_download(globals)
+        sanitize_plotly_download(globals, state)
 
     if (!is.null(input$legend_orientation)) {
         if (input$legend_orientation == "Horizontal") {
@@ -565,7 +565,7 @@ finalize_2d_plotly <- function(fig, input, globals, source, buttons, dragmode) {
 # Main orchestrator
 # ---------------------------------------------------------------------------
 
-render_2d_plotly <- function(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, source, buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL, refresh_on_gene_change = FALSE, atlas = FALSE, query_types = NULL, group = NULL, groupA = NULL, groupB = NULL, selected_metacell_types = NULL, selected_cell_types = NULL, tab_guard = NULL) {
+render_2d_plotly <- function(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, state, source, buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL, refresh_on_gene_change = FALSE, atlas = FALSE, query_types = NULL, group = NULL, groupA = NULL, groupB = NULL, selected_metacell_types = NULL, selected_cell_types = NULL, tab_guard = NULL) {
     plotly::renderPlotly({
         # Defer computation until the tab is active (when tab_guard is specified)
         if (!is.null(tab_guard)) {
@@ -602,14 +602,14 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
         # Dispatch to the appropriate handler
         fig <- dispatch_2d_color_proj(
             color_proj, input, dataset, atlas, mc2d,
-            metacell_types, cell_type_colors, gene_modules, globals,
+            metacell_types, cell_type_colors, gene_modules, globals, state,
             selected_cell_types, proj_stat, color_proj_gene,
             color_proj_metadata, color_proj_gene_module,
             query_types, group, groupA, groupB, selected_metacell_types
         )
 
         # Apply common post-processing
-        fig <- finalize_2d_plotly(fig, input, globals, source, buttons, dragmode)
+        fig <- finalize_2d_plotly(fig, input, globals, state, source, buttons, dragmode)
 
         return(fig)
     })

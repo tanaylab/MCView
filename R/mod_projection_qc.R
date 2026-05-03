@@ -63,7 +63,7 @@ mod_projection_qc_sidebar_ui <- function(id) {
 #' QC Server Function
 #'
 #' @noRd
-mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, globals) {
+mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, globals, state) {
     moduleServer(
         id,
         function(input, output, session) {
@@ -81,7 +81,7 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
                     color = "black"
                 )
             })
-            output$num_metacells_query <- qc_value_box("n_metacells", "Number of query metacells", dataset, color = "purple", globals = globals, tab_id = "projection_qc")
+            output$num_metacells_query <- qc_value_box("n_metacells", "Number of query metacells", dataset, color = "purple", globals = globals, state = state, tab_id = "projection_qc")
             output$num_metacells_similar <- shinydashboard::renderValueBox({
                 req(globals$current_tab == "projection_qc")
                 # Use DAF axis length instead of loading full matrix
@@ -176,16 +176,16 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
                 )
             })
 
-            output$plot_projected_correlation <- qc_stat_plot("projected_correlation", "Projected correlation per metacell", dataset, input, "plot_projected_correlation_type", globals, tab_id = "projection_qc")
+            output$plot_projected_correlation <- qc_stat_plot("projected_correlation", "Projected correlation per metacell", dataset, input, "plot_projected_correlation_type", globals, state, tab_id = "projection_qc")
 
-            output$correction_factor_box <- gene_correction_factor_stat_box(ns, id, dataset, "Correction factor per gene", "plot_correction_factor_scatter", globals = globals)
+            output$correction_factor_box <- gene_correction_factor_stat_box(ns, id, dataset, "Correction factor per gene", "plot_correction_factor_scatter", globals = globals, state = state)
 
-            output$plot_correction_factor_scatter <- gene_correction_factor_scatter_plot(dataset, input, globals)
+            output$plot_correction_factor_scatter <- gene_correction_factor_scatter_plot(dataset, input, globals, state)
             output$gene_correction_factor_table <- gene_correction_factor_table(dataset, input)
 
-            output$plot_mc_stacked_type <- plot_type_predictions_bar(dataset, metacell_types, cell_type_colors, globals = globals)
+            output$plot_mc_stacked_type <- plot_type_predictions_bar(dataset, metacell_types, cell_type_colors, globals = globals, state = state)
 
-            output$plot_fitted_genes_per_cell_type <- fitted_genes_per_cell_type_plot(dataset, input, globals)
+            output$plot_fitted_genes_per_cell_type <- fitted_genes_per_cell_type_plot(dataset, input, globals, state)
             output$fitted_genes_per_cell_type_table <- fitted_genes_per_cell_type_table(dataset, input)
 
             output$fitted_gene_per_cell_type_selector <- fitted_gene_per_cell_type_selector(ns, dataset, input)
@@ -194,7 +194,7 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
 }
 
 
-gene_correction_factor_stat_box <- function(ns, id, dataset, title, output_id, width = 12, height = "35vh", globals = NULL) {
+gene_correction_factor_stat_box <- function(ns, id, dataset, title, output_id, width = 12, height = "35vh", globals = NULL, state = NULL) {
     renderUI({
         if (!is.null(globals)) {
             req(globals$current_tab == "projection_qc")
@@ -219,7 +219,7 @@ gene_correction_factor_stat_box <- function(ns, id, dataset, title, output_id, w
     })
 }
 
-gene_correction_factor_scatter_plot <- function(dataset, input, globals, tab_id = "projection_qc") {
+gene_correction_factor_scatter_plot <- function(dataset, input, globals, state, tab_id = "projection_qc") {
     plotly::renderPlotly({
         req(globals$current_tab == tab_id)
         gene_qc <- get_gene_qc(dataset())
@@ -246,7 +246,7 @@ gene_correction_factor_scatter_plot <- function(dataset, input, globals, tab_id 
             sanitize_for_WebGL() %>%
             plotly::toWebGL() %>%
             sanitize_plotly_buttons() %>%
-            sanitize_plotly_download(globals)
+            sanitize_plotly_download(globals, state)
     }) %>% bindCache(dataset(), globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
 }
 
@@ -367,7 +367,7 @@ fitted_genes_per_cell_type_table <- function(dataset, input) {
     )
 }
 
-fitted_genes_per_cell_type_plot <- function(dataset, input, globals, tab_id = "projection_qc") {
+fitted_genes_per_cell_type_plot <- function(dataset, input, globals, state, tab_id = "projection_qc") {
     plotly::renderPlotly({
         req(globals$current_tab == tab_id)
         gene_qc <- get_gene_qc(dataset())
@@ -411,6 +411,6 @@ fitted_genes_per_cell_type_plot <- function(dataset, input, globals, tab_id = "p
 
         plotly::ggplotly(p) %>%
             sanitize_plotly_buttons() %>%
-            sanitize_plotly_download(globals)
+            sanitize_plotly_download(globals, state)
     }) %>% bindCache(dataset(), globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
 }

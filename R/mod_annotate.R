@@ -131,7 +131,7 @@ mod_annotate_sidebar_ui <- function(id) {
 #' annotate Server Function
 #'
 #' @noRd
-mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, globals) {
+mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, globals, state) {
     moduleServer(
         id,
         function(input, output, session) {
@@ -140,7 +140,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
 
             # gene selectors
             top_correlated_selectors(input, output, session, dataset, metacell_types, ns, gene_modules = gene_modules, selected_cell_types = selected_cell_types)
-            scatter_selectors(ns, dataset, output, globals)
+            scatter_selectors(ns, dataset, output, globals, state)
 
             observeEvent(input$metacell_types_fn, {
                 new_metacell_types <- tgutil::fread(input$metacell_types_fn$datapath, colClasses = c("cell_type" = "character", "metacell" = "character")) %>% as_tibble()
@@ -742,10 +742,10 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
             purrr::walk(mc_plot_sources, ~ observe_mc_click_event(.x, input, session, cell_type_colors, metacell_types, selected_metacell_types))
             purrr::walk(mc_plot_sources, ~ observer_mc_select_event(.x, input, cell_type_colors, metacell_types, selected_metacell_types))
 
-            projection_selectors(ns, dataset, output, input, gene_modules, globals, session, weight = 0.6)
+            projection_selectors(ns, dataset, output, input, gene_modules, globals, state, session, weight = 0.6)
 
             # We use this reactive in order to invalidate the cache only when needed
-            clipboard_changed <- clipboard_changed_2d_reactive(input, globals)
+            clipboard_changed <- clipboard_changed_2d_reactive(input, globals, state)
 
             # Projection plots
             output$plot_gene_proj_2d <- render_2d_plotly(
@@ -756,7 +756,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 metacell_types,
                 cell_type_colors,
                 gene_modules,
-                globals,
+                globals, state,
                 source = "proj_annot_plot",
                 buttons = c("hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"),
                 dragmode = "select",
@@ -800,12 +800,12 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 )
 
             # Use the already defined selected_cell_types reactiveVal (defined at the top of the server) so that it is shared across the module
-            scatter_box_outputs(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, ns, selected_cell_types = selected_cell_types, plotly_source = "gene_gene_plot_annot", plotly_buttons = c("hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = "select", tab_guard = "annotate")
+            scatter_box_outputs(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, state, ns, selected_cell_types = selected_cell_types, plotly_source = "gene_gene_plot_annot", plotly_buttons = c("hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = "select", tab_guard = "annotate")
 
             connect_gene_plots(input, output, session, ns, source = "proj_annot_plot")
 
             # MC/MC diff gene expression plots
-            diff_expr_outputs(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, ns, source_suffix = "_annot", tab_guard = "annotate")
+            diff_expr_outputs(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, state, ns, source_suffix = "_annot", tab_guard = "annotate")
 
             mod_gene_mc_plotly_observers(input, session, source = "mc_mc_plot_annot", notification_suffix = "")
         }

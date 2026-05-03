@@ -63,23 +63,35 @@ setup_app_state <- function() {
         plotly_height = NULL
     )
 
+    # Phase 2.2 — domain-scoped reactiveValues plumbed alongside globals.
+    # During the foundation commit these stay empty; per-domain commits
+    # migrate slots from globals into the matching domain.
+    state <- list(
+        session_ui = shiny::reactiveValues(),
+        tab_state = shiny::reactiveValues(),
+        selection = shiny::reactiveValues(),
+        manifold_state = shiny::reactiveValues()
+    )
+
     list(
         mc_types = mc_types,
         ct_colors = ct_colors,
         gene_mods = gene_mods,
-        globals = globals
+        globals = globals,
+        state = state
     )
 }
 
 # Helper: build the standard args list for a module server.
-# `state` is the output of setup_app_state().
-build_module_args <- function(state) {
+# `fixture` is the output of setup_app_state().
+build_module_args <- function(fixture) {
     list(
         dataset = shiny::reactive("test_data"),
-        metacell_types = shiny::reactiveVal(state$mc_types),
-        cell_type_colors = shiny::reactiveVal(state$ct_colors),
-        gene_modules = shiny::reactiveVal(state$gene_mods),
-        globals = state$globals
+        metacell_types = shiny::reactiveVal(fixture$mc_types),
+        cell_type_colors = shiny::reactiveVal(fixture$ct_colors),
+        gene_modules = shiny::reactiveVal(fixture$gene_mods),
+        globals = fixture$globals,
+        state = fixture$state
     )
 }
 

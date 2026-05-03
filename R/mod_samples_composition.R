@@ -14,7 +14,7 @@
 #' @noRd
 setup_samples_composition <- function(input, output, session, ns,
                                       dataset, metacell_types, cell_type_colors,
-                                      group_field, globals) {
+                                      group_field, globals, state) {
     # Shared reactive for cell-type composition, used by both the stacked
     # bar plot and the composition CI panel.  Cached per (dataset, group_field,
     # metacell_types) so switching back to a previous grouping field is instant.
@@ -25,7 +25,7 @@ setup_samples_composition <- function(input, output, session, ns,
         get_group_cell_type_composition(dataset(), gf, metacell_types())
     }) %>% bindCache(dataset(), group_field(), metacell_types())
 
-    output$plot_sample_stacked_types <- plot_sample_stacked_types(dataset, globals, metacell_types, cell_type_colors, input, group_field, composition_reactive = group_composition)
+    output$plot_sample_stacked_types <- plot_sample_stacked_types(dataset, globals, state, metacell_types, cell_type_colors, input, group_field, composition_reactive = group_composition)
 
     # --- Composition Confidence Intervals Panel ---
     composition_ci_data <- reactive({
@@ -149,7 +149,7 @@ setup_samples_composition <- function(input, output, session, ns,
                 margin = list(l = 120)
             ) %>%
             sanitize_plotly_buttons() %>%
-            sanitize_plotly_download(globals)
+            sanitize_plotly_download(globals, state)
 
         fig
     }) %>% bindCache(dataset(), group_field(), metacell_types(), cell_type_colors(), input$samp1, input$samp2, globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)

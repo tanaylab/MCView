@@ -158,7 +158,7 @@ mod_query_sidebar_ui <- function(id) {
 #' projection Server Function
 #'
 #' @noRd
-mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, globals) {
+mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, globals, state) {
     moduleServer(
         id,
         function(input, output, session) {
@@ -179,7 +179,7 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
             metacell_names <- metacell_names_reactive(dataset)
             metacell_colors <- metacell_colors_reactive(dataset, metacell_names, metacell_types)
 
-            mod_query_globals_observers(input, session, globals, dataset)
+            mod_query_globals_observers(input, session, globals, state, dataset)
 
             picker_options <- shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "contains", dropupAuto = FALSE)
 
@@ -222,11 +222,11 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
             })
 
 
-            scatter_selectors(ns, dataset, output, globals)
-            projection_selectors(ns, dataset, output, input, gene_modules, globals, session, weight = 0.6)
+            scatter_selectors(ns, dataset, output, globals, state)
+            projection_selectors(ns, dataset, output, input, gene_modules, globals, state, session, weight = 0.6)
             top_correlated_selector("axis_var", "axis", "axis_type", input, output, session, dataset, ns, button_labels = c("Axes", "Color"), ids = c("axis", "color"), gene_modules = gene_modules)
 
-            group_selectors_mod_query(input, output, session, dataset, ns, group, metacell_types, cell_type_colors, globals)
+            group_selectors_mod_query(input, output, session, dataset, ns, group, metacell_types, cell_type_colors, globals, state)
             metacell_selectors_mod_query(input, output, session, dataset, ns, metacell_names, metacell_colors, projected_metacell_types, atlas_colors, group)
 
             mc_mc_gene_scatter_df <- reactive({
@@ -257,10 +257,10 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
             })
 
             # Projection plots
-            output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, projected_metacell_types, atlas_colors, gene_modules, globals, group = group, source = "proj_mc_plot_proj_tab", tab_guard = "query")
+            output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, projected_metacell_types, atlas_colors, gene_modules, globals, state, group = group, source = "proj_mc_plot_proj_tab", tab_guard = "query")
 
             # Differential expression
-            output$plot_mc_mc_gene_scatter <- render_mc_mc_gene_plotly(input, output, session, ns, dataset, globals, gene_modules, mc_mc_gene_scatter_df, metacell_names, atlas_colors, metacell_types = metacell_types, tab_guard = "query")
+            output$plot_mc_mc_gene_scatter <- render_mc_mc_gene_plotly(input, output, session, ns, dataset, globals, state, gene_modules, mc_mc_gene_scatter_df, metacell_names, atlas_colors, metacell_types = metacell_types, tab_guard = "query")
 
             # Select a gene when clicking on it
             plotly_click_observer("projection_diff_expr_plot", session, "axis_var", notification_prefix = "Selected ", update_function = shinyWidgets::updatePickerInput)
@@ -320,7 +320,7 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
                     sanitize_for_WebGL() %>%
                     plotly::toWebGL() %>%
                     sanitize_plotly_buttons() %>%
-                    sanitize_plotly_download(globals)
+                    sanitize_plotly_download(globals, state)
 
                 if (input$color_by_var == "Cell type") {
                     fig <- plotly::hide_legend(fig)
@@ -435,7 +435,7 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
     )
 }
 
-mod_query_globals_observers <- function(input, session, globals, dataset, notification_suffix = " in \"Query\" tab") {
+mod_query_globals_observers <- function(input, session, globals, state, dataset, notification_suffix = " in \"Query\" tab") {
     # Deferred-action observers: globals$selected_query_* is set from other
     # tabs; re-fire on the relevant axis_type / mode change so the selection
     # lands once the target picker exists.
@@ -563,13 +563,13 @@ select_metacell_plotly_event_projection <- function(source, input, session, meta
     })
 }
 
-group_selectors_mod_query <- function(input, output, session, dataset, ns, group, metacell_types, cell_type_colors, globals) {
+group_selectors_mod_query <- function(input, output, session, dataset, ns, group, metacell_types, cell_type_colors, globals, state) {
     render_group_box(output, "group_box", ns, "Group", "group_table",
                      "reset_group", "remove_group_metacells", "paste_group_metacells",
                      "Group", input)
     render_group_table(output, "group_table", group, metacell_types, cell_type_colors)
     setup_group_observers(input, group, "add_metacell_to_group", "remove_group_metacells",
-                          "paste_group_metacells", "reset_group", "group_table", "metacell", globals)
+                          "paste_group_metacells", "reset_group", "group_table", "metacell", globals, state)
 
     purrr::walk(c("proj_mc_plot_proj_tab", "obs_proj_plot"), function(source) {
         observe_group_selection(source, input, group)

@@ -49,15 +49,15 @@ mod_qc_sidebar_ui <- function(id) {
 #' QC Server Function
 #'
 #' @noRd
-mod_qc_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, globals) {
+mod_qc_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, globals, state) {
     moduleServer(
         id,
         function(input, output, session) {
             ns <- session$ns
 
             # Value boxes - defer until QC tab is active
-            output$num_metacells <- qc_value_box("n_metacells", "Number of metacells", dataset, color = "black", globals = globals)
-            output$num_cells <- qc_value_box("n_cells", "Number of cells", dataset, color = "purple", globals = globals)
+            output$num_metacells <- qc_value_box("n_metacells", "Number of metacells", dataset, color = "black", globals = globals, state = state)
+            output$num_cells <- qc_value_box("n_cells", "Number of cells", dataset, color = "purple", globals = globals, state = state)
             output$num_outliers <- shinydashboard::renderValueBox({
                 req(globals$current_tab == "qc")
                 qc_stats <- get_mc_data(dataset(), "qc_stats")
@@ -82,16 +82,16 @@ mod_qc_server <- function(id, dataset, metacell_types, cell_type_colors, gene_mo
                     color = color
                 )
             })
-            output$median_umis_per_metacell <- qc_value_box("median_umis_per_metacell", "Median UMIs / MC", dataset, color = "blue", globals = globals)
-            output$median_cells_per_metacell <- qc_value_box("median_cells_per_metacell", "Median cells / MC", dataset, color = "maroon", globals = globals)
+            output$median_umis_per_metacell <- qc_value_box("median_umis_per_metacell", "Median UMIs / MC", dataset, color = "blue", globals = globals, state = state)
+            output$median_cells_per_metacell <- qc_value_box("median_cells_per_metacell", "Median cells / MC", dataset, color = "maroon", globals = globals, state = state)
 
-            output$plot_qc_umis <- qc_stat_plot("umis", "Number of UMIs per metacell", dataset, input, "plot_qc_umis_type", globals, log_scale = TRUE)
-            output$plot_qc_cell_num <- qc_stat_plot("cells", "Number of cells per metacell", dataset, input, "plot_qc_cell_num_type", globals)
+            output$plot_qc_umis <- qc_stat_plot("umis", "Number of UMIs per metacell", dataset, input, "plot_qc_umis_type", globals, state, log_scale = TRUE)
+            output$plot_qc_cell_num <- qc_stat_plot("cells", "Number of cells per metacell", dataset, input, "plot_qc_cell_num_type", globals, state)
         }
     )
 }
 
-qc_value_box <- function(field, title, dataset, color = "black", globals = NULL, tab_id = "qc") {
+qc_value_box <- function(field, title, dataset, color = "black", globals = NULL, state = NULL, tab_id = "qc") {
     shinydashboard::renderValueBox({
         # Defer computation until the tab is active
         if (!is.null(globals)) {
@@ -146,7 +146,7 @@ qc_stat_box <- function(ns, id, title, output_id, width = 12, height = "27vh", .
     )
 }
 
-qc_stat_plot <- function(field, xlab, dataset, input, plot_type_id, globals, ylab = NULL, log_scale = FALSE, tab_id = "qc") {
+qc_stat_plot <- function(field, xlab, dataset, input, plot_type_id, globals, state, ylab = NULL, log_scale = FALSE, tab_id = "qc") {
     plotly::renderPlotly({
         # Defer computation until the tab is active
         req(globals$current_tab == tab_id)
@@ -157,18 +157,18 @@ qc_stat_plot <- function(field, xlab, dataset, input, plot_type_id, globals, yla
         req(input[[plot_type_id]])
 
         if (input[[plot_type_id]] == "ECDF") {
-            p <- qc_ecdf(qc_df, field, xlab, ylab, globals, log_scale = log_scale)
+            p <- qc_ecdf(qc_df, field, xlab, ylab, globals, state, log_scale = log_scale)
         } else {
-            p <- qc_density(qc_df, field, xlab, ylab, globals, log_scale = log_scale)
+            p <- qc_density(qc_df, field, xlab, ylab, globals, state, log_scale = log_scale)
         }
 
-        p <- sanitize_plotly_download(p, globals)
+        p <- sanitize_plotly_download(p, globals, state)
 
         return(p)
     }) %>% bindCache(dataset(), input[[plot_type_id]], field, plot_type_id, globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
 }
 
-qc_density <- function(qc_df, field, xlab, ylab, globals, log_scale = FALSE) {
+qc_density <- function(qc_df, field, xlab, ylab, globals, state, log_scale = FALSE) {
     if (is.null(ylab)) {
         ylab <- "Density"
     }
@@ -215,12 +215,12 @@ qc_density <- function(qc_df, field, xlab, ylab, globals, log_scale = FALSE) {
             ay = 0
         ) %>%
         sanitize_plotly_buttons() %>%
-        sanitize_plotly_download(globals)
+        sanitize_plotly_download(globals, state)
 
     return(p)
 }
 
-qc_ecdf <- function(qc_df, field, xlab, ylab, globals, log_scale = FALSE) {
+qc_ecdf <- function(qc_df, field, xlab, ylab, globals, state, log_scale = FALSE) {
     if (is.null(ylab)) {
         ylab <- "% of metacells <= x"
     }
@@ -265,7 +265,7 @@ qc_ecdf <- function(qc_df, field, xlab, ylab, globals, log_scale = FALSE) {
             ay = 0
         ) %>%
         sanitize_plotly_buttons() %>%
-        sanitize_plotly_download(globals)
+        sanitize_plotly_download(globals, state)
 
 
     return(p)

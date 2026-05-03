@@ -130,7 +130,7 @@ get_metacell_by_heatmap_coord <- function(m, coord) {
     return(colnames(m)[x_coord])
 }
 
-get_markers_metadata <- function(dataset, selected_md, metacell_types, globals) {
+get_markers_metadata <- function(dataset, selected_md, metacell_types, globals, state) {
     if (!is.null(selected_md)) {
         metadata <- get_mc_data(dataset(), "metadata")
         if (is.null(metadata)) {

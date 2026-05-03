@@ -57,7 +57,7 @@ sanitize_plotly_buttons <- function(p,
     )
 }
 
-sanitize_plotly_download <- function(p, globals) {
+sanitize_plotly_download <- function(p, globals, state) {
     to_image_options <- list(format = globals$plotly_format, width = globals$plotly_width, height = globals$plotly_height, scale = globals$plotly_scale)
     p %>% plotly::config(
         toImageButtonOptions = to_image_options
@@ -83,7 +83,7 @@ prepare_plotly_scatter <- function(p, tooltip = "tooltip_text", source = NULL,
                                        "select2d", "lasso2d", "hoverClosestCartesian",
                                        "hoverCompareCartesian", "toggleSpikelines"
                                    ),
-                                   globals = NULL, hide_legend = FALSE) {
+                                   globals = NULL, state = NULL, hide_legend = FALSE) {
     if (is.null(tooltip)) {
         fig <- plotly::ggplotly(p, source = source)
     } else {
@@ -101,7 +101,7 @@ prepare_plotly_scatter <- function(p, tooltip = "tooltip_text", source = NULL,
         sanitize_plotly_buttons(buttons = buttons)
 
     if (!is.null(globals)) {
-        fig <- fig %>% sanitize_plotly_download(globals)
+        fig <- fig %>% sanitize_plotly_download(globals, state)
     }
 
     fig %>%

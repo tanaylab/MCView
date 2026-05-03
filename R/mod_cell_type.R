@@ -161,7 +161,7 @@ mod_cell_type_sidebar_ui <- function(id) {
 #' cell type Server Function
 #'
 #' @noRd
-mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, globals) {
+mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, globals, state) {
     moduleServer(
         id,
         function(input, output, session) {
@@ -665,7 +665,7 @@ mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, 
 
                 fig <- plotly::ggplotly(p, source = "cell_type_boxplot") %>%
                     sanitize_plotly_buttons() %>%
-                    sanitize_plotly_download(globals)
+                    sanitize_plotly_download(globals, state)
 
                 return(fig)
             }) %>% bindCache(

@@ -69,7 +69,7 @@ mod_about_sidebar_ui <- function(id) {
 #'
 #' @param gene_modules kept for interface consistency with other module servers; not used in this module.
 #' @noRd
-mod_about_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, globals) {
+mod_about_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, globals, state) {
     moduleServer(
         id,
         function(input, output, session) {

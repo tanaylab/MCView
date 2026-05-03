@@ -22,7 +22,7 @@
 #' @param gene_modules Reactive expression returning gene module data
 #' @param genes Reactive expression returning selected genes (can be NULL)
 #' @noRd
-heatmap_tooltip_handler <- function(output, mat, metacell_filter, metacell_types, cell_type_colors, dataset, input, globals, mode, gene_modules, genes, applied_params) {
+heatmap_tooltip_handler <- function(output, mat, metacell_filter, metacell_types, cell_type_colors, dataset, input, globals, state, mode, gene_modules, genes, applied_params) {
     output$hover_info <- renderUI({
         m <- mat()
         req(m)
@@ -73,7 +73,7 @@ heatmap_tooltip_handler <- function(output, mat, metacell_filter, metacell_types
             sep = "<br/>"
         )
 
-        metadata <- get_markers_metadata(dataset, applied_params()$selected_md, metacell_types, globals)
+        metadata <- get_markers_metadata(dataset, applied_params()$selected_md, metacell_types, globals, state)
         if (!is.null(metadata)) {
             mc_md <- metadata %>%
                 filter(metacell == !!metacell) %>%
@@ -106,7 +106,7 @@ heatmap_tooltip_handler <- function(output, mat, metacell_filter, metacell_types
 #' @param metacell_types Reactive expression returning metacell type annotations
 #' @param globals Reactive values for global state
 #' @noRd
-heatmap_download_handlers <- function(output, mat, markers, metacell_filter, dataset, input, metacell_types, globals, applied_params, ns) {
+heatmap_download_handlers <- function(output, mat, markers, metacell_filter, dataset, input, metacell_types, globals, state, applied_params, ns) {
     output$download_matrix <- downloadHandler(
         filename = function() {
             paste("markers_matrix-", Sys.Date(), ".csv", sep = "")
@@ -117,7 +117,7 @@ heatmap_download_handlers <- function(output, mat, markers, metacell_filter, dat
                 m <- m[, intersect(colnames(m), metacell_filter()), drop = FALSE]
             }
             if (input$include_metadata) {
-                metadata <- get_markers_metadata(dataset, applied_params()$selected_md, metacell_types, globals)
+                metadata <- get_markers_metadata(dataset, applied_params()$selected_md, metacell_types, globals, state)
                 metadata_m <- metadata %>%
                     as.data.frame() %>%
                     column_to_rownames("metacell") %>%
@@ -164,7 +164,7 @@ heatmap_download_handlers <- function(output, mat, markers, metacell_filter, dat
     )
 
     clipboard_copy_button_server(
-        input, "copy_genes_to_clipboard", markers, globals,
+        input, "copy_genes_to_clipboard", markers, globals, state,
         message_template = "Copied {count} genes to clipboard"
     )
 }

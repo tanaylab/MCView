@@ -13,7 +13,7 @@
 #'
 #' @noRd
 setup_samples_qc <- function(input, output, session, ns,
-                             dataset, group_field, globals) {
+                             dataset, group_field, globals, state) {
     # --- Sample QC Metrics Panel ---
     qc_stats <- reactive({
         req(dataset())
@@ -89,7 +89,7 @@ setup_samples_qc <- function(input, output, session, ns,
                 legend = list(orientation = "h", yanchor = "bottom", y = 1.02, xanchor = "right", x = 1)
             ) %>%
             sanitize_plotly_buttons() %>%
-            sanitize_plotly_download(globals)
+            sanitize_plotly_download(globals, state)
 
         fig
     }) %>% bindCache(dataset(), group_field(), input$samp1, input$samp2, globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
@@ -138,7 +138,7 @@ setup_samples_qc <- function(input, output, session, ns,
                 legend = list(orientation = "h", yanchor = "bottom", y = 1.02, xanchor = "right", x = 1)
             ) %>%
             sanitize_plotly_buttons() %>%
-            sanitize_plotly_download(globals)
+            sanitize_plotly_download(globals, state)
 
         fig
     }) %>% bindCache(dataset(), group_field(), input$samp1, input$samp2, globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)

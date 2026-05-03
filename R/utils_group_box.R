@@ -99,7 +99,7 @@ render_group_box <- function(output, output_id, ns, group_name, table_output_id,
 #'
 #' @noRd
 setup_group_observers <- function(input, group_reactive, add_id, remove_id, paste_id,
-                                  reset_id, table_id, metacell_input_id, globals) {
+                                  reset_id, table_id, metacell_input_id, globals, state) {
     observeEvent(input[[add_id]], {
         add_to_group(group_reactive, input[[metacell_input_id]])
     })

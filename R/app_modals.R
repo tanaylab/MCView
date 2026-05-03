@@ -1,4 +1,4 @@
-download_modal_reactives <- function(input, output, session, globals) {
+download_modal_reactives <- function(input, output, session, globals, state) {
     project <- mcv_get("project")
 
     # Handle DAF mode where project might be a dummy path
@@ -74,7 +74,7 @@ download_modal_reactives <- function(input, output, session, globals) {
     )
 }
 
-download_data_modal_reactives <- function(input, output, session, globals) {
+download_data_modal_reactives <- function(input, output, session, globals, state) {
     project <- mcv_get("project")
     creation_text <- ""
 

@@ -16,7 +16,7 @@
 #' @noRd
 setup_samples_de <- function(input, output, session, ns,
                              dataset, metacell_types, cell_type_colors,
-                             gene_modules, group_field, globals) {
+                             gene_modules, group_field, globals, state) {
     # Differential expression
     output$diff_expr_box <- renderUI({
         req(input$selected_cell_types)
@@ -61,7 +61,7 @@ setup_samples_de <- function(input, output, session, ns,
         }
     }) %>% bindCache(dataset(), input$selected_cell_types, input$samp1, input$samp2, metacell_types(), group_field())
 
-    output$plot_samp_samp_gene_scatter <- render_mc_mc_gene_plotly(input, output, session, ns, dataset, globals, gene_modules, samp_samp_scatter_df, metacell_names, cell_type_colors, mode = "Samples", tab_guard = "samples")
+    output$plot_samp_samp_gene_scatter <- render_mc_mc_gene_plotly(input, output, session, ns, dataset, globals, state, gene_modules, samp_samp_scatter_df, metacell_names, cell_type_colors, mode = "Samples", tab_guard = "samples")
 
     output$diff_expr_table <- render_mc_mc_gene_diff_table(input, output, session, ns, dataset, samp_samp_scatter_df)
 
@@ -151,7 +151,7 @@ setup_samples_de <- function(input, output, session, ns,
     }) %>% bindCache(dataset(), input$group_a, input$group_b, metacell_types(), group_field(), input$selected_cell_types)
 
     output$plot_group_comparison_scatter <- render_mc_mc_gene_plotly(
-        input, output, session, ns, dataset, globals, gene_modules,
+        input, output, session, ns, dataset, globals, state, gene_modules,
         group_comparison_df, metacell_names = NULL, cell_type_colors = NULL,
         mode = "GroupComparison", tab_guard = "samples"
     )

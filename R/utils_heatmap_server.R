@@ -8,7 +8,7 @@
 #   - R/utils_heatmap_ui.R       - UI builders (existing, unchanged)
 #   - R/utils_heatmap_help.R     - help-modal content (existing, unchanged)
 
-heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_type_colors, globals, markers, lfp_range, mode, genes = NULL, highlighted_genes = NULL, height = "80vh") {
+heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_type_colors, globals, state, markers, lfp_range, mode, genes = NULL, highlighted_genes = NULL, height = "80vh") {
     moduleServer(
         id,
         function(input, output, session) {
@@ -91,9 +91,9 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                 input$metadata_order_var, metacell_filter(), input$mat_value
             )
 
-            heatmap_download_handlers(output, mat, markers, metacell_filter, dataset, input, metacell_types, globals, applied_params, ns)
+            heatmap_download_handlers(output, mat, markers, metacell_filter, dataset, input, metacell_types, globals, state, applied_params, ns)
 
-            heatmap_matrix_reactives(ns, input, output, session, dataset, metacell_types, cell_type_colors, globals, markers, lfp_range, mode, metacell_filter, mat)
+            heatmap_matrix_reactives(ns, input, output, session, dataset, metacell_types, cell_type_colors, globals, state, markers, lfp_range, mode, metacell_filter, mat)
 
             output$cell_type_list <- cell_type_selector(dataset, ns, id = "selected_cell_types", label = "Cell types", selected = "all", cell_type_colors = cell_type_colors, metacell_types = metacell_types)
 
@@ -308,7 +308,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     req(m)
 
                     m <- filter_heatmap_by_metacell(m, metacell_filter())
-                    metadata <- get_markers_metadata(dataset, applied_params()$selected_md, metacell_types, globals)
+                    metadata <- get_markers_metadata(dataset, applied_params()$selected_md, metacell_types, globals, state)
 
                     req(nrow(m) > 0)
                     req(ncol(m) > 0)
@@ -395,7 +395,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                 globals$selected_query_metacell <- metacell
             })
 
-            heatmap_tooltip_handler(output, mat, metacell_filter, metacell_types, cell_type_colors, dataset, input, globals, mode, gene_modules, genes, applied_params)
+            heatmap_tooltip_handler(output, mat, metacell_filter, metacell_types, cell_type_colors, dataset, input, globals, state, mode, gene_modules, genes, applied_params)
         }
     )
 }

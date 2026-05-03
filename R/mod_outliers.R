@@ -42,7 +42,7 @@ mod_outliers_sidebar_ui <- function(id) {
 #' outliers Server Function
 #'
 #' @noRd
-mod_outliers_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, globals) {
+mod_outliers_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, globals, state) {
     moduleServer(
         id,
         function(input, output, session) {
@@ -64,7 +64,7 @@ mod_outliers_server <- function(id, dataset, metacell_types, cell_type_colors, g
                     rename(metacell = cell_id)
             })
 
-            heatmap_reactives("outliers_heatmap", dataset, outliers_metacell_types, gene_modules, cell_type_colors, globals, markers, lfp_range, "Outliers")
+            heatmap_reactives("outliers_heatmap", dataset, outliers_metacell_types, gene_modules, cell_type_colors, globals, state, markers, lfp_range, "Outliers")
         }
     )
 }

@@ -8,7 +8,7 @@
 #   - R/utils_heatmap_ui.R       - UI builders (existing, unchanged)
 #   - R/utils_heatmap_help.R     - help-modal content (existing, unchanged)
 
-heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metacell_types, cell_type_colors, globals, markers, lfp_range, mode, metacell_filter, mat) {
+heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metacell_types, cell_type_colors, globals, state, markers, lfp_range, mode, metacell_filter, mat) {
     observe({
         choices <- markers()
         if (!is.null(choices)) {

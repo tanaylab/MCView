@@ -102,7 +102,7 @@ is_gene_color_mode <- function(color_proj) {
     color_proj %in% c("Gene", "Gene A", "Gene B", "Gene module")
 }
 
-projection_selectors <- function(ns, dataset, output, input, gene_modules, globals, session, weight = 1, atlas = FALSE) {
+projection_selectors <- function(ns, dataset, output, input, gene_modules, globals, state, session, weight = 1, atlas = FALSE) {
     observe({
         shinyWidgets::updateVirtualSelect(
             session = session,

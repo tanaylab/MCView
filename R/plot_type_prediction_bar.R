@@ -1,4 +1,4 @@
-plot_type_predictions_bar <- function(dataset, metacell_types, cell_type_colors, globals = NULL) {
+plot_type_predictions_bar <- function(dataset, metacell_types, cell_type_colors, globals = NULL, state = NULL) {
     renderPlot(
         {
             if (!is.null(globals)) {

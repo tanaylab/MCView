@@ -359,7 +359,7 @@ mod_gene_correlation_ui <- function(id) {
 #' @param globals Reactive values shared across modules.
 #'
 #' @export
-mod_gene_correlation_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, globals) {
+mod_gene_correlation_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, globals, state) {
     moduleServer(
         id,
         function(input, output, session) {
@@ -761,7 +761,7 @@ mod_gene_correlation_server <- function(id, dataset, metacell_types, cell_type_c
             )
 
             clipboard_copy_button_server(
-                input, "copy_all_genes", filtered_gene_list, globals,
+                input, "copy_all_genes", filtered_gene_list, globals, state,
                 message_template = "Copied {count} genes to clipboard"
             )
 

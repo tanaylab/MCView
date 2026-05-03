@@ -1,4 +1,4 @@
-clipboard_changed_2d_reactive <- function(input, globals) {
+clipboard_changed_2d_reactive <- function(input, globals, state) {
     # We use this reactive in order to invalidate the cache only when needed
     reactive({
         if (is.null(input$color_proj) || is.null(input$color_proj_metadata) || input$color_proj != "metadata" || input$color_proj_metadata != "Clipboard") {
@@ -9,7 +9,7 @@ clipboard_changed_2d_reactive <- function(input, globals) {
     })
 }
 
-clipboard_changed_scatter_reactive <- function(input, globals) {
+clipboard_changed_scatter_reactive <- function(input, globals, state) {
     reactive({
         if (
             (!is.null(input$color_by_type) && !is.null(input$color_by_var) && input$color_by_type == "Metadata" && input$color_by_var == "Clipboard") ||
@@ -21,7 +21,7 @@ clipboard_changed_scatter_reactive <- function(input, globals) {
     })
 }
 
-clipboard_reactives <- function(dataset, input, output, session, metacell_types, cell_type_colors, gene_modules, globals) {
+clipboard_reactives <- function(dataset, input, output, session, metacell_types, cell_type_colors, gene_modules, globals, state) {
     observeEvent(
         input$clipboard_modal,
         showModal(modalDialog(
@@ -147,7 +147,7 @@ clipboard_copy_button_ui <- function(ns, id, data_reactive, label = "Copy to Cli
 #' @param globals Global reactive values (optional, for internal clipboard)
 #' @param message_template Template for success message with \{count\} placeholder
 #' @return Observer for button clicks
-clipboard_copy_button_server <- function(input, id, data_reactive, globals = NULL,
+clipboard_copy_button_server <- function(input, id, data_reactive, globals = NULL, state = NULL,
                                          message_template = "Copied {count} items to clipboard") {
     observeEvent(input[[id]], {
         data <- data_reactive()
