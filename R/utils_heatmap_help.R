@@ -137,7 +137,7 @@ get_markers_metadata <- function(dataset, selected_md, metacell_types, globals, 
             metadata <- metacell_types() %>% select(metacell)
         }
         metadata <- metadata %>%
-            mutate(Clipboard = ifelse(metacell %in% globals$clipboard, "selected", "not selected")) %>%
+            mutate(Clipboard = ifelse(metacell %in% state$selection$clipboard, "selected", "not selected")) %>%
             select(metacell, one_of(selected_md))
     } else {
         metadata <- NULL

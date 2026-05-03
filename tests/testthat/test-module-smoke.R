@@ -78,7 +78,9 @@ setup_app_state <- function() {
         tab_state = shiny::reactiveValues(
             active_tabs = app_config("tabs")
         ),
-        selection = shiny::reactiveValues(),
+        selection = shiny::reactiveValues(
+            clipboard = character(0)
+        ),
         manifold_state = shiny::reactiveValues(
             mc2d = get_mc_data("test_data", "mc2d"),
             anchor_genes = get_mc_data("test_data", "umap_anchors")

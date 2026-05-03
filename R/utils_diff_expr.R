@@ -207,8 +207,8 @@ calc_obs_exp_type_df <- function(dataset, cell_type, metacell_types, diff_thresh
 mc_mc_gene_scatter_df_reactive <- function(dataset, input, output, session, metacell_types, cell_type_colors, globals, state, groupA = NULL, groupB = NULL) {
     reactive({
         req(input$mode)
-        if (!is.null(input$filter_by_clipboard) && input$filter_by_clipboard && length(globals$clipboard) > 0) {
-            metacell_filter <- globals$clipboard
+        if (!is.null(input$filter_by_clipboard) && input$filter_by_clipboard && length(state$selection$clipboard) > 0) {
+            metacell_filter <- state$selection$clipboard
         } else {
             metacell_filter <- NULL
         }
@@ -276,7 +276,7 @@ diff_expr_switch_metacells <- function(dataset, input, output, session, groupA =
 diff_expr_auto_update_globals <- function(mc_mc_gene_scatter_df, globals, state) {
     observe({
         req(mc_mc_gene_scatter_df())
-        globals$significant_genes <- mc_mc_gene_scatter_df() %>%
+        state$selection$significant_genes <- mc_mc_gene_scatter_df() %>%
             filter(col %in% c("darkred", "darkblue")) %>%
             pull(gene) %>%
             unique()

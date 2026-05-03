@@ -112,7 +112,7 @@ setup_group_observers <- function(input, group_reactive, add_id, remove_id, past
     })
 
     observeEvent(input[[paste_id]], {
-        metacells <- globals$clipboard
+        metacells <- state$selection$clipboard
         group_reactive(unique(c(group_reactive(), metacells)))
     })
 

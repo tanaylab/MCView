@@ -35,7 +35,7 @@ app_server <- function(input, output, session) {
         state$manifold_state$anchor_genes <- get_mc_data(dataset(), "umap_anchors")
     })
 
-    globals$clipboard <- character(0)
+    state$selection$clipboard <- character(0)
     state$tab_state$active_tabs <- app_config("tabs")
     state$session_ui$plotly_scale <- 1
     state$session_ui$plotly_format <- "svg"

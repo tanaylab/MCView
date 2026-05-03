@@ -51,8 +51,8 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
 
 
                 if (input$filter_by_clipboard) {
-                    if (!is.null(globals$clipboard) && length(globals$clipboard) > 0) {
-                        m <- m[, intersect(colnames(m), globals$clipboard), drop = FALSE]
+                    if (!is.null(state$selection$clipboard) && length(state$selection$clipboard) > 0) {
+                        m <- m[, intersect(colnames(m), state$selection$clipboard), drop = FALSE]
                     }
                 }
 
@@ -177,8 +177,8 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                         (
                             !is.null(input$filter_by_clipboard) &&
                                 input$filter_by_clipboard &&
-                                !is.null(globals$clipboard) &&
-                                length(globals$clipboard) > 0
+                                !is.null(state$selection$clipboard) &&
+                                length(state$selection$clipboard) > 0
                         )
                 )
                 shinyjs::toggle(
@@ -195,7 +195,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
             })
 
             observeEvent(input$copy_metacells, {
-                globals$clipboard <- selected_metacells()
+                state$selection$clipboard <- selected_metacells()
                 showNotification(glue("Copied {length(selected_metacells())} metacells to clipboard"))
                 selected_metacells(character(0))
             })
@@ -285,7 +285,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
             # We use this reactive in order to invalidate the cache only when input$filter_by_clipboard is TRUE
             clipboard_changed <- reactive({
                 if ((!is.null(input$filter_by_clipboard) && input$filter_by_clipboard) || (!is.null(applied_params()) && !is.null(applied_params()$selected_md) && "Clipboard" %in% applied_params()$selected_md)) {
-                    return(c(input$filter_by_clipboard, globals$clipboard))
+                    return(c(input$filter_by_clipboard, state$selection$clipboard))
                 } else {
                     return(FALSE)
                 }
@@ -379,20 +379,20 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
 
                 if (gene %in% gene_names(dataset())) {
                     if (input$gene_select == "X axis") {
-                        globals$selected_gene_x_axis <- gene
+                        state$selection$selected_gene_x_axis <- gene
                     } else {
-                        globals$selected_gene_y_axis <- gene
+                        state$selection$selected_gene_y_axis <- gene
                     }
-                    globals$selected_query_gene <- gene
+                    state$selection$selected_query_gene <- gene
                 }
 
                 if (input$metacell_select == "Metacell A") {
-                    globals$selected_metacellA <- metacell
+                    state$selection$selected_metacellA <- metacell
                 } else {
-                    globals$selected_metacellB <- metacell
+                    state$selection$selected_metacellB <- metacell
                 }
 
-                globals$selected_query_metacell <- metacell
+                state$selection$selected_query_metacell <- metacell
             })
 
             heatmap_tooltip_handler(output, mat, metacell_filter, metacell_types, cell_type_colors, dataset, input, globals, state, mode, gene_modules, genes, applied_params)

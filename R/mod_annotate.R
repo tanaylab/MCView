@@ -251,7 +251,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
             })
 
             observeEvent(input$paste_metacells, {
-                selected_metacells <- unique(globals$clipboard)
+                selected_metacells <- unique(state$selection$clipboard)
 
                 new_selected_annot <- metacell_types() %>% filter(metacell %in% selected_metacells)
                 if (!is.null(input$add_to_selection) && input$add_to_selection) {
@@ -268,7 +268,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
 
             observeEvent(input$copy_metacells, {
                 selected_metacells <- selected_metacell_types()$metacell
-                globals$clipboard <- selected_metacells
+                state$selection$clipboard <- selected_metacells
                 showNotification(glue("Copied {length(selected_metacells)} metacells to clipboard"))
             })
 

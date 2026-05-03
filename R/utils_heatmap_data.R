@@ -97,9 +97,9 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
     })
 
     observeEvent(input$use_de_genes, {
-        if (!is.null(globals$significant_genes) && length(globals$significant_genes) > 0) {
-            markers(globals$significant_genes)
-            showNotification(glue("Updated markers with {length(globals$significant_genes)} significant genes from current Diff. Expression comparison"), type = "message")
+        if (!is.null(state$selection$significant_genes) && length(state$selection$significant_genes) > 0) {
+            markers(state$selection$significant_genes)
+            showNotification(glue("Updated markers with {length(state$selection$significant_genes)} significant genes from current Diff. Expression comparison"), type = "message")
         } else {
             showNotification("No significant genes available in the current Diff. Expression comparison.", type = "warning")
         }
@@ -136,9 +136,9 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
             }
 
             if (!is.null(input$filter_by_clipboard) && input$filter_by_clipboard) {
-                if (!is.null(globals$clipboard) && length(globals$clipboard) > 0) {
+                if (!is.null(state$selection$clipboard) && length(state$selection$clipboard) > 0) {
                     markers_df <- markers_df %>%
-                        filter(metacell %in% globals$clipboard)
+                        filter(metacell %in% state$selection$clipboard)
                 }
             }
         }

@@ -4,7 +4,7 @@ clipboard_changed_2d_reactive <- function(input, globals, state) {
         if (is.null(input$color_proj) || is.null(input$color_proj_metadata) || input$color_proj != "metadata" || input$color_proj_metadata != "Clipboard") {
             return(FALSE)
         } else {
-            return(globals$clipboard)
+            return(state$selection$clipboard)
         }
     })
 }
@@ -14,7 +14,7 @@ clipboard_changed_scatter_reactive <- function(input, globals, state) {
         if (
             (!is.null(input$color_by_type) && !is.null(input$color_by_var) && input$color_by_type == "Metadata" && input$color_by_var == "Clipboard") ||
                 (!is.null(input$filter_by_clipboard_scatter) && input$filter_by_clipboard_scatter)) {
-            return(globals$clipboard)
+            return(state$selection$clipboard)
         } else {
             return(FALSE)
         }
@@ -58,19 +58,19 @@ clipboard_reactives <- function(dataset, input, output, session, metacell_types,
     })
 
     observeEvent(input$add_to_clipboard, {
-        globals$clipboard <- unique(c(globals$clipboard, input$metacells_to_add))
+        state$selection$clipboard <- unique(c(state$selection$clipboard, input$metacells_to_add))
     })
 
     observeEvent(input$clear_clipboard, {
-        globals$clipboard <- character(0)
+        state$selection$clipboard <- character(0)
     })
 
     observeEvent(input$delete_clipboard_row, {
-        globals$clipboard <- globals$clipboard[-input$clipboard_table_rows_selected]
+        state$selection$clipboard <- state$selection$clipboard[-input$clipboard_table_rows_selected]
     })
 
     output$clipboard_table <- DT::renderDataTable(
-        metacell_types() %>% filter(metacell %in% globals$clipboard) %>% select(metacell, cell_type),
+        metacell_types() %>% filter(metacell %in% state$selection$clipboard) %>% select(metacell, cell_type),
         escape = FALSE,
         server = FALSE,
         rownames = FALSE,
@@ -88,7 +88,7 @@ clipboard_reactives <- function(dataset, input, output, session, metacell_types,
         },
         content = function(file) {
             fwrite(
-                metacell_types() %>% filter(metacell %in% globals$clipboard) %>% select(metacell, cell_type),
+                metacell_types() %>% filter(metacell %in% state$selection$clipboard) %>% select(metacell, cell_type),
                 file
             )
         }
@@ -153,8 +153,8 @@ clipboard_copy_button_server <- function(input, id, data_reactive, globals = NUL
         data <- data_reactive()
         if (!is.null(data) && length(data) > 0) {
             # Update internal clipboard if globals provided
-            if (!is.null(globals) && !is.null(globals$clipboard)) {
-                globals$clipboard <- as.character(data)
+            if (!is.null(globals) && !is.null(state$selection$clipboard)) {
+                state$selection$clipboard <- as.character(data)
             }
 
             # Show notification

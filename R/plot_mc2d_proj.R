@@ -295,7 +295,7 @@ handle_2d_metadata <- function(input, dataset, atlas, mc2d, metacell_types,
         metadata <- metacell_types() %>% select(metacell)
     }
     metadata <- metadata %>%
-        mutate(Clipboard = ifelse(metacell %in% globals$clipboard, "selected", "not selected"))
+        mutate(Clipboard = ifelse(metacell %in% state$selection$clipboard, "selected", "not selected"))
     render_2d_metadata_fig(color_proj_metadata, input, dataset, atlas, mc2d,
         metacell_types, selected_cell_types, metadata = metadata)
 }
