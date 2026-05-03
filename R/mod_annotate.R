@@ -139,17 +139,10 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
             selected_cell_types <- reactiveVal(NULL)
 
             # gene selectors
-            values <- reactiveValues(file_status = NULL)
             top_correlated_selectors(input, output, session, dataset, metacell_types, ns, gene_modules = gene_modules, selected_cell_types = selected_cell_types)
             scatter_selectors(ns, dataset, output, globals)
 
             observeEvent(input$metacell_types_fn, {
-                values$file_status <- "uploaded"
-            })
-
-            observe({
-                req(input$metacell_types_fn)
-                req(values$file_status)
                 new_metacell_types <- tgutil::fread(input$metacell_types_fn$datapath, colClasses = c("cell_type" = "character", "metacell" = "character")) %>% as_tibble()
 
                 input_ok <- TRUE
@@ -197,7 +190,6 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                     metacell_types(new_metacell_types)
                     # Reset the selected cell types to match the (possibly) new cell type list that was just loaded
                     selected_cell_types(unique(cell_type_colors()$cell_type))
-                    values$file_status <- NULL
                 }
             })
 
@@ -256,7 +248,6 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 last_chosen_cell_type("(Missing)")
                 # After resetting, make all current cell types selected by default
                 selected_cell_types(unique(cell_type_colors()$cell_type))
-                values$file_status <- NULL
             })
 
             observeEvent(input$paste_metacells, {

@@ -218,7 +218,7 @@ selected_genes_event_observer <- function(source, selected_genes) {
 }
 
 mod_gene_module_controllers <- function(ns, dataset, input, output, session, gene_modules, genes, selected_module, selected_genes, globals) {
-    values <- reactiveValues(file_status = NULL, module_list = NULL)
+    values <- reactiveValues(module_list = NULL)
     observe({
         req(gene_modules())
         values$module_list <- levels(gene_modules()$module)
@@ -349,16 +349,7 @@ mod_gene_module_controllers <- function(ns, dataset, input, output, session, gen
 
     # Load gene modules file
     observeEvent(input$gene_modules_fn, {
-        values$file_status <- "uploaded"
-    })
-
-    observe({
-        req(input$gene_modules_fn)
-        req(values$file_status)
-
         new_gene_modules <- fread(input$gene_modules_fn$datapath, colClasses = c("gene" = "character", "module" = "character")) %>% as_tibble()
-
-        values$file_status <- NULL
 
         for (field in c("gene", "module")) {
             if (!has_name(new_gene_modules, field)) {
@@ -410,7 +401,6 @@ mod_gene_module_controllers <- function(ns, dataset, input, output, session, gen
         req(isTRUE(input$confirm_reset_gene_modules))
         req(dataset())
         gene_modules(get_mc_data(dataset(), "gene_modules"))
-        values$file_status <- NULL
     })
 
     # GENES
