@@ -343,71 +343,87 @@ mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, 
                 shinyjs::toggle(id = "confusion_color_by_selector", condition = input$boxplot_axis_type == "Metadata" && input$boxplot_axis_var %in% colnames(md) && !is_numeric_field(md, input$boxplot_axis_var))
             })
 
-            # Set default ylim values based on current data
-            observe({
-                req(input$boxplot_axis_type)
-                req(input$boxplot_axis_var)
-                req(dataset())
-                req(metacell_types())
-                # Handle cell type requirements based on x-axis type
-                if (input$x_axis_type == "cell_types") {
-                    req(input$boxplot_cell_types)
-                    cell_types_to_use <- input$boxplot_cell_types
-                } else {
-                    req(input$cell_type_filter)
-                    cell_types_to_use <- input$cell_type_filter
-                }
+            # Set default ylim values based on current data.
+            # Triggers: axis type/var, dataset, annotation, x-axis branch.
+            # NOT triggers: input$boxplot_cell_types / input$cell_type_filter —
+            # toggling cell-type checkboxes shouldn't recompute (and overwrite)
+            # the default ylim. The active filter is read from inside the body
+            # under observeEvent's isolate semantics.
+            observeEvent(
+                {
+                    input$boxplot_axis_type
+                    input$boxplot_axis_var
+                    input$x_axis_type
+                    dataset()
+                    metacell_types()
+                },
+                {
+                    # Don't overwrite user-entered values when custom ylims is on.
+                    req(!isTRUE(input$custom_ylim))
+                    req(input$boxplot_axis_type)
+                    req(input$boxplot_axis_var)
+                    req(dataset())
+                    req(metacell_types())
+                    # Handle cell type requirements based on x-axis type
+                    if (input$x_axis_type == "cell_types") {
+                        req(input$boxplot_cell_types)
+                        cell_types_to_use <- input$boxplot_cell_types
+                    } else {
+                        req(input$cell_type_filter)
+                        cell_types_to_use <- input$cell_type_filter
+                    }
 
-                tryCatch(
-                    {
-                        if (input$boxplot_axis_type %in% c("Gene", "Gene module")) {
-                            if (input$boxplot_axis_type == "Gene module") {
-                                req(input$boxplot_axis_var %in% levels(gene_modules()$module))
-                                genes <- get_module_genes(input$boxplot_axis_var, gene_modules())
-                                egc_gene <- colSums(get_mc_egc(dataset(), genes = genes), na.rm = TRUE) + mcv_get("egc_epsilon")
-                            } else {
-                                req(input$boxplot_axis_var %in% gene_names(dataset()))
-                                egc_gene <- get_gene_egc(input$boxplot_axis_var, dataset()) + mcv_get("egc_epsilon")
-                            }
-
-                            df <- metacell_types() %>% filter(cell_type %in% cell_types_to_use)
-                            if (nrow(df) > 0) {
-                                egc_subset <- egc_gene[df$metacell]
-                                egc_subset <- egc_subset[!is.na(egc_subset)]
-                                if (length(egc_subset) > 0) {
-                                    y_min <- floor(min(egc_subset, na.rm = TRUE) * 10) / 10
-                                    y_max <- ceiling(max(egc_subset, na.rm = TRUE) * 10) / 10
-                                    updateNumericInput(session, "ylim_min", value = y_min)
-                                    updateNumericInput(session, "ylim_max", value = y_max)
+                    tryCatch(
+                        {
+                            if (input$boxplot_axis_type %in% c("Gene", "Gene module")) {
+                                if (input$boxplot_axis_type == "Gene module") {
+                                    req(input$boxplot_axis_var %in% levels(gene_modules()$module))
+                                    genes <- get_module_genes(input$boxplot_axis_var, gene_modules())
+                                    egc_gene <- colSums(get_mc_egc(dataset(), genes = genes), na.rm = TRUE) + mcv_get("egc_epsilon")
+                                } else {
+                                    req(input$boxplot_axis_var %in% gene_names(dataset()))
+                                    egc_gene <- get_gene_egc(input$boxplot_axis_var, dataset()) + mcv_get("egc_epsilon")
                                 }
-                            }
-                        } else {
-                            md <- metadata()
-                            req(!is.null(md))
-                            req(input$boxplot_axis_var %in% colnames(md))
-                            if (is_numeric_field(md, input$boxplot_axis_var)) {
-                                df <- metacell_types() %>%
-                                    filter(cell_type %in% cell_types_to_use) %>%
-                                    left_join(md %>% select(metacell, !!input$boxplot_axis_var), by = "metacell")
 
+                                df <- metacell_types() %>% filter(cell_type %in% cell_types_to_use)
                                 if (nrow(df) > 0) {
-                                    var_values <- df[[input$boxplot_axis_var]]
-                                    var_values <- var_values[!is.na(var_values)]
-                                    if (length(var_values) > 0) {
-                                        y_min <- floor(min(var_values, na.rm = TRUE) * 10) / 10
-                                        y_max <- ceiling(max(var_values, na.rm = TRUE) * 10) / 10
+                                    egc_subset <- egc_gene[df$metacell]
+                                    egc_subset <- egc_subset[!is.na(egc_subset)]
+                                    if (length(egc_subset) > 0) {
+                                        y_min <- floor(min(egc_subset, na.rm = TRUE) * 10) / 10
+                                        y_max <- ceiling(max(egc_subset, na.rm = TRUE) * 10) / 10
                                         updateNumericInput(session, "ylim_min", value = y_min)
                                         updateNumericInput(session, "ylim_max", value = y_max)
                                     }
                                 }
+                            } else {
+                                md <- metadata()
+                                req(!is.null(md))
+                                req(input$boxplot_axis_var %in% colnames(md))
+                                if (is_numeric_field(md, input$boxplot_axis_var)) {
+                                    df <- metacell_types() %>%
+                                        filter(cell_type %in% cell_types_to_use) %>%
+                                        left_join(md %>% select(metacell, !!input$boxplot_axis_var), by = "metacell")
+
+                                    if (nrow(df) > 0) {
+                                        var_values <- df[[input$boxplot_axis_var]]
+                                        var_values <- var_values[!is.na(var_values)]
+                                        if (length(var_values) > 0) {
+                                            y_min <- floor(min(var_values, na.rm = TRUE) * 10) / 10
+                                            y_max <- ceiling(max(var_values, na.rm = TRUE) * 10) / 10
+                                            updateNumericInput(session, "ylim_min", value = y_min)
+                                            updateNumericInput(session, "ylim_max", value = y_max)
+                                        }
+                                    }
+                                }
                             }
+                        },
+                        error = function(e) {
+                            # Silently ignore errors in default value setting
                         }
-                    },
-                    error = function(e) {
-                        # Silently ignore errors in default value setting
-                    }
-                )
-            })
+                    )
+                }
+            )
 
             # Validate ylim inputs and show warnings
             output$ylim_warning <- renderUI({
