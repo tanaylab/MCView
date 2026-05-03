@@ -49,23 +49,7 @@ setup_app_state <- function() {
             dplyr::left_join(ct_colors %>% dplyr::select(cell_type, mc_col = color), by = "cell_type")
     }
 
-    # Create mock globals matching app_server.R initialization
-    globals <- shiny::reactiveValues(
-        screen_width = 1200,
-        screen_height = 800,
-        mc2d = get_mc_data("test_data", "mc2d"),
-        anchor_genes = get_mc_data("test_data", "umap_anchors"),
-        clipboard = character(0),
-        active_tabs = app_config("tabs"),
-        plotly_scale = 1,
-        plotly_format = "svg",
-        plotly_width = NULL,
-        plotly_height = NULL
-    )
-
-    # Phase 2.2 — domain-scoped reactiveValues. Per-domain commits migrate
-    # slots from globals into the matching domain; the fixture mirrors them
-    # so each test exercises the post-migration path.
+    # Domain-scoped reactiveValues mirroring R/app_server.R initialization.
     state <- list(
         session_ui = shiny::reactiveValues(
             screen_width = 1200,
@@ -91,7 +75,6 @@ setup_app_state <- function() {
         mc_types = mc_types,
         ct_colors = ct_colors,
         gene_mods = gene_mods,
-        globals = globals,
         state = state
     )
 }
@@ -104,7 +87,6 @@ build_module_args <- function(fixture) {
         metacell_types = shiny::reactiveVal(fixture$mc_types),
         cell_type_colors = shiny::reactiveVal(fixture$ct_colors),
         gene_modules = shiny::reactiveVal(fixture$gene_mods),
-        globals = fixture$globals,
         state = fixture$state
     )
 }

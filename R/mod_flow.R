@@ -98,7 +98,7 @@ mod_flow_sidebar_ui <- function(id) {
 #' gene_mc Server Function
 #'
 #' @noRd
-mod_flow_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, globals, state) {
+mod_flow_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, state) {
     moduleServer(
         id,
         function(input, output, session) {
@@ -223,7 +223,7 @@ mod_flow_server <- function(id, dataset, metacell_types, cell_type_colors, gene_
 
                 plotly::ggplotly(plot_gene_trajectory(dataset(), input$traj_genes, input$selected_metacell, anchor_genes = NULL) + theme(axis.title.y = element_text(color = "darkblue")), source = "traj_plot", tooltip = "tooltip_text") %>%
                     sanitize_plotly_buttons() %>%
-                    sanitize_plotly_download(globals, state) %>%
+                    sanitize_plotly_download(state) %>%
                     plotly::event_register("plotly_click")
             }) %>% bindCache(dataset(), input$traj_genes, input$selected_metacell, state$session_ui$plotly_format, state$session_ui$plotly_width, state$session_ui$plotly_height, state$session_ui$plotly_scale)
         }

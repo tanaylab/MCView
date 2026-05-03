@@ -45,7 +45,7 @@ scatter_box <- function(ns, id, title = "Gene/Gene", x_selected = "Gene", y_sele
     )
 }
 
-scatter_box_outputs <- function(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, state, ns, plotly_source, plotly_buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL, atlas = FALSE, selected_cell_types = NULL, tab_guard = NULL) {
+scatter_box_outputs <- function(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, state, ns, plotly_source, plotly_buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL, atlas = FALSE, selected_cell_types = NULL, tab_guard = NULL) {
     if (!is.null(selected_cell_types)) {
         observe({
             if (is.null(selected_cell_types())) {
@@ -84,7 +84,7 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
     })
 
     # We use this reactive in order to invalidate the cache only when needed
-    clipboard_changed <- clipboard_changed_scatter_reactive(input, globals, state)
+    clipboard_changed <- clipboard_changed_scatter_reactive(input, state)
 
     output$plot_gene_gene_mc <- plotly::renderPlotly({
         # Defer computation until the tab is active (when tab_guard is specified)
@@ -169,7 +169,7 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
             prepare_plotly_scatter(
                 source = plotly_source,
                 buttons = plotly_buttons,
-                globals = globals, state = state,
+                state = state,
                 hide_legend = is.null(input$show_legend_scatter) || !input$show_legend_scatter
             )
 
@@ -271,7 +271,7 @@ axis_vars_ok <- function(dataset, input, md_id, gene_modules, axes = c("x_axis",
     return(all(vars_ok))
 }
 
-scatter_selectors <- function(ns, dataset, output, globals, state, prefix = "gene_gene") {
+scatter_selectors <- function(ns, dataset, output, state, prefix = "gene_gene") {
     output[[glue("{prefix}_log_labels_ui")]] <- renderUI({
         checkboxInput(ns("log_labels"), "Log2", value = default_scatters_log_labels(dataset()))
     })

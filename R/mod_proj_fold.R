@@ -39,7 +39,7 @@ mod_proj_fold_sidebar_ui <- function(id) {
 #' proj_fold Server Function
 #'
 #' @noRd
-mod_proj_fold_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, globals, state) {
+mod_proj_fold_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, state) {
     moduleServer(
         id,
         function(input, output, session) {
@@ -59,7 +59,7 @@ mod_proj_fold_server <- function(id, dataset, metacell_types, cell_type_colors, 
                     high_color = "red"
                 )
             })
-            heatmap_reactives("proj_fold_heatmap", dataset, metacell_types, gene_modules, cell_type_colors, globals, state, markers, lfp_range, "Proj")
+            heatmap_reactives("proj_fold_heatmap", dataset, metacell_types, gene_modules, cell_type_colors, state, markers, lfp_range, "Proj")
         }
     )
 }

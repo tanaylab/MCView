@@ -129,7 +129,7 @@ mod_gene_modules_sidebar_ui <- function(id) {
 #' gene_modules Server Function
 #'
 #' @noRd
-mod_gene_modules_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, globals, state) {
+mod_gene_modules_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, state) {
     moduleServer(
         id,
         function(input, output, session) {
@@ -140,7 +140,7 @@ mod_gene_modules_server <- function(id, dataset, metacell_types, cell_type_color
             selected_module <- reactiveVal()
             selected_genes <- reactiveVal() # selected genes at the diff. expr plot
 
-            scatter_selectors(ns, dataset, output, globals, state)
+            scatter_selectors(ns, dataset, output, state)
 
             output$shown_gene_modules_ui <- gene_modules_selector(
                 dataset,
@@ -176,9 +176,9 @@ mod_gene_modules_server <- function(id, dataset, metacell_types, cell_type_color
                 top_correlated_selector_multiple_genes(input, output, session, dataset, ns, "selected_top_genes", "", gene = input$top_correlated_gene, action_id = "add_genes_from_top_cor_list", action_label = "Add to gene module")
             })
 
-            heatmap_reactives("gene_modules_heatmap", dataset, metacell_types, gene_modules, cell_type_colors, globals, state, shown_gene_modules, lfp_range, "Gene modules", genes = genes, highlighted_genes = selected_module)
+            heatmap_reactives("gene_modules_heatmap", dataset, metacell_types, gene_modules, cell_type_colors, state, shown_gene_modules, lfp_range, "Gene modules", genes = genes, highlighted_genes = selected_module)
 
-            mod_gene_module_controllers(ns, dataset, input, output, session, gene_modules, genes, selected_module, selected_genes, globals, state)
+            mod_gene_module_controllers(ns, dataset, input, output, session, gene_modules, genes, selected_module, selected_genes, state)
 
             # Scatter plot
             selected_cell_types <- reactiveVal(NULL)
@@ -187,10 +187,10 @@ mod_gene_modules_server <- function(id, dataset, metacell_types, cell_type_color
                 req(cell_type_colors())
                 selected_cell_types(unique(cell_type_colors()$cell_type))
             })
-            scatter_box_outputs(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, state, ns, selected_cell_types = selected_cell_types, plotly_source = "gene_modules_md_md_plot")
+            scatter_box_outputs(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, state, ns, selected_cell_types = selected_cell_types, plotly_source = "gene_modules_md_md_plot")
 
             # Diff. expression
-            diff_expr_outputs(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, state, ns, source_suffix = "_gene_modules", dragmode = "select", plotly_buttons = c("hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"))
+            diff_expr_outputs(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, state, ns, source_suffix = "_gene_modules", dragmode = "select", plotly_buttons = c("hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"))
 
             output$add_selected_genes_button <- renderUI({
                 actionButton(ns("add_selected_genes"), "Add to gene module")
@@ -217,7 +217,7 @@ selected_genes_event_observer <- function(source, selected_genes) {
     })
 }
 
-mod_gene_module_controllers <- function(ns, dataset, input, output, session, gene_modules, genes, selected_module, selected_genes, globals, state) {
+mod_gene_module_controllers <- function(ns, dataset, input, output, session, gene_modules, genes, selected_module, selected_genes, state) {
     values <- reactiveValues(module_list = NULL)
     observe({
         req(gene_modules())

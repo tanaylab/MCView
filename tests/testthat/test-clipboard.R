@@ -37,19 +37,6 @@ setup_app_state <- function() {
             dplyr::left_join(ct_colors %>% dplyr::select(cell_type, mc_col = color), by = "cell_type")
     }
 
-    globals <- shiny::reactiveValues(
-        screen_width = 1200,
-        screen_height = 800,
-        mc2d = get_mc_data("test_data", "mc2d"),
-        anchor_genes = get_mc_data("test_data", "umap_anchors"),
-        clipboard = character(0),
-        active_tabs = app_config("tabs"),
-        plotly_scale = 1,
-        plotly_format = "svg",
-        plotly_width = NULL,
-        plotly_height = NULL
-    )
-
     state <- list(
         session_ui = shiny::reactiveValues(
             screen_width = 1200,
@@ -75,7 +62,6 @@ setup_app_state <- function() {
         mc_types = mc_types,
         ct_colors = ct_colors,
         gene_mods = gene_mods,
-        globals = globals,
         state = state
     )
 }
@@ -86,7 +72,6 @@ build_module_args <- function(fixture) {
         metacell_types = shiny::reactiveVal(fixture$mc_types),
         cell_type_colors = shiny::reactiveVal(fixture$ct_colors),
         gene_modules = shiny::reactiveVal(fixture$gene_mods),
-        globals = fixture$globals,
         state = fixture$state
     )
 }
@@ -121,12 +106,12 @@ test_that("clipboard_copy_button_ui handles NULL data", {
 })
 
 test_that("clipboard_copy_button_server is a callable function with correct signature", {
-    # clipboard_copy_button_server must accept (input, id, data_reactive, globals, message_template)
+    # clipboard_copy_button_server must accept (input, id, data_reactive, state, message_template)
     fn_args <- names(formals(clipboard_copy_button_server))
     expect_true("input" %in% fn_args)
     expect_true("id" %in% fn_args)
     expect_true("data_reactive" %in% fn_args)
-    expect_true("globals" %in% fn_args)
+    expect_true("state" %in% fn_args)
     expect_true("message_template" %in% fn_args)
 })
 

@@ -1,4 +1,4 @@
-plot_sample_stacked_types <- function(dataset, globals, state, metacell_types, cell_type_colors, input, group_field = NULL, composition_reactive = NULL) {
+plot_sample_stacked_types <- function(dataset, state, metacell_types, cell_type_colors, input, group_field = NULL, composition_reactive = NULL) {
     plotly::renderPlotly({
         req(state$tab_state$current_tab == "samples")
         gf <- if (!is.null(group_field)) group_field() else "samp_id"
@@ -115,7 +115,7 @@ plot_sample_stacked_types <- function(dataset, globals, state, metacell_types, c
 
         p <- plotly::ggplotly(p, source = "samp_types_plot") %>%
             sanitize_plotly_buttons() %>%
-            sanitize_plotly_download(globals, state) %>%
+            sanitize_plotly_download(state) %>%
             plotly::event_register("plotly_click")
 
         return(p)

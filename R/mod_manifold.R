@@ -107,16 +107,16 @@ mod_manifold_sidebar_ui <- function(id) {
 #' manifold Server Function
 #'
 #' @noRd
-mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, globals, state) {
+mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, state) {
     moduleServer(
         id,
         function(input, output, session) {
             ns <- session$ns
 
             top_correlated_selectors(input, output, session, dataset, metacell_types, ns, gene_modules = gene_modules)
-            projection_selectors(ns, dataset, output, input, gene_modules, globals, state, session)
+            projection_selectors(ns, dataset, output, input, gene_modules, state, session)
 
-            clipboard_changed <- clipboard_changed_2d_reactive(input, globals, state)
+            clipboard_changed <- clipboard_changed_2d_reactive(input, state)
 
             # 2D projection re-calculations
             observeEvent(input$recompute, {
@@ -282,7 +282,7 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
             })
 
             # Projection plots
-            output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, state, source = "proj_manifold_plot") %>%
+            output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, state, source = "proj_manifold_plot") %>%
                 bindCache(
                     dataset(),
                     input$color_proj,

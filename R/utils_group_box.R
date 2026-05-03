@@ -95,11 +95,11 @@ render_group_box <- function(output, output_id, ns, group_name, table_output_id,
 #' @param reset_id character input id for the reset button (e.g. "reset_groupA")
 #' @param table_id character input id for the DT table (e.g. "groupA_table")
 #' @param metacell_input_id character input id for the metacell picker (e.g. "metacell")
-#' @param globals reactive values list containing clipboard
+#' @param state Domain-scoped reactiveValues (session_ui / tab_state / selection / manifold_state).
 #'
 #' @noRd
 setup_group_observers <- function(input, group_reactive, add_id, remove_id, paste_id,
-                                  reset_id, table_id, metacell_input_id, globals, state) {
+                                  reset_id, table_id, metacell_input_id, state) {
     observeEvent(input[[add_id]], {
         add_to_group(group_reactive, input[[metacell_input_id]])
     })

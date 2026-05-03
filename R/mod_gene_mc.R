@@ -52,7 +52,7 @@ mod_gene_mc_sidebar_ui <- function(id) {
 #' gene_mc Server Function
 #'
 #' @noRd
-mod_gene_mc_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, globals, state) {
+mod_gene_mc_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, state) {
     moduleServer(
         id,
         function(input, output, session) {
@@ -70,15 +70,15 @@ mod_gene_mc_server <- function(id, dataset, metacell_types, cell_type_colors, ge
 
             top_correlated_selectors(input, output, session, dataset, metacell_types, ns, gene_modules = gene_modules, selected_cell_types = selected_cell_types)
             mod_gene_mc_plotly_observers(input, session)
-            mod_gene_mc_globals_observers(input, session, globals, state, dataset)
+            mod_gene_mc_selection_observers(input, session, state, dataset)
 
-            scatter_selectors(ns, dataset, output, globals, state)
-            projection_selectors(ns, dataset, output, input, gene_modules, globals, state, session, weight = 0.6)
+            scatter_selectors(ns, dataset, output, state)
+            projection_selectors(ns, dataset, output, input, gene_modules, state, session, weight = 0.6)
 
-            clipboard_changed <- clipboard_changed_2d_reactive(input, globals, state)
+            clipboard_changed <- clipboard_changed_2d_reactive(input, state)
 
             # Projection plots
-            output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, state, selected_cell_types = selected_cell_types, source = "proj_mc_plot_gene_tab", tab_guard = "gene_mc") %>%
+            output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, state, selected_cell_types = selected_cell_types, source = "proj_mc_plot_gene_tab", tab_guard = "gene_mc") %>%
                 bindCache(
                     dataset(),
                     input$color_proj,
@@ -120,9 +120,9 @@ mod_gene_mc_server <- function(id, dataset, metacell_types, cell_type_colors, ge
 
             connect_gene_plots(input, output, session, ns, source = "proj_mc_plot_gene_tab")
 
-            scatter_box_outputs(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, state, ns, plotly_source = "md_md_plot", selected_cell_types = selected_cell_types, tab_guard = "gene_mc")
+            scatter_box_outputs(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, state, ns, plotly_source = "md_md_plot", selected_cell_types = selected_cell_types, tab_guard = "gene_mc")
 
-            atlas_gene_gene(input, output, session, dataset, metacell_types, cell_type_colors, globals, state, ns)
+            atlas_gene_gene(input, output, session, dataset, metacell_types, cell_type_colors, state, ns)
         }
     )
 }
@@ -139,7 +139,7 @@ mod_gene_mc_plotly_observers <- function(input, session, source = "mc_mc_plot", 
     })
 }
 
-mod_gene_mc_globals_observers <- function(input, session, globals, state, dataset, notification_suffix = " in \"Genes\" tab") {
+mod_gene_mc_selection_observers <- function(input, session, state, dataset, notification_suffix = " in \"Genes\" tab") {
     # Deferred-action observers: state$selection$selected_gene_*_axis is set from other
     # tabs (e.g. heatmap dblclick); we re-attempt application when input$*_type
     # changes so the selection lands once the target picker exists.
@@ -184,7 +184,7 @@ mod_gene_mc_globals_observers <- function(input, session, globals, state, datase
     )
 }
 
-atlas_gene_gene <- function(input, output, session, dataset, metacell_types, cell_type_colors, globals, state, ns) {
+atlas_gene_gene <- function(input, output, session, dataset, metacell_types, cell_type_colors, state, ns) {
     output$atlas_gene_gene_box_ui <- renderUI({
         req(has_atlas(dataset()))
         generic_box(
@@ -228,7 +228,7 @@ atlas_gene_gene <- function(input, output, session, dataset, metacell_types, cel
         return(mods)
     })
 
-    scatter_selectors(ns, dataset, output, globals, state, prefix = "atlas_gene_gene")
+    scatter_selectors(ns, dataset, output, state, prefix = "atlas_gene_gene")
 
     # Metadata/Metadata plots
     render_axis_select_ui("atlas_x_axis", "X axis", "atlas_x_axis_select", md_choices = dataset_metadata_fields_numeric(dataset(), atlas = TRUE), md_selected = dataset_metadata_fields_numeric(dataset(), atlas = TRUE)[1], selected_gene = mcv_get("default_gene1"), input = input, output = output, ns = ns, dataset = dataset, gene_modules = gene_modules, session = session, atlas = TRUE)
@@ -294,7 +294,7 @@ atlas_gene_gene <- function(input, output, session, dataset, metacell_types, cel
             sanitize_for_WebGL() %>%
             plotly::toWebGL() %>%
             sanitize_plotly_buttons() %>%
-            sanitize_plotly_download(globals, state)
+            sanitize_plotly_download(state)
 
         if (input$atlas_color_by_var == "Cell type") {
             fig <- plotly::hide_legend(fig)

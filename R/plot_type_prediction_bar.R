@@ -1,7 +1,7 @@
-plot_type_predictions_bar <- function(dataset, metacell_types, cell_type_colors, globals = NULL, state = NULL) {
+plot_type_predictions_bar <- function(dataset, metacell_types, cell_type_colors, state = NULL) {
     renderPlot(
         {
-            if (!is.null(globals)) {
+            if (!is.null(state)) {
                 req(state$tab_state$current_tab == "projection_qc")
             }
             df_fracs <- get_mc_data(dataset(), "query_atlas_cell_type_fracs")

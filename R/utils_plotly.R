@@ -57,7 +57,7 @@ sanitize_plotly_buttons <- function(p,
     )
 }
 
-sanitize_plotly_download <- function(p, globals, state) {
+sanitize_plotly_download <- function(p, state) {
     to_image_options <- list(format = state$session_ui$plotly_format, width = state$session_ui$plotly_width, height = state$session_ui$plotly_height, scale = state$session_ui$plotly_scale)
     p %>% plotly::config(
         toImageButtonOptions = to_image_options
@@ -74,7 +74,7 @@ sanitize_plotly_download <- function(p, globals, state) {
 #' @param tooltip Tooltip text column name (default: "tooltip_text"), or NULL
 #' @param source Plotly source name for event handling
 #' @param buttons Buttons to remove from mode bar
-#' @param globals Globals object with plotly format settings
+#' @param state Domain-scoped reactiveValues (session_ui / tab_state / selection / manifold_state).
 #' @param hide_legend Whether to hide the legend (default: FALSE)
 #' @return Sanitized plotly object
 #' @export
@@ -83,7 +83,7 @@ prepare_plotly_scatter <- function(p, tooltip = "tooltip_text", source = NULL,
                                        "select2d", "lasso2d", "hoverClosestCartesian",
                                        "hoverCompareCartesian", "toggleSpikelines"
                                    ),
-                                   globals = NULL, state = NULL, hide_legend = FALSE) {
+                                   state = NULL, hide_legend = FALSE) {
     if (is.null(tooltip)) {
         fig <- plotly::ggplotly(p, source = source)
     } else {
@@ -100,8 +100,8 @@ prepare_plotly_scatter <- function(p, tooltip = "tooltip_text", source = NULL,
         plotly::partial_bundle() %>%
         sanitize_plotly_buttons(buttons = buttons)
 
-    if (!is.null(globals)) {
-        fig <- fig %>% sanitize_plotly_download(globals, state)
+    if (!is.null(state)) {
+        fig <- fig %>% sanitize_plotly_download(state)
     }
 
     fig %>%

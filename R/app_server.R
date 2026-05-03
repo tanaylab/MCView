@@ -13,11 +13,9 @@ app_server <- function(input, output, session) {
         }
     }
 
-    globals <- reactiveValues()
-
-    # Phase 2.2 — domain-scoped reactiveValues. Per-domain migrations move
-    # globals$<slot> into state$<domain>$<slot>; until then the new objects
-    # are populated alongside globals so the surface is wired but unused.
+    # Domain-scoped reactiveValues threaded through every module.
+    # Each domain owns a subset of session state; see dev/plans/2026-05-03-globals-split.md
+    # for the rationale.
     state <- list(
         session_ui = reactiveValues(),
         tab_state = reactiveValues(),
@@ -137,7 +135,7 @@ app_server <- function(input, output, session) {
     load_tab <- function(tab_def) {
         server_fn <- tab_def$server_fn
         if (!is.null(server_fn)) {
-            server_fn(tab_def$module_name, dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors, gene_modules = gene_modules, globals = globals, state = state)
+            server_fn(tab_def$module_name, dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors, gene_modules = gene_modules, state = state)
         } else {
             warning(paste0("Tab ", tab_def$module_name, " has no server_fn"))
         }
@@ -145,10 +143,10 @@ app_server <- function(input, output, session) {
 
     purrr::walk(mcv_get("tab_defs"), load_tab)
 
-    clipboard_reactives(dataset, input, output, session, metacell_types, cell_type_colors, gene_modules, globals, state)
+    clipboard_reactives(dataset, input, output, session, metacell_types, cell_type_colors, gene_modules, state)
 
-    download_modal_reactives(input, output, session, globals, state)
-    download_data_modal_reactives(input, output, session, globals, state)
+    download_modal_reactives(input, output, session, state)
+    download_data_modal_reactives(input, output, session, state)
 
     if (!is.null(app_config("profile")) && app_config("profile")) {
         # Profiling UI disabled; keep profile flag for timing logs only.

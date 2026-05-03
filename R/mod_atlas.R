@@ -87,7 +87,7 @@ mod_atlas_sidebar_ui <- function(id) {
 #' atlas Server Function
 #'
 #' @noRd
-mod_atlas_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, globals, state) {
+mod_atlas_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, state) {
     moduleServer(
         id,
         function(input, output, session) {
@@ -111,7 +111,7 @@ mod_atlas_server <- function(id, dataset, metacell_types, cell_type_colors, gene
                 return(mods)
             })
 
-            projection_selectors(ns, dataset, output, input, atlas_gene_modules, globals, state, session, weight = 1, atlas = TRUE)
+            projection_selectors(ns, dataset, output, input, atlas_gene_modules, state, session, weight = 1, atlas = TRUE)
             output$top_correlated_select_color_proj <- renderUI({
                 req(input$gene1)
                 req(has_gg_mc_top_cor(dataset()))
@@ -183,7 +183,7 @@ mod_atlas_server <- function(id, dataset, metacell_types, cell_type_colors, gene
             })
 
 
-            output$plot_mc_proj_2d <- render_2d_plotly(input, output, session, dataset, atlas_metacell_types, atlas_colors, globals = globals, state = state, atlas = TRUE, query_types = metacell_types, atlas_gene_modules, source = "proj_mc_plot_proj_tab", tab_guard = "atlas") %>% bindCache(dataset(), input$color_proj, atlas_metacell_types(), atlas_colors(), input$point_size, input$stroke, input$min_edge_size, input$set_range, input$proj_stat, input$expr_range, input$lfp, input$color_proj_gene, input$color_proj_metadata, input$selected_cell_types, input$selected_metacell, input$color_by_scale, input$query_threshold, input$color_proj_gene_module, input$graph_name, state$session_ui$plotly_format, state$session_ui$plotly_width, state$session_ui$plotly_height, state$session_ui$plotly_scale)
+            output$plot_mc_proj_2d <- render_2d_plotly(input, output, session, dataset, atlas_metacell_types, atlas_colors, state = state, atlas = TRUE, query_types = metacell_types, atlas_gene_modules, source = "proj_mc_plot_proj_tab", tab_guard = "atlas") %>% bindCache(dataset(), input$color_proj, atlas_metacell_types(), atlas_colors(), input$point_size, input$stroke, input$min_edge_size, input$set_range, input$proj_stat, input$expr_range, input$lfp, input$color_proj_gene, input$color_proj_metadata, input$selected_cell_types, input$selected_metacell, input$color_by_scale, input$query_threshold, input$color_proj_gene_module, input$graph_name, state$session_ui$plotly_format, state$session_ui$plotly_width, state$session_ui$plotly_height, state$session_ui$plotly_scale)
         }
     )
 }

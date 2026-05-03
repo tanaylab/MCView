@@ -1,4 +1,4 @@
-clipboard_changed_2d_reactive <- function(input, globals, state) {
+clipboard_changed_2d_reactive <- function(input, state) {
     # We use this reactive in order to invalidate the cache only when needed
     reactive({
         if (is.null(input$color_proj) || is.null(input$color_proj_metadata) || input$color_proj != "metadata" || input$color_proj_metadata != "Clipboard") {
@@ -9,7 +9,7 @@ clipboard_changed_2d_reactive <- function(input, globals, state) {
     })
 }
 
-clipboard_changed_scatter_reactive <- function(input, globals, state) {
+clipboard_changed_scatter_reactive <- function(input, state) {
     reactive({
         if (
             (!is.null(input$color_by_type) && !is.null(input$color_by_var) && input$color_by_type == "Metadata" && input$color_by_var == "Clipboard") ||
@@ -21,7 +21,7 @@ clipboard_changed_scatter_reactive <- function(input, globals, state) {
     })
 }
 
-clipboard_reactives <- function(dataset, input, output, session, metacell_types, cell_type_colors, gene_modules, globals, state) {
+clipboard_reactives <- function(dataset, input, output, session, metacell_types, cell_type_colors, gene_modules, state) {
     observeEvent(
         input$clipboard_modal,
         showModal(modalDialog(
@@ -144,16 +144,16 @@ clipboard_copy_button_ui <- function(ns, id, data_reactive, label = "Copy to Cli
 #' @param input Shiny input
 #' @param id Button ID
 #' @param data_reactive Reactive expression that returns the data
-#' @param globals Global reactive values (optional, for internal clipboard)
+#' @param state Domain-scoped reactiveValues (session_ui / tab_state / selection / manifold_state).
 #' @param message_template Template for success message with \{count\} placeholder
 #' @return Observer for button clicks
-clipboard_copy_button_server <- function(input, id, data_reactive, globals = NULL, state = NULL,
+clipboard_copy_button_server <- function(input, id, data_reactive, state = NULL,
                                          message_template = "Copied {count} items to clipboard") {
     observeEvent(input[[id]], {
         data <- data_reactive()
         if (!is.null(data) && length(data) > 0) {
-            # Update internal clipboard if globals provided
-            if (!is.null(globals) && !is.null(state$selection$clipboard)) {
+            # Update internal clipboard if state provided
+            if (!is.null(state) && !is.null(state$selection$clipboard)) {
                 state$selection$clipboard <- as.character(data)
             }
 

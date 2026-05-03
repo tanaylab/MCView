@@ -112,7 +112,7 @@ mod_mc_mc_sidebar_ui <- function(id) {
 #' mc_mc Server Function
 #'
 #' @noRd
-mod_mc_mc_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, globals, state) {
+mod_mc_mc_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, state) {
     moduleServer(
         id,
         function(input, output, session) {
@@ -124,14 +124,14 @@ mod_mc_mc_server <- function(id, dataset, metacell_types, cell_type_colors, gene
             metacell_names <- metacell_names_reactive(dataset)
             metacell_colors <- metacell_colors_reactive(dataset, metacell_names, metacell_types)
 
-            projection_selectors(ns, dataset, output, input, gene_modules, globals, state, session, weight = 0.6)
-            group_selectors(input, output, session, dataset, ns, groupA, groupB, metacell_types, cell_type_colors, globals, state)
+            projection_selectors(ns, dataset, output, input, gene_modules, state, session, weight = 0.6)
+            group_selectors(input, output, session, dataset, ns, groupA, groupB, metacell_types, cell_type_colors, state)
             metacell_selectors(input, output, session, dataset, ns, metacell_names, metacell_colors, metacell_types, cell_type_colors, groupA, groupB)
 
-            mc_mc_gene_scatter_df <- mc_mc_gene_scatter_df_reactive(dataset, input, output, session, metacell_types, cell_type_colors, globals, state, groupA, groupB)
+            mc_mc_gene_scatter_df <- mc_mc_gene_scatter_df_reactive(dataset, input, output, session, metacell_types, cell_type_colors, state, groupA, groupB)
 
             diff_expr_switch_metacells(dataset, input, output, session, groupA, groupB)
-            mod_mc_mc_globals_observers(input, session, globals, state)
+            mod_mc_mc_selection_observers(input, session, state)
 
             output$projection_color_selectors <- renderUI({
                 req(input$mode)
@@ -181,14 +181,14 @@ mod_mc_mc_server <- function(id, dataset, metacell_types, cell_type_colors, gene
             })
 
             # Differential expression
-            output$plot_mc_mc_gene_scatter <- render_mc_mc_gene_plotly(input, output, session, ns, dataset, globals, state, gene_modules, mc_mc_gene_scatter_df, metacell_names, cell_type_colors, tab_guard = "mc_mc")
+            output$plot_mc_mc_gene_scatter <- render_mc_mc_gene_plotly(input, output, session, ns, dataset, state, gene_modules, mc_mc_gene_scatter_df, metacell_names, cell_type_colors, tab_guard = "mc_mc")
 
             output$diff_expr_table <- render_mc_mc_gene_diff_table(input, output, session, ns, dataset, mc_mc_gene_scatter_df)
 
             # Projection plots
-            output$plot_mc_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, state, groupA = groupA, groupB = groupB, source = "proj_mc_plot", tab_guard = "mc_mc")
+            output$plot_mc_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, state, groupA = groupA, groupB = groupB, source = "proj_mc_plot", tab_guard = "mc_mc")
 
-            diff_expr_auto_update_globals(mc_mc_gene_scatter_df, globals, state)
+            diff_expr_auto_update_selection(mc_mc_gene_scatter_df, state)
 
             # metacell click observers
             metacell_click_observer("proj_manifold_plot", session)
@@ -206,7 +206,7 @@ mod_mc_mc_server <- function(id, dataset, metacell_types, cell_type_colors, gene
     )
 }
 
-mod_mc_mc_globals_observers <- function(input, session, globals, state, notification_suffix = " in \"Diff. Expr\" tab") {
+mod_mc_mc_selection_observers <- function(input, session, state, notification_suffix = " in \"Diff. Expr\" tab") {
     # Deferred-action observers: state$selection$selected_metacell{A,B} is set from
     # other tabs; re-fire on input$mode change so the selection lands once
     # the user enters MC-vs-MC mode and the metacell pickers exist.
@@ -372,14 +372,14 @@ metacell_selectors <- function(input, output, session, dataset, ns, metacell_nam
     })
 }
 
-group_selectors <- function(input, output, session, dataset, ns, groupA, groupB, metacell_types, cell_type_colors, globals, state) {
+group_selectors <- function(input, output, session, dataset, ns, groupA, groupB, metacell_types, cell_type_colors, state) {
     # Group A box and table
     render_group_box(output, "groupA_box", ns, "Group A", "groupA_table",
                      "reset_groupA", "remove_groupA_metacells", "paste_groupA_metacells",
                      "Groups", input)
     render_group_table(output, "groupA_table", groupA, metacell_types, cell_type_colors)
     setup_group_observers(input, groupA, "add_metacell_to_groupA", "remove_groupA_metacells",
-                          "paste_groupA_metacells", "reset_groupA", "groupA_table", "metacell", globals, state)
+                          "paste_groupA_metacells", "reset_groupA", "groupA_table", "metacell", state)
 
     # Group B box and table
     render_group_box(output, "groupB_box", ns, "Group B", "groupB_table",
@@ -387,7 +387,7 @@ group_selectors <- function(input, output, session, dataset, ns, groupA, groupB,
                      "Groups", input)
     render_group_table(output, "groupB_table", groupB, metacell_types, cell_type_colors)
     setup_group_observers(input, groupB, "add_metacell_to_groupB", "remove_groupB_metacells",
-                          "paste_groupB_metacells", "reset_groupB", "groupB_table", "metacell", globals, state)
+                          "paste_groupB_metacells", "reset_groupB", "groupB_table", "metacell", state)
 
     observeEvent(plotly::event_data("plotly_selected", source = "proj_mc_plot"), {
         el <- plotly::event_data("plotly_selected", source = "proj_mc_plot")

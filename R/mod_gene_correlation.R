@@ -356,10 +356,10 @@ mod_gene_correlation_ui <- function(id) {
 #' @param metacell_types Reactive returning metacell-type mapping data frame.
 #' @param cell_type_colors Reactive returning cell-type colour data frame.
 #' @param gene_modules Reactive returning gene-module mapping data frame.
-#' @param globals Reactive values shared across modules.
+#' @param state Domain-scoped reactiveValues (session_ui / tab_state / selection / manifold_state).
 #'
 #' @export
-mod_gene_correlation_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, globals, state) {
+mod_gene_correlation_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, state) {
     moduleServer(
         id,
         function(input, output, session) {
@@ -761,7 +761,7 @@ mod_gene_correlation_server <- function(id, dataset, metacell_types, cell_type_c
             )
 
             clipboard_copy_button_server(
-                input, "copy_all_genes", filtered_gene_list, globals, state,
+                input, "copy_all_genes", filtered_gene_list, state,
                 message_template = "Copied {count} genes to clipboard"
             )
 

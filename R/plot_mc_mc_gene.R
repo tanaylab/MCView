@@ -50,7 +50,7 @@ plot_mc_mc_gene <- function(df, metacell1, metacell2, highlight = NULL, label_pr
     return(p)
 }
 
-render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, globals, state, gene_modules, mc_mc_gene_scatter_df = NULL, metacell_names = NULL, cell_type_colors = NULL, mode = NULL, source_suffix = "", dragmode = NULL, plotly_buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), metacell_types = NULL, tab_guard = NULL) {
+render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, state, gene_modules, mc_mc_gene_scatter_df = NULL, metacell_names = NULL, cell_type_colors = NULL, mode = NULL, source_suffix = "", dragmode = NULL, plotly_buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), metacell_types = NULL, tab_guard = NULL) {
     plotly::renderPlotly({
         # Defer computation until the tab is active (when tab_guard is specified)
         if (!is.null(tab_guard)) {
@@ -184,7 +184,7 @@ render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, global
             sanitize_for_WebGL() %>%
             plotly::toWebGL() %>%
             sanitize_plotly_buttons(buttons = plotly_buttons) %>%
-            sanitize_plotly_download(globals, state) %>%
+            sanitize_plotly_download(state) %>%
             plotly::event_register("plotly_click") %>%
             plotly::event_register("plotly_selected")
 
