@@ -366,23 +366,16 @@ mod_gene_correlation_server <- function(id, dataset, metacell_types, cell_type_c
             ns <- session$ns
 
             # Reactive values
-            parsed_genes <- reactiveVal(character(0))
             correlation_results <- reactiveVal(NULL)
             calculation_status <- reactiveVal("")
 
             # Parse genes from input
-            observe({
-                genes <- c()
-
-                # From text area
-                if (!is.null(input$gene_list) && nzchar(input$gene_list)) {
-                    text_genes <- strsplit(input$gene_list, "[,;[:space:]]+")[[1]]
-                    genes <- c(genes, text_genes)
+            parsed_genes <- reactive({
+                if (is.null(input$gene_list) || !nzchar(input$gene_list)) {
+                    return(character(0))
                 }
-
-                # Clean and deduplicate
-                genes <- unique(trimws(genes[nzchar(genes)]))
-                parsed_genes(genes)
+                tokens <- strsplit(input$gene_list, "[,;[:space:]]+")[[1]]
+                unique(trimws(tokens[nzchar(tokens)]))
             })
 
             # Handle file upload

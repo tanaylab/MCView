@@ -355,21 +355,18 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
 
             output$gene_metadata_cell_type_selector <- cell_type_selector(dataset, ns, id = "gene_metadata_cell_type", label = "Cell types", selected = "all", cell_type_colors = cell_type_colors, metacell_types = metacell_types)
 
-            current_gene_table <- reactiveVal()
-
-            observe({
+            current_gene_table <- reactive({
                 req(!is.null(input$gene_metadata_any_cell_type))
                 gene_metadata <- get_mc_data(dataset(), "gene_metadata")
                 if (input$gene_metadata_any_cell_type) {
                     req(has_name(gene_metadata, "fitted_gene_any"))
                     req(has_name(gene_metadata, "marker_gene"))
-                    gene_metadata <- gene_metadata %>%
+                    gene_metadata %>%
                         select(-cell_type, -fitted_gene) %>%
                         rename(fitted_gene = fitted_gene_any) %>%
                         distinct() %>%
                         arrange(desc(marker_gene), fitted_gene) %>%
                         select(everything(), fitted_gene)
-                    current_gene_table(gene_metadata)
                 } else {
                     req(input$gene_metadata_cell_type)
                     req(gene_metadata)
@@ -377,13 +374,11 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
                         select(-any_of("fitted_gene_any")) %>%
                         filter(cell_type %in% input$gene_metadata_cell_type)
 
-
                     if (has_name(gene_metadata, "marker_gene") && has_name(gene_metadata, "fitted_gene")) {
                         gene_metadata <- gene_metadata %>%
                             arrange(cell_type, desc(marker_gene), fitted_gene)
                     }
-
-                    current_gene_table(gene_metadata)
+                    gene_metadata
                 }
             })
 

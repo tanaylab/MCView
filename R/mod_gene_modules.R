@@ -199,7 +199,6 @@ mod_gene_modules_server <- function(id, dataset, metacell_types, cell_type_color
             selected_genes_event_observer("mc_mc_plot_gene_modules", selected_genes)
             selected_genes_event_observer("ct_ct_plot_gene_modules", selected_genes)
             observe({
-                req(selected_genes)
                 shinyjs::toggle(id = "add_selected_genes_button", condition = length(selected_genes()) > 0)
             })
         }
@@ -218,20 +217,19 @@ selected_genes_event_observer <- function(source, selected_genes) {
 }
 
 mod_gene_module_controllers <- function(ns, dataset, input, output, session, gene_modules, genes, selected_module, selected_genes, state) {
-    values <- reactiveValues(module_list = NULL)
-    observe({
+    module_list <- reactive({
         req(gene_modules())
-        values$module_list <- levels(gene_modules()$module)
+        levels(gene_modules()$module)
     })
 
     # gene module selector
     output$gene_module_selector <- renderUI({
-        req(values$module_list)
+        req(module_list())
         shinyWidgets::pickerInput(
             ns("selected_gene_module"),
             "Gene module",
             inline = TRUE,
-            choices = values$module_list,
+            choices = module_list(),
             selected = NULL,
             multiple = FALSE
         )
@@ -465,14 +463,14 @@ mod_gene_module_controllers <- function(ns, dataset, input, output, session, gen
     observeEvent(input$move_selected_genes_modal, {
         req(input$selected_gene_module)
         showModal({
-            req(values$module_list)
+            req(module_list())
             modalDialog(
                 title = "Move gene module",
                 shinyWidgets::pickerInput(
                     ns("selected_gene_module_move"),
                     "Selected a gene module to move the gene(s) to:",
                     inline = TRUE,
-                    choices = values$module_list,
+                    choices = module_list(),
                     selected = NULL,
                     multiple = FALSE
                 ),

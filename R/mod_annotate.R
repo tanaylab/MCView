@@ -448,7 +448,6 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
 
 
             observe({
-                req(metacell_types)
                 if (nrow(selected_metacell_types()) == 0) {
                     to_show(NULL)
                 }
