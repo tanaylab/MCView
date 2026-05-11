@@ -65,20 +65,24 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
         )
     })
 
+    # One-shot: seed markers() from dataset when the parent hasn't supplied any.
     observe({
-        if (is.null(markers())) {
-            config <- mcv_get("config")
-            if (config$light_version) {
-                max_gene_num <- 100
-            } else {
-                req(input$max_gene_num)
-                max_gene_num <- input$max_gene_num
-            }
-
-            initial_markers <- choose_markers(get_marker_genes(dataset(), mode = mode), max_gene_num, dataset = dataset())
-            markers(initial_markers)
+        if (!is.null(markers())) {
+            return()
         }
+        config <- mcv_get("config")
+        if (config$light_version) {
+            max_gene_num <- 100
+        } else {
+            req(input$max_gene_num)
+            max_gene_num <- input$max_gene_num
+        }
+        initial_markers <- choose_markers(get_marker_genes(dataset(), mode = mode), max_gene_num, dataset = dataset())
+        markers(initial_markers)
+    })
 
+    # Mirror the lfp_range slider into the parent-owned reactiveVal.
+    observeEvent(input$lfp_range, {
         lfp_range(input$lfp_range)
     })
 
