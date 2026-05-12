@@ -203,5 +203,80 @@ dataset_names <- function() {
     names(mc_data)
 }
 
+#' Validate that the MCView environment is fully populated post-init
+#'
+#' Called by `run_app()` after the init chain (init_single_daf_mode /
+#' init_multi_daf_mode -> init_atlas -> init_defs). Treats partial
+#' initialization as a hard error so modules don't have to defensively
+#' check for NULL on every read.
+#'
+#' Required keys: `config`, `mc_data`, `tab_defs`, `egc_epsilon`,
+#' `expr_breaks`, `default_gene1`, `default_gene2`. Each entry in
+#' `mc_data` must be a list with at least `base_daf` and `daf_obj` as
+#' valid DAF objects. `atlas` is optional; if present it must be a DAF
+#' object.
+#'
+#' @return TRUE invisibly on success. Calls `cli::cli_abort()` on failure.
+#' @export
+validate_mcview_env <- function() {
+    errors <- character(0)
+
+    required_keys <- c(
+        "config", "mc_data", "tab_defs",
+        "egc_epsilon", "expr_breaks",
+        "default_gene1", "default_gene2"
+    )
+    for (key in required_keys) {
+        if (is.null(mcv_get(key))) {
+            errors <- c(errors, sprintf("required key {.val %s} is missing or NULL", key))
+        }
+    }
+
+    mc_data <- mcv_get("mc_data")
+    if (!is.null(mc_data)) {
+        if (!is.list(mc_data) || length(mc_data) == 0) {
+            errors <- c(errors, "{.var mc_data} must be a non-empty list")
+        } else if (is.null(names(mc_data)) || any(!nzchar(names(mc_data)))) {
+            errors <- c(errors, "{.var mc_data} entries must all be named")
+        } else {
+            for (ds_name in names(mc_data)) {
+                ds <- mc_data[[ds_name]]
+                if (!is.list(ds)) {
+                    errors <- c(errors, sprintf("{.code mc_data[['%s']]} must be a list", ds_name))
+                    next
+                }
+                for (slot in c("base_daf", "daf_obj")) {
+                    val <- ds[[slot]]
+                    if (is.null(val)) {
+                        errors <- c(errors, sprintf("{.code mc_data[['%s']][['%s']]} is missing", ds_name, slot))
+                    } else if (!dafr::is_daf(val)) {
+                        errors <- c(errors, sprintf("{.code mc_data[['%s']][['%s']]} is not a DAF object", ds_name, slot))
+                    }
+                }
+                if (!is.null(ds$cache_daf) && !dafr::is_daf(ds$cache_daf)) {
+                    errors <- c(errors, sprintf("{.code mc_data[['%s']]$cache_daf} is set but not a DAF object", ds_name))
+                }
+            }
+        }
+    }
+
+    tab_defs <- mcv_get("tab_defs")
+    if (!is.null(tab_defs) && (!is.list(tab_defs) || length(tab_defs) == 0)) {
+        errors <- c(errors, "{.var tab_defs} must be a non-empty list")
+    }
+
+    atlas <- mcv_get("atlas")
+    if (!is.null(atlas) && !dafr::is_daf(atlas)) {
+        errors <- c(errors, "{.var atlas} is set but not a DAF object")
+    }
+
+    if (length(errors) > 0) {
+        names(errors) <- rep_len("x", length(errors))
+        cli::cli_abort(c("MCView environment validation failed:", errors))
+    }
+
+    invisible(TRUE)
+}
+
 # Initialize on package load
 init_mcview_env()

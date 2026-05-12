@@ -193,6 +193,7 @@ run_app <- function(daf,
     }
 
     timed("init_defs", init_defs())
+    validate_mcview_env()
     timed("config_shiny_cache", config_shiny_cache())
     # Defer future::plan(multisession) until first use (Flow tab).
     # This saves ~5.7s at startup since spawning worker processes is expensive
