@@ -41,3 +41,42 @@ test_that("partial_bundle pre-warm is silent and idempotent", {
     expect_silent(prewarm_plotly_bundle())
     expect_true(isTRUE(mcv_get(".partial_bundle_warmed")))
 })
+
+test_that("get_gene_egc cold path matches eager-load value (no silent drift)", {
+    skip_if_not(dir.exists(get_test_daf_path()), "OBK fixture not available")
+
+    daf_obj <- dafr::open_daf(get_test_daf_path())
+    init_mcview_env()
+    init_single_daf_mode(daf_obj, "data", NULL, FALSE)
+    init_defs()
+    config_shiny_cache()
+
+    gene_axis <- dafr::axis_entries(daf_obj, "gene")
+    # Sample a few genes: first, middle, last. Catches positional / ordering
+    # bugs in compute_egc_from_daf's row extraction.
+    sample_genes <- gene_axis[c(1, floor(length(gene_axis) / 2), length(gene_axis))]
+
+    # Reference: eager-load path. Triggers full mc_mat into cache.
+    mat <- get_mc_data("data", "mc_mat")
+    mc_sum <- get_mc_sum("data")
+    ref <- lapply(sample_genes, function(g) {
+        umis <- mat[g, ]
+        umis / mc_sum[names(umis)]
+    })
+    names(ref) <- sample_genes
+
+    # Clear caches so the next call goes through the cold targeted-query path.
+    mcv_cache_set("data", "mc_mat", NULL)
+    mcv_cache_set("data", "mc_egc_full", NULL)
+    expect_null(mcv_cache_get("data", "mc_mat"))
+
+    for (g in sample_genes) {
+        v <- get_gene_egc(g, "data")
+        # Align names: ref keeps metacell axis order; v should too.
+        expect_equal(v[names(ref[[g]])], ref[[g]], tolerance = 1e-10,
+                     info = paste("gene =", g))
+    }
+
+    # And confirm cold path did NOT re-populate mc_mat.
+    expect_null(mcv_cache_get("data", "mc_mat"))
+})
