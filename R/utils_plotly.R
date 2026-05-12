@@ -137,7 +137,7 @@ prewarm_plotly_bundle <- function() {
         return(invisible(NULL))
     }
     tryCatch(
-        invisible(plotly::partial_bundle(plotly::plot_ly())),
+        invisible(plotly::partial_bundle(plotly::plot_ly(type = "scatter", mode = "markers"))),
         error = function(e) NULL  # opportunistic; failure is acceptable
     )
     mcv_set(".partial_bundle_warmed", TRUE)
