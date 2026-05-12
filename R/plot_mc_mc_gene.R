@@ -50,11 +50,17 @@ plot_mc_mc_gene <- function(df, metacell1, metacell2, highlight = NULL, label_pr
 }
 
 render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, state, gene_modules, mc_mc_gene_scatter_df = NULL, metacell_names = NULL, cell_type_colors = NULL, mode = NULL, source_suffix = "", dragmode = NULL, plotly_buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), metacell_types = NULL, tab_guard = NULL) {
+    # NOTE: `tab_guard` is accepted for API compatibility but intentionally
+    # NOT used to gate rendering: the bindCache below evaluates
+    # `mc_mc_gene_scatter_df()` (the expensive reactive) as a cache key,
+    # so deferring the inner render via `req(state$tab_state$current_tab ==
+    # tab_guard)` did not actually defer the work it claimed to defer.
+    # Worse, that req() failed on the initial render (when current_tab is
+    # still the landing tab), bindCache cached the silent failure under
+    # the then-current cache key, and because current_tab is not part of
+    # the cache key the render was never re-triggered when the user
+    # navigated to the tab - leaving the plot permanently blank.
     plotly::renderPlotly({
-        # Defer computation until the tab is active (when tab_guard is specified)
-        if (!is.null(tab_guard)) {
-            req(state$tab_state$current_tab == tab_guard)
-        }
         req(mc_mc_gene_scatter_df)
 
         if (!is.null(input$diff_expr_table_rows_selected)) {
