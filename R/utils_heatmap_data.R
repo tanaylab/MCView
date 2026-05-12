@@ -93,19 +93,19 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
         new_markers <- data.table::fread(input$load_genes$datapath, header = FALSE, data.table = FALSE)[, 1]
         new_markers <- new_markers[new_markers %in% gene_names(dataset())]
         if (length(new_markers) == 0) {
-            showNotification("No valid genes were loaded", type = "warning")
+            mcview_notify("warning", "No valid genes were loaded")
         } else {
             markers(new_markers)
-            showNotification(glue("Loaded {length(new_markers)} genes"), type = "message")
+            mcview_notify("success", glue("Loaded {length(new_markers)} genes"))
         }
     })
 
     observeEvent(input$use_de_genes, {
         if (!is.null(state$selection$significant_genes) && length(state$selection$significant_genes) > 0) {
             markers(state$selection$significant_genes)
-            showNotification(glue("Updated markers with {length(state$selection$significant_genes)} significant genes from current Diff. Expression comparison"), type = "message")
+            mcview_notify("success", glue("Updated markers with {length(state$selection$significant_genes)} significant genes from current Diff. Expression comparison"))
         } else {
-            showNotification("No significant genes available in the current Diff. Expression comparison.", type = "warning")
+            mcview_notify("warning", "No significant genes available in the current Diff. Expression comparison.")
         }
     })
 

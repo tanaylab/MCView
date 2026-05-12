@@ -256,7 +256,7 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
     }
 
     if (notify_var_genes) {
-        showNotification(glue("Ordering metacells based on {main_mark} vs {second_mark}"))
+        mcview_notify("info", glue("Ordering metacells based on {main_mark} vs {second_mark}"))
     }
 
     if (ncol(feat) == 1) {
@@ -517,7 +517,7 @@ get_marker_genes <- function(dataset, mode = "Markers") {
     if (mode == "Proj") {
         if (is.null(get_mc_data(dataset, "projected_fold"))) {
             if ("Projected-fold" %in% app_config("original_tabs")) {
-                showNotification(glue("Projected-fold matrix was not computed. Please compute it in python using the metacells package and rerun the import"), type = "error")
+                mcview_notify("error", glue("Projected-fold matrix was not computed. Please compute it in python using the metacells package and rerun the import"))
             }
             req(FALSE)
         }

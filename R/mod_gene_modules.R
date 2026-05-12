@@ -333,7 +333,7 @@ mod_gene_module_controllers <- function(ns, dataset, input, output, session, gen
     observeEvent(input$add_gene_module, {
         req(input$selected_gene_module)
         if (input$new_gene_module_name %in% levels(gene_modules()$module)) {
-            showNotification(glue("Module {input$new_gene_module_name} already exists"), type = "error")
+            mcview_notify("error", glue("Module {input$new_gene_module_name} already exists"))
         } else {
             new_gene_modules <- gene_modules() %>%
                 mutate(module = forcats::fct_expand(module, input$new_gene_module_name))
@@ -351,7 +351,7 @@ mod_gene_module_controllers <- function(ns, dataset, input, output, session, gen
 
         for (field in c("gene", "module")) {
             if (!has_name(new_gene_modules, field)) {
-                showNotification(glue("File should have a column named '{field}'"), type = "error")
+                mcview_notify("error", glue("File should have a column named '{field}'"))
                 req(FALSE)
             }
         }
@@ -362,7 +362,7 @@ mod_gene_module_controllers <- function(ns, dataset, input, output, session, gen
             pull(gene)
 
         if (length(bad_genes) > 0) {
-            showNotification(glue("The following genes appear in more than one module: {genes}", genes = paste(bad_genes, collapse = ", ")), type = "error")
+            mcview_notify("error", glue("The following genes appear in more than one module: {genes}", genes = paste(bad_genes, collapse = ", ")))
             req(FALSE)
         }
 
@@ -548,7 +548,7 @@ add_genes_to_gene_module <- function(new_genes_input, gene_modules, genes) {
             pull(str) %>%
             paste(collapse = ",")
 
-        showNotification(glue("The following genes already exist in other gene modules: {existing_genes}"), type = "error")
+        mcview_notify("error", glue("The following genes already exist in other gene modules: {existing_genes}"))
     }
 
     if (length(to_add) > 0) {

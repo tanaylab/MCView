@@ -409,7 +409,7 @@ mod_gene_correlation_server <- function(id, dataset, metacell_types, cell_type_c
                         updateTextAreaInput(session, "gene_list", value = combined)
                     },
                     error = function(e) {
-                        showNotification(paste("Error reading file:", e$message), type = "error")
+                        mcview_notify("error", paste("Error reading file:", e$message))
                     }
                 )
             })
@@ -478,18 +478,18 @@ mod_gene_correlation_server <- function(id, dataset, metacell_types, cell_type_c
                 invalid_genes <- setdiff(parsed_genes(), valid_genes)
 
                 if (length(invalid_genes) > 0) {
-                    showNotification(
+                    mcview_notify(
+                        "warning",
                         paste(
                             "Invalid genes (ignored):", paste(head(invalid_genes, 5), collapse = ", "),
                             if (length(invalid_genes) > 5) paste("and", length(invalid_genes) - 5, "more")
                         ),
-                        type = "warning",
                         duration = 5
                     )
                 }
 
                 if (length(valid_genes) == 0) {
-                    showNotification("No valid genes found", type = "error")
+                    mcview_notify("error", "No valid genes found")
                     return()
                 }
 
@@ -499,9 +499,9 @@ mod_gene_correlation_server <- function(id, dataset, metacell_types, cell_type_c
                         # Limit to 250 genes for gene-gene correlation
                         if (length(valid_genes) > 250) {
                             valid_genes <- valid_genes[1:250]
-                            showNotification(
+                            mcview_notify(
+                                "warning",
                                 paste("Limited to first 250 genes for gene-gene correlation analysis. Using:", paste(head(valid_genes, 5), collapse = ", "), "..."),
-                                type = "warning",
                                 duration = 5
                             )
                         }
@@ -509,9 +509,9 @@ mod_gene_correlation_server <- function(id, dataset, metacell_types, cell_type_c
                         # Limit to 300 genes for finding neighbors
                         if (length(valid_genes) > 300) {
                             valid_genes <- valid_genes[1:300]
-                            showNotification(
+                            mcview_notify(
+                                "warning",
                                 paste("Limited to first 300 genes for correlation analysis. Using:", paste(head(valid_genes, 5), collapse = ", "), "..."),
-                                type = "warning",
                                 duration = 5
                             )
                         }
@@ -588,14 +588,14 @@ mod_gene_correlation_server <- function(id, dataset, metacell_types, cell_type_c
                             correlation_results(results)
                             calculation_status(paste("Calculated correlations for", length(valid_genes), "genes"))
 
-                            showNotification(
-                                paste("Successfully calculated correlations for", length(valid_genes), "genes"),
-                                type = "default"
+                            mcview_notify(
+                                "info",
+                                paste("Successfully calculated correlations for", length(valid_genes), "genes")
                             )
                         },
                         error = function(e) {
                             calculation_status(paste("Error:", e$message))
-                            showNotification(paste("Calculation failed:", e$message), type = "error")
+                            mcview_notify("error", paste("Calculation failed:", e$message))
                             correlation_results(NULL)
                         }
                     )

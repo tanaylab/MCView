@@ -392,7 +392,7 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
                 gene <- current_gene_table() %>%
                     slice(input$gene_metadata_table_rows_selected) %>%
                     pull(gene)
-                showNotification(glue("selecting {gene}"))
+                mcview_notify("info", glue("selecting {gene}"))
                 shinyWidgets::updatePickerInput(session, "axis_var", selected = gene)
             })
 
@@ -445,7 +445,7 @@ mod_query_selection_observers <- function(input, session, state, dataset, notifi
             req(input$axis_var)
             shinyWidgets::updatePickerInput(session, "axis_var", selected = state$selection$selected_query_gene)
 
-            showNotification(glue("Selected {state$selection$selected_query_gene}{notification_suffix}"))
+            mcview_notify("info", glue("Selected {state$selection$selected_query_gene}{notification_suffix}"))
             state$selection$selected_query_gene <- NULL
         }
     )
@@ -460,7 +460,7 @@ mod_query_selection_observers <- function(input, session, state, dataset, notifi
             req(input$metacell1)
             req(state$selection$selected_query_metacell)
             shinyWidgets::updatePickerInput(session, "metacell1", selected = state$selection$selected_query_metacell)
-            showNotification(glue("Selected {state$selection$selected_query_metacell}{notification_suffix}"))
+            mcview_notify("info", glue("Selected {state$selection$selected_query_metacell}{notification_suffix}"))
             state$selection$selected_query_metacell <- NULL
         }
     )
@@ -543,7 +543,7 @@ select_metacell_plotly_event_projection <- function(source, input, session, meta
 
         if (input$mode == "MC") {
             updateSelectInput(session, "metacell1", selected = metacell)
-            showNotification(glue("Selected Metacell: #{metacell}"))
+            mcview_notify("info", glue("Selected Metacell: #{metacell}"))
         } else if (input$mode == "Type") {
             cell_type <- metacell_types() %>%
                 filter(metacell == !!metacell) %>%
@@ -551,7 +551,7 @@ select_metacell_plotly_event_projection <- function(source, input, session, meta
                 pull(cell_type)
             req(cell_type)
             updateSelectInput(session, "metacell1", selected = cell_type)
-            showNotification(glue("Selected Cell type: {cell_type}"))
+            mcview_notify("info", glue("Selected Cell type: {cell_type}"))
         } else if (input$mode == "Group") {
             add_to_group(group, metacell)
         }

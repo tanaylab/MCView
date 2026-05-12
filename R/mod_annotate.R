@@ -148,7 +148,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 input_ok <- TRUE
                 required_fields <- c("cell_type", "metacell")
                 if (!all(required_fields %in% colnames(new_metacell_types))) {
-                    showNotification(glue("Please provide a file with the following fields: cell_type, metacell"), type = "error")
+                    mcview_notify("error", glue("Please provide a file with the following fields: cell_type, metacell"))
                     input_ok <- FALSE
                 }
 
@@ -157,14 +157,14 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 unknown_metacells <- new_metacell_types$metacell[!(new_metacell_types$metacell %in% metacells)]
                 if (length(unknown_metacells) > 0) {
                     mcs <- paste(unknown_metacells, collapse = ", ")
-                    showNotification(glue("Metacell types contains metacells that are missing from the data: {mcs}"), type = "error")
+                    mcview_notify("error", glue("Metacell types contains metacells that are missing from the data: {mcs}"))
                     input_ok <- FALSE
                 }
 
                 missing_metacells <- metacells[!(metacells %in% new_metacell_types$metacell)]
                 if (length(missing_metacells) > 0) {
                     mcs <- paste(missing_metacells, collapse = ", ")
-                    showNotification(glue("Some metacells are missing from metacell types: {mcs}"), type = "warning")
+                    mcview_notify("warning", glue("Some metacells are missing from metacell types: {mcs}"))
                 }
 
                 if (input_ok) {
@@ -269,7 +269,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
             observeEvent(input$copy_metacells, {
                 selected_metacells <- selected_metacell_types()$metacell
                 state$selection$clipboard <- selected_metacells
-                showNotification(glue("Copied {length(selected_metacells)} metacells to clipboard"))
+                mcview_notify("info", glue("Copied {length(selected_metacells)} metacells to clipboard"))
             })
 
             observeEvent(input$reset_cell_type_colors, {
@@ -383,7 +383,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 req(nrow(selected_metacell_types()) > 0)
 
                 if (input$new_cell_type_name_from_selection %in% cell_type_colors()$cell_type) {
-                    showNotification(glue("Cell type {input$new_cell_type_name_from_selection} already exists"), type = "error")
+                    mcview_notify("error", glue("Cell type {input$new_cell_type_name_from_selection} already exists"))
                     removeModal()
                     req(FALSE)
                 }
@@ -441,9 +441,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 removeModal()
 
                 # Show a success notification
-                showNotification(glue("Created new cell type '{input$new_cell_type_name_from_selection}' and assigned {length(metacells)} metacells to it"),
-                    type = "message"
-                )
+                mcview_notify("success", glue("Created new cell type '{input$new_cell_type_name_from_selection}' and assigned {length(metacells)} metacells to it"))
             })
 
 
@@ -530,7 +528,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 req(input$new_merged_cell_type_name)
                 req(input$new_merged_cell_type_color)
                 if (input$new_merged_cell_type_name %in% cell_type_colors()$cell_type[-rows]) {
-                    showNotification(glue("Cell type {input$new_merged_cell_type_name} already exists"), type = "error")
+                    mcview_notify("error", glue("Cell type {input$new_merged_cell_type_name} already exists"))
                     removeModal()
                     req(FALSE)
                 }
@@ -609,7 +607,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 cell_type <- cell_type_colors()$cell_type[input$cell_type_table_rows_selected]
                 req(input$new_cell_type_name)
                 if (input$new_cell_type_name %in% cell_type_colors()$cell_type[-input$cell_type_table_rows_selected]) {
-                    showNotification(glue("Cell type {input$new_cell_type_name} already exists"), type = "error")
+                    mcview_notify("error", glue("Cell type {input$new_cell_type_name} already exists"))
                     removeModal()
                     req(FALSE)
                 }
@@ -647,7 +645,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 req(input$new_cell_type_name)
                 req(input$new_cell_type_color)
                 if (input$new_cell_type_name %in% cell_type_colors()$cell_type) {
-                    showNotification(glue("Cell type {input$new_cell_type_name} already exists"), type = "error")
+                    mcview_notify("error", glue("Cell type {input$new_cell_type_name} already exists"))
                     removeModal()
                     req(FALSE)
                 }

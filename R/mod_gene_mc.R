@@ -135,7 +135,7 @@ mod_gene_mc_plotly_observers <- function(input, session, source = "mc_mc_plot", 
         gene <- el$customdata
         req(input$x_axis_type == "Gene")
         shinyWidgets::updatePickerInput(session, "x_axis_var", selected = gene)
-        showNotification(glue("Selected {gene}{notification_suffix}"))
+        mcview_notify("info", glue("Selected {gene}{notification_suffix}"))
     })
 }
 
@@ -158,7 +158,7 @@ mod_gene_mc_selection_observers <- function(input, session, state, dataset, noti
                 shinyWidgets::updatePickerInput(session, "atlas_x_axis_var", selected = state$selection$selected_gene_x_axis)
             }
 
-            showNotification(glue("Selected {state$selection$selected_gene_x_axis}{notification_suffix}"))
+            mcview_notify("info", glue("Selected {state$selection$selected_gene_x_axis}{notification_suffix}"))
             state$selection$selected_gene_x_axis <- NULL
         }
     )
@@ -178,7 +178,7 @@ mod_gene_mc_selection_observers <- function(input, session, state, dataset, noti
                 shinyWidgets::updatePickerInput(session, "atlas_y_axis_var", selected = state$selection$selected_gene_y_axis)
             }
 
-            showNotification(glue("Selected {state$selection$selected_gene_y_axis}{notification_suffix}"))
+            mcview_notify("info", glue("Selected {state$selection$selected_gene_y_axis}{notification_suffix}"))
             state$selection$selected_gene_y_axis <- NULL
         }
     )

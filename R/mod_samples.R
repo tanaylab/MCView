@@ -369,7 +369,7 @@ mod_samples_server <- function(id, dataset, metacell_types, cell_type_colors, ge
                 el <- plotly::event_data("plotly_click", source = "samp_samp_diff_expr_plot")
                 selected <- el$customdata
                 shinyWidgets::updatePickerInput(session, "x_axis_var", selected = selected)
-                showNotification(glue("Selected gene {selected}"))
+                mcview_notify("info", glue("Selected gene {selected}"))
             })
         }
     )

@@ -163,6 +163,6 @@ setup_samples_de <- function(input, output, session, ns,
         el <- plotly::event_data("plotly_click", source = "grp_comparison_plot")
         selected <- el$customdata
         shinyWidgets::updatePickerInput(session, "x_axis_var", selected = selected)
-        showNotification(glue("Selected gene {selected}"))
+        mcview_notify("info", glue("Selected gene {selected}"))
     })
 }

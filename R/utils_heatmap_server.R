@@ -140,7 +140,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     categorical_filter_field = input$categorical_filter_field,
                     categorical_filter_values = input$categorical_filter_values
                 ))
-                showNotification("Applied changes - updating heatmap...", type = "message")
+                mcview_notify("success", "Applied changes - updating heatmap...")
             })
 
             output$reset_zoom_ui <- renderUI({
@@ -196,7 +196,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
 
             observeEvent(input$copy_metacells, {
                 state$selection$clipboard <- selected_metacells()
-                showNotification(glue("Copied {length(selected_metacells())} metacells to clipboard"))
+                mcview_notify("info", glue("Copied {length(selected_metacells())} metacells to clipboard"))
                 selected_metacells(character(0))
             })
 
@@ -204,15 +204,12 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                 req(input$selected_marker_genes)
                 highlighted_genes(input$selected_marker_genes)
 
-                showNotification(
-                    glue::glue("Highlighted {length(input$selected_marker_genes)} gene(s)"),
-                    type = "message"
-                )
+                mcview_notify("success", glue::glue("Highlighted {length(input$selected_marker_genes)} gene(s)"))
             })
 
             observeEvent(input$clear_highlights, {
                 highlighted_genes(NULL)
-                showNotification("Cleared gene highlights", type = "message")
+                mcview_notify("success", "Cleared gene highlights")
             })
 
             output$plotting_area <- renderUI({

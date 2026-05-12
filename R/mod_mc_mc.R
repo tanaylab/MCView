@@ -220,7 +220,7 @@ mod_mc_mc_selection_observers <- function(input, session, state, notification_su
             req(state$selection$selected_metacellA)
             req(input$metacell1)
             shinyWidgets::updatePickerInput(session, "metacell1", selected = state$selection$selected_metacellA)
-            showNotification(glue("Selected {state$selection$selected_metacellA}{notification_suffix}"))
+            mcview_notify("info", glue("Selected {state$selection$selected_metacellA}{notification_suffix}"))
             state$selection$selected_metacellA <- NULL
         }
     )
@@ -235,7 +235,7 @@ mod_mc_mc_selection_observers <- function(input, session, state, notification_su
             req(state$selection$selected_metacellB)
             req(input$metacell2)
             shinyWidgets::updatePickerInput(session, "metacell2", selected = state$selection$selected_metacellB)
-            showNotification(glue("Selected {state$selection$selected_metacellB}{notification_suffix}"))
+            mcview_notify("info", glue("Selected {state$selection$selected_metacellB}{notification_suffix}"))
             state$selection$selected_metacellB <- NULL
         }
     )
@@ -343,10 +343,10 @@ metacell_selectors <- function(input, output, session, dataset, ns, metacell_nam
         if (input$mode == "MCs") {
             if (input$proj_select_main == "Metacell A") {
                 updateSelectInput(session, "metacell1", selected = metacell)
-                showNotification(glue("Selected Metacell A: #{metacell}"))
+                mcview_notify("info", glue("Selected Metacell A: #{metacell}"))
             } else {
                 updateSelectInput(session, "metacell2", selected = metacell)
-                showNotification(glue("Selected Metacell B: #{metacell}"))
+                mcview_notify("info", glue("Selected Metacell B: #{metacell}"))
             }
         } else if (input$mode == "Types") {
             cell_type <- metacell_types() %>%
@@ -355,10 +355,10 @@ metacell_selectors <- function(input, output, session, dataset, ns, metacell_nam
                 pull(cell_type)
             if (input$proj_select_main == "Cell type A") {
                 updateSelectInput(session, "metacell1", selected = cell_type)
-                showNotification(glue("Selected Cell type A: {cell_type}"))
+                mcview_notify("info", glue("Selected Cell type A: {cell_type}"))
             } else {
                 updateSelectInput(session, "metacell2", selected = cell_type)
-                showNotification(glue("Selected Cell type B: {cell_type}"))
+                mcview_notify("info", glue("Selected Cell type B: {cell_type}"))
             }
         } else if (input$mode == "Groups") {
             if (input$proj_select_main == "Group A") {

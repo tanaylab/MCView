@@ -12,7 +12,7 @@ plotly_click_observer <- function(source_id, session, input_id, notification_pre
         selected <- el$customdata
         update_function(session, input_id, selected = selected)
         if (!is.null(notification_prefix)) {
-            showNotification(glue("{notification_prefix}{selected}"))
+            mcview_notify("info", glue("{notification_prefix}{selected}"))
         }
     })
 }

@@ -4,7 +4,7 @@ sanitize_metacell_types <- function(metacell_types, cell_type_colors, dataset) {
         bad_inds <- !is.na(metacell_types$cell_type) & (metacell_types$cell_type != "(Missing)") & !(metacell_types$cell_type %in% cell_type_colors$cell_type)
         if (sum(bad_inds) > 0) {
             bad_cell_types <- unique(metacell_types$cell_type[bad_inds]) %>% paste(collapse = ", ")
-            showNotification(glue("The following cell types are invalid: {bad_cell_types}"), type = "warning", duration = 10)
+            mcview_notify("warning", glue("The following cell types are invalid: {bad_cell_types}"), duration = 10)
             metacell_types$cell_type[bad_inds] <- NA
         }
     }

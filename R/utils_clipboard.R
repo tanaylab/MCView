@@ -159,9 +159,9 @@ clipboard_copy_button_server <- function(input, id, data_reactive, state = NULL,
 
             # Show notification
             message <- glue::glue(message_template, count = length(data))
-            showNotification(message, type = "default")
+            mcview_notify("info", message)
         } else {
-            showNotification("No data to copy", type = "warning")
+            mcview_notify("warning", "No data to copy")
         }
     })
 }

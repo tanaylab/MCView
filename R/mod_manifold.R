@@ -121,7 +121,7 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
             # 2D projection re-calculations
             observeEvent(input$recompute, {
                 req(state$manifold_state$anchor_genes)
-                showNotification("Recomputing 2D projection")
+                mcview_notify("info", "Recomputing 2D projection")
                 mc_egc <- get_mc_egc(dataset())
 
                 mc2d <- compute_umap(mc_egc, state$manifold_state$anchor_genes,
@@ -130,7 +130,7 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
                     genes_per_anchor = input$genes_per_anchor, random_seed = input$random_seed
                 )
                 if (is.null(mc2d)) {
-                    showNotification("Recomputing 2D projection failed", type = "error")
+                    mcview_notify("error", "Recomputing 2D projection failed")
                 }
                 req(mc2d)
                 state$manifold_state$mc2d <- mc2d
@@ -226,7 +226,7 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 # check if all genes are present in the dataset
                 unknown_genes <- setdiff(new_anchors, gene_names(dataset()))
                 if (length(unknown_genes) > 0) {
-                    showNotification(paste0("Unknown genes: ", paste(unknown_genes, collapse = ", ")), type = "error")
+                    mcview_notify("error", paste0("Unknown genes: ", paste(unknown_genes, collapse = ", ")))
                     new_anchors <- setdiff(new_anchors, unknown_genes)
                 }
 
@@ -249,9 +249,9 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 req(input$load_projection)
                 req(input$load_projection$datapath)
                 mc2d <- layout_and_graph_to_mc2d(input$load_projection$datapath, state$manifold_state$mc2d$graph %>% rename(from = mc1, to = mc2), metacells = get_metacell_ids(dataset()), warn_function = function(msg) {
-                    showNotification(msg, type = "error")
+                    mcview_notify("error", msg)
                 }, error_function = function(msg) {
-                    showNotification(msg, type = "error")
+                    mcview_notify("error", msg)
                 })
                 req(mc2d)
                 state$manifold_state$mc2d <- mc2d
@@ -273,9 +273,9 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 req(input$load_graph)
                 req(input$load_graph$datapath)
                 mc2d <- layout_and_graph_to_mc2d(mc2d_to_df(state$manifold_state$mc2d), input$load_graph$datapath, metacells = get_metacell_ids(dataset()), warn_function = function(msg) {
-                    showNotification(msg, type = "error")
+                    mcview_notify("error", msg)
                 }, error_function = function(msg) {
-                    showNotification(msg, type = "error")
+                    mcview_notify("error", msg)
                 })
                 req(mc2d)
                 state$manifold_state$mc2d <- mc2d
