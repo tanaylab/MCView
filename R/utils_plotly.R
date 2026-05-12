@@ -140,6 +140,8 @@ prewarm_plotly_bundle <- function() {
         invisible(plotly::partial_bundle(plotly::plot_ly(type = "scatter", mode = "markers"))),
         error = function(e) NULL  # opportunistic; failure is acceptable
     )
+    # Set the flag unconditionally so a transient failure doesn't make
+    # every subsequent session retry the (potentially slow) pre-warm.
     mcv_set(".partial_bundle_warmed", TRUE)
     invisible(NULL)
 }

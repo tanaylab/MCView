@@ -6,11 +6,7 @@ test_that("get_gene_egc does not eagerly load full mc_mat on cold path", {
     skip_if_not(dir.exists(get_test_daf_path()), "OBK fixture not available")
 
     # Fresh session: open DAF, init env. Do NOT touch mc_mat / mc_egc_full.
-    daf_obj <- dafr::open_daf(get_test_daf_path())
-    init_mcview_env()
-    init_single_daf_mode(daf_obj, "data", NULL, FALSE)
-    init_defs()
-    config_shiny_cache()
+    daf_obj <- setup_cold_session()
 
     expect_null(mcv_cache_get("data", "mc_mat"))
     expect_null(mcv_cache_get("data", "mc_egc_full"))
@@ -45,11 +41,7 @@ test_that("partial_bundle pre-warm is silent and idempotent", {
 test_that("get_gene_egc cold path matches eager-load value (no silent drift)", {
     skip_if_not(dir.exists(get_test_daf_path()), "OBK fixture not available")
 
-    daf_obj <- dafr::open_daf(get_test_daf_path())
-    init_mcview_env()
-    init_single_daf_mode(daf_obj, "data", NULL, FALSE)
-    init_defs()
-    config_shiny_cache()
+    daf_obj <- setup_cold_session()
 
     gene_axis <- dafr::axis_entries(daf_obj, "gene")
     # Sample a few genes: first, middle, last. Catches positional / ordering
@@ -84,11 +76,7 @@ test_that("get_gene_egc cold path matches eager-load value (no silent drift)", {
 test_that("calc_mc_mc_gene_df does not eagerly load full mc_mat", {
     skip_if_not(dir.exists(get_test_daf_path()), "OBK fixture not available")
 
-    daf_obj <- dafr::open_daf(get_test_daf_path())
-    init_mcview_env()
-    init_single_daf_mode(daf_obj, "data", NULL, FALSE)
-    init_defs()
-    config_shiny_cache()
+    daf_obj <- setup_cold_session()
 
     mc_names <- dafr::axis_entries(daf_obj, "metacell")
     skip_if(length(mc_names) < 2, "Need >= 2 metacells")
@@ -107,11 +95,7 @@ test_that("calc_mc_mc_gene_df does not eagerly load full mc_mat", {
 test_that("calc_mc_mc_gene_df cold path matches eager-load value (no silent drift)", {
     skip_if_not(dir.exists(get_test_daf_path()), "OBK fixture not available")
 
-    daf_obj <- dafr::open_daf(get_test_daf_path())
-    init_mcview_env()
-    init_single_daf_mode(daf_obj, "data", NULL, FALSE)
-    init_defs()
-    config_shiny_cache()
+    daf_obj <- setup_cold_session()
 
     mc_names <- dafr::axis_entries(daf_obj, "metacell")
     skip_if(length(mc_names) < 2, "Need >= 2 metacells")
