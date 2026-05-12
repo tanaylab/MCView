@@ -298,15 +298,39 @@ set_cache_metadata <- function(cache_daf, base_daf) {
 
 #' Compute hash of base DAF for cache invalidation
 #'
+#' Combines axis-length and version fingerprints with a per-file
+#' (path, size) digest of the DAF's storage directory. Size is used
+#' rather than mtime so the hash is stable across rsync/container
+#' redeploys but still changes when underlying vectors are rewritten
+#' (zarr files change size when contents change).
+#'
 #' @param base_daf Base DAF object
 #'
-#' @return Hash string based on axis lengths and version
+#' @return Hash string
 compute_base_hash <- function(base_daf) {
+    base_path <- tryCatch(daf_storage_path(base_daf), error = function(e) NULL)
+    file_fingerprint <- if (!is.null(base_path) && dir.exists(base_path)) {
+        files <- list.files(base_path, recursive = TRUE, full.names = TRUE, all.files = FALSE)
+        # Exclude the cache subtree if it lives inside the DAF dir.
+        files <- files[!grepl("[/\\\\]\\.mcview_cache(/|\\\\|$)", files)]
+        if (length(files) == 0) {
+            ""
+        } else {
+            # Sort for deterministic order; pair each file with its size.
+            files <- sort(files)
+            sizes <- file.size(files)
+            paste(basename(files), sizes, sep = ":", collapse = "|")
+        }
+    } else {
+        ""
+    }
+
     components <- c(
         as.character(tryCatch(dafr::axis_length(base_daf, "metacell"), error = function(e) 0)),
         as.character(tryCatch(dafr::axis_length(base_daf, "gene"), error = function(e) 0)),
         as.character(tryCatch(dafr::axis_length(base_daf, "type"), error = function(e) 0)),
-        daf_scalar(base_daf, "mcview_data_version", default = "")
+        daf_scalar(base_daf, "mcview_data_version", default = ""),
+        file_fingerprint
     )
     digest::digest(paste(components, collapse = "|"), algo = "md5")
 }

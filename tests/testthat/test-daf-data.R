@@ -215,7 +215,7 @@ test_that("create_cache_config creates valid config", {
     expect_equal(config$type, "files")
     expect_equal(config$cache_dir, ".mcview_cache")
     expect_true(config$precompute_on_startup)
-    expect_equal(config$invalidation$strategy, "version")
+    expect_equal(config$invalidation$strategy, "hash")
 })
 
 test_that("create_cache_config accepts custom values", {
@@ -344,6 +344,41 @@ test_that("compute_base_hash is consistent", {
     expect_equal(hash1, hash2)
     expect_type(hash1, "character")
     expect_gt(nchar(hash1), 0)
+})
+
+test_that("compute_base_hash incorporates file fingerprints from DAF storage path", {
+    skip_if_no_daf()
+    daf <- dafr::open_daf(get_test_daf_path())
+
+    # Snapshot the real hash, then run the function in a copy of the DAF dir
+    # where one file's size has changed. The hash MUST differ.
+    real_hash <- compute_base_hash(daf)
+
+    tmp_dir <- file.path(tempdir(), paste0("daf_hash_", as.integer(Sys.time())))
+    on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+    dir.create(tmp_dir, showWarnings = FALSE, recursive = TRUE)
+    file.copy(get_test_daf_path(), tmp_dir, recursive = TRUE)
+
+    tmp_daf <- dafr::open_daf(file.path(tmp_dir, basename(get_test_daf_path())))
+    baseline_hash <- compute_base_hash(tmp_daf)
+    # A fresh copy may legitimately differ (different absolute paths but we
+    # only fingerprint basenames + sizes - so it should match).
+    expect_equal(real_hash, baseline_hash)
+
+    # Mutate a file size in the copy; expect a different hash.
+    files <- list.files(file.path(tmp_dir, basename(get_test_daf_path())),
+        recursive = TRUE, full.names = TRUE
+    )
+    # Pick a small, non-cache file we can safely extend.
+    target <- files[which.min(file.size(files))[1]]
+    cat("\nextra-byte\n", file = target, append = TRUE)
+
+    expect_false(identical(compute_base_hash(tmp_daf), baseline_hash))
+})
+
+test_that("default cache invalidation strategy is 'hash'", {
+    cfg <- create_cache_config()
+    expect_equal(cfg$invalidation$strategy, "hash")
 })
 
 # ==============================================================================

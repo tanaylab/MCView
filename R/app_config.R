@@ -420,7 +420,7 @@ extract_cache_config <- function(config = NULL, daf_obj = NULL, dataset_name = N
         cache_dir = ".mcview_cache",
         precompute_on_startup = TRUE,
         invalidation = list(
-            strategy = "version",
+            strategy = "hash",
             version_scalar = "mcview_data_version"
         )
     )
@@ -540,7 +540,7 @@ create_cache_config <- function(
         cache_dir = cache_dir,
         precompute_on_startup = precompute_on_startup,
         invalidation = list(
-            strategy = "version",
+            strategy = "hash",
             version_scalar = "mcview_data_version"
         )
     )
