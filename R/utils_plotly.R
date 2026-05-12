@@ -118,3 +118,28 @@ plotly_text_plot <- function(text) {
         theme_void()
     return(plotly::ggplotly(p))
 }
+
+#' Pre-warm plotly's internal partial_bundle cache.
+#'
+#' First call to `plotly::partial_bundle()` in an R process parses the
+#' ~3 MB plotly.js JSON; subsequent calls reuse the cached result. We pay
+#' this cost once at session start so the first user-visible plot does
+#' not.
+#'
+#' Idempotent at process level: the `mcv_get(".partial_bundle_warmed")`
+#' guard avoids the function-call overhead on subsequent Shiny sessions
+#' that share the same R process.
+#'
+#' @return Invisibly NULL.
+#' @noRd
+prewarm_plotly_bundle <- function() {
+    if (isTRUE(mcv_get(".partial_bundle_warmed"))) {
+        return(invisible(NULL))
+    }
+    tryCatch(
+        invisible(plotly::partial_bundle(plotly::plot_ly())),
+        error = function(e) NULL  # opportunistic; failure is acceptable
+    )
+    mcv_set(".partial_bundle_warmed", TRUE)
+    invisible(NULL)
+}
