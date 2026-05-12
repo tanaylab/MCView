@@ -27,7 +27,6 @@ plot_type_predictions_bar <- function(dataset, metacell_types, cell_type_colors,
                 ggplot(aes(x = metacell, y = fraction, fill = type, customdata = metacell)) +
                 geom_col() +
                 scale_fill_manual(name = "", values = atlas_colors) +
-                theme_mcview() +
                 theme(
                     panel.grid.minor = element_blank(),
                     panel.grid.major = element_blank(),

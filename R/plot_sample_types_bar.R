@@ -101,7 +101,6 @@ plot_sample_stacked_types <- function(dataset, state, metacell_types, cell_type_
             scale_fill_manual(name = "", values = cell_type_colors() %>%
                 select(cell_type, color) %>%
                 deframe()) +
-            theme_mcview() +
             theme(
                 panel.grid.minor = element_blank(),
                 panel.grid.major = element_blank(),

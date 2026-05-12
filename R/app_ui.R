@@ -140,32 +140,29 @@ app_ui <- function(request) {
                 shinyWidgets::actionBttn(
                     inputId = "clipboard_modal",
                     label = "Clipboard",
-                    icon = shiny::icon("clipboard"),
+                    icon = NULL,
                     color = "default",
                     size = "sm",
                     block = FALSE,
-                    no_outline = FALSE,
-                    class = "mcview-header-btn"
+                    no_outline = FALSE
                 ),
                 shinyWidgets::actionBttn(
                     inputId = "download_data_modal",
-                    label = "Export data",
-                    icon = shiny::icon("download"),
+                    label = "Download data",
+                    icon = NULL,
                     color = "default",
                     size = "sm",
                     block = FALSE,
-                    no_outline = FALSE,
-                    class = "mcview-header-btn"
+                    no_outline = FALSE
                 ),
                 shinyWidgets::actionBttn(
                     inputId = "download_modal",
                     label = "Run locally",
-                    icon = shiny::icon("desktop"),
+                    icon = NULL,
                     color = "default",
                     size = "sm",
                     block = FALSE,
-                    no_outline = FALSE,
-                    class = "mcview-header-btn"
+                    no_outline = FALSE
                 )
             )
         ),

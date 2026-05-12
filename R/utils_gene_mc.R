@@ -642,7 +642,7 @@ plot_correlation_barplot <- function(correlation_results, gene) {
             x = "Gene",
             y = "Correlation Coefficient"
         ) +
-        theme_mcview() +
+        theme_minimal() +
         theme(
             axis.text.y = element_text(size = 10),
             plot.title = element_text(size = 14, hjust = 0.5),

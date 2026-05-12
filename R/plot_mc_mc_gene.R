@@ -44,7 +44,6 @@ plot_mc_mc_gene <- function(df, metacell1, metacell2, highlight = NULL, label_pr
         xlab(glue("Expression in {label_prefix}{metacell1}{x_label_suffix}")) +
         ylab(glue("Expression in {label_prefix}{metacell2}")) +
         scale_color_identity() +
-        theme_mcview() +
         theme(axis.text.x = element_text(angle = 30, vjust = 0.5, hjust = 1))
 
     return(p)

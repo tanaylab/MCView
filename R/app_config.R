@@ -2,7 +2,7 @@ init_defs <- function() {
     mcv_set("egc_epsilon", 1e-5)
     options(spinner.type = 6)
 
-    theme_set(theme_mcview())
+    theme_set(theme_classic())
 
     init_tab_defs()
 

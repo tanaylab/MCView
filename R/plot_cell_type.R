@@ -137,7 +137,6 @@ cell_type_gene_boxplot <- function(gene,
         xlab(x_label) +
         ylab(y_label) +
         guides(fill = "none") +
-        theme_mcview() +
         theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
     # Add faceting if specified
@@ -290,7 +289,6 @@ cell_type_metadata_boxplot <- function(var,
         xlab(x_label) +
         ylab(y_label) +
         guides(fill = "none") +
-        theme_mcview() +
         theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
     if (!is.null(y_scale)) {
@@ -390,11 +388,10 @@ cell_type_metadata_confusion <- function(var,
         )) +
         geom_tile() +
         scale_fill_gradientn(
-            colors = mcview_palette$cell_type_score,
+            colors = c("white", "#F4A582", "#D6604D", "#B2182B", "#67001F", "black"),
             name = label,
             limits = c(0, 1)
         ) +
-        theme_mcview() +
         theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
     return(p)

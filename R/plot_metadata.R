@@ -413,7 +413,7 @@ plot_mc_scatter <- function(dataset,
                             cell_type_colors = get_mc_data(dataset, "cell_type_colors"),
                             point_size = initial_scatters_point_size(dataset),
                             stroke = initial_scatters_stroke(dataset),
-                            expr_colors = mcview_palette$expression,
+                            expr_colors = c("#053061", "#2166AC", "#4393C3", "#92C5DE", "#D1E5F0", "#F7F7F7", "#FDDBC7", "#F4A582", "#D6604D", "#B2182B", "#67001F"),
                             plot_text = TRUE,
                             atlas = FALSE,
                             metadata = get_mc_data(dataset, "metadata", atlas = atlas),
@@ -598,8 +598,6 @@ plot_mc_scatter <- function(dataset,
         p <- p + geom_text(size = 1, color = "black")
     }
 
-    p <- p + theme_mcview()
-
     return(p)
 }
 
@@ -617,7 +615,7 @@ plot_sample_scatter <- function(dataset,
                                 cell_types = NULL,
                                 point_size = initial_scatters_point_size(dataset),
                                 stroke = initial_scatters_stroke(dataset),
-                                expr_colors = mcview_palette$expression,
+                                expr_colors = c("#053061", "#2166AC", "#4393C3", "#92C5DE", "#D1E5F0", "#F7F7F7", "#FDDBC7", "#F4A582", "#D6604D", "#B2182B", "#67001F"),
                                 plot_text = TRUE) {
     metadata <- get_mc_data(dataset, "cell_metadata")
 
@@ -819,8 +817,6 @@ plot_sample_scatter <- function(dataset,
         p <- p + geom_text(size = 1, color = "black")
     }
 
-    p <- p + theme_mcview()
-
     return(p)
 }
 
@@ -837,7 +833,7 @@ plot_obs_proj_scatter <- function(dataset,
                                   cell_types = NULL,
                                   point_size = initial_scatters_point_size(dataset),
                                   stroke = initial_scatters_stroke(dataset),
-                                  expr_colors = mcview_palette$expression,
+                                  expr_colors = c("#053061", "#2166AC", "#4393C3", "#92C5DE", "#D1E5F0", "#F7F7F7", "#FDDBC7", "#F4A582", "#D6604D", "#B2182B", "#67001F"),
                                   plot_text = TRUE) {
     atlas_metadata <- get_mc_data(dataset, "metadata", atlas = TRUE)
     query_metadata <- get_mc_data(dataset, "metadata", atlas = FALSE)
@@ -990,8 +986,6 @@ plot_obs_proj_scatter <- function(dataset,
     if (plot_text) {
         p <- p + geom_text(size = 1, color = "black")
     }
-
-    p <- p + theme_mcview()
 
     return(p)
 }
