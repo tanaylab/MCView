@@ -80,3 +80,26 @@ test_that("get_gene_egc cold path matches eager-load value (no silent drift)", {
     # And confirm cold path did NOT re-populate mc_mat.
     expect_null(mcv_cache_get("data", "mc_mat"))
 })
+
+test_that("calc_mc_mc_gene_df does not eagerly load full mc_mat", {
+    skip_if_not(dir.exists(get_test_daf_path()), "OBK fixture not available")
+
+    daf_obj <- dafr::open_daf(get_test_daf_path())
+    init_mcview_env()
+    init_single_daf_mode(daf_obj, "data", NULL, FALSE)
+    init_defs()
+    config_shiny_cache()
+
+    mc_names <- dafr::axis_entries(daf_obj, "metacell")
+    skip_if(length(mc_names) < 2, "Need >= 2 metacells")
+
+    expect_null(mcv_cache_get("data", "mc_mat"))
+
+    df <- calc_mc_mc_gene_df("data", mc_names[1], mc_names[2])
+    expect_true(tibble::is_tibble(df))
+    expect_true(nrow(df) > 0)
+    expect_true(all(c("gene", "diff", "pval", "col") %in% names(df)))
+
+    # mc_mat should still NOT be cached.
+    expect_null(mcv_cache_get("data", "mc_mat"))
+})
