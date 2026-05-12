@@ -198,20 +198,23 @@ get_gene_egc <- function(gene, dataset, projected = FALSE, atlas = FALSE, correc
         }
     }
 
-    # Fast path 2: extract row from session-cached UMIs matrix.
-    # get_mc_data(dataset, "mc_mat") is cached after first access, so this
-    # avoids a ~1s Julia round-trip on every single-gene query.
-    mc_mat <- get_mc_data(dataset, "mc_mat", atlas = atlas)
+    # Fast path 2: hit the session-cached UMIs matrix WITHOUT triggering a load.
+    # Using mcv_cache_get directly (instead of get_mc_data) means we skip
+    # the eager full-matrix DAF query when the cache is empty. Other code
+    # paths that genuinely need the full matrix (markers heatmap, UMAP
+    # recompute) still warm it through get_mc_data / get_mc_egc.
+    cache_key <- if (atlas) "mc_mat_atlas" else "mc_mat"
+    mc_mat <- mcv_cache_get(dataset, cache_key)
     if (!is.null(mc_mat) && gene %in% rownames(mc_mat)) {
         mc_sum <- get_mc_sum(dataset, atlas = atlas)
         gene_umis <- mc_mat[gene, ]
         return(gene_umis / mc_sum[names(gene_umis)])
     }
 
-    # Fallback: full compute path (first access before mc_mat is cached)
+    # Cold path: targeted DAF query for just this gene. ~50-700 ms cold,
+    # ~30 ms warm; vs ~1.75 s to load the full mc_mat one-shot. The full
+    # matrix gets loaded only when something actually needs it.
     egc <- compute_egc_from_daf(daf_obj, genes = gene)
-
-    # Return as vector (single gene)
     if (nrow(egc) == 0) {
         return(NULL)
     }
