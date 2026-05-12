@@ -24,6 +24,16 @@ mod_about_ui <- function(id) {
         }
     } else if (!is.null(about_file) && fs::file_exists(about_file)) {
         about_content <- includeRMarkdown(about_file)
+    } else {
+        # Fall back to the bundled default About content when the DAF
+        # carries neither an about_markdown scalar nor an about_file path
+        # (e.g. raw DAF datasets that weren't created via
+        # convert_project_to_daf). Without this fallback the About tab
+        # renders only its right-hand thumbnail plots.
+        default_about <- app_sys("default-config", "about.Rmd")
+        if (fs::file_exists(default_about)) {
+            about_content <- includeRMarkdown(default_about)
+        }
     }
 
     tagList(
