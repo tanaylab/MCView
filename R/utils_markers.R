@@ -515,7 +515,10 @@ add_genes_to_marker_matrix <- function(mat, genes, dataset) {
 get_marker_genes <- function(dataset, mode = "Markers") {
     daf_obj <- get_dataset_daf(dataset)
     if (mode == "Proj") {
-        if (is.null(get_mc_data(dataset, "projected_fold"))) {
+        # Cheap presence check via DAF metadata - avoids loading the full
+        # projected_fold matrix just to test for existence.
+        if (is.null(daf_obj) ||
+            !dafr::has_matrix(daf_obj, "metacell", "gene", "projected_fold")) {
             if ("Projected-fold" %in% app_config("original_tabs")) {
                 mcview_notify("error", glue("Projected-fold matrix was not computed. Please compute it in python using the metacells package and rerun the import"))
             }
