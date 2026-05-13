@@ -86,9 +86,14 @@ daf_query_mc_mat <- function(daf_obj, genes = NULL, metacells = NULL) {
         # For small gene sets, per-gene queries beat full matrix load + subset.
         # Threshold chosen empirically on the OBK dataset.
         if (length(valid_genes) <= 50) {
-            # Query each gene individually - avoids loading full gene x metacell matrix
+            # Query each gene individually - avoids loading full gene x metacell
+            # matrix. dafr's query syntax requires the axis-mask to come AFTER
+            # the matrix selector, e.g. `@ metacell @ gene :: UMIs @ gene = X`.
+            # The earlier `@ metacell @ gene = X :: UMIs` form errors out with
+            # "comparator outside of mask" on every DAF, silently sending every
+            # caller through the full-matrix fallback below.
             vecs <- lapply(valid_genes, function(gene) {
-                query <- glue::glue("@ metacell @ gene = {escape_daf_value(gene)} :: UMIs")
+                query <- glue::glue("@ metacell @ gene :: UMIs @ gene = {escape_daf_value(gene)}")
                 tryCatch(daf_obj[query], error = function(e) NULL)
             })
 
@@ -142,7 +147,9 @@ daf_query_mc_mat <- function(daf_obj, genes = NULL, metacells = NULL) {
         valid_metacells <- intersect(as.character(metacells), metacell_names)
         if (length(valid_metacells) > 0) {
             vecs <- lapply(valid_metacells, function(mc) {
-                query <- glue::glue("@ gene @ metacell = {escape_daf_value(mc)} :: UMIs")
+                # Mask must come after the matrix selector; see the per-gene
+                # fast path above for the same bug.
+                query <- glue::glue("@ gene @ metacell :: UMIs @ metacell = {escape_daf_value(mc)}")
                 tryCatch(daf_obj[query], error = function(e) NULL)
             })
 
