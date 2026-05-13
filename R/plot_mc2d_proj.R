@@ -323,8 +323,29 @@ handle_2d_gene_module <- function(input, dataset, atlas, mc2d, metacell_types,
 handle_2d_sample <- function(input, dataset, atlas, mc2d, metacell_types,
                              selected_cell_types) {
     req(input$samp1)
-    render_2d_metadata_fig(paste0("samp_id: ", input$samp1), input, dataset,
-        atlas, mc2d, metacell_types, selected_cell_types)
+    md <- paste0("samp_id: ", input$samp1)
+
+    # Derive per-metacell fraction of cells from input$samp1 on the fly. The
+    # legacy pipeline (cell_metadata_to_metacell) materialised these as
+    # `samp_id: <sample>` columns inside the metacell metadata table; raw
+    # DAFs that weren't produced by that pipeline (e.g. OBK's metacells_clean)
+    # lack the column and may also lack a literal `samp_id` cell vector,
+    # using a different grouping field instead.
+    gf <- if (!is.null(input$group_field) && nzchar(input$group_field)) {
+        input$group_field
+    } else {
+        "samp_id"
+    }
+    fracs <- per_metacell_group_fraction(dataset(), gf, input$samp1)
+    req(fracs)
+    metadata <- tibble(
+        metacell = names(fracs),
+        !!md := unname(fracs)
+    )
+
+    render_2d_metadata_fig(md, input, dataset,
+        atlas, mc2d, metacell_types, selected_cell_types,
+        metadata = metadata)
 }
 
 #' @noRd

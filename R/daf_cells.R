@@ -146,6 +146,48 @@ get_cell_field_map <- function(dataset, field_name) {
     result
 }
 
+#' Per-metacell fraction of cells whose grouping value equals \code{group_value}
+#'
+#' For each metacell, returns the fraction of its cells that carry
+#' \code{group_value} in the cell-level vector named \code{group_field}. Used
+#' by the Samples projection to colour metacells by a given sample's
+#' contribution. Works against either the dedicated cells DAF (preferred) or
+#' a cell axis embedded in the metacells DAF.
+#'
+#' @param dataset Dataset name
+#' @param group_field Cell-level vector property used to group cells
+#' @param group_value Value within that vector to count fractions for
+#' @return Named numeric vector keyed by metacell id, or NULL if any source
+#'   vector is unavailable.
+#' @noRd
+per_metacell_group_fraction <- function(dataset, group_field, group_value) {
+    if (is.null(group_field) || !nzchar(group_field) || is.null(group_value)) {
+        return(NULL)
+    }
+    group_vec <- get_cell_field_map(dataset, group_field)
+    mc_vec <- get_cell_metacell_map(dataset)
+    if (is.null(group_vec) || is.null(mc_vec)) {
+        return(NULL)
+    }
+    common <- intersect(names(group_vec), names(mc_vec))
+    if (length(common) == 0) {
+        return(NULL)
+    }
+    group_vec <- group_vec[common]
+    mc_vec <- mc_vec[common]
+    keep <- !is.na(mc_vec) & mc_vec != "-1"
+    group_vec <- group_vec[keep]
+    mc_vec <- mc_vec[keep]
+    if (length(mc_vec) == 0) {
+        return(NULL)
+    }
+    totals <- tapply(rep(1L, length(mc_vec)), mc_vec, sum)
+    hits <- tapply(group_vec == group_value, mc_vec, sum, na.rm = TRUE)
+    fracs <- as.numeric(hits) / as.numeric(totals)
+    names(fracs) <- names(totals)
+    fracs
+}
+
 #' List available categorical fields for grouping cells
 #'
 #' Queries the cells DAF for all cell-level vector properties and filters
