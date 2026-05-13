@@ -199,8 +199,18 @@ connect_browser <- function(port, width = 1400, height = 900) {
     # Set Chrome binary path
     Sys.setenv(CHROMOTE_CHROME = .CHROME_PATH)
 
-    # Set LD_LIBRARY_PATH to include conda libraries (needed for Chrome)
-    conda_prefix <- Sys.getenv("CONDA_PREFIX", "")
+    # Set LD_LIBRARY_PATH to include conda libraries (needed for Chrome).
+    # Respect explicit CHROME_LIB_ENV / CONDA_PREFIX if set; otherwise fall
+    # back to the dafr-mcview env that dev/run-browser-tests.sh defaults to.
+    # This lets plain `Rscript -e 'devtools::test()'` find Chrome's deps
+    # without the user pre-exporting any env vars.
+    conda_prefix <- Sys.getenv("CHROME_LIB_ENV", Sys.getenv("CONDA_PREFIX", ""))
+    if (!nzchar(conda_prefix)) {
+        default_env <- file.path(Sys.getenv("HOME"), "miniconda3", "envs", "dafr-mcview")
+        if (dir.exists(default_env)) {
+            conda_prefix <- default_env
+        }
+    }
     if (nzchar(conda_prefix)) {
         current_ld <- Sys.getenv("LD_LIBRARY_PATH", "")
         conda_lib <- file.path(conda_prefix, "lib")
