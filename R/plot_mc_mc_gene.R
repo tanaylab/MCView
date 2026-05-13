@@ -36,9 +36,10 @@ plot_mc_mc_gene <- function(df, metacell1, metacell2, highlight = NULL, label_pr
             )
         )
 
+    point_size <- app_config("scatters_point_size") %||% 1.5
     p <- df %>%
         ggplot(aes(x = !!sym(metacell1), y = !!sym(metacell2), label = gene, customdata = gene, col = col, tooltip_text = Gene)) +
-        geom_point(size = 1, alpha = 1) +
+        geom_point(size = point_size, alpha = 1) +
         scale_x_continuous(limits = c(xylims[xmin], xylims[xmax]), trans = "log2", breaks = xylims[xmin:xmax], labels = scales::scientific(xylims[xmin:xmax])) +
         scale_y_continuous(limits = c(xylims[ymin], xylims[ymax]), trans = "log2", breaks = xylims[ymin:ymax], labels = scales::scientific(xylims[ymin:ymax])) +
         xlab(glue("Expression in {label_prefix}{metacell1}{x_label_suffix}")) +
