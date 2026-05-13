@@ -1,4 +1,11 @@
 calc_diff_expr <- function(mat, egc, columns, diff_thresh = 1.5, pval_thresh = 0.01) {
+    # `egc` can arrive as a Matrix package class (dgeMatrix when
+    # compute_egc_from_daf returns the result of sweep() on a sparse mc_mat).
+    # as.data.frame() has no S4 method for dgeMatrix, so coerce to a base
+    # matrix first.
+    if (is(egc, "Matrix")) {
+        egc <- as.matrix(egc)
+    }
     df <- as.data.frame(egc)
 
     df$diff <- log2(df[, columns[1]]) - log2(df[, columns[2]])

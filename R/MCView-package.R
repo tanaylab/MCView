@@ -11,7 +11,7 @@
 #' @import tgstat
 #' @import tgutil
 #' @import cli
-#' @importFrom Matrix t rowSums
+#' @importFrom Matrix t rowSums colSums
 #' @importFrom rlang has_name
 #' @importFrom glue glue
 #' @importFrom promises %...>%
