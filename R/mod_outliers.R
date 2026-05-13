@@ -64,7 +64,7 @@ mod_outliers_server <- function(id, dataset, metacell_types, cell_type_colors, g
                     rename(metacell = cell_id)
             })
 
-            heatmap_reactives("outliers_heatmap", dataset, outliers_metacell_types, gene_modules, cell_type_colors, state, markers, lfp_range, "Outliers")
+            heatmap_reactives("outliers_heatmap", dataset, outliers_metacell_types, gene_modules, cell_type_colors, state, markers, lfp_range, "Outliers", tab_guard = "outliers")
         }
     )
 }

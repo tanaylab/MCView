@@ -280,8 +280,14 @@ diff_expr_switch_metacells <- function(dataset, input, output, session, groupA =
     })
 }
 
-diff_expr_auto_update_selection <- function(mc_mc_gene_scatter_df, state) {
+diff_expr_auto_update_selection <- function(mc_mc_gene_scatter_df, state, tab_guard = NULL) {
     observe({
+        # mc_mc_gene_scatter_df() runs calc_ct_ct_gene_df / calc_mc_mc_gene_df,
+        # which on HEP-scale datasets is the dominant chunk of session-connect
+        # cost. Defer until the user opens the owning tab.
+        if (!is.null(tab_guard)) {
+            req(state$tab_state$current_tab == tab_guard)
+        }
         req(mc_mc_gene_scatter_df())
         state$selection$significant_genes <- mc_mc_gene_scatter_df() %>%
             filter(col %in% c("darkred", "darkblue")) %>%

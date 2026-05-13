@@ -46,7 +46,7 @@ mod_markers_server <- function(id, dataset, metacell_types, cell_type_colors, ge
             ns <- session$ns
             markers <- reactiveVal()
             lfp_range <- reactiveVal()
-            heatmap_reactives("markers_heatmap", dataset, metacell_types, gene_modules, cell_type_colors, state, markers, lfp_range, "Markers")
+            heatmap_reactives("markers_heatmap", dataset, metacell_types, gene_modules, cell_type_colors, state, markers, lfp_range, "Markers", tab_guard = "markers")
         }
     )
 }

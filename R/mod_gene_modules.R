@@ -176,7 +176,7 @@ mod_gene_modules_server <- function(id, dataset, metacell_types, cell_type_color
                 top_correlated_selector_multiple_genes(input, output, session, dataset, ns, "selected_top_genes", "", gene = input$top_correlated_gene, action_id = "add_genes_from_top_cor_list", action_label = "Add to gene module")
             })
 
-            heatmap_reactives("gene_modules_heatmap", dataset, metacell_types, gene_modules, cell_type_colors, state, shown_gene_modules, lfp_range, "Gene modules", genes = genes, highlighted_genes = selected_module)
+            heatmap_reactives("gene_modules_heatmap", dataset, metacell_types, gene_modules, cell_type_colors, state, shown_gene_modules, lfp_range, "Gene modules", genes = genes, highlighted_genes = selected_module, tab_guard = "gene_modules")
 
             mod_gene_module_controllers(ns, dataset, input, output, session, gene_modules, genes, selected_module, selected_genes, state)
 

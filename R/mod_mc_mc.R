@@ -188,7 +188,7 @@ mod_mc_mc_server <- function(id, dataset, metacell_types, cell_type_colors, gene
             # Projection plots
             output$plot_mc_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, state, groupA = groupA, groupB = groupB, source = "proj_mc_plot", tab_guard = "mc_mc")
 
-            diff_expr_auto_update_selection(mc_mc_gene_scatter_df, state)
+            diff_expr_auto_update_selection(mc_mc_gene_scatter_df, state, tab_guard = "mc_mc")
 
             # metacell click observers
             metacell_click_observer("proj_manifold_plot", session)

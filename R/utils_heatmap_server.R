@@ -8,7 +8,7 @@
 #   - R/utils_heatmap_ui.R       - UI builders (existing, unchanged)
 #   - R/utils_heatmap_help.R     - help-modal content (existing, unchanged)
 
-heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_type_colors, state, markers, lfp_range, mode, genes = NULL, highlighted_genes = NULL, height = "80vh") {
+heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_type_colors, state, markers, lfp_range, mode, genes = NULL, highlighted_genes = NULL, height = "80vh", tab_guard = NULL) {
     moduleServer(
         id,
         function(input, output, session) {
@@ -93,7 +93,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
 
             heatmap_download_handlers(output, mat, markers, metacell_filter, dataset, input, metacell_types, state, applied_params, ns)
 
-            heatmap_matrix_reactives(ns, input, output, session, dataset, metacell_types, cell_type_colors, state, markers, lfp_range, mode, metacell_filter, mat)
+            heatmap_matrix_reactives(ns, input, output, session, dataset, metacell_types, cell_type_colors, state, markers, lfp_range, mode, metacell_filter, mat, tab_guard = tab_guard)
 
             output$cell_type_list <- cell_type_selector(dataset, ns, id = "selected_cell_types", label = "Cell types", selected = "all", cell_type_colors = cell_type_colors, metacell_types = metacell_types)
 

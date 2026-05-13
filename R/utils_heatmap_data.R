@@ -8,7 +8,7 @@
 #   - R/utils_heatmap_ui.R       - UI builders (existing, unchanged)
 #   - R/utils_heatmap_help.R     - help-modal content (existing, unchanged)
 
-heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metacell_types, cell_type_colors, state, markers, lfp_range, mode, metacell_filter, mat) {
+heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metacell_types, cell_type_colors, state, markers, lfp_range, mode, metacell_filter, mat, tab_guard = NULL) {
     observe({
         choices <- markers()
         if (!is.null(choices)) {
@@ -66,7 +66,12 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
     })
 
     # One-shot: seed markers() from dataset when the parent hasn't supplied any.
+    # Defer until the owning tab is visited - choose_markers + get_marker_genes
+    # is the heaviest single chunk of session-connect cost on HEP-scale data.
     observe({
+        if (!is.null(tab_guard)) {
+            req(state$tab_state$current_tab == tab_guard)
+        }
         if (!is.null(markers())) {
             return()
         }
