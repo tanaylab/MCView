@@ -23,8 +23,9 @@ app_server <- function(input, output, session) {
         manifold_state = reactiveValues()
     )
 
-    # Phase 4: amortise plotly.js bundle-parse cost once per R process.
-    prewarm_plotly_bundle()
+    # Phase 4 prewarm_plotly_bundle() removed alongside partial_bundle() in
+    # prepare_plotly_scatter (see utils_plotly.R) - prewarming a bundle we
+    # no longer ship is just startup overhead.
 
     observe({
         state$session_ui$screen_width <- input$screen_width

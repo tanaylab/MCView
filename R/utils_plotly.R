@@ -94,10 +94,16 @@ prepare_plotly_scatter <- function(p, tooltip = "tooltip_text", source = NULL,
         fig <- fig %>% plotly::hide_legend()
     }
 
+    # NOTE: `plotly::partial_bundle()` (Phase 4 perf knob) used to live here
+    # to ship a trimmed plotly.js bundle to the client. As of plotly 4.10.4,
+    # the resulting bundles silently produce empty plot containers when the
+    # page already has a different bundle loaded (the bundles don't compose),
+    # so the gene/gene scatter on the Genes tab and similar WebGL scatters
+    # render as a blank box on the first visit. Falling back to the default
+    # full bundle - bandwidth tradeoff but plots actually appear.
     fig <- fig %>%
         sanitize_for_WebGL() %>%
         plotly::toWebGL() %>%
-        plotly::partial_bundle() %>%
         sanitize_plotly_buttons(buttons = buttons)
 
     if (!is.null(state)) {
