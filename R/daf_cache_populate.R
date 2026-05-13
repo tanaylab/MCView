@@ -66,7 +66,10 @@ cache_correlations_daf <- function(daf_obj, gene1, df) {
 
     success <- tryCatch(
         {
-            dafr::add_axis(daf_obj, axis_name, as.character(seq_len(nrow(combined))), overwrite = TRUE)
+            if (dafr::has_axis(daf_obj, axis_name)) {
+                dafr::delete_axis(daf_obj, axis_name)
+            }
+            dafr::add_axis(daf_obj, axis_name, as.character(seq_len(nrow(combined))))
             dafr::set_vector(daf_obj, axis_name, "gene1", as.character(combined$gene1))
             dafr::set_vector(daf_obj, axis_name, "gene2", as.character(combined$gene2))
             dafr::set_vector(daf_obj, axis_name, "cor", as.numeric(combined$cor))
@@ -110,7 +113,10 @@ precompute_daf_correlations <- function(daf_obj, k = 30, egc_epsilon = 1e-5, for
 
     success <- tryCatch(
         {
-            dafr::add_axis(daf_obj, cache_axis, as.character(seq_len(nrow(gg_df))), overwrite = TRUE)
+            if (dafr::has_axis(daf_obj, cache_axis)) {
+                dafr::delete_axis(daf_obj, cache_axis)
+            }
+            dafr::add_axis(daf_obj, cache_axis, as.character(seq_len(nrow(gg_df))))
             dafr::set_vector(daf_obj, cache_axis, "gene1", as.character(gg_df$gene1))
             dafr::set_vector(daf_obj, cache_axis, "gene2", as.character(gg_df$gene2))
             dafr::set_vector(daf_obj, cache_axis, "cor", as.numeric(gg_df$cor))

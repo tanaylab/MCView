@@ -41,6 +41,28 @@ convert_daf_to_mcview <- function(daf_obj, var_name, atlas = FALSE) {
         "proj_weights" = convert_daf_proj_weights(daf_obj),
         "query_atlas_cell_type_fracs" = convert_daf_query_cell_type_fracs(daf_obj),
         "query_md" = convert_daf_query_metadata(daf_obj),
+        # Known-optional keys that are not stored in the DAF: caller-side
+        # fallbacks (calc_* in utils_cache, plot_vein/plot_network for the
+        # Flow tab, get_metadata_colors for color overrides). Returning NULL
+        # silently lets those fallbacks run without log noise. Anything not
+        # listed here is treated as a typo and warns.
+        "samp_mc_count" = ,
+        "samp_mc_frac" = ,
+        "samp_metadata" = ,
+        "samp_list" = ,
+        "default_markers" = ,
+        "default_markers_dist" = ,
+        "metadata_colors" = ,
+        "umap_anchors" = ,
+        "outliers_metadata" = ,
+        "project_max_projection_fold_factor" = ,
+        "mc_ag" = ,
+        "mc_network" = ,
+        "mc_rank" = ,
+        "mct_probs_trans" = ,
+        "time_annot" = ,
+        "type_ag" = ,
+        "type_flow" = NULL,
         {
             cli::cli_warn("Unknown MCView conversion type: {var_name}")
             NULL

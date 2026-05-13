@@ -319,7 +319,7 @@ calc_samp_mc_count <- function(dataset) {
 }
 
 get_samp_mc_count <- function(dataset) {
-    return(get_mc_data(dataset, "samp_mc_count") %||% calc_samp_mc_count(dataset))
+    return(mcv_cache_get(dataset, "samp_mc_count") %||% calc_samp_mc_count(dataset))
 }
 
 calc_samp_mc_frac <- function(dataset) {
@@ -330,7 +330,7 @@ calc_samp_mc_frac <- function(dataset) {
 }
 
 get_samp_mc_frac <- function(dataset) {
-    return(get_mc_data(dataset, "samp_mc_frac") %||% calc_samp_mc_frac(dataset))
+    return(mcv_cache_get(dataset, "samp_mc_frac") %||% calc_samp_mc_frac(dataset))
 }
 
 calc_samp_metadata <- function(dataset) {
@@ -361,7 +361,7 @@ get_samp_metadata <- function(dataset) {
     if (!has_cell_metadata(dataset)) {
         return(NULL)
     }
-    return(get_mc_data(dataset, "samp_metadata") %||% calc_samp_metadata(dataset))
+    return(mcv_cache_get(dataset, "samp_metadata") %||% calc_samp_metadata(dataset))
 }
 
 calc_samples_list <- function(dataset) {
@@ -375,7 +375,7 @@ calc_samples_list <- function(dataset) {
 }
 
 get_samples_list <- function(dataset) {
-    get_mc_data(dataset, "samp_list") %||% calc_samples_list(dataset)
+    mcv_cache_get(dataset, "samp_list") %||% calc_samples_list(dataset)
 }
 
 # Remove standard identity fields from metadata field names
