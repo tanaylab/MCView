@@ -137,8 +137,9 @@ convert_daf_metacell_types <- function(daf_obj) {
         cell_type = cell_types
     )
 
-    # Add optional cell count: try canonical "n_cells" first, fall back to legacy "n_cell"
-    n_cell <- try_daf_names(daf_obj, "metacell", c("n_cells", "n_cell"))
+    # Add optional cell count: accept n_cells (canonical), n_cell (legacy
+    # OBK-style), or cells (legacy converted projects like HEP_atlas_v5).
+    n_cell <- try_daf_names(daf_obj, "metacell", c("n_cells", "n_cell", "cells"))
     if (!is.null(n_cell)) {
         mc_types$n_cell <- n_cell
     }
@@ -454,8 +455,9 @@ convert_daf_mc_qc_metadata <- function(daf_obj) {
 
     # Handle fields with fallback names
     result <- add_optional_vec_with_fallback(result, daf_obj, "metacell", "umis", "total_UMIs")
-    # Try canonical "n_cells" first, then legacy "n_cell"
-    n_cells_vec <- try_daf_names(daf_obj, "metacell", c("n_cells", "n_cell"))
+    # Cells-per-metacell may be exported as n_cells (canonical), n_cell (legacy
+    # OBK-style), or cells (legacy converted projects like HEP_atlas_v5).
+    n_cells_vec <- try_daf_names(daf_obj, "metacell", c("n_cells", "n_cell", "cells"))
     if (!is.null(n_cells_vec)) {
         result[["cells"]] <- n_cells_vec
     }
@@ -611,13 +613,13 @@ convert_daf_qc_stats <- function(daf_obj) {
         }
     }
     if (is.null(stats$median_cells_per_metacell)) {
-        n_cells_vec <- try_daf_names(daf_obj, "metacell", c("n_cells", "n_cell"))
+        n_cells_vec <- try_daf_names(daf_obj, "metacell", c("n_cells", "n_cell", "cells"))
         if (!is.null(n_cells_vec) && length(n_cells_vec) > 0) {
             stats$median_cells_per_metacell <- stats::median(n_cells_vec, na.rm = TRUE)
         }
     }
     if (is.null(stats$n_cells)) {
-        n_cells_vec <- try_daf_names(daf_obj, "metacell", c("n_cells", "n_cell"))
+        n_cells_vec <- try_daf_names(daf_obj, "metacell", c("n_cells", "n_cell", "cells"))
         if (!is.null(n_cells_vec) && length(n_cells_vec) > 0) {
             stats$n_cells <- sum(n_cells_vec, na.rm = TRUE)
         } else if (dafr::has_axis(daf_obj, "cell")) {
