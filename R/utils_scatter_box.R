@@ -87,10 +87,14 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
     clipboard_changed <- clipboard_changed_scatter_reactive(input, state)
 
     output$plot_gene_gene_mc <- plotly::renderPlotly({
-        # Defer computation until the tab is active (when tab_guard is specified)
-        if (!is.null(tab_guard)) {
-            req(state$tab_state$current_tab == tab_guard)
-        }
+        # NOTE: `tab_guard` is accepted for API compatibility but intentionally
+        # NOT used to gate rendering. The bindCache below evaluates many
+        # input/reactive values as cache keys, so a `req(current_tab == ...)`
+        # inside the body silently fails on the initial render (when
+        # current_tab is still the landing tab) and bindCache memoises the
+        # failure - the plot then stays blank forever because current_tab
+        # is not part of the cache key. Same anti-pattern that bit
+        # plot_mc_mc_gene; see commit dfa41c7 for the original fix.
         req(input$x_axis_var)
         req(input$y_axis_var)
         req(input$color_by_var)
