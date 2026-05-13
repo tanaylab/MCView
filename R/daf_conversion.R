@@ -597,6 +597,34 @@ convert_daf_qc_stats <- function(daf_obj) {
         }
     }
 
+    # Fall back to derived values when scalars weren't pre-stored. Raw DAFs
+    # (not produced by convert_project_to_daf) typically lack them, so we
+    # compute medians from per-metacell vectors and cell totals from axes
+    # rather than letting the QC value boxes silently req() out.
+    if (is.null(stats$median_umis_per_metacell)) {
+        total_umis <- tryCatch(
+            dafr::get_vector(daf_obj, "metacell", "total_UMIs"),
+            error = function(e) NULL
+        )
+        if (!is.null(total_umis) && length(total_umis) > 0) {
+            stats$median_umis_per_metacell <- stats::median(total_umis, na.rm = TRUE)
+        }
+    }
+    if (is.null(stats$median_cells_per_metacell)) {
+        n_cells_vec <- try_daf_names(daf_obj, "metacell", c("n_cells", "n_cell"))
+        if (!is.null(n_cells_vec) && length(n_cells_vec) > 0) {
+            stats$median_cells_per_metacell <- stats::median(n_cells_vec, na.rm = TRUE)
+        }
+    }
+    if (is.null(stats$n_cells)) {
+        n_cells_vec <- try_daf_names(daf_obj, "metacell", c("n_cells", "n_cell"))
+        if (!is.null(n_cells_vec) && length(n_cells_vec) > 0) {
+            stats$n_cells <- sum(n_cells_vec, na.rm = TRUE)
+        } else if (dafr::has_axis(daf_obj, "cell")) {
+            stats$n_cells <- dafr::axis_length(daf_obj, "cell")
+        }
+    }
+
     if (length(stats) == 0) {
         return(NULL)
     }
