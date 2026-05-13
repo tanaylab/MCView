@@ -540,11 +540,24 @@ detect_available_tabs <- function(daf_obj) {
         tabs <- c(tabs, "Gene modules")
     }
 
-    # Projection QC - all fields are optional, so available if core passes
-    tabs <- c(tabs, "Projection QC")
+    # Projection QC / Atlas - all individual fields are marked optional in
+    # their contracts, but the tabs are meaningful only when the DAF actually
+    # carries projection metadata. Without any of these markers both tabs
+    # render empty panels (no fitted-genes table, no projected scatter, etc.).
+    has_projection <- has_vec("metacell", "projected_correlation") ||
+        has_vec("metacell", "projected_type") ||
+        has_vec("metacell", "similar") ||
+        has_vec("metacell", "is_similar") ||
+        has_vec("metacell", "atlas_metacell") ||
+        has_mat("gene", "metacell", "projected_fold") ||
+        has_mat("metacell", "gene", "projected_fraction") ||
+        has_mat("metacell", "gene", "projected_geomean_fraction") ||
+        has_mat("metacell", "gene", "corrected_fraction") ||
+        has_mat("metacell", "gene", "corrected_geomean_fraction")
 
-    # Atlas - all fields are optional, available if core passes
-    tabs <- c(tabs, "Atlas")
+    if (has_projection) {
+        tabs <- c(tabs, "Projection QC", "Atlas")
+    }
 
     # Annotate - always available if core passes
     tabs <- c(tabs, "Annotate")
