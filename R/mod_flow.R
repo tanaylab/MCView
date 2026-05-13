@@ -146,9 +146,10 @@ mod_flow_server <- function(id, dataset, metacell_types, cell_type_colors, gene_
                 shinyjs::toggle(id = "vein_gene_foc_type_select", condition = input$color_gene_vein == "Cell type")
             })
 
+            # bindCache below does not include current_tab in its keys, so a
+            # body-level tab_guard req() would silently cache the failure.
             output$gene_vein_plot <- renderPlot(
                 {
-                    req(state$tab_state$current_tab == "flow")
                     req(input$color_gene_vein)
                     req(input$vein_gene_foc_type)
 
@@ -180,9 +181,10 @@ mod_flow_server <- function(id, dataset, metacell_types, cell_type_colors, gene_
             ) %>% bindCache(dataset(), input$color_gene_vein, input$gene, input$vein_gene_foc_type, metacell_types())
 
             # Metacell flow
+            # bindCache below does not include current_tab in its keys, so a
+            # body-level tab_guard req() would silently cache the failure.
             output$plot_metacell_flow <- renderPlot(
                 {
-                    req(state$tab_state$current_tab == "flow")
                     req(has_network(dataset()))
                     req(input$selected_metacell)
 
@@ -215,8 +217,9 @@ mod_flow_server <- function(id, dataset, metacell_types, cell_type_colors, gene_
                 updateSelectizeInput(session, "traj_genes", choices = gene_names(dataset()), server = TRUE, selected = top_var_genes(), options = list(maxItems = 5))
             })
 
+            # bindCache below does not include current_tab in its keys, so a
+            # body-level tab_guard req() would silently cache the failure.
             output$plot_mc_traj <- plotly::renderPlotly({
-                req(state$tab_state$current_tab == "flow")
                 req(input$traj_genes)
                 req(has_network(dataset()))
                 req(input$selected_metacell)

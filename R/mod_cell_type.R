@@ -500,8 +500,9 @@ mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, 
                 updateCheckboxGroupInput(session, "x_axis_categories", selected = character(0))
             })
 
+            # bindCache below does not include current_tab in its keys, so a
+            # body-level tab_guard req() would silently cache the failure.
             output$cell_type_boxplot <- plotly::renderPlotly({
-                req(state$tab_state$current_tab == "cell_type")
                 req(input$boxplot_axis_type)
                 req(dataset())
                 req(metacell_types())

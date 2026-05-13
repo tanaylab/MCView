@@ -147,9 +147,9 @@ qc_stat_box <- function(ns, id, title, output_id, width = 12, height = "27vh", .
 }
 
 qc_stat_plot <- function(field, xlab, dataset, input, plot_type_id, state, ylab = NULL, log_scale = FALSE, tab_id = "qc") {
+    # bindCache below does not include current_tab in its keys, so a
+    # body-level tab_guard req() would silently cache the failure.
     plotly::renderPlotly({
-        # Defer computation until the tab is active
-        req(state$tab_state$current_tab == tab_id)
         qc_df <- as_tibble(get_mc_data(dataset(), "mc_qc_metadata"))
 
         req(qc_df[[field]])

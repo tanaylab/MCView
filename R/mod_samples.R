@@ -308,8 +308,9 @@ mod_samples_server <- function(id, dataset, metacell_types, cell_type_colors, ge
                 })
             }
 
+            # bindCache below does not include current_tab in its keys, so a
+            # body-level tab_guard req() would silently cache the failure.
             output$plot_gene_gene_mc <- plotly::renderPlotly({
-                req(state$tab_state$current_tab == "samples")
                 req(input$x_axis_var)
                 req(input$y_axis_var)
                 req(input$color_by_var)

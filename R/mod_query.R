@@ -289,8 +289,9 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
                 session = session
             )
 
+            # bindCache below does not include current_tab in its keys, so a
+            # body-level tab_guard req() would silently cache the failure.
             output$plot_gene_gene_mc <- plotly::renderPlotly({
-                req(state$tab_state$current_tab == "query")
                 req(input$axis_var)
                 req(input$color_by_var)
                 req(input$axis_type)

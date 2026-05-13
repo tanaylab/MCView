@@ -47,8 +47,9 @@ setup_samples_qc <- function(input, output, session, ns,
         )
     })
 
+    # bindCache below does not include current_tab in its keys, so a
+    # body-level tab_guard req() would silently cache the failure.
     output$plot_qc_cells_per_group <- plotly::renderPlotly({
-        req(state$tab_state$current_tab == "samples")
         stats_df <- qc_stats()
         req(nrow(stats_df) > 0)
 
@@ -94,8 +95,9 @@ setup_samples_qc <- function(input, output, session, ns,
         fig
     }) %>% bindCache(dataset(), group_field(), input$samp1, input$samp2, state$session_ui$plotly_format, state$session_ui$plotly_width, state$session_ui$plotly_height, state$session_ui$plotly_scale)
 
+    # bindCache below does not include current_tab in its keys, so a
+    # body-level tab_guard req() would silently cache the failure.
     output$plot_qc_umis_per_group <- plotly::renderPlotly({
-        req(state$tab_state$current_tab == "samples")
         stats_df <- qc_stats()
         req(nrow(stats_df) > 0)
         req(!all(is.na(stats_df$median_umis_per_cell)))

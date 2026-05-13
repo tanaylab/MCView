@@ -1,6 +1,10 @@
 plot_sample_stacked_types <- function(dataset, state, metacell_types, cell_type_colors, input, group_field = NULL, composition_reactive = NULL) {
+    # bindCache below does not include `state$tab_state$current_tab` in its
+    # keys, so a body-level tab_guard req() would let bindCache memoise the
+    # silent failure under the then-current cache key and never re-run when
+    # the user lands on the Samples tab. Same anti-pattern as
+    # render_mc_mc_gene_plotly and render_2d_plotly.
     plotly::renderPlotly({
-        req(state$tab_state$current_tab == "samples")
         gf <- if (!is.null(group_field)) group_field() else "samp_id"
         use_cells <- has_cell_gene_umis(dataset()) && !is.null(group_field)
 

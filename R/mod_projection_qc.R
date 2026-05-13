@@ -220,8 +220,9 @@ gene_correction_factor_stat_box <- function(ns, id, dataset, title, output_id, w
 }
 
 gene_correction_factor_scatter_plot <- function(dataset, input, state, tab_id = "projection_qc") {
+    # bindCache below does not include current_tab in its keys, so a
+    # body-level tab_guard req() would silently cache the failure.
     plotly::renderPlotly({
-        req(state$tab_state$current_tab == tab_id)
         gene_qc <- get_gene_qc(dataset())
         if (is.null(gene_qc) || is.null(gene_qc$correction_factor)) {
             return(plotly_text_plot("Please recompute the metacells\nusing the latest version\nin order to see this plot."))
@@ -368,8 +369,9 @@ fitted_genes_per_cell_type_table <- function(dataset, input) {
 }
 
 fitted_genes_per_cell_type_plot <- function(dataset, input, state, tab_id = "projection_qc") {
+    # bindCache below does not include current_tab in its keys, so a
+    # body-level tab_guard req() would silently cache the failure.
     plotly::renderPlotly({
-        req(state$tab_state$current_tab == tab_id)
         gene_qc <- get_gene_qc(dataset())
         if (is.null(gene_qc)) {
             return(plotly_text_plot("Please recompute the metacells\nusing the latest version\nin order to see this plot."))

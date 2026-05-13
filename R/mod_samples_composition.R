@@ -67,8 +67,9 @@ setup_samples_composition <- function(input, output, session, ns,
         )
     })
 
+    # bindCache below does not include current_tab in its keys, so a
+    # body-level tab_guard req() would silently cache the failure.
     output$plot_composition_ci <- plotly::renderPlotly({
-        req(state$tab_state$current_tab == "samples")
         comp_df <- composition_ci_data()
         req(nrow(comp_df) > 0)
 

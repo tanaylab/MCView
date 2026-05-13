@@ -587,11 +587,16 @@ finalize_2d_plotly <- function(fig, input, state, source, buttons, dragmode) {
 # ---------------------------------------------------------------------------
 
 render_2d_plotly <- function(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, state, source, buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL, refresh_on_gene_change = FALSE, atlas = FALSE, query_types = NULL, group = NULL, groupA = NULL, groupB = NULL, selected_metacell_types = NULL, selected_cell_types = NULL, tab_guard = NULL) {
+    # NOTE: `tab_guard` is accepted for API compatibility but intentionally
+    # NOT used to gate rendering. The bindCache at the call site uses inputs
+    # like `state$session_ui$plotly_*` as keys; if any of those change while
+    # the user is on a different tab (e.g., browser resize), bindCache would
+    # evaluate this body, the tab_guard req() would fail, bindCache would
+    # memoise the silent failure under the then-current cache key, and the
+    # plot would stay permanently blank when the user later visits the tab.
+    # Same anti-pattern documented at the top of render_mc_mc_gene_plotly
+    # (commits dfa41c7, 3a63c42).
     plotly::renderPlotly({
-        # Defer computation until the tab is active (when tab_guard is specified)
-        if (!is.null(tab_guard)) {
-            req(state$tab_state$current_tab == tab_guard)
-        }
         req(input$color_proj)
         req(input$point_size)
         req(input$stroke)
