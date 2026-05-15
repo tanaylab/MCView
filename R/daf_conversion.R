@@ -379,20 +379,16 @@ convert_daf_metadata <- function(daf_obj) {
         return(NULL)
     }
 
-    # Load each metadata vector individually via daf_vec rather than build a
-    # full DataFrame up front via get_frame().
-    result <- tibble(metacell = metacell_names)
-    for (field in metadata_fields) {
-        vec <- daf_vec(daf_obj, "metacell", field, required = FALSE)
-        if (!is.null(vec)) {
-            result[[field]] <- vec
-        }
-    }
-
-    if (ncol(result) == 1) {
+    # Single dafr::get_dataframe call instead of N+1 daf_vec loops.
+    df <- tryCatch(
+        dafr::get_dataframe(daf_obj, "metacell", columns = metadata_fields),
+        error = function(e) NULL
+    )
+    if (is.null(df) || ncol(df) == 0) {
         return(NULL)
     }
-
+    result <- tibble::as_tibble(df) %>%
+        tibble::add_column(metacell = metacell_names, .before = 1L)
     return(result)
 }
 
@@ -460,10 +456,17 @@ convert_daf_cell_metadata <- function(daf_obj) {
 
     extra_fields <- setdiff(cell_props, handled_fields)
 
-    for (field in extra_fields) {
-        vec <- daf_vec(daf_obj, "cell", field, required = FALSE)
-        if (!is.null(vec)) {
-            result[[field]] <- vec
+    if (length(extra_fields) > 0) {
+        # Batched fetch: one dafr::get_dataframe call instead of N daf_vec.
+        # Matters most on cell DAFs with many properties (~60 on OBK cells).
+        extra_df <- tryCatch(
+            dafr::get_dataframe(daf_obj, "cell", columns = extra_fields),
+            error = function(e) NULL
+        )
+        if (!is.null(extra_df) && ncol(extra_df) > 0) {
+            for (field in colnames(extra_df)) {
+                result[[field]] <- extra_df[[field]]
+            }
         }
     }
 
