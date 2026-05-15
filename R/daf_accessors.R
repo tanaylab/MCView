@@ -305,20 +305,42 @@ compute_egc_from_daf <- function(daf_obj, genes = NULL, metacells = NULL) {
     }
 
     if (!is.null(fraction_name)) {
-        mat <- dafr::get_matrix(daf_obj, "gene", "metacell", fraction_name)
-        if (!is.null(genes)) {
-            mat <- mat[intersect(genes, rownames(mat)), , drop = FALSE]
+        # Mask the DAF axes when small subsets are requested so dafr only
+        # materialises the requested rows/cols. Above the threshold the mask
+        # query string gets unwieldy, so fall back to mmap + R-side index.
+        gene_names <- if (!is.null(genes)) intersect(as.character(genes),
+            dafr::axis_entries(daf_obj, "gene")) else NULL
+        mc_names   <- if (!is.null(metacells)) intersect(as.character(metacells),
+            dafr::axis_entries(daf_obj, "metacell")) else NULL
+        use_gmask <- !is.null(gene_names) && length(gene_names) <= .MASK_THRESHOLD
+        use_mmask <- !is.null(mc_names)   && length(mc_names)   <= .MASK_THRESHOLD
+        if (use_gmask || use_mmask) {
+            gmask <- if (use_gmask) build_name_mask(gene_names) else ""
+            mmask <- if (use_mmask) build_name_mask(mc_names) else ""
+            qstr <- as.character(glue::glue("@ gene{gmask} @ metacell{mmask} :: {fraction_name}"))
+            mat <- dafr::get_query(daf_obj, qstr)
+            if (!is.null(gene_names) && !use_gmask) {
+                mat <- mat[gene_names, , drop = FALSE]
+            }
+            if (!is.null(mc_names) && !use_mmask) {
+                mat <- mat[, mc_names, drop = FALSE]
+            }
+            return(mat)
         }
-        if (!is.null(metacells)) {
-            mat <- mat[, intersect(metacells, colnames(mat)), drop = FALSE]
+        mat <- dafr::get_matrix(daf_obj, "gene", "metacell", fraction_name)
+        if (!is.null(gene_names)) {
+            mat <- mat[gene_names, , drop = FALSE]
+        }
+        if (!is.null(mc_names)) {
+            mat <- mat[, mc_names, drop = FALSE]
         }
         return(mat)
     }
 
     # No fraction matrix in the DAF - let dafr compute it. Full-matrix
     # case is one query; filtered case routes through daf_query_mc_mat's
-    # per-gene / per-metacell fast paths to avoid materialising the
-    # whole UMI matrix, then divides by total_UMIs in R.
+    # mask fast path to avoid materialising the whole UMI matrix, then
+    # divides by total_UMIs in R.
     if (is.null(genes) && is.null(metacells)) {
         return(daf_obj["@ gene @ metacell :: UMIs % Fraction"])
     }
@@ -329,5 +351,53 @@ compute_egc_from_daf <- function(daf_obj, genes = NULL, metacells = NULL) {
         mc_sum <- mc_sum[intersect(metacells, names(mc_sum))]
     }
     sweep(mc_mat, 2, mc_sum, "/")
+}
+
+#' Per-metacell sum of EGC values over a gene set, via DAF mask + reduction.
+#'
+#' Replaces `colSums(get_mc_egc(dataset, genes = gene_set))` - the colSums
+#' is done by dafr (`>| Sum`) so the gene x metacell sub-matrix never
+#' lands in R. Picks the same fraction matrix priority as
+#' `compute_egc_from_daf` (linear_fraction, geomean_fraction, then
+#' UMIs % Fraction).
+#'
+#' @param daf_obj DAF object
+#' @param genes Character vector of gene names to sum over
+#' @return Named numeric vector keyed by metacell, length = n_metacells
+#' @export
+gene_set_egc_sum <- function(daf_obj, genes) {
+    if (length(genes) == 0) return(numeric(0))
+
+    # Pick the fraction matrix name once - same priority as
+    # compute_egc_from_daf so warm and cold paths agree.
+    matrix_payload <- if (dafr::has_matrix(daf_obj, "gene", "metacell", "linear_fraction")) {
+        ":: linear_fraction"
+    } else if (dafr::has_matrix(daf_obj, "gene", "metacell", "geomean_fraction")) {
+        ":: geomean_fraction"
+    } else {
+        ":: UMIs % Fraction"
+    }
+
+    gene_axis <- dafr::axis_entries(daf_obj, "gene")
+    valid <- intersect(as.character(genes), gene_axis)
+    if (length(valid) == 0) {
+        mc_axis <- dafr::axis_entries(daf_obj, "metacell")
+        return(setNames(rep(0, length(mc_axis)), mc_axis))
+    }
+
+    if (length(valid) <= .MASK_THRESHOLD) {
+        mask <- build_name_mask(valid)
+        # @ gene [mask] @ metacell :: <fraction> >- Sum reduces masked-gene
+        # rows -> one value per metacell (col). Native orientation, no
+        # relayout. Use dafr::get_query directly: `[` dispatch on chained
+        # DAFs from inside this package's namespace can mis-resolve and
+        # raise "comparator outside of mask".
+        qstr <- as.character(glue::glue("@ gene{mask} @ metacell {matrix_payload} >- Sum"))
+        return(dafr::get_query(daf_obj, qstr))
+    }
+
+    # Above threshold: fall back to R-side colSums on the (still-narrow) sub-matrix.
+    mat <- compute_egc_from_daf(daf_obj, genes = valid)
+    Matrix::colSums(mat, na.rm = TRUE)
 }
 

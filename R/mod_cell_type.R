@@ -379,7 +379,7 @@ mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, 
                                 if (input$boxplot_axis_type == "Gene module") {
                                     req(input$boxplot_axis_var %in% levels(gene_modules()$module))
                                     genes <- get_module_genes(input$boxplot_axis_var, gene_modules())
-                                    egc_gene <- colSums(get_mc_egc(dataset(), genes = genes), na.rm = TRUE) + mcv_get("egc_epsilon")
+                                    egc_gene <- gene_set_egc_sum(get_daf_for_query(dataset()), genes) + mcv_get("egc_epsilon")
                                 } else {
                                     req(input$boxplot_axis_var %in% gene_names(dataset()))
                                     egc_gene <- get_gene_egc(input$boxplot_axis_var, dataset()) + mcv_get("egc_epsilon")
@@ -533,7 +533,7 @@ mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, 
                     if (input$boxplot_axis_type == "Gene module") {
                         req(input$boxplot_axis_var %in% levels(gene_modules()$module))
                         genes <- get_module_genes(input$boxplot_axis_var, gene_modules())
-                        egc_gene <- colSums(get_mc_egc(dataset(), genes = genes), na.rm = TRUE) + mcv_get("egc_epsilon")
+                        egc_gene <- gene_set_egc_sum(get_daf_for_query(dataset()), genes) + mcv_get("egc_epsilon")
                     } else {
                         req(input$boxplot_axis_var %in% gene_names(dataset()))
                         egc_gene <- NULL

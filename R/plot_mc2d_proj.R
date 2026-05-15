@@ -56,7 +56,10 @@ mc2d_plot_gene_ggp <- function(dataset,
     min_lfp <- min_lfp %||% -3
     max_lfp <- max_lfp %||% 3
     if (length(gene) > 1) {
-        lfp <- colSums(get_mc_egc(dataset, genes = gene, atlas = atlas), na.rm = TRUE) + mcv_get("egc_epsilon")
+        # Per-metacell sum of EGC over the gene set, fully in dafr (no
+        # gene x metacell submatrix in R, no R-side colSums).
+        daf_obj <- get_daf_for_query(dataset, atlas)
+        lfp <- gene_set_egc_sum(daf_obj, gene) + mcv_get("egc_epsilon")
         mc_fp <- lfp / median(lfp, na.rm = TRUE)
         gene <- gene_name %||% gene[1]
     } else if (length(gene) == 1) {

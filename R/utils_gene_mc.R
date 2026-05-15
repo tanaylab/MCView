@@ -333,8 +333,7 @@ calc_individual_correlations <- function(dataset, genes, n_top = 30, cell_type_f
 #' @param atlas Logical; use atlas data
 #' @return Data frame with columns: gene2, cor, input_gene, rank, correlation_type
 calc_module_correlations <- function(dataset, genes, n_top = 30, cell_type_filter = NULL, threshold = 0, atlas = FALSE) {
-    mc_egc <- get_mc_egc(dataset, atlas = atlas)
-    available_genes <- rownames(mc_egc)
+    available_genes <- gene_names(dataset, atlas = atlas)
     valid_genes <- genes[genes %in% available_genes]
 
     if (length(valid_genes) == 0) {
@@ -357,8 +356,11 @@ calc_module_correlations <- function(dataset, genes, n_top = 30, cell_type_filte
         }
     }
 
-    # Calculate module expression as mean of constituent genes
-    module_expr <- colMeans(mc_egc[valid_genes, , drop = FALSE], na.rm = TRUE)
+    # Module expression = mean fraction over the gene set per metacell.
+    # Pull only the requested gene rows (mask query) instead of the full
+    # gene x metacell matrix.
+    mc_egc <- get_mc_egc(dataset, genes = valid_genes, atlas = atlas)
+    module_expr <- colMeans(mc_egc, na.rm = TRUE)
 
     # Use calc_top_cors with the module expression vector
     cors <- calc_top_cors(dataset, "module", "both", module_expr, metacell_filter, valid_genes, atlas = atlas)
@@ -395,8 +397,7 @@ calc_module_correlations <- function(dataset, genes, n_top = 30, cell_type_filte
 #' @param atlas Logical; use atlas data
 #' @return Data frame with columns: input_gene, gene2, cor, correlation_type, rank
 calc_gene_gene_correlations <- function(dataset, genes, cell_type_filter = NULL, threshold = 0, atlas = FALSE) {
-    mc_egc <- get_mc_egc(dataset, atlas = atlas)
-    available_genes <- rownames(mc_egc)
+    available_genes <- gene_names(dataset, atlas = atlas)
     valid_genes <- genes[genes %in% available_genes]
 
     if (length(valid_genes) < 2) {
@@ -414,8 +415,9 @@ calc_gene_gene_correlations <- function(dataset, genes, cell_type_filter = NULL,
         }
     }
 
-    # Filter metacells if needed
-    expr_data <- mc_egc[valid_genes, , drop = FALSE]
+    # Pull only the requested gene rows; mask query keeps the full gene x
+    # metacell matrix off the heap.
+    expr_data <- get_mc_egc(dataset, genes = valid_genes, atlas = atlas)
     if (!is.null(metacell_filter)) {
         metacell_filter <- intersect(metacell_filter, colnames(expr_data))
         expr_data <- expr_data[, metacell_filter, drop = FALSE]
@@ -477,9 +479,8 @@ plot_correlation_heatmap <- function(correlation_results, input_genes, dataset,
     # Combine input genes and top correlated genes
     all_genes <- unique(c(input_genes, top_genes))
 
-    # Get expression matrix for these genes
-    mc_egc <- get_mc_egc(dataset)
-    genes_in_data <- intersect(all_genes, rownames(mc_egc))
+    # Get expression matrix for the small target gene set only.
+    genes_in_data <- intersect(all_genes, gene_names(dataset))
 
     if (length(genes_in_data) < 2) {
         plot.new()
@@ -490,7 +491,7 @@ plot_correlation_heatmap <- function(correlation_results, input_genes, dataset,
     }
 
     # Calculate correlation matrix (BLAS-accelerated)
-    expr_subset <- mc_egc[genes_in_data, , drop = FALSE]
+    expr_subset <- get_mc_egc(dataset, genes = genes_in_data)
     t_expr <- t(expr_subset)
     cor_matrix <- tryCatch(
         .Call("tgs_cross_cor_blas", t_expr, t_expr, TRUE, FALSE, FALSE, 0, new.env(parent = parent.frame()), PACKAGE = "tgstat"),
