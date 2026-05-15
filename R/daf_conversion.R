@@ -50,8 +50,8 @@ convert_daf_to_mcview <- function(daf_obj, var_name, atlas = FALSE) {
         "samp_mc_frac" = ,
         "samp_metadata" = ,
         "samp_list" = ,
-        "default_markers" = ,
-        "default_markers_dist" = ,
+        "default_markers" = convert_daf_default_markers(daf_obj),
+        "default_markers_dist" = convert_daf_default_markers_dist(daf_obj),
         "metadata_colors" = ,
         "umap_anchors" = ,
         "outliers_metadata" = ,
@@ -260,6 +260,21 @@ convert_daf_lateral_genes <- function(daf_obj) {
 
 convert_daf_noisy_genes <- function(daf_obj) {
     convert_daf_flagged_genes(daf_obj, "is_noisy")
+}
+
+convert_daf_default_markers <- function(daf_obj) {
+    s <- daf_scalar(daf_obj, "mcview_default_markers", default = NULL)
+    if (is.null(s) || !nzchar(s)) return(NULL)
+    strsplit(as.character(s), ",", fixed = TRUE)[[1L]]
+}
+
+convert_daf_default_markers_dist <- function(daf_obj) {
+    if (!dafr::has_matrix(daf_obj, "metacell", "metacell",
+                          "mcview_default_markers_dist")) {
+        return(NULL)
+    }
+    dafr::get_matrix(daf_obj, "metacell", "metacell",
+                     "mcview_default_markers_dist")
 }
 
 convert_daf_marker_genes <- function(daf_obj) {
