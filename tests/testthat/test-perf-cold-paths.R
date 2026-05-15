@@ -48,13 +48,15 @@ test_that("get_gene_egc cold path matches eager-load value (no silent drift)", {
     # bugs in compute_egc_from_daf's row extraction.
     sample_genes <- gene_axis[c(1, floor(length(gene_axis) / 2), length(gene_axis))]
 
-    # Reference: eager-load path. Triggers full mc_mat into cache.
-    mat <- get_mc_data("data", "mc_mat")
-    mc_sum <- get_mc_sum("data")
-    ref <- lapply(sample_genes, function(g) {
-        umis <- mat[g, ]
-        umis / mc_sum[names(umis)]
-    })
+    # Reference: warm `mc_egc_full` path, which is `convert_daf_mc_egc(daf_obj)`
+    # - whatever fraction matrix the DAF ships (linear_fraction first, then
+    # geomean_fraction, then UMIs % Fraction). The cold path must agree with
+    # this exact computation; an older version of this test computed
+    # UMIs/total_UMIs directly, which masked the linear-vs-geomean mismatch
+    # the cold path used to have on geomean_fraction-only fixtures (see
+    # project_linear_geomean_egc_mismatch.md).
+    mc_egc <- get_mc_egc("data")
+    ref <- lapply(sample_genes, function(g) mc_egc[g, ])
     names(ref) <- sample_genes
 
     # Clear caches so the next call goes through the cold targeted-query path.

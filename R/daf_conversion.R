@@ -107,14 +107,13 @@ convert_daf_mc_egc <- function(daf_obj) {
         return(egc_mat)
     }
 
-    # Fall back: compute linear fraction from UMIs / total_UMIs
-    cli::cli_inform("Computing EGC as UMIs / total_UMIs (no fraction matrix in DAF)")
-    mc_mat <- convert_daf_mc_mat(daf_obj)
-    mc_sum <- convert_daf_mc_sum(daf_obj)
-
-    # Compute EGC (normalized expression) - gene x metacell
-    # Divide each column by its total to get fractions summing to 1.
-    sweep(mc_mat, 2, mc_sum, "/")
+    # Fall back: ask dafr to compute UMIs % Fraction. The eltwise `% Fraction`
+    # divides each column (metacell) by its column sum, matching the historical
+    # sweep(UMIs, 2, total_UMIs, "/") whenever total_UMIs == colSums(UMIs) -
+    # the standard import-pipeline invariant. No R-side sweep, no extra
+    # mc_mat materialisation.
+    cli::cli_inform("Computing EGC as UMIs % Fraction (no fraction matrix in DAF)")
+    daf_obj["@ gene @ metacell :: UMIs % Fraction"]
 }
 
 convert_daf_mc2d <- function(daf_obj) {

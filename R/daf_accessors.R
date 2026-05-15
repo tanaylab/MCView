@@ -277,11 +277,18 @@ filter_genes_by_flags <- function(df, lateral_genes = NULL, noisy_genes = NULL,
 
 #' Compute EGC (expression per gene per cell) from DAF
 #'
-#' Retrieves UMI matrix and total UMIs, then normalizes to get EGC.
-#' Consolidates the repeated pattern of:
-#'   mc_mat <- daf_query_mc_mat(...)
-#'   mc_sum <- daf_query_mc_sum(...)
-#'   return(t(t(mc_mat) / mc_sum))
+#' Returns the gene x metacell expression matrix, preferring whatever
+#' pre-computed fraction matrix the DAF ships - in priority order
+#' `linear_fraction`, `geomean_fraction`. When neither exists, asks dafr
+#' to compute UMIs % Fraction inline (the `% Fraction` eltwise divides
+#' each column by its own column sum, matching the historical
+#' sweep(UMIs, 2, total_UMIs, "/") whenever total_UMIs == colSums(UMIs) -
+#' the standard import-pipeline invariant).
+#'
+#' Preferring the stored fraction matrix also keeps this cold path in
+#' agreement with `convert_daf_mc_egc` (the warm `mc_egc_full` builder)
+#' - see project_linear_geomean_egc_mismatch.md for the latent
+#' discrepancy this avoids.
 #'
 #' @param daf_obj DAF object
 #' @param genes Optional vector of gene names to filter
@@ -289,15 +296,38 @@ filter_genes_by_flags <- function(df, lateral_genes = NULL, noisy_genes = NULL,
 #' @return EGC matrix (genes x metacells) with columns summing to 1
 #' @export
 compute_egc_from_daf <- function(daf_obj, genes = NULL, metacells = NULL) {
+    fraction_name <- if (dafr::has_matrix(daf_obj, "gene", "metacell", "linear_fraction")) {
+        "linear_fraction"
+    } else if (dafr::has_matrix(daf_obj, "gene", "metacell", "geomean_fraction")) {
+        "geomean_fraction"
+    } else {
+        NULL
+    }
+
+    if (!is.null(fraction_name)) {
+        mat <- dafr::get_matrix(daf_obj, "gene", "metacell", fraction_name)
+        if (!is.null(genes)) {
+            mat <- mat[intersect(genes, rownames(mat)), , drop = FALSE]
+        }
+        if (!is.null(metacells)) {
+            mat <- mat[, intersect(metacells, colnames(mat)), drop = FALSE]
+        }
+        return(mat)
+    }
+
+    # No fraction matrix in the DAF - let dafr compute it. Full-matrix
+    # case is one query; filtered case routes through daf_query_mc_mat's
+    # per-gene / per-metacell fast paths to avoid materialising the
+    # whole UMI matrix, then divides by total_UMIs in R.
+    if (is.null(genes) && is.null(metacells)) {
+        return(daf_obj["@ gene @ metacell :: UMIs % Fraction"])
+    }
+
     mc_mat <- daf_query_mc_mat(daf_obj, genes = genes, metacells = metacells)
     mc_sum <- daf_query_mc_sum(daf_obj, metacells = metacells)
-
-    # Filter mc_sum to match metacells in matrix
     if (!is.null(metacells)) {
         mc_sum <- mc_sum[intersect(metacells, names(mc_sum))]
     }
-
-    # Divide each column by the corresponding mc_sum value.
     sweep(mc_mat, 2, mc_sum, "/")
 }
 
