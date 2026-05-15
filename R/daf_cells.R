@@ -164,27 +164,37 @@ per_metacell_group_fraction <- function(dataset, group_field, group_value) {
     if (is.null(group_field) || !nzchar(group_field) || is.null(group_value)) {
         return(NULL)
     }
-    group_vec <- get_cell_field_map(dataset, group_field)
-    mc_vec <- get_cell_metacell_map(dataset)
-    if (is.null(group_vec) || is.null(mc_vec)) {
+    cells_daf <- get_cells_daf(dataset)
+    if (is.null(cells_daf) ||
+        !dafr::has_vector(cells_daf, "cell", "metacell") ||
+        !dafr::has_vector(cells_daf, "cell", group_field)) {
         return(NULL)
     }
-    common <- intersect(names(group_vec), names(mc_vec))
-    if (length(common) == 0) {
-        return(NULL)
+
+    # Two DAF group reductions on the cell axis instead of pulling both
+    # vectors into R and split()-ing. The mask `[ metacell != -1 ]` drops
+    # the cells-without-a-metacell sentinel, mirroring the original
+    # `keep <- mc_vec != "-1"` filter.
+    val_esc <- escape_daf_value(as.character(group_value))
+    field_esc <- escape_daf_value(group_field)
+    hits_q <- sprintf(
+        "@ cell [ metacell != -1 & %s = %s ] : metacell / metacell >> Count",
+        field_esc, val_esc
+    )
+    tots_q <- "@ cell [ metacell != -1 ] : metacell / metacell >> Count"
+
+    hits <- tryCatch(dafr::get_query(cells_daf, hits_q), error = function(e) NULL)
+    tots <- tryCatch(dafr::get_query(cells_daf, tots_q), error = function(e) NULL)
+    if (is.null(tots) || length(tots) == 0) return(NULL)
+
+    fracs <- numeric(length(tots))
+    names(fracs) <- names(tots)
+    if (!is.null(hits) && length(hits) > 0) {
+        common <- intersect(names(hits), names(tots))
+        if (length(common) > 0) {
+            fracs[common] <- as.numeric(hits[common]) / as.numeric(tots[common])
+        }
     }
-    group_vec <- group_vec[common]
-    mc_vec <- mc_vec[common]
-    keep <- !is.na(mc_vec) & mc_vec != "-1"
-    group_vec <- group_vec[keep]
-    mc_vec <- mc_vec[keep]
-    if (length(mc_vec) == 0) {
-        return(NULL)
-    }
-    totals <- tapply(rep(1L, length(mc_vec)), mc_vec, sum)
-    hits <- tapply(group_vec == group_value, mc_vec, sum, na.rm = TRUE)
-    fracs <- as.numeric(hits) / as.numeric(totals)
-    names(fracs) <- names(totals)
     fracs
 }
 
