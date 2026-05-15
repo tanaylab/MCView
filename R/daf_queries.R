@@ -59,10 +59,28 @@ daf_query_gene_agg <- function(daf_obj, agg_op) {
 # Query-Based Data Access
 # ==============================================================================
 
+#' Build a `[ name = X | name = Y | ... ]` mask from a name vector.
+#' Returns "" for empty input so callers can paste it inline.
+#' @noRd
+build_name_mask <- function(names) {
+    if (length(names) == 0) return("")
+    parts <- vapply(names, function(n) paste0("name = ", escape_daf_value(n)),
+                    character(1))
+    paste0(" [ ", paste(parts, collapse = " | "), " ]")
+}
+
+# Above this many entries, the mask query string gets unwieldy and the
+# full-matrix load + R-side subset is cheaper. Empirical sweet spot ~500;
+# OBK (~2.4K metacells, ~28K genes) lands well inside it.
+.MASK_THRESHOLD <- 500L
+
 #' Retrieve a slice of the UMIs matrix via DAF
 #'
-#' Retrieves required genes/metacells from the UMIs matrix.
-#' Filtering is done in R after retrieval.
+#' For small subsets (<= MASK_THRESHOLD entries on either axis), pushes a
+#' `[ name = ... | name = ... ]` mask into the DAF query so dafr returns
+#' just the requested rows/cols directly. For larger subsets falls back to
+#' the full matrix + R-side index. The mask form requires dafr >= 0.2.7
+#' (which fixed the row-mask + GroupRowsBy alignment bug).
 #'
 #' @param daf_obj DAF object
 #' @param genes Optional vector of gene names to retrieve
@@ -71,102 +89,54 @@ daf_query_gene_agg <- function(daf_obj, agg_op) {
 #' @return Matrix slice with genes as rows and metacells as columns
 #' @export
 daf_query_mc_mat <- function(daf_obj, genes = NULL, metacells = NULL) {
+    gene_names <- dafr::axis_entries(daf_obj, "gene")
     metacell_names <- dafr::axis_entries(daf_obj, "metacell")
 
-    # For gene subsets, query per-gene vectors from DAF to avoid loading the full matrix
-    if (!is.null(genes) && length(genes) > 0) {
-        gene_names <- dafr::axis_entries(daf_obj, "gene")
-        valid_genes <- intersect(as.character(genes), gene_names)
-        if (length(valid_genes) == 0) {
-            mat <- Matrix::Matrix(0, nrow = 0, ncol = length(metacell_names), sparse = TRUE)
-            colnames(mat) <- metacell_names
-            return(mat)
-        }
+    valid_genes <- if (is.null(genes)) NULL else intersect(as.character(genes), gene_names)
+    valid_mcs   <- if (is.null(metacells)) NULL else intersect(as.character(metacells), metacell_names)
 
-        # For small gene sets, per-gene queries beat full matrix load + subset.
-        # Threshold chosen empirically on the OBK dataset.
-        if (length(valid_genes) <= 50) {
-            # Query each gene individually - avoids loading full gene x metacell
-            # matrix. dafr's query syntax requires the axis-mask to come AFTER
-            # the matrix selector, e.g. `@ metacell @ gene :: UMIs @ gene = X`.
-            # The earlier `@ metacell @ gene = X :: UMIs` form errors out with
-            # "comparator outside of mask" on every DAF, silently sending every
-            # caller through the full-matrix fallback below.
-            vecs <- lapply(valid_genes, function(gene) {
-                query <- glue::glue("@ metacell @ gene :: UMIs @ gene = {escape_daf_value(gene)}")
-                tryCatch(daf_obj[query], error = function(e) NULL)
-            })
-
-            # Check if per-gene queries worked
-            if (!any(sapply(vecs, is.null))) {
-                # Build sparse matrix directly from per-gene vectors
-                n_genes <- length(valid_genes)
-                n_mcs <- length(metacell_names)
-                numeric_vecs <- lapply(vecs, as.numeric)
-                # Find non-zero entries for sparse triplet construction
-                # Use list accumulation to avoid O(n²) vector growth
-                i_list <- vector("list", n_genes)
-                j_list <- vector("list", n_genes)
-                x_list <- vector("list", n_genes)
-                for (g in seq_len(n_genes)) {
-                    nz <- which(numeric_vecs[[g]] != 0)
-                    if (length(nz) > 0) {
-                        i_list[[g]] <- rep(g, length(nz))
-                        j_list[[g]] <- nz
-                        x_list[[g]] <- numeric_vecs[[g]][nz]
-                    }
-                }
-                i_idx <- unlist(i_list)
-                j_idx <- unlist(j_list)
-                x_vals <- unlist(x_list)
-                if (length(i_idx) > 0) {
-                    mat <- Matrix::sparseMatrix(
-                        i = i_idx, j = j_idx, x = x_vals,
-                        dims = c(n_genes, n_mcs),
-                        dimnames = list(valid_genes, metacell_names)
-                    )
-                } else {
-                    mat <- Matrix::Matrix(0, nrow = n_genes, ncol = n_mcs, sparse = TRUE)
-                    rownames(mat) <- valid_genes
-                    colnames(mat) <- metacell_names
-                }
-                if (!is.null(metacells)) {
-                    valid_mc <- intersect(metacells, metacell_names)
-                    mat <- mat[, valid_mc, drop = FALSE]
-                }
-                return(mat)
-            }
-            # Fall through to full matrix if per-gene queries failed
-        }
-        # For >50 genes, fall through to full matrix retrieval below
+    if (!is.null(valid_genes) && length(valid_genes) == 0) {
+        mat <- Matrix::Matrix(0, nrow = 0, ncol = length(metacell_names), sparse = TRUE)
+        colnames(mat) <- metacell_names
+        return(mat)
+    }
+    if (!is.null(valid_mcs) && length(valid_mcs) == 0) {
+        mat <- Matrix::Matrix(0, nrow = length(gene_names), ncol = 0, sparse = TRUE)
+        rownames(mat) <- gene_names
+        return(mat)
     }
 
-    # For small metacell subsets (no gene filter), query per-metacell to avoid loading full matrix
-    if (is.null(genes) && !is.null(metacells) && length(metacells) <= 20) {
-        gene_names <- dafr::axis_entries(daf_obj, "gene")
-        valid_metacells <- intersect(as.character(metacells), metacell_names)
-        if (length(valid_metacells) > 0) {
-            vecs <- lapply(valid_metacells, function(mc) {
-                # Mask must come after the matrix selector; see the per-gene
-                # fast path above for the same bug.
-                query <- glue::glue("@ gene @ metacell :: UMIs @ metacell = {escape_daf_value(mc)}")
-                tryCatch(daf_obj[query], error = function(e) NULL)
-            })
+    use_gene_mask <- !is.null(valid_genes) && length(valid_genes) <= .MASK_THRESHOLD
+    use_mc_mask   <- !is.null(valid_mcs)   && length(valid_mcs)   <= .MASK_THRESHOLD
 
-            if (!any(sapply(vecs, is.null))) {
-                mat <- do.call(cbind, lapply(vecs, as.numeric))
-                rownames(mat) <- gene_names
-                colnames(mat) <- valid_metacells
-                return(Matrix::Matrix(mat, sparse = TRUE))
+    # Single-query fast path for any combination of small subsets.
+    if (use_gene_mask || use_mc_mask) {
+        gmask <- if (use_gene_mask) build_name_mask(valid_genes) else ""
+        mmask <- if (use_mc_mask) build_name_mask(valid_mcs) else ""
+        # dafr::get_query rather than daf_obj[...]: the `[` dispatch for
+        # chained DAFs from inside this package's namespace can mis-resolve
+        # and raise "comparator outside of mask".
+        query <- as.character(glue::glue("@ gene{gmask} @ metacell{mmask} :: UMIs"))
+        mat <- tryCatch(dafr::get_query(daf_obj, query), error = function(e) NULL)
+        if (!is.null(mat)) {
+            # Apply any leftover (un-masked) axis filter R-side. Both can be
+            # NULL if the axis was already masked.
+            if (!is.null(valid_genes) && !use_gene_mask) {
+                mat <- mat[valid_genes, , drop = FALSE]
             }
+            if (!is.null(valid_mcs) && !use_mc_mask) {
+                mat <- mat[, valid_mcs, drop = FALSE]
+            }
+            return(if (methods::is(mat, "Matrix")) mat
+                   else Matrix::Matrix(mat, sparse = TRUE))
         }
-        # Fall through to full matrix if per-metacell queries failed
+        # Fall through to full-matrix load if the masked query failed for any
+        # reason (e.g. an old dafr without the GroupBy fix).
     }
 
-    # Full matrix retrieval (needed when genes=NULL or per-gene queries failed).
-    # Request gene x metacell directly - DAF handles relayout internally.
-    # dafr::get_matrix() returns a named matrix when axes exist; skip redundant dimnames.
-    gene_names <- dafr::axis_entries(daf_obj, "gene")
+    # Full-matrix retrieval. Request gene x metacell directly - DAF handles
+    # relayout internally; fall back to metacell x gene + transpose if the
+    # native orientation isn't stored.
     mc_mat <- tryCatch(
         {
             m <- dafr::get_matrix(daf_obj, "gene", "metacell", "UMIs")
@@ -175,7 +145,6 @@ daf_query_mc_mat <- function(daf_obj, genes = NULL, metacells = NULL) {
             m
         },
         error = function(e) {
-            # Fallback: load metacell x gene and transpose
             m <- dafr::get_matrix(daf_obj, "metacell", "gene", "UMIs")
             m <- Matrix::t(m)
             if (is.null(rownames(m))) rownames(m) <- gene_names
@@ -184,14 +153,11 @@ daf_query_mc_mat <- function(daf_obj, genes = NULL, metacells = NULL) {
         }
     )
 
-    if (!is.null(genes)) {
-        valid_genes <- intersect(genes, gene_names)
+    if (!is.null(valid_genes)) {
         mc_mat <- mc_mat[valid_genes, , drop = FALSE]
     }
-
-    if (!is.null(metacells)) {
-        valid_metacells <- intersect(metacells, metacell_names)
-        mc_mat <- mc_mat[, valid_metacells, drop = FALSE]
+    if (!is.null(valid_mcs)) {
+        mc_mat <- mc_mat[, valid_mcs, drop = FALSE]
     }
 
     return(mc_mat)
