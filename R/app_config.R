@@ -20,42 +20,49 @@ init_defs <- function() {
 
 #' Compute optimal default genes (expensive)
 #'
-#' Loads the full EGC matrix and finds the two genes with highest
-#' expression range (max - min across metacells), excluding lateral
-#' and noisy genes. This is the original init_selected_genes() logic
-#' but extracted so it can be called lazily.
+#' Picks the two genes with the highest expression range (max - min across
+#' metacells), excluding lateral and noisy genes. Uses two DAF reductions
+#' (per-gene Max and per-gene Min) so the full EGC matrix never lands in R.
 #'
 #' @return Character vector of length 2 with gene names
 #' @noRd
 compute_optimal_default_genes <- function() {
-    mc_egc <- get_mc_egc(dataset_names()[1])
-    if (has_atlas(dataset_names()[1])) {
-        mc_egc_atlas <- get_mc_egc(dataset_names()[1], atlas = TRUE)
-        mc_egc <- mc_egc[intersect(rownames(mc_egc), rownames(mc_egc_atlas)), ]
+    dataset <- dataset_names()[1]
+    daf_obj <- get_dataset_daf(dataset)
+    if (is.null(daf_obj)) {
+        return(character(0))
     }
 
-    f <- rep(TRUE, nrow(mc_egc))
-    lateral_genes <- get_mc_data(dataset_names()[1], "lateral_genes")
+    minmax <- gene_expression_range_via_query(daf_obj)
+    if (is.null(minmax) || length(minmax) == 0) {
+        return(character(0))
+    }
+
+    if (has_atlas(dataset)) {
+        atlas_daf <- get_dataset_daf(dataset, atlas = TRUE)
+        if (!is.null(atlas_daf)) {
+            atlas_genes <- dafr::axis_entries(atlas_daf, "gene")
+            minmax <- minmax[names(minmax) %in% atlas_genes]
+        }
+    }
+
+    lateral_genes <- get_mc_data(dataset, "lateral_genes")
     if (!is.null(lateral_genes)) {
-        f <- f & !(rownames(mc_egc) %in% lateral_genes)
+        minmax <- minmax[!(names(minmax) %in% lateral_genes)]
     }
-    noisy_genes <- get_mc_data(dataset_names()[1], "noisy_genes")
+    noisy_genes <- get_mc_data(dataset, "noisy_genes")
     if (!is.null(noisy_genes)) {
-        f <- f & !(rownames(mc_egc) %in% noisy_genes)
+        minmax <- minmax[!(names(minmax) %in% noisy_genes)]
     }
-    mc_egc <- mc_egc[f, ]
 
-    minmax <- matrixStats::rowMaxs(mc_egc, na.rm = TRUE) - matrixStats::rowMins(mc_egc, na.rm = TRUE)
-    names(minmax) <- rownames(mc_egc)
     genes <- names(head(sort(minmax, decreasing = TRUE), n = 2))
 
     # Cache for future use
     config <- mcv_get("config")
     cache_enabled <- isTRUE(config$cache_in_daf)
-    if (cache_enabled) {
+    if (cache_enabled && length(genes) >= 2) {
         tryCatch(
             {
-                daf_obj <- get_dataset_daf(dataset_names()[1])
                 dafr::set_scalar(daf_obj, "mcview_cache_default_gene1", genes[1])
                 dafr::set_scalar(daf_obj, "mcview_cache_default_gene2", genes[2])
             },
@@ -64,6 +71,39 @@ compute_optimal_default_genes <- function() {
     }
 
     genes
+}
+
+#' Compute per-gene Max - Min via two DAF reductions.
+#'
+#' Reuses any pre-computed fraction matrix (linear_fraction, then
+#' geomean_fraction); otherwise asks dafr to compute UMIs % Fraction
+#' inline. The full matrix never materialises in R - each reduction
+#' returns a length n_genes vector.
+#'
+#' @noRd
+gene_expression_range_via_query <- function(daf_obj) {
+    matrix_expr <- if (dafr::has_matrix(daf_obj, "gene", "metacell", "linear_fraction")) {
+        "@ gene @ metacell :: linear_fraction"
+    } else if (dafr::has_matrix(daf_obj, "gene", "metacell", "geomean_fraction")) {
+        "@ gene @ metacell :: geomean_fraction"
+    } else {
+        "@ gene @ metacell :: UMIs % Fraction"
+    }
+    mx <- tryCatch(daf_obj[paste(matrix_expr, ">| Max")], error = function(e) NULL)
+    mn <- tryCatch(daf_obj[paste(matrix_expr, ">| Min")], error = function(e) NULL)
+    if (is.null(mx) || is.null(mn)) {
+        return(NULL)
+    }
+    # `>|` reduces columns (metacells) -> one value per row (gene). Result
+    # is named by the gene axis; align defensively in case names diverge.
+    common <- intersect(names(mx), names(mn))
+    if (length(common) == 0) {
+        gene_names <- dafr::axis_entries(daf_obj, "gene")
+        names(mx) <- names(mx) %||% gene_names
+        names(mn) <- names(mn) %||% gene_names
+        common <- intersect(names(mx), names(mn))
+    }
+    mx[common] - mn[common]
 }
 
 #' Get all possible tab names from tab definitions
