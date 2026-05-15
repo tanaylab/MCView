@@ -1,5 +1,8 @@
-mctnetwork_g_t_types <- function(net, min_time, max_time, g, mc_egc, mc_colors) {
-    gene_e <- dafr::fast_log(mc_egc[g, ], eps = 1e-5, base = 2)
+mctnetwork_g_t_types <- function(net, min_time, max_time, g, gene_egc, mc_colors) {
+    # `gene_egc` is the per-metacell expression vector for `g`. Callers used
+    # to pass the full mc_egc matrix and we'd take one row; the single-gene
+    # query is ~2-3 orders of magnitude cheaper on cold start.
+    gene_e <- dafr::fast_log(gene_egc, eps = 1e-5, base = 2)
 
     all_types <- unique(mc_colors)
 
@@ -127,7 +130,6 @@ plot_vein <- function(dataset,
     type_ag <- get_mc_data(dataset, "type_ag")
     type_flow <- get_mc_data(dataset, "type_flow")
     time_annot <- get_mc_data(dataset, "time_annot")
-    mc_egc <- get_mc_egc(dataset)
     mc_colors <- metacell_types$mc_col
     mc_network <- get_mc_data(dataset, "mc_network")
 
@@ -177,7 +179,8 @@ plot_vein <- function(dataset,
     foc_agn <- type_agn[adj_cols, t1:t2]
 
     if (!is.null(gene)) {
-        a <- mctnetwork_g_t_types(mc_network, min_t, max_t, gene, mc_egc, mc_colors)
+        gene_egc <- get_gene_egc(gene, dataset)
+        a <- mctnetwork_g_t_types(mc_network, min_t, max_t, gene, gene_egc, mc_colors)
         src_g_tt <- a$src_g_tt
         targ_g_tt <- a$targ_g_tt
         plot_gene <- TRUE
