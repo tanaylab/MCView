@@ -279,14 +279,20 @@ validate_daf_for_mcview <- function(daf_obj, strict = FALSE, verbose = FALSE) {
 validate_daf_content <- function(daf_obj, verbose = FALSE) {
     if (verbose) cli_alert_info("Validating data content...")
 
-    # Validate UMI matrix content
-    umat <- dafr::get_matrix(daf_obj, "metacell", "gene", "UMIs")
+    # Validate UMI matrix content via two scalar reductions instead of
+    # materialising the gene x metacell UMI matrix in R just to spot-check.
+    umi_min <- tryCatch(daf_obj["@ metacell @ gene :: UMIs >> Min"],
+                        error = function(e) NULL)
+    umi_max <- tryCatch(daf_obj["@ metacell @ gene :: UMIs >> Max"],
+                        error = function(e) NULL)
 
-    if (any(umat < 0, na.rm = TRUE)) {
+    if (is.null(umi_min) || is.null(umi_max)) {
+        cli_abort("UMIs matrix is missing or unreadable")
+    }
+    if (!is.na(umi_min) && umi_min < 0) {
         cli_abort("UMIs matrix contains negative values")
     }
-
-    if (all(umat == 0, na.rm = TRUE)) {
+    if (!is.na(umi_max) && umi_max == 0) {
         cli_abort("UMIs matrix contains only zeros")
     }
 
