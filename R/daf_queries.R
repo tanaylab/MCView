@@ -254,9 +254,24 @@ daf_query_2d_coords <- function(daf_obj, metacells = NULL) {
 # DAF Aggregation Queries
 # ==============================================================================
 
+#' Build a DAF mask alternation for cell-type filtering, e.g.
+#' `[ type = A | type = B | type = C ]`. Returns empty string for NULL/empty
+#' inputs so callers can paste it inline unconditionally.
+#' @noRd
+build_type_mask <- function(cell_types) {
+    if (is.null(cell_types) || length(cell_types) == 0) return("")
+    parts <- vapply(cell_types, function(t) paste0("type = ", escape_daf_value(t)),
+                    character(1))
+    paste0(" [ ", paste(parts, collapse = " | "), " ]")
+}
+
 #' Retrieve UMIs matrix aggregated by cell type via DAF query
 #'
-#' Uses DAF's GroupBy query to efficiently aggregate UMIs by cell type.
+#' Uses DAF's GroupBy query to efficiently aggregate UMIs by cell type. When
+#' `cell_types` is given, the filter is pushed into the metacell mask so the
+#' GroupBy only aggregates the requested types instead of all-then-filter.
+#' Requires dafr >= 0.2.6 (which fixes the row-mask + GroupRowsBy alignment
+#' bug); on earlier versions the masked GroupBy mis-labels output rows.
 #'
 #' @param daf_obj DAF object
 #' @param cell_types Optional vector of cell type names to include
@@ -264,15 +279,14 @@ daf_query_2d_coords <- function(daf_obj, metacells = NULL) {
 #' @return Matrix with genes as rows and cell types as columns
 #' @export
 daf_query_cell_type_umis <- function(daf_obj, cell_types = NULL) {
-    # Use DAF query for efficient grouping
-    # Query: @ metacell @ gene :: UMIs -/ type >- Sum
-    # GroupRowsBy type (metacell axis) and reduce columns with Sum
-    ct_mat <- daf_obj["@ metacell @ gene :: UMIs -/ type >- Sum"]
+    mask <- build_type_mask(cell_types)
+    ct_mat <- daf_obj[glue::glue("@ metacell{mask} @ gene :: UMIs -/ type >- Sum")]
 
     # Transpose to get genes as rows, cell types as columns
     ct_mat <- t(ct_mat)
 
-    # Filter by cell types if specified
+    # Belt-and-braces filter: drop any types that survived the mask but
+    # weren't requested (defensive against name-typo callers).
     if (!is.null(cell_types)) {
         valid_types <- intersect(cell_types, colnames(ct_mat))
         if (length(valid_types) > 0) {
@@ -293,11 +307,9 @@ daf_query_cell_type_umis <- function(daf_obj, cell_types = NULL) {
 #' @return Named vector of total UMIs per cell type
 #' @export
 daf_query_cell_type_sum <- function(daf_obj, cell_types = NULL) {
-    # Use DAF query for efficient grouping
-    # Query: @ metacell : total_UMIs / type >> Sum
-    result <- daf_obj["@ metacell : total_UMIs / type >> Sum"]
+    mask <- build_type_mask(cell_types)
+    result <- daf_obj[glue::glue("@ metacell{mask} : total_UMIs / type >> Sum")]
 
-    # Filter by cell types if specified
     if (!is.null(cell_types)) {
         valid_types <- intersect(cell_types, names(result))
         if (length(valid_types) > 0) {
