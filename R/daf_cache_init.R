@@ -311,8 +311,11 @@ compute_base_hash <- function(base_daf) {
     base_path <- tryCatch(daf_storage_path(base_daf), error = function(e) NULL)
     file_fingerprint <- if (!is.null(base_path) && dir.exists(base_path)) {
         files <- list.files(base_path, recursive = TRUE, full.names = TRUE, all.files = FALSE)
-        # Exclude the cache subtree if it lives inside the DAF dir.
-        files <- files[!grepl("[/\\\\]\\.mcview_cache(/|\\\\|$)", files)]
+        # Exclude derived/cache subtrees if they live inside the DAF dir.
+        # The current default is .mcview_derived; .mcview_cache is the legacy
+        # name. Without this exclusion every precompute write flips the hash
+        # and invalidates the cache that was just written.
+        files <- files[!grepl("[/\\\\]\\.mcview_(derived|cache)(/|\\\\|$)", files)]
         if (length(files) == 0) {
             ""
         } else {

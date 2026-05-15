@@ -376,6 +376,38 @@ test_that("compute_base_hash incorporates file fingerprints from DAF storage pat
     expect_false(identical(compute_base_hash(tmp_daf), baseline_hash))
 })
 
+test_that("compute_base_hash ignores files inside the derived/cache subtree", {
+    skip_if_no_daf()
+
+    # Copy the DAF so we can drop files inside its tree without corrupting
+    # /home/obk/data/mcview/metacells_clean.
+    tmp_dir <- file.path(tempdir(), paste0("daf_hash_ignore_", as.integer(Sys.time())))
+    on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+    dir.create(tmp_dir, showWarnings = FALSE, recursive = TRUE)
+    file.copy(get_test_daf_path(), tmp_dir, recursive = TRUE)
+    tmp_root <- file.path(tmp_dir, basename(get_test_daf_path()))
+
+    tmp_daf <- dafr::open_daf(tmp_root)
+    baseline_hash <- compute_base_hash(tmp_daf)
+
+    # Create a file inside .mcview_derived: hash must NOT change. This is the
+    # B1 bug shape - the regex only excluded .mcview_cache, so any file the
+    # precompute wrote into .mcview_derived flipped the hash and invalidated
+    # the cache that had just been written.
+    derived_path <- file.path(tmp_root, ".mcview_derived", "ds")
+    dir.create(derived_path, recursive = TRUE)
+    writeLines("contents", file.path(derived_path, "scalar.json"))
+
+    expect_identical(compute_base_hash(tmp_daf), baseline_hash)
+
+    # Legacy .mcview_cache name must also be ignored.
+    legacy_path <- file.path(tmp_root, ".mcview_cache", "ds")
+    dir.create(legacy_path, recursive = TRUE)
+    writeLines("legacy", file.path(legacy_path, "legacy.json"))
+
+    expect_identical(compute_base_hash(tmp_daf), baseline_hash)
+})
+
 test_that("default cache invalidation strategy is 'hash'", {
     cfg <- create_cache_config()
     expect_equal(cfg$invalidation$strategy, "hash")
