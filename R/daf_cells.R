@@ -740,26 +740,39 @@ get_group_qc_stats <- function(dataset, group_field) {
         return(out)
     }
 
-    umis <- as.numeric(dafr::get_vector(cells_daf, "cell", "total_UMIs"))
-    if (length(umis) != length(labels)) {
-        cli_abort(
-            "cell-axis length mismatch: labels={length(labels)} vs total_UMIs={length(umis)}"
-        )
+    # Three DAF group reductions on the cell axis: cell count, sum of UMIs,
+    # median UMIs per cell, all aggregated by `group_field`. Avoids pulling
+    # both vectors into R and the per-group split() / vapply chain - matters
+    # most on cell DAFs with millions of cells.
+    #
+    # `n_q` counts entries by group_field itself, not by total_UMIs - this
+    # mirrors the legacy `length(split())` semantics and counts every cell
+    # in a group, even ones with NA total_UMIs. Using `total_UMIs` here
+    # would silently undercount those cells.
+    n_q <- glue::glue("@ cell : {group_field} / {group_field} >> Count")
+    sum_q <- glue::glue("@ cell : total_UMIs / {group_field} >> Sum")
+    med_q <- glue::glue("@ cell : total_UMIs / {group_field} >> Median")
+    n_cells <- cells_daf[n_q]
+    total_umis <- cells_daf[sum_q]
+    median_umis <- cells_daf[med_q]
+
+    group_ids <- sort(unique(c(names(n_cells), names(total_umis), names(median_umis))))
+    # Look up via match() rather than `vec[group_ids]`: R name-indexing
+    # returns NA when the lookup key is "" even when "" is a valid name in
+    # the vector, which silently drops the empty-string group (real on cell
+    # DAFs where some cells have an unset categorical field).
+    pick <- function(vec, ids) {
+        vals <- rep(NA_real_, length(ids))
+        idx <- match(ids, names(vec))
+        ok <- !is.na(idx)
+        vals[ok] <- as.numeric(vec)[idx[ok]]
+        vals
     }
-
-    splits <- split(umis, labels)
-    ord <- order(names(splits))
-    splits <- splits[ord]
-    group_ids <- names(splits)
-    n_cells <- vapply(splits, length, integer(1L))
-    total_umis <- vapply(splits, sum, numeric(1L))
-    median_umis <- vapply(splits, stats::median, numeric(1L))
-
     out <- tibble::tibble(
         group_id = group_ids,
-        n_cells = as.integer(n_cells),
-        total_umis = as.numeric(total_umis),
-        median_umis_per_cell = as.numeric(median_umis)
+        n_cells = as.integer(pick(n_cells, group_ids)),
+        total_umis = pick(total_umis, group_ids),
+        median_umis_per_cell = pick(median_umis, group_ids)
     )
     mcv_cache_set(dataset, cache_key, out)
     out
