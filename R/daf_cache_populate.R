@@ -190,41 +190,6 @@ precompute_daf_metacell_top_genes <- function(daf_obj, egc_epsilon = 1e-5, force
     invisible(success)
 }
 
-precompute_daf_gene_stats <- function(daf_obj, force = FALSE) {
-    if (is.null(daf_obj) || !daf_is_writable(daf_obj)) {
-        return(invisible(FALSE))
-    }
-
-    if (!force && dafr::has_vector(daf_obj, "gene", "mcview_cache_gene_max_umis") &&
-        dafr::has_vector(daf_obj, "gene", "mcview_cache_gene_mean_umis") &&
-        dafr::has_vector(daf_obj, "gene", "mcview_cache_gene_sum_umis")) {
-        return(invisible(FALSE))
-    }
-
-    max_umis <- daf_query_gene_max_umis(daf_obj)
-    mean_umis <- daf_query_gene_mean_umis(daf_obj)
-    sum_umis <- daf_query_gene_sum_umis(daf_obj)
-
-    if (any(is.na(max_umis)) || any(is.na(mean_umis)) || any(is.na(sum_umis))) {
-        return(invisible(FALSE))
-    }
-
-    success <- tryCatch(
-        {
-            dafr::set_vector(daf_obj, "gene", "mcview_cache_gene_max_umis", as.numeric(max_umis), overwrite = TRUE)
-            dafr::set_vector(daf_obj, "gene", "mcview_cache_gene_mean_umis", as.numeric(mean_umis), overwrite = TRUE)
-            dafr::set_vector(daf_obj, "gene", "mcview_cache_gene_sum_umis", as.numeric(sum_umis), overwrite = TRUE)
-            TRUE
-        },
-        error = function(e) {
-            cli::cli_alert_warning("Cache operation failed: {e$message}")
-            FALSE
-        }
-    )
-
-    invisible(success)
-}
-
 precompute_daf_type_markers <- function(daf_obj, genes_per_type = 50,
                                        min_log_fraction = -13, force = FALSE) {
     if (is.null(daf_obj) || !daf_is_writable(daf_obj)) {
@@ -238,19 +203,19 @@ precompute_daf_type_markers <- function(daf_obj, genes_per_type = 50,
         return(invisible(FALSE))
     }
 
-    # Need both EGC matrix and type annotations
+    # Need type annotations on metacell axis
     if (!dafr::has_vector(daf_obj, "metacell", "type")) {
         return(invisible(FALSE))
     }
 
-    mc_egc <- convert_daf_mc_egc(daf_obj)
-    if (is.null(mc_egc) || ncol(mc_egc) == 0) {
+    n_mcs <- tryCatch(dafr::axis_length(daf_obj, "metacell"), error = function(e) 0)
+    if (is.null(n_mcs) || n_mcs == 0) {
         return(invisible(FALSE))
     }
 
-    mc_types <- dafr::get_vector(daf_obj, "metacell", "type")
-
-    markers <- calc_type_marker_genes(mc_egc, mc_types,
+    # Per-type and global gene means are computed by DAF GroupBy queries;
+    # the full gene x metacell EGC never lands in R.
+    markers <- calc_type_marker_genes(daf_obj = daf_obj,
         genes_per_type = genes_per_type,
         min_log_fraction = min_log_fraction
     )
@@ -359,17 +324,22 @@ cache_type_markers_daf_legacy <- function(daf_obj, markers) {
 precompute_daf_derived <- function(daf_obj,
                                    correlations = TRUE,
                                    metacell_top_genes = TRUE,
-                                   gene_stats = TRUE,
                                    type_markers = TRUE,
                                    qc_vectors = TRUE,
                                    egc_cache = TRUE,
                                    default_markers = TRUE,
                                    correlations_k = 30,
                                    egc_epsilon = 1e-5,
-                                   force = FALSE) {
+                                   force = FALSE,
+                                   ...) {
     if (is.null(daf_obj) || !daf_is_writable(daf_obj)) {
         return(invisible(FALSE))
     }
+
+    # The legacy `gene_stats` precompute was dropped: dafr's per-query cache
+    # memoises `@ metacell @ gene :: UMIs >- {Max|Mean|Sum}` on first call, so
+    # `daf_query_gene_{max,mean,sum}_umis()` are essentially free on the warm
+    # path. `convert_daf_gene_qc` already falls back to a live query.
 
     any_done <- FALSE
     if (isTRUE(correlations)) {
@@ -378,17 +348,14 @@ precompute_daf_derived <- function(daf_obj,
     if (isTRUE(metacell_top_genes)) {
         any_done <- precompute_daf_metacell_top_genes(daf_obj, egc_epsilon = egc_epsilon, force = force) || any_done
     }
-    if (isTRUE(gene_stats)) {
-        any_done <- precompute_daf_gene_stats(daf_obj, force = force) || any_done
-    }
     if (isTRUE(type_markers)) {
         any_done <- precompute_daf_type_markers(daf_obj, force = force) || any_done
     }
     if (isTRUE(qc_vectors)) {
-        precompute_daf_qc_vectors(daf_obj, daf_obj, force = force)
+        any_done <- precompute_daf_qc_vectors(daf_obj, daf_obj, force = force) || any_done
     }
     if (isTRUE(egc_cache)) {
-        precompute_daf_egc(daf_obj, daf_obj, force = force)
+        any_done <- precompute_daf_egc(daf_obj, daf_obj, force = force) || any_done
     }
     if (isTRUE(default_markers)) {
         precompute_daf_default_markers(daf_obj, daf_obj, force = force)
@@ -401,7 +368,7 @@ precompute_daf_derived <- function(daf_obj,
 precompute_daf_cache <- precompute_daf_derived
 
 # ==============================================================================
-# Stub Pre-computation Functions (not yet implemented)
+# Pre-computation Functions
 # ==============================================================================
 
 #' Pre-compute max inner_fold QC vectors per metacell
@@ -417,11 +384,55 @@ precompute_daf_cache <- precompute_daf_derived
 #' @return Invisibly returns TRUE if vectors were written, FALSE otherwise
 #' @noRd
 precompute_daf_qc_vectors <- function(complete_daf, derived_daf, force = FALSE) {
-    # TODO: Pre-compute max_inner_fold and max_inner_fold_no_lateral per metacell
-    # Uses: daf["@ gene @ metacell :: inner_fold >> Max"] for max_inner_fold
-    # Uses: filter lateral genes, then same query for max_inner_fold_no_lateral
-    cli::cli_inform("Skipping QC vector pre-computation (not yet implemented)")
-    invisible(FALSE)
+    if (is.null(complete_daf) || is.null(derived_daf)) {
+        return(invisible(FALSE))
+    }
+    if (!dafr::has_matrix(complete_daf, "gene", "metacell", "inner_fold") &&
+        !dafr::has_matrix(complete_daf, "metacell", "gene", "inner_fold")) {
+        return(invisible(FALSE))
+    }
+
+    any_done <- FALSE
+
+    # Per-metacell max inner_fold across all genes.
+    if (force || !dafr::has_vector(complete_daf, "metacell", "mcview_cache_max_inner_fold")) {
+        v <- tryCatch(
+            complete_daf["@ metacell @ gene :: inner_fold >| Max"],
+            error = function(e) NULL
+        )
+        if (!is.null(v)) {
+            tryCatch({
+                dafr::set_vector(derived_daf, "metacell",
+                    "mcview_cache_max_inner_fold", as.numeric(v),
+                    overwrite = TRUE)
+                any_done <- TRUE
+            }, error = function(e) {
+                cli::cli_alert_warning("Failed to write max_inner_fold: {e$message}")
+            })
+        }
+    }
+
+    # Same, excluding lateral genes (only when is_lateral is present).
+    have_lateral <- dafr::has_vector(complete_daf, "gene", "is_lateral")
+    if (have_lateral &&
+        (force || !dafr::has_vector(complete_daf, "metacell", "mcview_cache_max_inner_fold_no_lateral"))) {
+        v <- tryCatch(
+            complete_daf["@ metacell @ gene [ ! is_lateral ] :: inner_fold >| Max"],
+            error = function(e) NULL
+        )
+        if (!is.null(v)) {
+            tryCatch({
+                dafr::set_vector(derived_daf, "metacell",
+                    "mcview_cache_max_inner_fold_no_lateral", as.numeric(v),
+                    overwrite = TRUE)
+                any_done <- TRUE
+            }, error = function(e) {
+                cli::cli_alert_warning("Failed to write max_inner_fold_no_lateral: {e$message}")
+            })
+        }
+    }
+
+    invisible(any_done)
 }
 
 #' Pre-compute geomean_fraction (EGC) when not in input DAF
@@ -437,10 +448,43 @@ precompute_daf_qc_vectors <- function(complete_daf, derived_daf, force = FALSE) 
 #' @return Invisibly returns TRUE if matrix was written, FALSE otherwise
 #' @noRd
 precompute_daf_egc <- function(complete_daf, derived_daf, force = FALSE) {
-    # TODO: Pre-compute geomean_fraction when not in input DAF
-    # Store as gene x metacell :: mcview_cache_geomean_fraction in derived layer
-    cli::cli_inform("Skipping EGC pre-computation (not yet implemented)")
-    invisible(FALSE)
+    if (is.null(complete_daf) || is.null(derived_daf)) {
+        return(invisible(FALSE))
+    }
+    # If a fraction matrix already lives in the base DAF (mmap-backed), the
+    # warm/cold paths already use it via convert_daf_mc_egc and there's
+    # nothing to persist.
+    if (dafr::has_matrix(complete_daf, "gene", "metacell", "linear_fraction") ||
+        dafr::has_matrix(complete_daf, "gene", "metacell", "geomean_fraction")) {
+        return(invisible(FALSE))
+    }
+    if (!dafr::has_matrix(complete_daf, "gene", "metacell", "UMIs") &&
+        !dafr::has_matrix(complete_daf, "metacell", "gene", "UMIs")) {
+        return(invisible(FALSE))
+    }
+    if (!force && dafr::has_matrix(complete_daf, "gene", "metacell", "linear_fraction")) {
+        return(invisible(FALSE))
+    }
+
+    cli::cli_alert_info("Pre-computing linear_fraction (gene x metacell) into the derived layer...")
+    mat <- tryCatch(
+        complete_daf["@ gene @ metacell :: UMIs % Fraction"],
+        error = function(e) {
+            cli::cli_alert_warning("Failed to compute linear_fraction: {e$message}")
+            NULL
+        }
+    )
+    if (is.null(mat)) return(invisible(FALSE))
+
+    success <- tryCatch({
+        dafr::set_matrix(derived_daf, "gene", "metacell", "linear_fraction",
+            mat, overwrite = TRUE)
+        TRUE
+    }, error = function(e) {
+        cli::cli_alert_warning("Failed to write linear_fraction: {e$message}")
+        FALSE
+    })
+    invisible(success)
 }
 
 #' Pre-compute default markers list and distance matrix
@@ -456,10 +500,10 @@ precompute_daf_egc <- function(complete_daf, derived_daf, force = FALSE) {
 #' @return Invisibly returns TRUE if data was written, FALSE otherwise
 #' @noRd
 precompute_daf_default_markers <- function(complete_daf, derived_daf, force = FALSE) {
-    # TODO: Pre-compute default markers list and distance matrix
-    # Uses: choose_markers() to select default set, then tgs_cor + tgs_dist + hclust
-    # Stores: mcview_default_markers scalar and mcview_default_markers_dist matrix
-    cli::cli_inform("Skipping default markers pre-computation (not yet implemented)")
+    # Not yet implemented. The Markers tab computes choose_markers() + tgs_cor +
+    # hclust on first visit and caches the result in the session; persisting
+    # them to the derived layer is a real win (~2-5s on first visit) but
+    # needs choose_markers wiring and is left for a future change.
     invisible(FALSE)
 }
 
@@ -476,7 +520,7 @@ precompute_daf_default_markers <- function(complete_daf, derived_daf, force = FA
 #' @param cache_dir Derived data directory path (absolute or relative to daf_path)
 #' @param cache_type Storage type: "files" (persistent) or "memory" (session only)
 #' @param what What to compute: NULL (all), or character vector subset of:
-#'   "correlations", "metacell_top_genes", "gene_stats", "type_markers"
+#'   "correlations", "metacell_top_genes", "type_markers"
 #' @param force Recompute even if derived data exists and is valid
 #' @param verbose Print progress messages
 #'
@@ -490,7 +534,7 @@ precompute_daf_default_markers <- function(complete_daf, derived_daf, force = FA
 #' # Populate specific items
 #' populate_mcview_derived(
 #'     "/path/to/daf",
-#'     what = c("correlations", "gene_stats"),
+#'     what = c("correlations", "type_markers"),
 #'     verbose = TRUE
 #' )
 #'
@@ -568,7 +612,7 @@ populate_mcview_derived <- function(
     chain_daf <- derived_result$complete_daf %||% derived_daf
 
     # Determine what to compute
-    all_items <- c("correlations", "metacell_top_genes", "gene_stats", "type_markers")
+    all_items <- c("correlations", "metacell_top_genes", "type_markers")
     if (is.null(what)) {
         what <- all_items
     } else {
@@ -593,12 +637,6 @@ populate_mcview_derived <- function(
         if (verbose) cli::cli_alert("Computing metacell top genes...")
         results$metacell_top_genes <- precompute_daf_metacell_top_genes(chain_daf, force = force)
         if (verbose && results$metacell_top_genes) cli::cli_alert_success("Metacell top genes computed")
-    }
-
-    if ("gene_stats" %in% what) {
-        if (verbose) cli::cli_alert("Computing gene statistics...")
-        results$gene_stats <- precompute_daf_gene_stats(chain_daf, force = force)
-        if (verbose && results$gene_stats) cli::cli_alert_success("Gene statistics computed")
     }
 
     if ("type_markers" %in% what) {
@@ -647,7 +685,7 @@ populate_dataset_cache <- function(dataset, what = NULL, force = FALSE, verbose 
     }
 
     # Determine what to compute
-    all_items <- c("correlations", "metacell_top_genes", "gene_stats", "type_markers")
+    all_items <- c("correlations", "metacell_top_genes", "type_markers")
     if (is.null(what)) {
         what <- all_items
     }
@@ -662,11 +700,6 @@ populate_dataset_cache <- function(dataset, what = NULL, force = FALSE, verbose 
     if ("metacell_top_genes" %in% what) {
         if (verbose) cli::cli_alert("Computing metacell top genes for {dataset}...")
         results$metacell_top_genes <- precompute_daf_metacell_top_genes(chain_daf, force = force)
-    }
-
-    if ("gene_stats" %in% what) {
-        if (verbose) cli::cli_alert("Computing gene statistics for {dataset}...")
-        results$gene_stats <- precompute_daf_gene_stats(chain_daf, force = force)
     }
 
     if ("type_markers" %in% what) {

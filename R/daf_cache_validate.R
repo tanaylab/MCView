@@ -76,11 +76,12 @@ validate_mcview_cache <- function(daf_path, cache_dir = NULL) {
         result$stale_reason <- "Cache hash does not match base DAF"
     }
 
-    # Check completeness
+    # Check completeness. `gene_stats` precompute was dropped; dafr's per-query
+    # cache memoises gene Max/Mean/Sum on first call so the persisted vectors
+    # buy nothing meaningful.
     expected_items <- list(
         correlations = dafr::has_axis(cache_daf, "mcview_cache_gg_mc_top_cor"),
         metacell_top_genes = dafr::has_vector(cache_daf, "metacell", "mcview_cache_top1_gene"),
-        gene_stats = dafr::has_vector(cache_daf, "gene", "mcview_cache_gene_max_umis"),
         type_markers = dafr::has_axis(cache_daf, "mcview_type_markers")
     )
 
