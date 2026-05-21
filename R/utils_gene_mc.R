@@ -99,9 +99,12 @@ get_cached_cor <- function(gg_mc_top_cor, gene, type, exclude = NULL) {
 
 calc_top_cors <- function(dataset, gene, type, data_vec, metacell_filter, exclude, atlas = FALSE) {
     # BLAS-accelerated correlation
-    # Push metacell filter down to DAF query to avoid loading full matrix
-    # Unfiltered non-atlas path: reuse the cached lfp_full to avoid the ~500 MB
-    # log2 alloc on every gene click. Filtered / atlas paths recompute.
+    # Push metacell filter down to DAF query to avoid loading full matrix.
+    # Unfiltered non-atlas path: reuse the cached lfp_full plus its paired
+    # transpose (lfp_full_t) so each click skips both the ~500 MB log2 alloc
+    # AND the ~460 ms transpose. Filtered / atlas paths recompute fresh.
+    can_cache <- is.null(metacell_filter) && is.null(data_vec) &&
+                 !atlas && is.null(exclude)
     if (is.null(metacell_filter) && is.null(data_vec) && !atlas) {
         lfp <- get_mc_lfp(dataset)
     } else {
@@ -122,7 +125,9 @@ calc_top_cors <- function(dataset, gene, type, data_vec, metacell_filter, exclud
     } else {
         x_mat <- t(lfp[gene, , drop = FALSE])
     }
-    y_mat <- t(lfp)
+    # y_mat is metacell-rows x gene-cols. For the unfiltered cacheable path
+    # we reuse a persistent transpose; otherwise we materialise on the spot.
+    y_mat <- if (can_cache) get_mc_lfp_t(dataset) else t(lfp)
 
     cor_mat <- tryCatch(
         .Call(

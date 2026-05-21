@@ -76,7 +76,34 @@ get_mc_lfp <- function(dataset, atlas = FALSE) {
     # one-time cost across the session).
     lfp <- dafr::fast_log(mc_egc, eps = eps, base = 2)
     mcv_cache_set(dataset, "lfp_full", lfp)
+    # Any cached transpose belonged to the previous lfp_full and is now
+    # stale - clear it so get_mc_lfp_t() recomputes on next demand.
+    mcv_cache_set(dataset, "lfp_full_t", NULL)
     lfp
+}
+
+#' Get the cached TRANSPOSE of the lfp matrix
+#'
+#' calc_top_cors and similar BLAS-cor callers want metacell-rows x gene-cols
+#' input. Computing `t(lfp_full)` on every gene click costs ~460 ms on OBK
+#' (28K x 2.4K dgeMatrix). Cache the transpose alongside `lfp_full` so each
+#' gene-correlation click reuses it; ~500 MB of additional RSS in exchange.
+#'
+#' Eviction stays paired with `lfp_full` (cleared together via mcv_cache_set
+#' to NULL or session teardown). Filtered / atlas paths still compute fresh.
+#'
+#' @param dataset Dataset name
+#' @return metacell x gene matrix, or NULL if lfp is unavailable
+#' @noRd
+get_mc_lfp_t <- function(dataset) {
+    cached <- mcv_cache_get(dataset, "lfp_full_t")
+    if (!is.null(cached)) return(cached)
+
+    lfp <- get_mc_lfp(dataset)
+    if (is.null(lfp)) return(NULL)
+    lfp_t <- t(lfp)
+    mcv_cache_set(dataset, "lfp_full_t", lfp_t)
+    lfp_t
 }
 
 get_mc_fp <- function(dataset, genes = NULL, atlas = FALSE, metacells = NULL) {
