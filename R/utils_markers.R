@@ -282,11 +282,23 @@ get_top_marks <- function(feat, notify_var_genes = TRUE) {
     return(c(main_mark, second_mark))
 }
 
-# Environment for caching per-cell-type clustering results.
+# LRU cache for per-cell-type clustering results.
 # Key = digest of (cell_type, gene_names, metacell_ids), value = ordering vector.
 # This avoids re-computing fastcluster::hclust when toggling force_cell_type
-# back and forth, since the per-cell-type subsets do not change.
+# back and forth.
+#
+# `.ct_cluster_cache` stores values; `.ct_cluster_cache_meta$keys` is the
+# access-order list, oldest first. On a hit we touch the key (move to the
+# tail); when inserting past the cap we evict the head. Previously the env was
+# flushed wholesale when full, which discarded actively-used entries during
+# heatmap cell-type toggling.
+#
+# Both pieces of state live in `new.env()` rather than as bare package-level
+# vectors so they can be mutated after the namespace is locked at install time
+# (`<<-` on a bare vector binding fails on an installed package).
 .ct_cluster_cache <- new.env(parent = emptyenv())
+.ct_cluster_cache_meta <- new.env(parent = emptyenv())
+.ct_cluster_cache_meta$keys <- character(0)
 
 #' Invalidate the per-cell-type clustering cache.
 #'
@@ -294,11 +306,31 @@ get_top_marks <- function(feat, notify_var_genes = TRUE) {
 #' @noRd
 clear_ct_cluster_cache <- function() {
     rm(list = ls(.ct_cluster_cache, all.names = TRUE), envir = .ct_cluster_cache)
+    .ct_cluster_cache_meta$keys <- character(0)
 }
 
 # Maximum number of cached entries to prevent unbounded memory growth.
 # Each entry is a small integer vector (ordering), so 500 entries is negligible.
 .ct_cluster_cache_max <- 500L
+
+# Internal: record a touch (move key to LRU tail).
+.ct_cluster_cache_touch <- function(cache_key) {
+    keys <- .ct_cluster_cache_meta$keys
+    .ct_cluster_cache_meta$keys <- c(keys[keys != cache_key], cache_key)
+}
+
+# Internal: insert/replace value and trim oldest if over capacity.
+.ct_cluster_cache_put <- function(cache_key, value) {
+    assign(cache_key, value, envir = .ct_cluster_cache)
+    .ct_cluster_cache_touch(cache_key)
+    keys <- .ct_cluster_cache_meta$keys
+    overflow <- length(keys) - .ct_cluster_cache_max
+    if (overflow > 0) {
+        evict <- keys[seq_len(overflow)]
+        .ct_cluster_cache_meta$keys <- keys[-seq_len(overflow)]
+        rm(list = evict, envir = .ct_cluster_cache)
+    }
+}
 
 #' Order metacells based on 2 most variable genes
 #'
@@ -346,7 +378,17 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
 
     if (!is.null(cached_dist)) {
         metacells <- colnames(feat)
-        hc <- fastcluster::hclust(as.dist(as.matrix(cached_dist)[metacells, metacells]), method = "ward.D2")
+        # Subset BEFORE coercing: cached_dist is the full N x N dist matrix
+        # persisted by precompute_daf_default_markers; on OBK that's ~46 MB.
+        # `as.matrix(cached_dist)` materialises the whole thing into RSS
+        # (and breaks dafr's mmap ALTREP) just so we can then take a small
+        # sub-block. Indexing the ALTREP / dgeMatrix directly returns the
+        # base-matrix subset we need.
+        sub_dist <- cached_dist[metacells, metacells, drop = FALSE]
+        if (!is.matrix(sub_dist)) {
+            sub_dist <- as.matrix(sub_dist)
+        }
+        hc <- fastcluster::hclust(as.dist(sub_dist), method = "ward.D2")
     } else {
         hc <- fastcluster::hclust(tgs_dist(tgs_cor(feat, pairwise.complete.obs = TRUE)), method = "ward.D2")
     }
@@ -386,13 +428,10 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
 
                 if (exists(cache_key, envir = .ct_cluster_cache, inherits = FALSE)) {
                     ct_ord <- get(cache_key, envir = .ct_cluster_cache, inherits = FALSE)
+                    .ct_cluster_cache_touch(cache_key)
                 } else {
                     ct_ord <- suppressWarnings(order_mc_by_most_var_genes(gene_folds[, x$metacell], notify_var_genes = FALSE))
-                    # Evict all entries if cache exceeds size limit
-                    if (length(ls(.ct_cluster_cache, all.names = TRUE)) >= .ct_cluster_cache_max) {
-                        clear_ct_cluster_cache()
-                    }
-                    assign(cache_key, ct_ord, envir = .ct_cluster_cache)
+                    .ct_cluster_cache_put(cache_key, ct_ord)
                 }
             }
 
