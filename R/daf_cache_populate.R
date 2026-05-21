@@ -504,71 +504,103 @@ precompute_daf_default_markers <- function(complete_daf, derived_daf,
     if (is.null(complete_daf) || is.null(derived_daf)) {
         return(invisible(FALSE))
     }
-    if (!force &&
-        dafr::has_scalar(complete_daf, "mcview_default_markers") &&
-        dafr::has_matrix(complete_daf, "metacell", "metacell",
-                         "mcview_default_markers_dist")) {
+
+    has_scalar <- dafr::has_scalar(complete_daf, "mcview_default_markers")
+    has_dist <- dafr::has_matrix(complete_daf, "metacell", "metacell",
+                                 "mcview_default_markers_dist")
+    if (!force && has_scalar && has_dist) {
         return(invisible(FALSE))
     }
     if (!requireNamespace("tgstat", quietly = TRUE)) {
         return(invisible(FALSE))
     }
 
-    # Pick the default marker set the same way the Markers tab would.
-    marker_genes <- tryCatch(convert_daf_marker_genes(complete_daf),
-                             error = function(e) NULL)
-    if (is.null(marker_genes) || nrow(marker_genes) == 0) {
+    # When the scalar already exists, reuse its markers so we don't rewrite
+    # it with a (potentially different) re-pick just because the dist matrix
+    # was missing. The two artifacts must reference the same marker set, so
+    # we only re-pick when the scalar is missing or force=TRUE.
+    repicked <- FALSE
+    if (!force && has_scalar) {
+        markers <- convert_daf_default_markers(complete_daf)
+    } else {
+        marker_genes <- tryCatch(convert_daf_marker_genes(complete_daf),
+                                 error = function(e) NULL)
+        if (is.null(marker_genes) || nrow(marker_genes) == 0) {
+            return(invisible(FALSE))
+        }
+        markers <- choose_markers(marker_genes, max_markers = max_markers)
+        repicked <- TRUE
+    }
+    if (is.null(markers) || length(markers) < 2L) {
         return(invisible(FALSE))
     }
-    markers <- choose_markers(marker_genes, max_markers = max_markers)
-    if (length(markers) < 2L) return(invisible(FALSE))
+    # New marker list invalidates any pre-existing dist (it was computed against
+    # the previous selection). Treat as missing so the dist branch recomputes.
+    if (repicked) has_dist <- FALSE
 
-    # Marker FP across all metacells. compute_egc_from_daf uses the stored
-    # fraction matrix when available, so this matches the live `get_mc_fp`
-    # path's numerics.
-    mc_egc <- tryCatch(compute_egc_from_daf(complete_daf, genes = markers),
-                       error = function(e) NULL)
-    if (is.null(mc_egc) || ncol(mc_egc) < 2L) {
-        return(invisible(FALSE))
-    }
-    mc_fp <- egc_to_fp(mc_egc)
-    # Match order_mc_by_most_var_genes' epsilon = 0, log_transform = TRUE
-    # branch; the cached dist must align with the live computation.
-    feat <- log2(mc_fp)
+    any_done <- FALSE
 
-    # tgs_cor / tgs_dist over metacells. Drop metacells that would feed
-    # all-zero cols (mirrors order_mc_by_most_var_genes' zero-mc filter).
-    cor_mat <- tryCatch(
-        tgstat::tgs_cor(feat, pairwise.complete.obs = TRUE),
-        error = function(e) NULL
-    )
-    if (is.null(cor_mat)) return(invisible(FALSE))
-    dist_obj <- tryCatch(tgstat::tgs_dist(cor_mat), error = function(e) NULL)
-    if (is.null(dist_obj)) return(invisible(FALSE))
-    dist_mat <- as.matrix(dist_obj)
-
-    # Pad to the full metacell axis with NAs for any metacells absent from
-    # the lfp matrix; consumers index by name so NAs are harmless.
-    metacell_names <- dafr::axis_entries(complete_daf, "metacell")
-    full <- matrix(NA_real_, length(metacell_names), length(metacell_names),
-                   dimnames = list(metacell_names, metacell_names))
-    common <- intersect(rownames(dist_mat), metacell_names)
-    if (length(common) > 0L) {
-        full[common, common] <- dist_mat[common, common]
+    # Write scalar first (cheap) so a subsequent dist-failure still persists
+    # the marker selection.
+    if (force || !has_scalar) {
+        ok <- tryCatch({
+            dafr::set_scalar(derived_daf, "mcview_default_markers",
+                paste(markers, collapse = ","), overwrite = TRUE)
+            TRUE
+        }, error = function(e) {
+            cli::cli_alert_warning("Failed to write default_markers: {e$message}")
+            FALSE
+        })
+        any_done <- any_done || ok
     }
 
-    success <- tryCatch({
-        dafr::set_scalar(derived_daf, "mcview_default_markers",
-            paste(markers, collapse = ","), overwrite = TRUE)
-        dafr::set_matrix(derived_daf, "metacell", "metacell",
-            "mcview_default_markers_dist", full, overwrite = TRUE)
-        TRUE
-    }, error = function(e) {
-        cli::cli_alert_warning("Failed to write default_markers: {e$message}")
-        FALSE
-    })
+    if (force || !has_dist) {
+        # Marker FP across all metacells. compute_egc_from_daf uses the stored
+        # fraction matrix when available, so this matches the live `get_mc_fp`
+        # path's numerics.
+        mc_egc <- tryCatch(compute_egc_from_daf(complete_daf, genes = markers),
+                           error = function(e) NULL)
+        if (is.null(mc_egc) || ncol(mc_egc) < 2L) {
+            return(invisible(any_done))
+        }
+        mc_fp <- egc_to_fp(mc_egc)
+        # Match order_mc_by_most_var_genes' epsilon = 0, log_transform = TRUE
+        # branch; the cached dist must align with the live computation.
+        feat <- log2(mc_fp)
 
-    invisible(success)
+        # tgs_cor / tgs_dist over metacells. Drop metacells that would feed
+        # all-zero cols (mirrors order_mc_by_most_var_genes' zero-mc filter).
+        cor_mat <- tryCatch(
+            tgstat::tgs_cor(feat, pairwise.complete.obs = TRUE),
+            error = function(e) NULL
+        )
+        if (is.null(cor_mat)) return(invisible(any_done))
+        dist_obj <- tryCatch(tgstat::tgs_dist(cor_mat), error = function(e) NULL)
+        if (is.null(dist_obj)) return(invisible(any_done))
+        dist_mat <- as.matrix(dist_obj)
+
+        # Pad to the full metacell axis with NAs for any metacells absent from
+        # the lfp matrix; consumers index by name so NAs are harmless.
+        metacell_names <- dafr::axis_entries(complete_daf, "metacell")
+        full <- matrix(NA_real_, length(metacell_names), length(metacell_names),
+                       dimnames = list(metacell_names, metacell_names))
+        common <- intersect(rownames(dist_mat), metacell_names)
+        if (length(common) > 0L) {
+            full[common, common] <- dist_mat[common, common]
+        }
+
+        ok <- tryCatch({
+            dafr::set_matrix(derived_daf, "metacell", "metacell",
+                "mcview_default_markers_dist", full, overwrite = TRUE)
+            TRUE
+        }, error = function(e) {
+            cli::cli_alert_warning("Failed to write default_markers_dist: {e$message}")
+            FALSE
+        })
+        any_done <- any_done || ok
+    }
+
+    invisible(any_done)
 }
 
 # ==============================================================================
