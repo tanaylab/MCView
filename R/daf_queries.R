@@ -346,6 +346,21 @@ daf_query_noisy_genes <- function(daf_obj) {
     daf_query_flagged_genes(daf_obj, "is_noisy")
 }
 
+#' Resolve gene-axis module property name.
+#'
+#' Prefers the canonical `primary_module` and falls back to the legacy `module`.
+#' Returns NULL when neither is present.
+#' @noRd
+.daf_module_prop <- function(daf_obj) {
+    if (dafr::has_vector(daf_obj, "gene", "primary_module")) {
+        "primary_module"
+    } else if (dafr::has_vector(daf_obj, "gene", "module")) {
+        "module"
+    } else {
+        NULL
+    }
+}
+
 #' Get UMIs aggregated by gene module using DAF query
 #'
 #' If DAF has gene.module property, uses GroupBy for efficient aggregation.
@@ -356,13 +371,7 @@ daf_query_noisy_genes <- function(daf_obj) {
 #' @return Matrix with modules as rows and metacells as columns, or NULL
 #' @export
 daf_query_module_umis <- function(daf_obj, modules = NULL) {
-    # Try canonical "primary_module" first, fall back to legacy "module"
-    module_prop <- NULL
-    if (dafr::has_vector(daf_obj, "gene", "primary_module")) {
-        module_prop <- "primary_module"
-    } else if (dafr::has_vector(daf_obj, "gene", "module")) {
-        module_prop <- "module"
-    }
+    module_prop <- .daf_module_prop(daf_obj)
     if (is.null(module_prop)) {
         return(NULL)
     }
@@ -388,6 +397,48 @@ daf_query_module_umis <- function(daf_obj, modules = NULL) {
     # No transpose needed.
 
     # Filter by modules if specified
+    if (!is.null(modules)) {
+        valid_modules <- intersect(modules, rownames(mod_mat))
+        if (length(valid_modules) > 0) {
+            mod_mat <- mod_mat[valid_modules, , drop = FALSE]
+        }
+    }
+
+    return(mod_mat)
+}
+
+#' Get per-metacell module fractions using a single DAF query
+#'
+#' Returns a matrix of `sum_{g in module} UMIs[g,m] / total_UMIs[m]`. This is
+#' the normalized form most callers actually want; computing it via
+#' `daf_query_module_umis()` + `t(t(.) / mc_sum)` requires two queries and a
+#' double-transpose. Pushing `% Fraction` into the query before GroupBy gives
+#' the same answer in one pass (verified bit-equivalent on a synthetic 6x3
+#' fixture).
+#'
+#' Returns NULL if the DAF has no gene-axis module property.
+#'
+#' Internal helper - if needed externally, add @export and re-run
+#' devtools::document().
+#'
+#' @param daf_obj DAF object
+#' @param modules Optional vector of module names to filter
+#' @return Matrix with modules as rows and metacells as columns, or NULL
+#' @noRd
+daf_query_module_fraction <- function(daf_obj, modules = NULL) {
+    module_prop <- .daf_module_prop(daf_obj)
+    if (is.null(module_prop)) {
+        return(NULL)
+    }
+
+    query <- glue::glue(
+        "@ gene @ metacell :: UMIs % Fraction -/ {module_prop} >- Sum"
+    )
+    mod_mat <- tryCatch(daf_obj[query], error = function(e) NULL)
+    if (is.null(mod_mat)) {
+        return(NULL)
+    }
+
     if (!is.null(modules)) {
         valid_modules <- intersect(modules, rownames(mod_mat))
         if (length(valid_modules) > 0) {
