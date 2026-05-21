@@ -89,15 +89,24 @@ get_mc_lfp <- function(dataset, atlas = FALSE) {
 #' (28K x 2.4K dgeMatrix). Cache the transpose alongside `lfp_full` so each
 #' gene-correlation click reuses it; ~500 MB of additional RSS in exchange.
 #'
-#' Eviction stays paired with `lfp_full` (cleared together via mcv_cache_set
-#' to NULL or session teardown). Filtered / atlas paths still compute fresh.
+#' The cached transpose is only valid as the pair of the current lfp_full.
+#' get_mc_lfp() proactively clears lfp_full_t whenever it rebuilds lfp_full,
+#' but external clears via `mcv_cache_set(dataset, "lfp_full", NULL)` (e.g.
+#' from the cold-path tests) bypass that. Guard against the stale-pair
+#' scenario by checking lfp_full presence before trusting the transpose.
 #'
 #' @param dataset Dataset name
 #' @return metacell x gene matrix, or NULL if lfp is unavailable
 #' @noRd
 get_mc_lfp_t <- function(dataset) {
-    cached <- mcv_cache_get(dataset, "lfp_full_t")
-    if (!is.null(cached)) return(cached)
+    if (is.null(mcv_cache_get(dataset, "lfp_full"))) {
+        # lfp_full was cleared - any cached transpose belongs to a stale
+        # matrix. Drop it now so other callers don't see it either.
+        mcv_cache_set(dataset, "lfp_full_t", NULL)
+    } else {
+        cached <- mcv_cache_get(dataset, "lfp_full_t")
+        if (!is.null(cached)) return(cached)
+    }
 
     lfp <- get_mc_lfp(dataset)
     if (is.null(lfp)) return(NULL)
