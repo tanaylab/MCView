@@ -98,24 +98,30 @@ get_cached_cor <- function(gg_mc_top_cor, gene, type, exclude = NULL) {
 }
 
 calc_top_cors <- function(dataset, gene, type, data_vec, metacell_filter, exclude, atlas = FALSE) {
-    # BLAS-accelerated correlation
-    # Push metacell filter down to DAF query to avoid loading full matrix.
-    # Unfiltered non-atlas path: reuse the cached lfp_full plus its paired
-    # transpose (lfp_full_t) so each click skips both the ~500 MB log2 alloc
-    # AND the ~460 ms transpose. Filtered / atlas paths recompute fresh.
-    can_cache <- is.null(metacell_filter) && is.null(data_vec) &&
-                 !atlas && is.null(exclude)
-    if (is.null(metacell_filter) && is.null(data_vec) && !atlas) {
+    # BLAS-accelerated correlation.
+    # Original semantic: when data_vec is supplied, metacell_filter is
+    # ignored (data_vec is matched against the full colnames(lfp) below).
+    # So the effective filter is NULL whenever data_vec is supplied.
+    effective_filter <- if (is.null(data_vec)) metacell_filter else NULL
+    # The cached lfp_full and its paired transpose apply whenever the
+    # effective filter is NULL and we're not in atlas mode. That covers
+    # both the no-filter base case AND the data_vec case (with or without
+    # a now-ignored metacell_filter).
+    use_cached_lfp <- is.null(effective_filter) && !atlas
+    if (use_cached_lfp) {
         lfp <- get_mc_lfp(dataset)
     } else {
-        mc_egc <- get_mc_egc(dataset, atlas = atlas,
-            metacells = if (is.null(data_vec)) metacell_filter else NULL)
+        mc_egc <- get_mc_egc(dataset, atlas = atlas, metacells = effective_filter)
         lfp <- dafr::fast_log(mc_egc, eps = mcv_get("egc_epsilon"), base = 2)
     }
+    # exclude row-subsets the lfp, so the cached transpose no longer matches;
+    # we'll materialise t(lfp) below if any exclusion applies.
+    excluded <- FALSE
     if (!is.null(exclude)) {
         exclude_idx <- which(rownames(lfp) %in% exclude)
         if (length(exclude_idx) > 0) {
             lfp <- lfp[-exclude_idx, , drop = FALSE]
+            excluded <- TRUE
         }
     }
 
@@ -125,9 +131,9 @@ calc_top_cors <- function(dataset, gene, type, data_vec, metacell_filter, exclud
     } else {
         x_mat <- t(lfp[gene, , drop = FALSE])
     }
-    # y_mat is metacell-rows x gene-cols. For the unfiltered cacheable path
-    # we reuse a persistent transpose; otherwise we materialise on the spot.
-    y_mat <- if (can_cache) get_mc_lfp_t(dataset) else t(lfp)
+    # y_mat is metacell-rows x gene-cols. Reuse the cached transpose when
+    # we used the cached lfp AND haven't row-subset it via exclude.
+    y_mat <- if (use_cached_lfp && !excluded) get_mc_lfp_t(dataset) else t(lfp)
 
     cor_mat <- tryCatch(
         .Call(
