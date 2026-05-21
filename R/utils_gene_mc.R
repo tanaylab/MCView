@@ -131,9 +131,17 @@ calc_top_cors <- function(dataset, gene, type, data_vec, metacell_filter, exclud
     } else {
         x_mat <- t(lfp[gene, , drop = FALSE])
     }
-    # y_mat is metacell-rows x gene-cols. Reuse the cached transpose when
-    # we used the cached lfp AND haven't row-subset it via exclude.
-    y_mat <- if (use_cached_lfp && !excluded) get_mc_lfp_t(dataset) else t(lfp)
+    # y_mat is metacell-rows x gene-cols. With the cached lfp_full_t we
+    # can serve both the unfiltered case (whole-matrix reuse) and the
+    # exclude case (column-subset) without ever materialising t(lfp) on
+    # the row-subsetted lfp - column-subsetting the cached transpose is
+    # ~4x faster than subset-then-transpose on OBK (~250 vs ~1000 ms).
+    y_mat <- if (use_cached_lfp) {
+        full_t <- get_mc_lfp_t(dataset)
+        if (excluded) full_t[, rownames(lfp), drop = FALSE] else full_t
+    } else {
+        t(lfp)
+    }
 
     cor_mat <- tryCatch(
         .Call(
