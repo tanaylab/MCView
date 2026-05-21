@@ -167,9 +167,12 @@ get_mc_data <- function(dataset, var_name, atlas = FALSE) {
     #   mc_sum         - single get_vector + names()
     #   lateral_genes  - get_vector + flag filter
     #   noisy_genes    - get_vector + flag filter
-    #   projected_fold  - single get_matrix
+    #   projected_fold - single get_matrix
+    #   mc_mat         - lazy Matrix::t() of mmap-backed UMIs; caching it
+    #                    forces the dgCMatrix into RSS and duplicates dafr's
+    #                    per-version cache on the underlying mmap view.
     static_vars <- c(
-        "mc_mat", "mc2d",
+        "mc2d",
         "marker_genes", "gene_modules",
         "marker_genes_projected",
         "mc_qc_metadata", "gene_qc", "gg_mc_top_cor",

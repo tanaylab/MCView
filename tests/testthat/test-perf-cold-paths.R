@@ -102,14 +102,15 @@ test_that("calc_mc_mc_gene_df cold path matches eager-load value (no silent drif
     mc_names <- dafr::axis_entries(daf_obj, "metacell")
     skip_if(length(mc_names) < 2, "Need >= 2 metacells")
 
-    # Reference: warm the cache via the eager path, run calc_mc_mc_gene_df,
+    # Reference: warm dafr's per-version mc_mat cache (mc_mat is no longer
+    # held in mcv_cache — caching the mmap-backed UMIs there forced full RSS
+    # materialisation and duplicated dafr's own cache). Run calc_mc_mc_gene_df,
     # capture its output.
     invisible(get_mc_data("data", "mc_mat"))
-    expect_true(!is.null(mcv_cache_get("data", "mc_mat")))
+    expect_null(mcv_cache_get("data", "mc_mat"))
     df_ref <- calc_mc_mc_gene_df("data", mc_names[1], mc_names[2])
 
     # Clear caches so the next call goes through the cold targeted-query path.
-    mcv_cache_set("data", "mc_mat", NULL)
     mcv_cache_set("data", "mc_egc_full", NULL)
     expect_null(mcv_cache_get("data", "mc_mat"))
 
