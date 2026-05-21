@@ -69,17 +69,10 @@ calc_diff_expr <- function(mat, egc, columns, diff_thresh = 1.5, pval_thresh = 0
 #'
 #' @noRd
 calc_mc_mc_gene_df <- function(dataset, metacell1, metacell2, diff_thresh = 1.5, pval_thresh = 0.01) {
-    # Prefer the session-cached full UMIs matrix when available; otherwise
-    # query only the two requested metacell columns from DAF. Loading the
-    # full matrix here would cost ~1.7 s on OBK; the targeted query is
-    # ~30 ms warm / ~700 ms cold.
-    mc_mat <- mcv_cache_get(dataset, "mc_mat")
-    if (!is.null(mc_mat)) {
-        mat <- mc_mat[, c(metacell1, metacell2), drop = FALSE]
-    } else {
-        daf_obj <- get_daf_for_query(dataset, atlas = FALSE)
-        mat <- daf_query_mc_mat(daf_obj, metacells = c(metacell1, metacell2))
-    }
+    # Targeted DAF query for just the two requested columns. ~30 ms warm /
+    # ~700 ms cold; loading the full matrix here would cost ~1.7 s on OBK.
+    daf_obj <- get_daf_for_query(dataset, atlas = FALSE)
+    mat <- daf_query_mc_mat(daf_obj, metacells = c(metacell1, metacell2))
 
     egc <- get_metacells_egc(c(metacell1, metacell2), dataset) + mcv_get("egc_epsilon")
 

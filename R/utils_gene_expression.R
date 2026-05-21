@@ -98,11 +98,12 @@ get_mc_gene_modules_egc <- function(dataset, modules = NULL, gene_modules = NULL
         return(NULL)
     }
 
-    # Try DAF query first (if DAF has gene.module property)
-    mod_mat <- daf_query_module_umis(daf_obj, modules = modules)
+    # Try DAF query first (if DAF has gene.module property). The pushed-down
+    # `% Fraction` returns per-metacell module fractions directly - one DAF
+    # query instead of two (mod_mat + mc_sum) + a double-transpose / divide.
+    mod_mat <- daf_query_module_fraction(daf_obj, modules = modules)
     if (!is.null(mod_mat)) {
-        mc_sum <- daf_query_mc_sum(daf_obj)
-        return(t(t(mod_mat) / mc_sum))
+        return(mod_mat)
     }
 
     # Fallback: use gene_modules data frame and R aggregation
@@ -201,7 +202,9 @@ get_gene_egc <- function(gene, dataset, projected = FALSE, atlas = FALSE, correc
         return(gene_vec / mc_sum[common_metacells])
     }
 
-    # Fast path 1: check session-level mc_egc_full cache (instant extraction)
+    # Fast path: check session-level mc_egc_full cache (instant extraction).
+    # mc_mat is no longer R-cached (see utils_cache.R static_vars), so the
+    # only warm slot worth checking is the EGC.
     if (!atlas) {
         cached_egc <- mcv_cache_get(dataset, "mc_egc_full")
         if (!is.null(cached_egc) && gene %in% rownames(cached_egc)) {
@@ -209,22 +212,8 @@ get_gene_egc <- function(gene, dataset, projected = FALSE, atlas = FALSE, correc
         }
     }
 
-    # Fast path 2: hit the session-cached UMIs matrix WITHOUT triggering a load.
-    # Using mcv_cache_get directly (instead of get_mc_data) means we skip
-    # the eager full-matrix DAF query when the cache is empty. Other code
-    # paths that genuinely need the full matrix (markers heatmap, UMAP
-    # recompute) still warm it through get_mc_data / get_mc_egc.
-    cache_key <- if (atlas) "mc_mat_atlas" else "mc_mat"
-    mc_mat <- mcv_cache_get(dataset, cache_key)
-    if (!is.null(mc_mat) && gene %in% rownames(mc_mat)) {
-        mc_sum <- get_mc_sum(dataset, atlas = atlas)
-        gene_umis <- mc_mat[gene, ]
-        return(gene_umis / mc_sum[names(gene_umis)])
-    }
-
     # Cold path: targeted DAF query for just this gene. ~50-700 ms cold,
-    # ~30 ms warm; vs ~1.75 s to load the full mc_mat one-shot. The full
-    # matrix gets loaded only when something actually needs it.
+    # ~30 ms warm via dafr's own per-version cache.
     egc <- compute_egc_from_daf(daf_obj, genes = gene)
     if (nrow(egc) == 0) {
         return(NULL)
