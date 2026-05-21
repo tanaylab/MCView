@@ -114,16 +114,17 @@ calc_top_cors <- function(dataset, gene, type, data_vec, metacell_filter, exclud
         mc_egc <- get_mc_egc(dataset, atlas = atlas, metacells = effective_filter)
         lfp <- dafr::fast_log(mc_egc, eps = mcv_get("egc_epsilon"), base = 2)
     }
-    # exclude row-subsets the lfp, so the cached transpose no longer matches;
-    # we'll materialise t(lfp) below if any exclusion applies.
-    excluded <- FALSE
-    if (!is.null(exclude)) {
-        exclude_idx <- which(rownames(lfp) %in% exclude)
-        if (length(exclude_idx) > 0) {
-            lfp <- lfp[-exclude_idx, , drop = FALSE]
-            excluded <- TRUE
-        }
-    }
+    # exclude only affects WHICH genes appear in the cor output - it doesn't
+    # change x_mat (gene-row extract or data_vec by metacell name) or the
+    # underlying lfp values, so we defer the actual row-removal until we
+    # know which materialisation we need. For the cached-transpose path we
+    # can column-subset full_t directly; for the t(lfp) fallback path we
+    # row-subset lfp at that point. This avoids the ~250 ms row-subset of
+    # the 28K-row lfp on every Gene Modules click (where exclude is the
+    # module's own 16-ish genes - the subset cost is dominated by the
+    # SIZE of the result, not the size of exclude).
+    exclude_idx <- if (!is.null(exclude)) which(rownames(lfp) %in% exclude) else integer(0)
+    excluded <- length(exclude_idx) > 0
 
     if (!is.null(data_vec)) {
         req(!atlas)
@@ -134,11 +135,13 @@ calc_top_cors <- function(dataset, gene, type, data_vec, metacell_filter, exclud
     # y_mat is metacell-rows x gene-cols. With the cached lfp_full_t we
     # can serve both the unfiltered case (whole-matrix reuse) and the
     # exclude case (column-subset) without ever materialising t(lfp) on
-    # the row-subsetted lfp - column-subsetting the cached transpose is
+    # a row-subsetted lfp - column-subsetting the cached transpose is
     # ~4x faster than subset-then-transpose on OBK (~250 vs ~1000 ms).
     y_mat <- if (use_cached_lfp) {
         full_t <- get_mc_lfp_t(dataset)
-        if (excluded) full_t[, rownames(lfp), drop = FALSE] else full_t
+        if (excluded) full_t[, -exclude_idx, drop = FALSE] else full_t
+    } else if (excluded) {
+        t(lfp[-exclude_idx, , drop = FALSE])
     } else {
         t(lfp)
     }
