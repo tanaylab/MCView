@@ -331,13 +331,27 @@ mod_gene_module_controllers <- function(ns, dataset, input, output, session, gen
     })
 
     observeEvent(input$add_gene_module, {
-        req(input$selected_gene_module)
-        if (input$new_gene_module_name %in% levels(gene_modules()$module)) {
+        # Adding a module depends on the typed name, not on a current
+        # selection - requiring selected_gene_module blocked creating the
+        # FIRST module on datasets that ship none (the picker isn't rendered
+        # until module_list() is non-empty, so it has no selection yet).
+        # req() on the name also guards against creating a blank-named module.
+        req(input$new_gene_module_name)
+        current <- gene_modules()
+        existing_levels <- if (is.null(current)) character(0) else levels(current$module)
+
+        if (input$new_gene_module_name %in% existing_levels) {
             mcview_notify("error", glue("Module {input$new_gene_module_name} already exists"))
+        } else if (is.null(current)) {
+            # No modules in this dataset yet: seed an empty (zero-gene) table
+            # carrying the new module as its sole factor level.
+            gene_modules(tibble(
+                gene = character(0),
+                module = factor(character(0), levels = input$new_gene_module_name)
+            ))
         } else {
-            new_gene_modules <- gene_modules() %>%
-                mutate(module = forcats::fct_expand(module, input$new_gene_module_name))
-            gene_modules(new_gene_modules)
+            gene_modules(current %>%
+                mutate(module = forcats::fct_expand(module, input$new_gene_module_name)))
         }
 
         shinyWidgets::updatePickerInput(session, "selected_gene_module", selected = input$new_gene_module_name)
