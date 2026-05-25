@@ -382,11 +382,15 @@ calc_module_correlations <- function(dataset, genes, n_top = 30, cell_type_filte
         }
     }
 
-    # Module expression = mean fraction over the gene set per metacell.
-    # Pull only the requested gene rows (mask query) instead of the full
-    # gene x metacell matrix.
+    # Module score per metacell = log2(mean fraction over the gene set + eps).
+    # The log transform keeps the correlation in log space (module score vs
+    # gene lfp), matching single-gene correlation (lfp vs lfp); correlating a
+    # linear module fraction against log gene expression was inconsistent. For
+    # a 1-gene module this reduces to the single-gene lfp (and the n==1 branch
+    # above already delegates to calc_individual_correlations). Pull only the
+    # requested gene rows (mask query) instead of the full matrix.
     mc_egc <- get_mc_egc(dataset, genes = valid_genes, atlas = atlas)
-    module_expr <- colMeans(mc_egc, na.rm = TRUE)
+    module_expr <- log2(colMeans(mc_egc, na.rm = TRUE) + mcv_get("egc_epsilon"))
 
     # Use calc_top_cors with the module expression vector
     cors <- calc_top_cors(dataset, "module", "both", module_expr, metacell_filter, valid_genes, atlas = atlas)

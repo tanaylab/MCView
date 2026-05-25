@@ -185,7 +185,10 @@ top_correlated_selector <- function(gene_id, id, type_id, input, output, session
         } else if (input[[type_id]] == "Gene module") {
             req(!is.null(gene_modules))
             req(gene %in% gene_modules()$module)
-            data_vec <- get_gene_module_egc(gene, dataset(), gene_modules()) + mcv_get("egc_epsilon")
+            # log2 the module fraction so the top-correlated search runs in log
+            # space (module score vs gene lfp), consistent with single-gene
+            # correlation and calc_module_correlations.
+            data_vec <- log2(get_gene_module_egc(gene, dataset(), gene_modules()) + mcv_get("egc_epsilon"))
             exclude <- gene_modules()$gene[gene_modules()$module == gene]
         } else {
             metadata <- get_mc_data(dataset(), "metadata")
