@@ -364,6 +364,13 @@ add_optional_matrices <- function(daf, cache_dir, gene_names, metacell_names) {
         }
     }
 
+    # Read mc_sum once up front: both the corrected and projected fraction
+    # blocks normalise by it. Without this initialisation, the projected
+    # block's `mc_sum <- mc_sum %||% ...` references an unbound local whenever
+    # the corrected block didn't run (e.g. projected_mat present but
+    # mc_mat_corrected absent), erroring "object 'mc_sum' not found".
+    mc_sum <- read_cache_file(cache_dir, "mc_sum")
+
     # Corrected UMI matrix (mc_mat_corrected)
     mc_mat_corrected <- read_cache_file(cache_dir, "mc_mat_corrected")
     if (!is.null(mc_mat_corrected) && !is.null(dim(mc_mat_corrected))) {
@@ -373,7 +380,6 @@ add_optional_matrices <- function(daf, cache_dir, gene_names, metacell_names) {
         if (!any(is.na(row_idx)) && !any(is.na(col_idx))) {
             mc_mat_corrected <- mc_mat_corrected[row_idx, col_idx, drop = FALSE]
             # Store as corrected_fraction (normalized by total UMIs)
-            mc_sum <- read_cache_file(cache_dir, "mc_sum")
             if (!is.null(mc_sum)) {
                 corrected_frac <- t(t(mc_mat_corrected) / mc_sum[colnames(mc_mat_corrected)])
                 # Check for NAs - skip if present
@@ -397,7 +403,6 @@ add_optional_matrices <- function(daf, cache_dir, gene_names, metacell_names) {
         if (!any(is.na(row_idx)) && !any(is.na(col_idx))) {
             projected_mat <- projected_mat[row_idx, col_idx, drop = FALSE]
             # Store as projected_fraction (normalized by total UMIs)
-            mc_sum <- mc_sum %||% read_cache_file(cache_dir, "mc_sum")
             if (!is.null(mc_sum)) {
                 projected_frac <- t(t(projected_mat) / mc_sum[colnames(projected_mat)])
                 # Check for NAs
