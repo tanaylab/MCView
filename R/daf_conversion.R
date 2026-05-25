@@ -390,6 +390,13 @@ convert_daf_metadata <- function(daf_obj) {
     # Filter out core fields and QC fields (handled separately)
     metadata_fields <- setdiff(props, core_fields)
 
+    # Drop MCView-derived cache vectors (mcview_cache_*, read through their
+    # own accessors, not as metadata) and DAF-internal (double-underscore)
+    # properties such as __zeros_downsample_UMIs. Surfacing them as
+    # user-selectable metadata clutters the field selectors and can break
+    # metadata plots (e.g. the character-valued mcview_cache_top1_gene).
+    metadata_fields <- metadata_fields[!grepl("^(mcview_cache_|__)", metadata_fields)]
+
     if (length(metadata_fields) == 0) {
         return(NULL)
     }
