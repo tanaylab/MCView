@@ -345,7 +345,7 @@ cell_type_metadata_confusion <- function(var,
         group_by(!!sym(var)) %>%
         mutate(n_tot_md = sum(n), p_md = n / n_tot_md) %>%
         ungroup() %>%
-        tidyr::replace_na(replace = list(p_cell_type = 0, p_var = 0)) %>%
+        tidyr::replace_na(replace = list(p_cell_type = 0, p_md = 0)) %>%
         mutate(
             `# of metacells` = n,
             `total # of cell type metacells` = n_tot,
