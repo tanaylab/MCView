@@ -440,14 +440,21 @@ mcview_core_contract <- function() {
         # Special validation rules
         custom_rules = list(
             coordinates = list(
-                description = "Must have either (x,y) or (u,v) coordinates",
+                description = "Must have a 2D coordinate pair: (x,y), (u,v), or (umap_x,umap_y)",
                 validate = function(daf_obj) {
-                    has_xy <- dafr::has_vector(daf_obj, "metacell", "x") &&
-                        dafr::has_vector(daf_obj, "metacell", "y")
-                    has_uv <- dafr::has_vector(daf_obj, "metacell", "u") &&
+                    # Mirror convert_daf_mc2d()'s resolution, which takes X from
+                    # {x, umap_x, u} and Y from {y, umap_y, v}. Requiring only
+                    # (x,y) or (u,v) here rejected Metacells.jl DAFs that store
+                    # coordinates as umap_x/umap_y, failing validate_daf_for_mcview
+                    # at load even though the manifold renders fine.
+                    has_x <- dafr::has_vector(daf_obj, "metacell", "x") ||
+                        dafr::has_vector(daf_obj, "metacell", "umap_x") ||
+                        dafr::has_vector(daf_obj, "metacell", "u")
+                    has_y <- dafr::has_vector(daf_obj, "metacell", "y") ||
+                        dafr::has_vector(daf_obj, "metacell", "umap_y") ||
                         dafr::has_vector(daf_obj, "metacell", "v")
-                    if (!has_xy && !has_uv) {
-                        return("Missing 2D coordinates: need either (x,y) or (u,v)")
+                    if (!has_x || !has_y) {
+                        return("Missing 2D coordinates: need (x,y), (u,v), or (umap_x,umap_y)")
                     }
                     return(NULL)
                 }
