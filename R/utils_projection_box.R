@@ -191,7 +191,7 @@ projection_selectors <- function(ns, dataset, output, input, gene_modules, state
             sliderInput(ns("min_edge_size"), label = "Min edge length", min = 0, max = 0.3, value = min_edge_length(dataset()), step = 0.001)
         } else {
             graph <- get_mc_data(dataset(), "metacell_graphs")[[graph]]
-            sliderInput(ns("min_edge_size"), label = "Min weight", min = min(graph$weight, na.rm = TRUE), max = max(graph$weight, na.rm = TRUE), value = median(graph$weight), step = (max(graph$weight, na.rm = TRUE) - min(graph$weight, na.rm = TRUE)) / 50)
+            sliderInput(ns("min_edge_size"), label = "Min weight", min = min(graph$weight, na.rm = TRUE), max = max(graph$weight, na.rm = TRUE), value = median(graph$weight, na.rm = TRUE), step = (max(graph$weight, na.rm = TRUE) - min(graph$weight, na.rm = TRUE)) / 50)
         }
     })
 }
