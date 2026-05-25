@@ -111,6 +111,18 @@ download_data_modal_reactives <- function(input, output, session, state) {
                     creation_text,
                     easyClose = TRUE
                 )
+            } else {
+                # File exists but its size can't be stat'd (e.g. unreadable /
+                # special file). Without this branch `dialog` stays unbound and
+                # showModal(dialog) below errors when the user opens the modal.
+                dialog <- modalDialog(
+                    title = "Download data",
+                    "The metacells anndata file is present but could not be read.",
+                    br(),
+                    br(),
+                    creation_text,
+                    easyClose = TRUE
+                )
             }
         } else {
             dialog <- modalDialog(
