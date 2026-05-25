@@ -11,7 +11,11 @@ cell_type_gene_boxplot <- function(gene,
                                    facet_var = NULL,
                                    coord_flip = FALSE,
                                    log_scale = FALSE) {
-    egc_gene <- egc_gene %||% get_gene_egc(gene, dataset) + mcv_get("egc_epsilon")
+    # Parenthesise the fallback: %||% binds tighter than +, so without parens
+    # this read as `(egc_gene %||% get_gene_egc(...)) + eps` and added eps to a
+    # supplied egc_gene too - but gene-module callers already add egc_epsilon,
+    # so it got added twice. Only the NULL (plain-gene) branch needs the eps.
+    egc_gene <- egc_gene %||% (get_gene_egc(gene, dataset) + mcv_get("egc_epsilon"))
 
     # Prepare base data
     df <- metacell_types %>%
