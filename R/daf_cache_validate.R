@@ -82,7 +82,12 @@ validate_mcview_cache <- function(daf_path, cache_dir = NULL) {
     expected_items <- list(
         correlations = dafr::has_axis(cache_daf, "mcview_cache_gg_mc_top_cor"),
         metacell_top_genes = dafr::has_vector(cache_daf, "metacell", "mcview_cache_top1_gene"),
-        type_markers = dafr::has_axis(cache_daf, "mcview_type_markers")
+        # Accept either the current sparse-matrix format (written by default by
+        # cache_type_markers_daf) or the legacy axis fallback. Checking only the
+        # legacy axis made a normally-populated cache always report markers
+        # missing. Mirrors the populate early-exit guard.
+        type_markers = dafr::has_matrix(cache_daf, "type", "gene", "mcview_marker_rank") ||
+            dafr::has_axis(cache_daf, "mcview_type_markers")
     )
 
     result$missing <- names(expected_items)[!unlist(expected_items)]
