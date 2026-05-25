@@ -296,37 +296,52 @@ set_cache_metadata <- function(cache_daf, base_daf) {
     }
 }
 
+#' Fingerprint a DAF storage directory
+#'
+#' Digests each file (excluding the derived/cache subtree) by
+#' (relative path, size, mtime). mtime is included so a same-size content
+#' rewrite is detected - e.g. re-annotating metacell types without changing
+#' the metacell count rewrites a fixed-width vector `.data` at identical byte
+#' size, which a size-only fingerprint would miss (serving a stale cache).
+#' `rsync -a` and docker COPY preserve mtime, so ordinary redeploys do not
+#' falsely invalidate; a non-preserving copy triggers one harmless rebuild.
+#'
+#' @param base_path DAF storage directory
+#' @return A digest string ("" if the path is absent/empty)
+#' @noRd
+daf_dir_fingerprint <- function(base_path) {
+    if (is.null(base_path) || !dir.exists(base_path)) {
+        return("")
+    }
+    files <- list.files(base_path, recursive = TRUE, full.names = TRUE, all.files = FALSE)
+    # Exclude derived/cache subtrees if they live inside the DAF dir.
+    # The current default is .mcview_derived; .mcview_cache is the legacy
+    # name. Without this exclusion every precompute write flips the hash
+    # and invalidates the cache that was just written.
+    files <- files[!grepl("[/\\\\]\\.mcview_(derived|cache)(/|\\\\|$)", files)]
+    if (length(files) == 0) {
+        return("")
+    }
+    # Sort for deterministic order; pair each file with size + mtime, keyed by
+    # its path relative to base_path (distinguishes same-basename files).
+    files <- sort(files)
+    rel <- fs::path_rel(files, base_path)
+    sizes <- file.size(files)
+    mtimes <- as.numeric(file.mtime(files))
+    paste(rel, sizes, mtimes, sep = ":", collapse = "|")
+}
+
 #' Compute hash of base DAF for cache invalidation
 #'
 #' Combines axis-length and version fingerprints with a per-file
-#' (path, size) digest of the DAF's storage directory. Size is used
-#' rather than mtime so the hash is stable across rsync/container
-#' redeploys but still changes when underlying vectors are rewritten
-#' (zarr files change size when contents change).
+#' (relative path, size, mtime) digest of the DAF's storage directory.
 #'
 #' @param base_daf Base DAF object
 #'
 #' @return Hash string
 compute_base_hash <- function(base_daf) {
     base_path <- tryCatch(daf_storage_path(base_daf), error = function(e) NULL)
-    file_fingerprint <- if (!is.null(base_path) && dir.exists(base_path)) {
-        files <- list.files(base_path, recursive = TRUE, full.names = TRUE, all.files = FALSE)
-        # Exclude derived/cache subtrees if they live inside the DAF dir.
-        # The current default is .mcview_derived; .mcview_cache is the legacy
-        # name. Without this exclusion every precompute write flips the hash
-        # and invalidates the cache that was just written.
-        files <- files[!grepl("[/\\\\]\\.mcview_(derived|cache)(/|\\\\|$)", files)]
-        if (length(files) == 0) {
-            ""
-        } else {
-            # Sort for deterministic order; pair each file with its size.
-            files <- sort(files)
-            sizes <- file.size(files)
-            paste(basename(files), sizes, sep = ":", collapse = "|")
-        }
-    } else {
-        ""
-    }
+    file_fingerprint <- daf_dir_fingerprint(base_path)
 
     components <- c(
         as.character(tryCatch(dafr::axis_length(base_daf, "metacell"), error = function(e) 0)),
