@@ -99,14 +99,18 @@ get_cached_cor <- function(gg_mc_top_cor, gene, type, exclude = NULL) {
 
 calc_top_cors <- function(dataset, gene, type, data_vec, metacell_filter, exclude, atlas = FALSE) {
     # BLAS-accelerated correlation.
-    # Original semantic: when data_vec is supplied, metacell_filter is
-    # ignored (data_vec is matched against the full colnames(lfp) below).
-    # So the effective filter is NULL whenever data_vec is supplied.
-    effective_filter <- if (is.null(data_vec)) metacell_filter else NULL
-    # The cached lfp_full and its paired transpose apply whenever the
-    # effective filter is NULL and we're not in atlas mode. That covers
-    # both the no-filter base case AND the data_vec case (with or without
-    # a now-ignored metacell_filter).
+    # metacell_filter restricts the metacell set the correlation runs over,
+    # on BOTH the gene path and the data_vec (module / metadata) path. When a
+    # filter is set, x_mat is matched against the filtered colnames(lfp)
+    # below, so data_vec is automatically subset to the same metacells - the
+    # filtered lfp and the filtered data_vec stay aligned by name.
+    # (Historically the data_vec path silently dropped metacell_filter, which
+    # made the Gene Correlation tab's cell-type filter a no-op in module mode
+    # while single-gene mode honoured it - an inconsistency, now removed.)
+    effective_filter <- metacell_filter
+    # The cached lfp_full and its paired transpose apply whenever no metacell
+    # subset applies and we're not in atlas mode - i.e. the common no-filter
+    # case (gene path or data_vec path). A filter forces a fresh filtered lfp.
     use_cached_lfp <- is.null(effective_filter) && !atlas
     if (use_cached_lfp) {
         lfp <- get_mc_lfp(dataset)

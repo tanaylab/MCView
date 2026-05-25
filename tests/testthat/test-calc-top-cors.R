@@ -48,7 +48,11 @@ test_that("calc_top_cors: data_vec without filter matches gene-self path", {
     expect_equal(self$cor, via_vec$cor, tolerance = 1e-12)
 })
 
-test_that("calc_top_cors: data_vec overrides metacell_filter", {
+test_that("calc_top_cors: data_vec path honours metacell_filter", {
+    # Regression: the data_vec (module / metadata) path used to silently
+    # drop metacell_filter, making the Gene Correlation tab's cell-type
+    # filter a no-op in module mode. It must now restrict the correlation to
+    # the filtered metacells, matching a manual computation over that subset.
     ctx <- setup_calc_top_cors_dataset()
     on.exit(ctx$restore(), add = TRUE)
 
@@ -61,11 +65,15 @@ test_that("calc_top_cors: data_vec overrides metacell_filter", {
     via_vec_with_filter <- calc_top_cors("test_ds", "module", "pos",
                                          lfp[g1, ], mcf, NULL, FALSE)
 
-    # data_vec semantically overrides metacell_filter; both calls run on
-    # the full metacell axis. Outputs must match.
-    expect_equal(via_vec_only$gene2, via_vec_with_filter$gene2)
-    expect_equal(via_vec_only$cor, via_vec_with_filter$cor,
-                 tolerance = 1e-12)
+    # Filtering to a metacell subset changes the correlation set/values.
+    expect_false(isTRUE(all.equal(via_vec_only$cor, via_vec_with_filter$cor)))
+
+    # The filtered result matches a manual cor computed only over `mcf`.
+    lfp_sub <- lfp[, mcf]
+    g1_vec <- lfp_sub[g1, ]
+    ref_cors <- apply(lfp_sub, 1, function(r) cor(r, g1_vec))
+    ref_top_pos <- names(sort(ref_cors, decreasing = TRUE)[1:30])
+    expect_equal(via_vec_with_filter$gene2[1:5], ref_top_pos[1:5])
 })
 
 test_that("calc_top_cors: exclude drops excluded genes from the result", {
