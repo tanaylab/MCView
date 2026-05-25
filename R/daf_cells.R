@@ -372,6 +372,22 @@ get_cell_metacell_map <- function(dataset) {
 #' whose metacell's type matches the requested cell types. The filter uses
 #' a regex match on the chained lookup `metacell : type`.
 #'
+#' Escape regex metacharacters so a string matches literally
+#'
+#' Builds a pattern that matches the input verbatim when fed to a regex
+#' operator (DAF's `~`). The previous inline `gsub` put `[`, `]` and `\`
+#' inside a bracket class (`[...\\[\\]\\\\]`), which is a no-op in POSIX ERE -
+#' it escaped nothing, so a type named e.g. `B.cell` matched `B<any>cell`.
+#' This version escapes `[` / `]` via alternation (outside any class) so the
+#' substitution actually fires.
+#'
+#' @param x Character vector
+#' @return Character vector with regex metacharacters backslash-escaped
+#' @noRd
+escape_regex <- function(x) {
+    gsub("([.|()\\^{}+$*?]|\\[|\\])", "\\\\\\1", x)
+}
+
 #' @param cells_daf Chained cells DAF (cells + metacells)
 #' @param cell_types Character vector of cell types to include
 #' @param metacell_types Optional metacell_types tibble (unused, for API compat)
@@ -379,7 +395,7 @@ get_cell_metacell_map <- function(dataset) {
 #' @noRd
 make_cell_type_view <- function(cells_daf, cell_types, metacell_types = NULL) {
     # Escape regex special characters in type names and build OR pattern
-    escaped_types <- gsub("([.+*?^${}()|\\[\\]\\\\])", "\\\\\\1", cell_types)
+    escaped_types <- escape_regex(cell_types)
     types_pattern <- paste(escaped_types, collapse = "|")
 
     # Use metacell chain lookup if available, otherwise direct cell type vector
