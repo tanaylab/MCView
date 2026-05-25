@@ -22,8 +22,12 @@ calc_marker_genes <- function(mc_egc,
     interesting_genes_mask <- (max_log_fractions_of_genes
     >= minimal_max_log_fraction)
 
-    if (length(interesting_genes_mask) == 0) {
-        cli_abort("No genes with at least one value above the {.field minimal_max_log_fraction} threshold ({.val {.value minimal_max_log_fraction}})")
+    # `interesting_genes_mask` is a per-gene logical vector, so length() is the
+    # gene count and is never 0 when genes exist - the abort never fired. Test
+    # whether ANY gene clears the threshold; otherwise the subset below is
+    # 0-row and a silent empty marker set propagates.
+    if (!any(interesting_genes_mask, na.rm = TRUE)) {
+        cli_abort("No genes with at least one value above the {.field minimal_max_log_fraction} threshold ({.val {minimal_max_log_fraction}})")
     }
 
     mc_fp <- sweep(mc_egc, 1, matrixStats::rowMedians(mc_egc, na.rm = TRUE))

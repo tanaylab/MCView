@@ -55,7 +55,10 @@ parse_cell_type_colors <- function(cell_type_colors) {
 
 parse_metacell_types <- function(metacell_types, metacells = NULL) {
     if (is.character(metacell_types)) {
+        file <- metacell_types
         metacell_types <- fread(metacell_types) %>% as_tibble()
+    } else {
+        file <- "metacell_types"
     }
 
     if (!has_name(metacell_types, "metacell")) {
