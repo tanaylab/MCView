@@ -113,7 +113,7 @@ mod_atlas_server <- function(id, dataset, metacell_types, cell_type_colors, gene
 
             projection_selectors(ns, dataset, output, input, atlas_gene_modules, state, session, weight = 1, atlas = TRUE)
             output$top_correlated_select_color_proj <- renderUI({
-                req(input$gene1)
+                req(input$color_proj_gene)
                 req(has_gg_mc_top_cor(dataset()))
                 markers_only_val <- isTRUE(input$markers_only_atlas_cor %||% TRUE)
                 tagList(
@@ -126,6 +126,18 @@ mod_atlas_server <- function(id, dataset, metacell_types, cell_type_colors, gene
                         size = 10,
                         selectize = FALSE
                     )
+                )
+            })
+
+            # Picking a top-correlated gene recolours the projection by it
+            # (mirrors the non-atlas top_correlated_selector wiring). Without
+            # this, the selector's value was produced but never consumed.
+            observeEvent(input$selected_top_gene, {
+                req(input$selected_top_gene)
+                shinyWidgets::updateVirtualSelect(
+                    session = session,
+                    inputId = "color_proj_gene",
+                    selected = input$selected_top_gene
                 )
             })
 
