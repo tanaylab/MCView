@@ -319,10 +319,14 @@ compute_egc_from_daf <- function(daf_obj, genes = NULL, metacells = NULL) {
             mmask <- if (use_mmask) build_name_mask(mc_names) else ""
             qstr <- as.character(glue::glue("@ gene{gmask} @ metacell{mmask} :: {fraction_name}"))
             mat <- dafr::get_query(daf_obj, qstr)
-            if (!is.null(gene_names) && !use_gmask) {
+            # Reorder to requested order: a DAF name-mask keeps native axis
+            # order, so reindex by name in all cases (masked or not) to match
+            # the mmap fallback below. Keeps column order predictable for
+            # positional consumers (get_samples_egc's matrix product).
+            if (!is.null(gene_names)) {
                 mat <- mat[gene_names, , drop = FALSE]
             }
-            if (!is.null(mc_names) && !use_mmask) {
+            if (!is.null(mc_names)) {
                 mat <- mat[, mc_names, drop = FALSE]
             }
             return(mat)

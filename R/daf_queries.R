@@ -119,12 +119,18 @@ daf_query_mc_mat <- function(daf_obj, genes = NULL, metacells = NULL) {
         query <- as.character(glue::glue("@ gene{gmask} @ metacell{mmask} :: UMIs"))
         mat <- tryCatch(dafr::get_query(daf_obj, query), error = function(e) NULL)
         if (!is.null(mat)) {
-            # Apply any leftover (un-masked) axis filter R-side. Both can be
-            # NULL if the axis was already masked.
-            if (!is.null(valid_genes) && !use_gene_mask) {
+            # Reorder both axes to the REQUESTED order. A DAF name-mask
+            # preserves the native axis order (it does not reorder to the
+            # mask's listing), and the un-masked axis still needs its R-side
+            # filter applied. Reordering by name in all cases keeps this fast
+            # path consistent with the full-matrix fallback below, which
+            # always returns requested order - positional consumers (e.g. the
+            # mc_egc %*% t(samp_mc_frac) product in get_samples_egc) depend on
+            # it. The masked subset is small, so the reindex is cheap.
+            if (!is.null(valid_genes)) {
                 mat <- mat[valid_genes, , drop = FALSE]
             }
-            if (!is.null(valid_mcs) && !use_mc_mask) {
+            if (!is.null(valid_mcs)) {
                 mat <- mat[, valid_mcs, drop = FALSE]
             }
             return(if (methods::is(mat, "Matrix")) mat
