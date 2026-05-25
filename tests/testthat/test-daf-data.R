@@ -357,12 +357,14 @@ test_that("compute_base_hash incorporates file fingerprints from DAF storage pat
     tmp_dir <- file.path(tempdir(), paste0("daf_hash_", as.integer(Sys.time())))
     on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
     dir.create(tmp_dir, showWarnings = FALSE, recursive = TRUE)
-    file.copy(get_test_daf_path(), tmp_dir, recursive = TRUE)
+    # copy.date = TRUE preserves mtime (like rsync -a / docker COPY). The
+    # fingerprint is (relative path, size, mtime), so an mtime-preserving copy
+    # with identical content must hash the same; a non-preserving copy would
+    # legitimately differ (one harmless rebuild).
+    file.copy(get_test_daf_path(), tmp_dir, recursive = TRUE, copy.date = TRUE)
 
     tmp_daf <- dafr::open_daf(file.path(tmp_dir, basename(get_test_daf_path())))
     baseline_hash <- compute_base_hash(tmp_daf)
-    # A fresh copy may legitimately differ (different absolute paths but we
-    # only fingerprint basenames + sizes - so it should match).
     expect_equal(real_hash, baseline_hash)
 
     # Mutate a file size in the copy; expect a different hash.
