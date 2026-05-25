@@ -462,9 +462,6 @@ precompute_daf_egc <- function(complete_daf, derived_daf, force = FALSE) {
         !dafr::has_matrix(complete_daf, "metacell", "gene", "UMIs")) {
         return(invisible(FALSE))
     }
-    if (!force && dafr::has_matrix(complete_daf, "gene", "metacell", "linear_fraction")) {
-        return(invisible(FALSE))
-    }
 
     cli::cli_alert_info("Pre-computing linear_fraction (gene x metacell) into the derived layer...")
     mat <- tryCatch(
@@ -568,8 +565,11 @@ precompute_daf_default_markers <- function(complete_daf, derived_daf,
         # branch; the cached dist must align with the live computation.
         feat <- log2(mc_fp)
 
-        # tgs_cor / tgs_dist over metacells. Drop metacells that would feed
-        # all-zero cols (mirrors order_mc_by_most_var_genes' zero-mc filter).
+        # tgs_cor / tgs_dist over metacells. No zero-mc filter is applied here:
+        # pairwise correlations between retained metacells are independent of
+        # any extra all-zero columns, and the live consumer
+        # (order_mc_by_most_var_genes) subsets the cached dist to its non-zero
+        # metacells, so the cached sub-block matches the no-cache computation.
         cor_mat <- tryCatch(
             tgstat::tgs_cor(feat, pairwise.complete.obs = TRUE),
             error = function(e) NULL
