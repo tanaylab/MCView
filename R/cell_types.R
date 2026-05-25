@@ -30,7 +30,22 @@ parse_cell_type_colors <- function(cell_type_colors) {
 
     cell_type_colors <- cell_type_colors %>%
         filter(!is.na(cell_type), !is.na(color)) %>%
-        filter(cell_type != "(Missing)") %>%
+        filter(cell_type != "(Missing)")
+
+    # Reject a cell type mapped to more than one DISTINCT color before the
+    # collapse below. The old check ran after distinct(cell_type), which had
+    # already dropped the conflicting rows, so it never fired and a conflict
+    # was silently resolved to the first color.
+    conflicts <- cell_type_colors %>%
+        distinct(cell_type, color) %>%
+        count(cell_type) %>%
+        filter(n > 1) %>%
+        pull(cell_type)
+    if (length(conflicts) > 0) {
+        cli_abort("{.field {file}}: cell type{?s} {.val {conflicts}} mapped to more than one color")
+    }
+
+    cell_type_colors <- cell_type_colors %>%
         distinct(cell_type, .keep_all = TRUE)
 
     if (!has_name(cell_type_colors, "order")) {
@@ -40,14 +55,6 @@ parse_cell_type_colors <- function(cell_type_colors) {
     cell_type_colors <- cell_type_colors %>%
         distinct(cell_type, color, order) %>%
         select(cell_type, color, order)
-
-    n_colors <- cell_type_colors %>%
-        count(cell_type) %>%
-        pull(n)
-
-    if (any(n_colors > 1)) {
-        cli_abort("Some cell types appear more than once with different colors.")
-    }
 
     return(cell_type_colors)
 }
