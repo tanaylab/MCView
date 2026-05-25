@@ -298,7 +298,60 @@ get_cell_types_mat <- function(cell_types, metacell_types, dataset, projected = 
         return(NULL)
     }
 
-    daf_query_cell_type_umis(daf_obj, cell_types = cell_types)
+    # Group by the CURRENT metacell_types mapping (reflecting session
+    # re-annotations), not the DAF's stored `type` vector. Aggregating via
+    # `daf_query_cell_type_umis` (which groups by stored type and ignores the
+    # projected/corrected flags) made DE/obs-exp ignore annotation edits and
+    # made the obs-vs-projected comparison degenerate (both returned raw UMIs).
+    if (is.null(metacell_types)) {
+        return(NULL)
+    }
+    mc_types <- metacell_types %>%
+        filter(cell_type %in% cell_types) %>%
+        select(metacell, cell_type) %>%
+        deframe()
+    mc_types[] <- as.character(mc_types)
+    names(mc_types) <- as.character(names(mc_types))
+    if (length(mc_types) == 0) {
+        return(NULL)
+    }
+
+    # Select the matrix variant. projected_mat / mc_mat_corrected are
+    # gene x metacell UMI-like matrices reconstructed from the stored
+    # fraction matrices; the raw path pulls only the requested metacells.
+    if (projected) {
+        mc_mat <- get_mc_data(dataset, "projected_mat", atlas = atlas)
+    } else if (corrected) {
+        mc_mat <- get_mc_data(dataset, "mc_mat_corrected", atlas = atlas)
+        if (is.null(mc_mat)) {
+            mc_mat <- daf_query_mc_mat(daf_obj, metacells = names(mc_types))
+        }
+    } else {
+        mc_mat <- daf_query_mc_mat(daf_obj, metacells = names(mc_types))
+    }
+    if (is.null(mc_mat)) {
+        return(NULL)
+    }
+
+    # Restrict to the requested metacells present in the matrix, preserving
+    # their cell-type labels, then sum UMIs per gene within each cell type via
+    # a sparse indicator multiply (keeps mc_mat sparse; result is small).
+    keep <- intersect(names(mc_types), colnames(mc_mat))
+    if (length(keep) == 0) {
+        return(NULL)
+    }
+    mc_mat <- mc_mat[, keep, drop = FALSE]
+    groups <- mc_types[keep]
+    type_levels <- unique(groups)
+    indicator <- Matrix::sparseMatrix(
+        i = seq_along(groups),
+        j = match(groups, type_levels),
+        x = 1,
+        dims = c(length(groups), length(type_levels)),
+        dimnames = list(keep, type_levels)
+    )
+    ct_mat <- as.matrix(mc_mat %*% indicator)
+    return(ct_mat)
 }
 
 get_cell_types_egc <- function(cell_types, metacell_types, dataset, mat = NULL, projected = FALSE, atlas = FALSE, corrected = FALSE) {
