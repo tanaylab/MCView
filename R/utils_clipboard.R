@@ -66,6 +66,9 @@ clipboard_reactives <- function(dataset, input, output, session, metacell_types,
     })
 
     observeEvent(input$delete_clipboard_row, {
+        # Guard against no selection: `x[-NULL]` errors and `x[-integer(0)]`
+        # returns an EMPTY vector, which would silently wipe the clipboard.
+        req(input$clipboard_table_rows_selected)
         state$selection$clipboard <- state$selection$clipboard[-input$clipboard_table_rows_selected]
     })
 
