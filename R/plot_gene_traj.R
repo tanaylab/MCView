@@ -16,11 +16,14 @@ calc_mc_egc_t <- function(dataset, metacell, genes = NULL) {
         return(NULL)
     }
 
-    # find maximal time with non-zero colSums
-    t_max <- which.max(c(1:ncol(flow_prob))[non_zero])
-
-    # find minimal time with non-zero colSums
-    t_min <- which.min(c(1:ncol(flow_prob))[non_zero])
+    # Trim to the span of time bins carrying flow. `which(non_zero)` gives
+    # the original column indices; take their min/max so we keep the real
+    # window. (Using which.max/which.min on `c(1:ncol)[non_zero]` was wrong:
+    # it returns the position WITHIN the non-zero subset, collapsing to "the
+    # first sum(non_zero) columns" unless the window already starts at 1.)
+    nz_cols <- which(non_zero)
+    t_min <- min(nz_cols)
+    t_max <- max(nz_cols)
 
     flow_prob_f <- flow_prob[, t_min:t_max]
     if (is.null(ncol(flow_prob_f))) {
