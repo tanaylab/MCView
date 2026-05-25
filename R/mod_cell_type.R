@@ -652,11 +652,20 @@ mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, 
                             log_scale = isTRUE(input$log_scale)
                         )
                     } else {
+                        # Use the active cell-type filter for the current
+                        # x_axis_type: boxplot_cell_types is only rendered in
+                        # "cell_types" mode; in "metadata" mode the control is
+                        # cell_type_filter (matches every other branch here).
+                        confusion_cell_types <- if (input$x_axis_type == "cell_types") {
+                            input$boxplot_cell_types
+                        } else {
+                            input$cell_type_filter
+                        }
                         p <- cell_type_metadata_confusion(
                             input$boxplot_axis_var,
                             dataset(),
                             color_by = input$confusion_color_by,
-                            cell_types = input$boxplot_cell_types,
+                            cell_types = confusion_cell_types,
                             metacell_types = metacell_types()
                         )
                     }
