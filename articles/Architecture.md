@@ -36,6 +36,7 @@ relative path.
 Creation of a project can be done by running:
 
 ``` r
+
 MCView::create_project("my_project")
 ```
 
@@ -135,12 +136,14 @@ folder, in a separate folder for each dataset. In the above example:
 You can list the datasets in the project using:
 
 ``` r
+
 MCView::dataset_ls("my_project")
 ```
 
 And removal of a dataset can be done by:
 
 ``` r
+
 MCView::dataset_rm("my_project", "dataset")
 ```
 
@@ -149,6 +152,7 @@ MCView::dataset_rm("my_project", "dataset")
 Running the app can be done by running:
 
 ``` r
+
 MCView::run_app(project = "/path/to/my/project")
 ```
 
@@ -177,6 +181,7 @@ To deploy the app, you can simply:
 2.  For shinyapps.io, run:
 
 ``` r
+
 rsconnect::deployApp(appDir = "my_project")
 ```
 
@@ -184,6 +189,7 @@ For backward compatibility, you can still create a separate bundle
 using:
 
 ``` r
+
 MCView::create_bundle(project = "my_project", path = getwd(), name = "my_project_bundle")
 ```
 
@@ -196,6 +202,7 @@ regardless of package updates, you can create a self-contained bundle
 that includes the MCView code:
 
 ``` r
+
 MCView::create_bundle(
     project = "my_project",
     path = getwd(),
@@ -209,6 +216,7 @@ server with limited resources, you can use the `light_version=TRUE`
 argument:
 
 ``` r
+
 MCView::create_bundle(
     project = "my_project",
     path = getwd(),

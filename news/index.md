@@ -1,5 +1,19 @@
 # Changelog
 
+## MCView 0.2.55
+
+- Made `qs` an optional (`Suggests`) dependency instead of a hard
+  requirement. New projects are serialized with `qs2`; `qs` is only
+  needed to read legacy `.qs` caches from pre-0.2.54 projects, and a
+  clear message now points to re-importing (or installing `qs`) when it
+  is missing. This removes the archived-from-CRAN `qs` (and its
+  `stringfish` build conflict) from the default install and the Docker
+  image.
+- Docker: fixed `start_app.R` file permissions so the container runs
+  under an arbitrary non-root UID (Kubernetes / OpenShift). The launcher
+  is now owned by `root:0` with group/world read+execute, avoiding
+  `cannot open file './start_app.R': Permission denied`.
+
 ## MCView 0.2.54
 
 - Switched serialization from `qs` to `qs2` (`qs` was removed from

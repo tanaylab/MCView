@@ -5,6 +5,7 @@
 First, let’s load the MCView package:
 
 ``` r
+
 library(MCView)
 ```
 
@@ -12,6 +13,7 @@ For this tutorial, we’ll use a PBMC dataset that was pre-processed using
 the `metacells` python package.
 
 ``` r
+
 dir.create("raw")
 download.file("http://www.wisdom.weizmann.ac.il/~atanay/metac_data/PBMC_processed.tar.gz", "raw/PBMC_processed.tar.gz")
 untar("raw/PBMC_processed.tar.gz", exdir = "raw")
@@ -26,6 +28,7 @@ The most common way to start with MCView is to directly import your
 dataset:
 
 ``` r
+
 import_dataset(
     project = "PBMC", # This will create the project if it doesn't exist
     dataset = "PBMC",
@@ -58,6 +61,7 @@ package with `import_dataset_metacell1`.
 Once import is complete, you can run the app:
 
 ``` r
+
 run_app(project = "PBMC", launch.browser = TRUE)
 ```
 
@@ -65,12 +69,14 @@ This opens a browser window with the app. You can customize the port,
 host, and browser launch:
 
 ``` r
+
 run_app(project = "PBMC", port = 5555, host = "127.0.0.1", launch.browser = FALSE)
 ```
 
 If you’re already in the project directory, simply run:
 
 ``` r
+
 run_app(launch.browser = TRUE)
 ```
 
@@ -84,6 +90,7 @@ the annotations:
 2.  Update the annotations with:
 
 ``` r
+
 update_metacell_types("PBMC", "PBMC", "/path/to/metacell_types_file")
 ```
 
@@ -92,6 +99,7 @@ Where “/path/to/metacell_types_file” is the path to your exported file.
 To only update cell type colors:
 
 ``` r
+
 update_cell_type_colors("PBMC", "PBMC", "/path/to/cell_type_colors_file")
 ```
 
@@ -100,6 +108,7 @@ update_cell_type_colors("PBMC", "PBMC", "/path/to/cell_type_colors_file")
 You can add metadata for each metacell during import:
 
 ``` r
+
 import_dataset(
     project = "PBMC",
     dataset = "PBMC",
@@ -117,6 +126,7 @@ Use `metadata_colors` to customize colors for each field.
 To update metadata after import:
 
 ``` r
+
 update_metadata(
     project = "PBMC",
     dataset = "PBMC",
@@ -145,6 +155,7 @@ Deploy to
 [shinyapps.io](https://docs.rstudio.com/shinyapps.io/getting-started.html#deploying-applications):
 
 ``` r
+
 rsconnect::deployApp(appDir = "PBMC")
 ```
 
@@ -157,6 +168,7 @@ For additional customization (such as including MCView code in your
 bundle):
 
 ``` r
+
 create_bundle(
     project = "PBMC",
     path = getwd(),
@@ -178,6 +190,7 @@ If you want to customize your project configuration before importing
 data, you can manually create a project first:
 
 ``` r
+
 create_project("PBMC", title = "PBMC")
 ```
 

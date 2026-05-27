@@ -12,12 +12,14 @@ group server.
 Install the latest github release:
 
 ``` r
+
 remotes::install_github("tanaylab/MCView", ref = remotes::github_release())
 ```
 
 Or install the development version:
 
 ``` r
+
 remotes::install_github("tanaylab/MCView")
 ```
 
@@ -31,6 +33,7 @@ Tl;dr:
 #### Import a dataset:
 
 ``` r
+
 MCView::import_dataset(project = "PBMC",                
                anndata_file = "raw/metacells.h5ad")
 ```
@@ -46,6 +49,7 @@ MCView::import_dataset(project = "PBMC",
 You can run the app from R using:
 
 ``` r
+
 MCView::run_app("PBMC", launch.browser = TRUE)
 ```
 
