@@ -98,7 +98,7 @@ update_metadata_colors <- function(project,
         }
         metadata_colors <- c(metadata_colors, new_metadata_colors)
     } else if (!overwrite && fs::file_exists(prev_colors_file_qs)) {
-        metadata_colors <- qs::qread(prev_colors_file_qs)
+        metadata_colors <- read_legacy_qs(prev_colors_file_qs, "metadata_colors")
         for (f in names(metadata_colors)) {
             metadata_colors[[f]] <- NULL
         }

@@ -1,3 +1,16 @@
+# Read a legacy pre-qs2 cache file. New projects are serialized with qs2; `qs` is
+# archived from CRAN and kept only as an optional (Suggests) dependency, so guard
+# its use and tell the user how to recover when it isn't installed.
+read_legacy_qs <- function(qs_file, name = fs::path_file(qs_file)) {
+    if (!requireNamespace("qs", quietly = TRUE)) {
+        cli_abort(c(
+            "Found a legacy {.file .qs} cache for {.field {name}}, but the {.pkg qs} package is not installed.",
+            "i" = "Re-import this project with the current MCView (it serializes with {.pkg qs2}), or install the archived {.pkg qs} package to read the old cache."
+        ))
+    }
+    qs::qread(qs_file)
+}
+
 serialize_shiny_data <- function(object, name, dataset, cache_dir, df2mat = FALSE, flat = FALSE, ...) {
     dataset_dir <- fs::path(cache_dir, dataset)
 
@@ -37,7 +50,7 @@ load_shiny_data <- function(name, dataset, cache_dir, atlas = FALSE) {
         if (fs::file_exists(qs2_file)) {
             object <- qs2::qs_read(qs2_file)
         } else if (fs::file_exists(qs_file)) {
-            object <- qs::qread(qs_file)
+            object <- read_legacy_qs(qs_file, name)
         } else {
             cli_abort("Cannot find {.file {name}} in {.file {cache_dir}} (looked for .qs2 and .qs files)")
         }

@@ -1,3 +1,7 @@
+# MCView 0.2.55
+
+* Made `qs` an optional (`Suggests`) dependency instead of a hard requirement. New projects are serialized with `qs2`; `qs` is only needed to read legacy `.qs` caches from pre-0.2.54 projects, and a clear message now points to re-importing (or installing `qs`) when it is missing. This removes the archived-from-CRAN `qs` (and its `stringfish` build conflict) from the default install and the Docker image.
+
 # MCView 0.2.54
 
 * Switched serialization from `qs` to `qs2` (`qs` was removed from CRAN). New cache files are saved in `.qs2` format. Existing projects with `.qs` cache files are still supported via the legacy `qs` package (installed from GitHub).

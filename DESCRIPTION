@@ -1,6 +1,6 @@
 Package: MCView
 Title: A Shiny App for Metacell Analysis
-Version: 0.2.54
+Version: 0.2.55
 Authors@R: 
     person(given = "Aviezer",
            family = "Lifshitz",
@@ -49,7 +49,6 @@ Imports:
     plotly (>= 4.9.3),
     promises,
     purrr,
-    qs,
     qs2,
     rclipboard,
     rlang,
@@ -87,8 +86,9 @@ Suggests:
     testthat,
     withr,
     metacell,
-    profvis
-VignetteBuilder: 
+    profvis,
+    qs
+VignetteBuilder:
     knitr
 Remotes:
     qsbase/qs,
