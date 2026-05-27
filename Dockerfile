@@ -46,7 +46,16 @@ RUN R -e "pak::pak('tanaylab/MCView@${MCVIEW_REF}')" \
  && R -e 'if (!requireNamespace("MCView", quietly = TRUE)) quit(status = 1); cat("MCView", as.character(packageVersion("MCView")), "installed OK\n")'
 
 RUN mkdir /MCView
-ADD ./start_app.R /MCView/
+COPY ./start_app.R /MCView/start_app.R
+
+# Make the app runnable under an arbitrary non-root UID, which Kubernetes /
+# OpenShift assign at runtime (random UID, always GID 0). Normalize ownership to
+# root, give the root group the owner's access, and keep the launcher world
+# read+executable -- otherwise the container fails with
+# "cannot open file './start_app.R': Permission denied".
+RUN chmod 755 /MCView/start_app.R \
+ && chown -R root:0 /MCView \
+ && chmod -R g=u /MCView
 
 WORKDIR /MCView
 
