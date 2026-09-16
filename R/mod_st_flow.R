@@ -79,13 +79,14 @@ mod_st_flow_server <- function(id, dataset, metacell_types, cell_type_colors, ge
             norm_selector(input, output, session, dataset, ns)
 
             data <- get_mc_data(dataset(), "spatial_flow_data")
+            tbin_time <- spatial_tbin_time(data)
 
-            flow_to = summarise_flow_to(data$ed)
-            flow_from = summarise_flow_from(data$ed)
-            flow_to_spat = summarise_flow_to_spatial(data$ed)
-            flow_from_spat = summarise_flow_from_spatial(data$ed)
+            flow_to = data$flow_to %||% summarise_flow_to(data$ed)
+            flow_from = data$flow_from %||% summarise_flow_from(data$ed)
+            flow_to_spat = data$flow_to_spat %||% summarise_flow_to_spatial(data$ed)
+            flow_from_spat = data$flow_from_spat %||% summarise_flow_from_spatial(data$ed)
 
-            output$Type_composition = renderPlot({plot_type_composition(input, output, session, dataset, data, metacell_types, metacell_names, cell_type_colors)})
+            output$Type_composition = renderPlot({plot_type_composition(input, output, session, dataset, data, metacell_types, metacell_names, cell_type_colors, tbin_time)})
             
             output$Temporal_Flow = renderPlot({g = plot_temporal_flow_bars_wraper(input, output, session, dataset, data, metacell_types, metacell_names, cell_type_colors,
                                                                         flow_to, flow_from, flow_to_spat, flow_from_spat)
@@ -113,7 +114,7 @@ plot_height_smcs = function(input, metacell_types){
     return(n)
 }
 
-plot_type_composition = function(input, output, session, dataset, data, metacell_types, metacell_names, cell_type_colors){
+plot_type_composition = function(input, output, session, dataset, data, metacell_types, metacell_names, cell_type_colors, tbin_time){
     
     req(input$mode)
 
@@ -144,8 +145,6 @@ plot_type_composition = function(input, output, session, dataset, data, metacell
     ctype_color = metacell_types_df$mc_col
     names(ctype_color) = metacell_types_df$metacell
 
-    tbin_time = unique(data$f_sm_sb_tb[,c('time_bin', 'age')])$age
-    names(tbin_time) = unique(data$f_sm_sb_tb[,c('time_bin', 'age')])$time_bin
     tbin_time_l = paste0(names(tbin_time), ' ~E',tbin_time)
     names(tbin_time_l) = names(tbin_time)
 

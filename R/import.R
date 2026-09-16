@@ -212,6 +212,13 @@ import_dataset <- function(project,
 
     if (!is.null(spatial)){
         data <- readRDS(spatial)
+        if (!is.null(data$ed)) {
+            cli_alert_info("Precomputing spatial flow summaries")
+            data$flow_to <- summarise_flow_to(data$ed)
+            data$flow_from <- summarise_flow_from(data$ed)
+            data$flow_to_spat <- summarise_flow_to_spatial(data$ed)
+            data$flow_from_spat <- summarise_flow_from_spatial(data$ed)
+        }
         serialize_shiny_data(data, "spatial_flow_data", dataset = dataset, cache_dir = cache_dir)
     }
 

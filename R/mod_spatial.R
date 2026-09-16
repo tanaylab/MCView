@@ -58,12 +58,26 @@ mod_spatial_sidebar_ui <- function(id) {
     )
 }
 
+load_spatial_geom_pkgs_once <- function() {
+    if (isTRUE(getOption("MCView.spatial_pkgs_loaded"))) {
+        return(invisible(NULL))
+    }
+    devtools::load_all(here("mingeom"), export_all = FALSE, quiet = TRUE)
+    devtools::load_all(here("spatula"), export_all = FALSE, quiet = TRUE)
+    options(MCView.spatial_pkgs_loaded = TRUE)
+}
+
+spatial_tbin_time <- function(data) {
+    tbin_time <- unique(data$f_sm_sb_tb[, c("time_bin", "age")])$age
+    names(tbin_time) <- unique(data$f_sm_sb_tb[, c("time_bin", "age")])$time_bin
+    tbin_time
+}
+
 mod_spatial_server <- function(id, dataset, metacell_types, cell_type_colors, gene_modules, globals) {
     library(here)
     library(gridExtra)
     library(grid)
-    devtools::load_all(here("mingeom"), export_all = FALSE, quiet = TRUE)
-    devtools::load_all(here("spatula"), export_all = FALSE, quiet = TRUE)
+    load_spatial_geom_pkgs_once()
 
     moduleServer(
         id,
@@ -76,14 +90,26 @@ mod_spatial_server <- function(id, dataset, metacell_types, cell_type_colors, ge
             mod_spatial_globals_observers(input, session, globals)
 
             data <- get_mc_data(dataset(), "spatial_flow_data")
+            tbin_time <- spatial_tbin_time(data)
+
+            flow_summary <- reactive({
+                req(input$mode %in% c("Types", "SMCs"))
+                summarise_flow(input, data, mode = input$mode, tbin_time)
+            })
+
+            insitu_base <- reactive({
+                req(input$mode == "Genes")
+                req(input$inspect_sub_manif)
+                build_insitu_base(input, data)
+            })
 
             output$beatleplot <- renderPlot({      
-                g = plot_map(input, data, dataset, metacell_names, metacell_types)
+                g = plot_map(input, data, dataset, metacell_names, metacell_types, tbin_time, flow_summary, insitu_base)
                 grid.draw(g)
             }, height = function(){200*plot_height(input, data)})
 
             output$APplot <- renderPlot({
-                plot_AP(input, data, dataset, metacell_names, metacell_types)
+                plot_AP(input, data, dataset, metacell_names, metacell_types, tbin_time, flow_summary, insitu_base)
             })
 
             output$types_express_genes <- renderUI({
@@ -254,7 +280,7 @@ summarise_flow <- function(input, data, mode, tbin_time){
         return(f_ct_sb_tb)
 }
 
-summarise_insitu = function(input, data, dataset, mode = 'egc'){
+build_insitu_base = function(input, data){
 
     f_ct_sb_tb = data$f_sm_sb_tb
     sub_manif = unique(f_ct_sb_tb$cell_type)
@@ -277,6 +303,13 @@ summarise_insitu = function(input, data, dataset, mode = 'egc'){
     f_ct_sb_tb = f_ct_sb_tb %>% group_by(time_bin, sbin, smc) %>% mutate(f_m_s = sum(f))
     f_ct_sb_tb = f_ct_sb_tb %>% group_by(time_bin, sbin) %>% mutate(f_s = sum(f))
 
+    return(f_ct_sb_tb)
+}
+
+summarise_insitu = function(input, data, dataset, insitu_base, mode = 'egc'){
+
+    f_ct_sb_tb = insitu_base()
+
     egc <- get_gene_egc(input$display_select, dataset(), atlas = FALSE) + egc_epsilon
     f_ct_sb_tb$egc = egc[as.character(f_ct_sb_tb$smc)]
     tot_egc = f_ct_sb_tb %>% group_by(time_bin) %>% summarise(tot_egc = sum(f_m_s*egc, na.rm = T))
@@ -291,7 +324,7 @@ summarise_insitu = function(input, data, dataset, mode = 'egc'){
 }
 
 
-plot_AP <- function(input, data, dataset, metacell_names, metacell_types){
+plot_AP <- function(input, data, dataset, metacell_names, metacell_types, tbin_time, flow_summary, insitu_base){
 
     if(input$mode == 'Types'){
         req(input$display_select %in% metacell_types()$cell_type)
@@ -304,7 +337,7 @@ plot_AP <- function(input, data, dataset, metacell_names, metacell_types){
     to_plot = input$display_select
 
     if(input$mode == 'Types' | input$mode == 'SMCs'){
-        f_ct_sb_tb = summarise_flow(input, data, mode = input$mode, tbin_time)
+        f_ct_sb_tb = flow_summary()
 
         if(input$mode == 'Types'){
                 plot_data = f_ct_sb_tb[f_ct_sb_tb$cell_type == to_plot & f_ct_sb_tb$sbin %in% paste0('M', seq(1,12)),]
@@ -331,7 +364,7 @@ plot_AP <- function(input, data, dataset, metacell_names, metacell_types){
 
     }else if(input$mode == 'Genes'){
 
-        summarise_insitu_ret = summarise_insitu(input, data, dataset)
+        summarise_insitu_ret = summarise_insitu(input, data, dataset, insitu_base)
         spat_egc = summarise_insitu_ret$spat_egc
         tot_egc = summarise_insitu_ret$tot_egc
 
@@ -349,7 +382,7 @@ plot_AP <- function(input, data, dataset, metacell_names, metacell_types){
     }
 }
 
-plot_map <- function(input, data, dataset, metacell_names, metacell_types) {
+plot_map <- function(input, data, dataset, metacell_names, metacell_types, tbin_time, flow_summary, insitu_base) {
     
     if(input$mode == 'Types'){
         req(input$display_select %in% metacell_types()$cell_type)
@@ -362,8 +395,6 @@ plot_map <- function(input, data, dataset, metacell_names, metacell_types) {
     smc_idx = 0
     g = NULL
 
-    tbin_time = unique(data$f_sm_sb_tb[,c('time_bin', 'age')])$age
-    names(tbin_time) = unique(data$f_sm_sb_tb[,c('time_bin', 'age')])$time_bin
     tbs = sort(as.integer(unique(data$f_sm_sb_tb$time_bin)))
     to_plot = input$display_select
 
@@ -372,7 +403,7 @@ plot_map <- function(input, data, dataset, metacell_names, metacell_types) {
 
     if(input$mode == 'Types' | input$mode == 'SMCs'){
 
-        f_ct_sb_tb = summarise_flow(input, data, mode = input$mode, tbin_time)
+        f_ct_sb_tb = flow_summary()
 
         for(tb in tbs){
 
@@ -407,7 +438,7 @@ plot_map <- function(input, data, dataset, metacell_names, metacell_types) {
 
     }else if(input$mode == 'Genes'){
     
-        summarise_insitu_res= summarise_insitu(input, data, dataset, mode = 'dens')
+        summarise_insitu_res= summarise_insitu(input, data, dataset, insitu_base, mode = 'dens')
         spat_density = summarise_insitu_res$spat_density
         egc = summarise_insitu_res$tot_egc
 
