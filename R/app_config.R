@@ -183,12 +183,12 @@ init_tab_defs <- function() {
         "Spatial" = list(
             title = "Spatial",
             module_name = "spatial",
-            icon = "cat"#"" #"puzzle-piece"
+            icon = "puzzle-piece"
         ),
         "ST flow" = list(
             title = "ST flow",
             module_name = "st_flow",
-            icon = "fish"#"" #"puzzle-piece"
+            icon = "arrows-split-up-and-left"
         ),
         "Beatle flow" = list(
             title = "Beatle flow",
