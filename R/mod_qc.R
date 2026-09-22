@@ -13,10 +13,9 @@ mod_qc_ui <- function(id) {
         column(
             width = 12,
             fluidRow(
-                shinydashboard::valueBoxOutput(ns("num_metacells"), width = 2),
-                shinydashboard::valueBoxOutput(ns("median_umis_per_metacell"), width = 2),
-                shinydashboard::valueBoxOutput(ns("num_cells"), width = 2),
-                shinydashboard::valueBoxOutput(ns("median_cells_per_metacell"), width = 2),
+                shinydashboard::valueBoxOutput(ns("num_metacells"), width = 3),
+                shinydashboard::valueBoxOutput(ns("median_umis_per_metacell"), width = 3),
+                shinydashboard::valueBoxOutput(ns("median_cells_per_metacell"), width = 3),
                 shinydashboard::valueBoxOutput(ns("num_outliers"), width = 3),
             )
         ),
@@ -69,7 +68,6 @@ mod_qc_server <- function(id, dataset, metacell_types, cell_type_colors, gene_mo
 
             # Value boxes
             output$num_metacells <- qc_value_box("n_metacells", "Number of metacells", dataset, color = "black")
-            output$num_cells <- qc_value_box("n_cells", "Number of cells", dataset, color = "purple")
             output$num_outliers <- shinydashboard::renderValueBox({
                 num_cells <- get_mc_data(dataset(), "qc_stats")$n_cells
                 num_outliers <- get_mc_data(dataset(), "qc_stats")$n_outliers
