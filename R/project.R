@@ -282,6 +282,7 @@ create_project <- function(project,
 #'
 #' @export
 create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overwrite = FALSE, self_contained = FALSE, branch = "latest_release", restart = overwrite, permissions = NULL, light_version = FALSE, excluded_tabs = c("Gene modules", "Annotate", "Inner-fold", "Stdev-fold"), shiny_cache_dir = NULL, shiny_cache_max_size = NULL, ...) {
+    excluded_tabs_missing <- missing(excluded_tabs)
     bundle_dir <- fs::path(path, name)
     if (!(fs::dir_exists(project))) {
         cli::cli_abort("{.path {project}} does not exists.")
@@ -321,8 +322,13 @@ create_bundle <- function(project, path = getwd(), name = "MCView_bundle", overw
     fs::dir_copy(project, fs::path(bundle_dir, "project"))
 
     if (light_version) {
-        add_to_config(project_config_file(fs::path(bundle_dir, "project")), light_version = TRUE, excluded_tabs = excluded_tabs)
-        cli::cli_alert("Creating a light version of the bundle. Excluded tabs: {.field Gene modules, Annotate, Inner-fold, Stdev-fold}. To change this, edit the {.file project/config.yaml} file.")
+        add_to_config(project_config_file(fs::path(bundle_dir, "project")), light_version = TRUE)
+        cli::cli_alert("Creating a light version of the bundle.")
+    }
+
+    if (!excluded_tabs_missing || light_version) {
+        add_to_config(project_config_file(fs::path(bundle_dir, "project")), excluded_tabs = excluded_tabs)
+        cli::cli_alert("Excluded tabs: {.field {paste(excluded_tabs, collapse = ', ')}}. To change this, edit the {.file project/config.yaml} file.")
     }
 
     if (!is.null(shiny_cache_dir)) {
