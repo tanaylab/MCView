@@ -153,7 +153,7 @@ app_ui <- function(request) {
         controlbar = right_sidebar,
         preloader = list(html = tagList(waiter::spin_1(), h4("Loading STF Viewer..."), h5(config$title)), color = "#333e48"),
         footer = shinydashboardPlus::dashboardFooter(
-            left = app_footer,
+            left = NULL,
             right = glue("(C) Weizmann Institute of Science, 2020-{year}", year = format(Sys.time(), "%Y"))
         ),
     )
