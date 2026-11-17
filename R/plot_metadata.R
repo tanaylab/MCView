@@ -490,10 +490,11 @@ plot_mc_scatter <- function(dataset,
             scale_fill_manual(name = color_var, values = md_colors) +
             guides(color = "none")
     } else {
+        # no guides(fill = "none") here: ggplotly splits traces by aesthetics whose guide is "none",
+        # which would create a trace per distinct fill color. scale_fill_identity has no legend anyway.
         p <- p +
             geom_point(size = point_size) +
-            geom_point(size = point_size, shape = 21, stroke = stroke, color = "black") +
-            guides(fill = "none")
+            geom_point(size = point_size, shape = 21, stroke = stroke, color = "black")
 
         p <- p +
             scale_color_gradientn(name = color_var, colors = md_colors$colors, values = scales::rescale(md_colors$breaks)) +
@@ -1025,10 +1026,11 @@ plot_obs_proj_scatter <- function(dataset,
             scale_fill_manual(name = color_var, values = md_colors) +
             guides(color = "none")
     } else {
+        # no guides(fill = "none") here: ggplotly splits traces by aesthetics whose guide is "none",
+        # which would create a trace per distinct fill color. scale_fill_identity has no legend anyway.
         p <- p +
             geom_point(size = point_size) +
-            geom_point(size = point_size, shape = 21, stroke = stroke, color = "black") +
-            guides(fill = "none")
+            geom_point(size = point_size, shape = 21, stroke = stroke, color = "black")
 
         p <- p +
             scale_color_gradientn(name = color_var, colors = md_colors$colors, values = scales::rescale(md_colors$breaks)) +
