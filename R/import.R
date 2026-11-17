@@ -168,7 +168,7 @@ import_dataset <- function(project,
         }
 
         cli_alert_info("Reading {.file {anndata_file}}")
-        adata <- anndata::read_h5ad(anndata_file)
+        adata <- read_h5ad(anndata_file)
     }
 
     if (is.null(adata$uns$mcview_format)) {
