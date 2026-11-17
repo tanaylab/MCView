@@ -72,6 +72,10 @@ plot_markers_mat <- function(mat,
 
     p_mat <- p_mat + theme(legend.position = "top")
 
+    # build the heatmap once: the gtable is made from it and print.gt_custom reuses it for the plot coordinates
+    p_build <- ggplot_build(p_mat)
+    p_gtable <- ggplot_gtable(p_build)
+
     if (plot_legend) {
         legend_point_size <- max(1, min(10, 250 / nrow(cell_type_colors)))
         legend <- cowplot::get_legend(cell_type_colors %>%
@@ -80,18 +84,18 @@ plot_markers_mat <- function(mat,
             scale_color_manual("", values = deframe(cell_type_colors)) +
             guides(color = guide_legend(override.aes = list(size = legend_point_size), ncol = 1)))
 
-        p <- add_markers_colorbars(p_mat, mc_types, dataset, top_cell_type_bar, metadata)
+        p <- add_markers_colorbars(p_gtable, mc_types, dataset, top_cell_type_bar, metadata)
 
         if (separate_gtable) {
-            return(list(p = p_mat, gtable = p, legend = legend))
+            return(list(p = p_mat, build = p_build, gtable = p, legend = legend))
         }
 
         cowplot::ggdraw(cowplot::plot_grid(p, legend, nrow = 1, rel_widths = c(0.8, 0.15)))
     } else {
-        p <- add_markers_colorbars(p_mat, mc_types, dataset, top_cell_type_bar, metadata)
+        p <- add_markers_colorbars(p_gtable, mc_types, dataset, top_cell_type_bar, metadata)
 
         if (separate_gtable) {
-            return(list(p = p_mat, gtable = p))
+            return(list(p = p_mat, build = p_build, gtable = p))
         }
 
         cowplot::ggdraw(p)

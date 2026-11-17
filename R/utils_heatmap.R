@@ -955,7 +955,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     )
 
                     # we are returning the gtable and ggplot object separatly in order to allow shiny to infer positions correctly.
-                    return(structure(list(p = res$p, gtable = res$gtable), class = "gt_custom"))
+                    return(structure(list(p = res$p, build = res$build, gtable = res$gtable), class = "gt_custom"))
                 },
                 res = 96
             ) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), gene_modules(), lfp_range(), metacell_filter(), input$plot_legend, input$plot_cell_type_legend, input$plot_genes_legend, applied_params(), markers(), clipboard_changed(), input$high_color, input$low_color, input$mid_color, input$midpoint, genes(), input$show_genes, highlighted_genes(), input$highlight_color, input$max_gene_num, input$metadata_order_var, input$mat_value)
@@ -1090,7 +1090,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
 #' @export print.gt_custom
 #' @export
 print.gt_custom <- function(x) {
-    build <- ggplot_build(x$p)
+    build <- x$build %||% ggplot_build(x$p)
 
     grid::grid.newpage()
     grid::grid.draw(x$gtable)
