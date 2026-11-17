@@ -147,7 +147,7 @@ get_cell_types_egc <- function(cell_types, metacell_types, dataset, mat = NULL, 
     return(ct_egc)
 }
 
-get_samples_mat <- function(cell_types, metacell_types, dataset) {
+get_samples_mat <- function(cell_types, metacell_types, dataset, samples = NULL) {
     mc_mat <- get_mc_data(dataset, "mc_mat")
 
     mc_types <- metacell_types %>%
@@ -156,12 +156,11 @@ get_samples_mat <- function(cell_types, metacell_types, dataset) {
         deframe()
 
     mc_mat <- mc_mat[, names(mc_types), drop = FALSE]
-    samp_mc_frac <- get_samp_mc_frac(dataset)[, names(mc_types)]
+    samp_mc_frac <- get_samp_mc_frac(dataset)[samples %||% TRUE, names(mc_types), drop = FALSE]
     samp_sums <- rowSums(samp_mc_frac)
 
     # remove samples with no metacells
-    samp_mc_frac <- samp_mc_frac[samp_sums > 0, ]
-    mc_mat <- mc_mat[samp_sums > 0, ]
+    samp_mc_frac <- samp_mc_frac[samp_sums > 0, , drop = FALSE]
     samp_mc_frac <- samp_mc_frac / rowSums(samp_mc_frac)
 
     samp_mat <- mc_mat %*% t(samp_mc_frac)
@@ -169,19 +168,19 @@ get_samples_mat <- function(cell_types, metacell_types, dataset) {
     return(samp_mat)
 }
 
-get_samples_egc <- function(cell_types, metacell_types, dataset) {
-    mc_egc <- get_mc_egc(dataset)
-
+get_samples_egc <- function(cell_types, metacell_types, dataset, samples = NULL) {
     mc_types <- metacell_types %>%
         filter(cell_type %in% cell_types) %>%
         select(metacell, cell_type) %>%
         deframe()
 
-    mc_egc <- mc_egc[, names(mc_types)]
-    samp_mc_frac <- get_samp_mc_frac(dataset)[, names(mc_types)]
+    mc_mat <- get_mc_data(dataset, "mc_mat")[, names(mc_types), drop = FALSE]
+    mc_sum <- get_mc_sum(dataset)[names(mc_types)]
+    samp_mc_frac <- get_samp_mc_frac(dataset)[samples %||% TRUE, names(mc_types), drop = FALSE]
     samp_mc_frac <- samp_mc_frac / rowSums(samp_mc_frac)
 
-    samp_egc <- mc_egc %*% t(samp_mc_frac)
+    # egc %*% t(samp_mc_frac), folding the normalization into the weights instead of normalizing the matrix
+    samp_egc <- mc_mat %*% (t(samp_mc_frac) / mc_sum)
 
     return(samp_egc)
 }

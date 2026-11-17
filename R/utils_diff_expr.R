@@ -66,7 +66,7 @@ calc_mc_mc_gene_df <- function(dataset, metacell1, metacell2, diff_thresh = 1.5,
 #' @noRd
 calc_ct_ct_gene_df <- function(dataset, cell_type1, cell_type2, metacell_types, diff_thresh = 1.5, pval_thresh = 0.01) {
     mat <- get_cell_types_mat(c(cell_type1, cell_type2), metacell_types, dataset)
-    egc <- get_cell_types_egc(c(cell_type1, cell_type2), metacell_types, dataset) + egc_epsilon
+    egc <- get_cell_types_egc(c(cell_type1, cell_type2), metacell_types, dataset, mat = mat) + egc_epsilon
 
     df <- calc_diff_expr(mat, egc, c(cell_type1, cell_type2), diff_thresh, pval_thresh)
 
@@ -81,8 +81,9 @@ calc_ct_ct_gene_df <- function(dataset, cell_type1, cell_type2, metacell_types, 
 #'
 #' @noRd
 calc_samp_samp_gene_df <- function(dataset, samp1, samp2, metacell_types, cell_types, diff_thresh = 1.5, pval_thresh = 0.01) {
-    mat <- get_samples_mat(cell_types, metacell_types, dataset)
-    egc <- get_samples_egc(cell_types, metacell_types, dataset) + egc_epsilon
+    samples <- unique(c(samp1, samp2))
+    mat <- get_samples_mat(cell_types, metacell_types, dataset, samples = samples)
+    egc <- get_samples_egc(cell_types, metacell_types, dataset, samples = samples) + egc_epsilon
 
     df <- calc_diff_expr(mat, egc, c(samp1, samp2), diff_thresh, pval_thresh)
 
@@ -111,8 +112,8 @@ calc_obs_exp_type_df <- function(dataset, cell_type, metacell_types, diff_thresh
     obs_mat <- get_cell_types_mat(cell_type, metacell_types, dataset, corrected = TRUE)
     exp_mat <- get_cell_types_mat(cell_type, metacell_types, dataset, projected = TRUE)
 
-    obs_egc <- get_cell_types_egc(cell_type, metacell_types, dataset, corrected = TRUE) + egc_epsilon
-    exp_egc <- get_cell_types_egc(cell_type, metacell_types, dataset, projected = TRUE) + egc_epsilon
+    obs_egc <- get_cell_types_egc(cell_type, metacell_types, dataset, mat = obs_mat, corrected = TRUE) + egc_epsilon
+    exp_egc <- get_cell_types_egc(cell_type, metacell_types, dataset, mat = exp_mat, projected = TRUE) + egc_epsilon
 
     genes <- intersect(rownames(obs_mat), rownames(exp_mat))
     mat <- as.matrix(data.frame(Observed = obs_mat[genes, 1], Projected = exp_mat[genes, 1]))
