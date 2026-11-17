@@ -6,3 +6,12 @@ test_that("subset_dist matches subsetting the full distance matrix", {
         expect_equal(as.matrix(subset_dist(d, labs)), as.matrix(d)[labs, labs])
     }
 })
+
+test_that("cluster_metacells returns the same clustering with and without the app cache", {
+    feat <- matrix(rnorm(200), nrow = 10, dimnames = list(NULL, paste0("m", 1:20)))
+    hc <- cluster_metacells(feat)
+    shiny::shinyOptions(cache = cachem::cache_mem())
+    withr::defer(shiny::shinyOptions(cache = NULL))
+    expect_identical(cluster_metacells(feat)$order, hc$order)
+    expect_identical(cluster_metacells(feat)$order, hc$order) # cache hit
+})

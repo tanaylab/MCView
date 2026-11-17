@@ -173,12 +173,7 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
         return(1:ncol(feat_all))
     }
 
-    if (!is.null(cached_dist)) {
-        metacells <- colnames(feat)
-        hc <- fastcluster::hclust(subset_dist(cached_dist, metacells), method = "ward.D2")
-    } else {
-        hc <- fastcluster::hclust(tgs_dist(tgs_cor(feat, pairwise.complete.obs = TRUE)), method = "ward.D2")
-    }
+    hc <- cluster_metacells(feat, cached_dist)
 
     reorder.hclust <- utils::getFromNamespace("reorder.hclust", "vegan")
     ord <- reorder.hclust(hc, as.numeric(feat[main_mark, ] - feat[second_mark, ]), agglo.FUN = "uwmean")$order
@@ -250,6 +245,31 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
     }
 
     return(ord)
+}
+
+# The clustering is the slow part of the heatmaps and depends only on the features, while the
+# heatmap is recomputed on every zoom / annotation / ordering change. Keep it in the app cache
+# (shared by all sessions) when running inside shiny.
+cluster_metacells <- function(feat, cached_dist = NULL) {
+    cache <- shiny::getShinyOption("cache")
+    key <- rlang::hash(list("cluster_metacells", feat, attr(cached_dist, "Labels")))
+    if (!is.null(cache)) {
+        hc <- cache$get(key)
+        if (!cachem::is.key_missing(hc)) {
+            return(hc)
+        }
+    }
+
+    if (!is.null(cached_dist)) {
+        hc <- fastcluster::hclust(subset_dist(cached_dist, colnames(feat)), method = "ward.D2")
+    } else {
+        hc <- fastcluster::hclust(tgs_dist(tgs_cor(feat, pairwise.complete.obs = TRUE)), method = "ward.D2")
+    }
+
+    if (!is.null(cache)) {
+        cache$set(key, hc)
+    }
+    return(hc)
 }
 
 # Same as as.dist(as.matrix(d)[labels, labels]) without expanding d to a full n x n matrix
