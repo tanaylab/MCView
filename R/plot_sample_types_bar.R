@@ -67,5 +67,5 @@ plot_sample_stacked_types <- function(dataset, globals, metacell_types, cell_typ
             sanitize_plotly_download(globals)
 
         return(p)
-    }) %>% bindCache(dataset, metacell_types, cell_type_colors, input$sample_types_ordering, globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
+    }) %>% bindCache(dataset(), metacell_types(), cell_type_colors(), input$sample_types_ordering, globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
 }
