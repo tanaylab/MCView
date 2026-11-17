@@ -122,9 +122,9 @@ mc2d_plot_metadata_ggp_categorical <- function(mc2d_df,
 
     legend_title <- md
 
-    add_scatter_layer <- function(x, showlegend = FALSE) {
+    add_scatter_layer <- function(x, showlegend = FALSE, data = mc2d_df) {
         plotly::add_trace(x,
-            data = mc2d_df,
+            data = data,
             x = ~x,
             y = ~y,
             color = ~value,
@@ -146,7 +146,10 @@ mc2d_plot_metadata_ggp_categorical <- function(mc2d_df,
             showlegend = showlegend
         )
     }
-    fig <- plotly::plot_ly() %>% add_scatter_layer()
+    # The points are drawn above the edges, which skip hover. The layer below the edges keeps
+    # one point per group only so that legend clicks restyle the same trace indices as
+    # before (connect_gene_plots forwards them to other plots).
+    fig <- plotly::plot_ly() %>% add_scatter_layer(data = mc2d_df %>% distinct(value, .keep_all = TRUE))
 
     if (nrow(graph) > 0) {
         edges_x <- c(rbind(graph$x_mc1, graph$x_mc2, NA))
@@ -162,6 +165,7 @@ mc2d_plot_metadata_ggp_categorical <- function(mc2d_df,
                     color = graph_color,
                     width = graph_width * 5
                 ),
+                hoverinfo = "skip",
                 showlegend = FALSE
             )
     }
@@ -253,7 +257,9 @@ mc2d_plot_metadata_ggp_numeric <- function(mc2d_df,
             showlegend = showlegend
         )
     }
-    fig <- plotly::plot_ly() %>% add_scatter_layer()
+    # the edges skip hover, so the points only need to be drawn once, above them
+    # (plotly takes the color scale from the first trace, hence 'colors' here)
+    fig <- plotly::plot_ly(colors = colors)
 
     if (nrow(graph) > 0) {
         edges_x <- c(rbind(graph$x_mc1, graph$x_mc2, NA))
@@ -269,6 +275,7 @@ mc2d_plot_metadata_ggp_numeric <- function(mc2d_df,
                     color = graph_color,
                     width = graph_width * 5
                 ),
+                hoverinfo = "skip",
                 showlegend = FALSE
             )
     }

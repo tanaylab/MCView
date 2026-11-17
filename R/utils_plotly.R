@@ -27,6 +27,20 @@ sanitize_for_WebGL <- function(p) {
     return(p)
 }
 
+# plotly_build() repeats a trace's hoverinfo for every point (with NA for NA points). Send it
+# once per trace. Needed for hoverinfo = "skip" to work, and smaller.
+collapse_hoverinfo <- function(p) {
+    p <- plotly::plotly_build(p)
+    p$x$data <- purrr::map(p$x$data, function(tr) {
+        h <- unique(tr$hoverinfo[!is.na(tr$hoverinfo)])
+        if (length(tr$hoverinfo) > 1 && length(h) == 1) {
+            tr$hoverinfo <- h
+        }
+        tr
+    })
+    p
+}
+
 # See https://github.com/plotly/plotly.js/issues/4999
 arrange_2d_proj_tooltip <- function(fig) {
     if (fig$x$data[[1]]$mode == "lines") {

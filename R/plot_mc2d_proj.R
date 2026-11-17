@@ -114,7 +114,9 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
         )
     }
 
-    fig <- plotly::plot_ly() %>% add_scatter_layer()
+    # the edges skip hover, so the points only need to be drawn once, above them
+    # (plotly takes the color scale from the first trace, hence 'colors' here)
+    fig <- plotly::plot_ly(colors = shades)
 
     if (nrow(graph) > 0) {
         edges_x <- c(rbind(graph$x_mc1, graph$x_mc2, NA))
@@ -130,6 +132,7 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
                     color = graph_color,
                     width = graph_width * 5
                 ),
+                hoverinfo = "skip",
                 showlegend = FALSE
             )
     }
@@ -434,7 +437,8 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
         fig <- fig %>%
             sanitize_for_WebGL()
         fig <- fig %>%
-            plotly::toWebGL()
+            plotly::toWebGL() %>%
+            collapse_hoverinfo()
         # fig <- fig %>%
         #     arrange_2d_proj_tooltip()
         fig <- fig %>%
