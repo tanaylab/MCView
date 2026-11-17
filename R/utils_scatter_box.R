@@ -306,13 +306,7 @@ render_axis_select_ui <- function(axis, title, output_id, md_choices, md_selecte
                 label = title
             )
         } else if (input[[glue("{axis}_type")]] == "Gene") {
-            shinyWidgets::updateVirtualSelect(
-                session = session,
-                inputId = glue("{axis}_var"),
-                choices = gene_names_label(dataset(), atlas = atlas),
-                selected = selected_gene,
-                label = title
-            )
+            update_gene_select(session, glue("{axis}_var"), dataset(), selected = selected_gene, label = title, atlas = atlas)
         } else if (input[[glue("{axis}_type")]] == "Gene module") {
             shinyWidgets::updateVirtualSelect(
                 session = session,
