@@ -23,9 +23,13 @@ app_ui <- function(request) {
             if (is.null(func)) {
                 return(NULL)
             } else {
+                # start hidden: shiny evaluates the condition only after it reports
+                # which outputs are visible, so a visible panel would render all of
+                # its outputs on page load
                 conditionalPanel(
                     condition = glue("input.tab_sidebar == '{mod}'"),
-                    func(mod)
+                    func(mod),
+                    style = "display: none;"
                 )
             }
         }
