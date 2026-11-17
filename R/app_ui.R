@@ -5,6 +5,19 @@
 #' @import shiny
 #' @noRd
 app_ui <- function(request) {
+    # The UI doesn't depend on the request and takes 1-2 seconds of the (shared) R process to
+    # build, so build it once per project and configuration.
+    key <- list(project, config, tab_defs)
+    if (!identical(app_ui_cache$key, key)) {
+        app_ui_cache$ui <- build_app_ui()
+        app_ui_cache$key <- key
+    }
+    app_ui_cache$ui
+}
+
+app_ui_cache <- new.env(parent = emptyenv())
+
+build_app_ui <- function() {
     modules <- purrr::map_chr(tab_defs, "module_name")
 
     ui_sidebar_funcs <- purrr::map(modules, ~ {
