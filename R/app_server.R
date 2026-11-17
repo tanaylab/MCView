@@ -64,16 +64,16 @@ app_server <- function(input, output, session) {
         if (!has_samples(dataset())) {
             available_tabs <- available_tabs[available_tabs != "Samples"]
         }
-        if (is.null(get_mc_data(dataset(), "inner_fold_mat"))) {
+        if (!has_mc_data(dataset(), "inner_fold_mat")) {
             available_tabs <- available_tabs[available_tabs != "Inner-fold"]
         }
-        if (is.null(get_mc_data(dataset(), "inner_stdev_mat"))) {
+        if (!has_mc_data(dataset(), "inner_stdev_mat")) {
             available_tabs <- available_tabs[available_tabs != "Stdev-fold"]
         }
-        if (is.null(get_mc_data(dataset(), "deviant_fold_mat"))) {
+        if (!has_mc_data(dataset(), "deviant_fold_mat")) {
             available_tabs <- available_tabs[available_tabs != "Outliers"]
         }
-        if (is.null(get_mc_data(dataset(), "type_flow"))) {
+        if (!has_mc_data(dataset(), "type_flow")) {
             available_tabs <- available_tabs[available_tabs != "Flow"]
         }
         updateCheckboxGroupInput(
