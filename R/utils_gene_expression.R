@@ -34,9 +34,9 @@ get_mc_gene_modules_egc <- function(dataset, modules = NULL, gene_modules = NULL
             mutate(module = forcats::fct_drop(module))
     }
 
-    mc_mat <- mc_mat[gene_modules$gene, ]
-
-    mc_mat <- tgs_matrix_tapply(t(mc_mat), gene_modules$module, sum)
+    # rowsum rather than tgs_matrix_tapply: tgstat forks worker processes, which costs seconds
+    # when the app process holds a large dataset
+    mc_mat <- rowsum(mc_mat[gene_modules$gene, , drop = FALSE], gene_modules$module)
 
     return(t(t(mc_mat) / mc_sum))
 }
