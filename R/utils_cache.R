@@ -193,6 +193,10 @@ get_metadata <- function(dataset, atlas = FALSE) {
     }
 
     if (!is.null(metadata)) {
+        # get_metadata() is called dozens of times per session, so join only once
+        if (!is.null(mc_data[[dataset]][["metadata_with_qc"]])) {
+            return(mc_data[[dataset]][["metadata_with_qc"]])
+        }
         mc_qc_metadata <- mc_data[[dataset]][["mc_qc_metadata"]]
         if (!is.null(mc_qc_metadata)) {
             same_colnames <- intersect(colnames(mc_qc_metadata), colnames(metadata))
@@ -206,6 +210,7 @@ get_metadata <- function(dataset, atlas = FALSE) {
                     left_join(mc_qc_metadata, by = "metacell")
             }
         }
+        mc_data[[dataset]][["metadata_with_qc"]] <<- metadata
     }
 
 
