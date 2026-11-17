@@ -11,7 +11,8 @@ get_mc_egc <- function(dataset, genes = NULL, atlas = FALSE, metacells = NULL) {
         mc_sum <- mc_sum[intersect(metacells, names(mc_sum))]
     }
 
-    return(t(t(mc_mat) / mc_sum))
+    # same values as t(t(mc_mat) / mc_sum) without the two transposed copies
+    return(mc_mat / rep(mc_sum, each = nrow(mc_mat)))
 }
 
 get_mc_fp <- function(dataset, genes = NULL, atlas = FALSE, metacells = NULL) {

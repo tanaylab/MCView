@@ -59,12 +59,12 @@ init_selected_genes <- function() {
     # if selected genes are not set - choose them from the first dataset
     if (is.null(config$selected_gene1) || is.null(config$selected_gene2)) {
         mc_egc <- get_mc_egc(dataset_ls(project)[1])
-        if (has_atlas(dataset_ls(project)[1])) {
-            mc_egc_atlas <- get_mc_egc(dataset_ls(project)[1], atlas = TRUE)
-            mc_egc <- mc_egc[intersect(rownames(mc_egc), rownames(mc_egc_atlas)), ]
-        }
 
+        # filter rows with `rows =` below instead of copying the (genes x metacells) matrix
         f <- rep(TRUE, nrow(mc_egc))
+        if (has_atlas(dataset_ls(project)[1])) {
+            f <- rownames(mc_egc) %in% gene_names(dataset_ls(project)[1], atlas = TRUE)
+        }
         lateral_genes <- get_mc_data(dataset_ls(project)[1], "lateral_genes")
         if (!is.null(lateral_genes)) {
             f <- f & !(rownames(mc_egc) %in% lateral_genes)
@@ -73,10 +73,9 @@ init_selected_genes <- function() {
         if (!is.null(noisy_genes)) {
             f <- f & !(rownames(mc_egc) %in% noisy_genes)
         }
-        mc_egc <- mc_egc[f, ]
 
-        minmax <- matrixStats::rowMaxs(mc_egc, na.rm = TRUE) - matrixStats::rowMins(mc_egc, na.rm = TRUE)
-        names(minmax) <- rownames(mc_egc)
+        minmax <- matrixStats::rowMaxs(mc_egc, rows = which(f), na.rm = TRUE) - matrixStats::rowMins(mc_egc, rows = which(f), na.rm = TRUE)
+        names(minmax) <- rownames(mc_egc)[f]
         genes <- names(head(sort(minmax, decreasing = TRUE), n = 2))
     }
 
