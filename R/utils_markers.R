@@ -16,7 +16,7 @@ calc_marker_genes <- function(mc_egc,
                               use_abs = TRUE) {
     mc_egc <- log2(mc_egc + 1e-5)
 
-    max_log_fractions_of_genes <- apply(mc_egc, 1, max)
+    max_log_fractions_of_genes <- matrixStats::rowMaxs(mc_egc)
 
     interesting_genes_mask <- (max_log_fractions_of_genes
     >= minimal_max_log_fraction)
@@ -25,7 +25,7 @@ calc_marker_genes <- function(mc_egc,
         cli_abort("No genes with at least one value above the {.field minimal_max_log_fraction} threshold ({.val {.value minimal_max_log_fraction}})")
     }
 
-    mc_fp <- sweep(mc_egc, 1, matrixStats::rowMedians(mc_egc, na.rm = TRUE))
+    mc_fp <- mc_egc - matrixStats::rowMedians(mc_egc, na.rm = TRUE)
 
     mc_top_genes <- select_top_fold_genes_per_metacell(
         mc_fp[interesting_genes_mask, , drop = FALSE],
@@ -46,18 +46,23 @@ select_top_fold_genes_per_metacell <- function(fold_matrix, genes_per_metacell =
         cli_abort("No genes with at least one value above the {.field minimal_relative_log_fraction} threshold ({.val {.value minimal_relative_log_fraction}})")
     }
 
-    mc_top_genes <- apply(fold_matrix, 2, function(fp) {
+    top_ind <- apply(fold_matrix, 2, function(fp) {
         if (use_abs) {
-            top_ind <- order(-abs(fp))[1:genes_per_metacell]
+            order(-abs(fp))[1:genes_per_metacell]
         } else {
-            top_ind <- order(-fp)[1:genes_per_metacell]
+            order(-fp)[1:genes_per_metacell]
         }
+    })
+    top_ind <- matrix(top_ind, nrow = genes_per_metacell)
 
-        return(tibble(gene = rownames(fold_matrix)[top_ind], rank = 1:length(top_ind), fp = fp[top_ind]))
-    }) %>%
-        purrr::imap_dfr(~ .x %>% mutate(metacell = .y)) %>%
-        arrange(metacell, rank) %>%
-        select(metacell, gene, rank, fp)
+    genes <- rownames(fold_matrix)[top_ind]
+    mc_top_genes <- tibble(
+        metacell = rep(colnames(fold_matrix), each = genes_per_metacell),
+        gene = genes,
+        rank = rep(seq_len(genes_per_metacell), ncol(fold_matrix)),
+        fp = stats::setNames(fold_matrix[cbind(as.vector(top_ind), as.vector(col(top_ind)))], genes)
+    ) %>%
+        arrange(metacell, rank)
 
     return(mc_top_genes)
 }
