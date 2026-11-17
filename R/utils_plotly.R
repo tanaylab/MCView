@@ -27,6 +27,20 @@ sanitize_for_WebGL <- function(p) {
     return(p)
 }
 
+# plotly_build() repeats a trace's hoverinfo for every point (with NA for NA points). Send it
+# once per trace. Needed for hoverinfo = "skip" to work, and smaller.
+collapse_hoverinfo <- function(p) {
+    p <- plotly::plotly_build(p)
+    p$x$data <- purrr::map(p$x$data, function(tr) {
+        h <- unique(tr$hoverinfo[!is.na(tr$hoverinfo)])
+        if (length(tr$hoverinfo) > 1 && length(h) == 1) {
+            tr$hoverinfo <- h
+        }
+        tr
+    })
+    p
+}
+
 # See https://github.com/plotly/plotly.js/issues/4999
 arrange_2d_proj_tooltip <- function(fig) {
     if (fig$x$data[[1]]$mode == "lines") {
@@ -59,9 +73,18 @@ sanitize_plotly_buttons <- function(p,
 
 sanitize_plotly_download <- function(p, globals) {
     to_image_options <- list(format = globals$plotly_format, width = globals$plotly_width, height = globals$plotly_height, scale = globals$plotly_scale)
+    # (done here because all our plotly outputs pass through this function)
+    attr(p$x, "TOJSON_FUNC") <- plotly_to_json
     p %>% plotly::config(
         toImageButtonOptions = to_image_options
     )
+}
+
+# plotly's own serializer (plotly:::to_JSON) writes numbers with 15-17 significant digits. 6 are
+# plenty for drawing (hover texts are formatted in R), make the plots' JSON ~10% smaller and are
+# faster to write.
+plotly_to_json <- function(x, ...) {
+    jsonlite::toJSON(x, digits = I(6), auto_unbox = TRUE, force = TRUE, null = "null", na = "null", time_format = "%Y-%m-%d %H:%M:%OS6", ...)
 }
 
 plotly_text_plot <- function(text) {

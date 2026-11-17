@@ -41,6 +41,19 @@ dt_selector_column <- function(df, id, ns, choices, ...) {
 }
 
 
+#' Server-side DT filter that does not return the indices of all filtered rows
+#'
+#' DT sends them on every draw and the browser sends them back as
+#' input$<id>_rows_all. For tables with ~1M rows this is ~10MB per draw. Use only
+#' for tables that don't use input$<id>_rows_all or multiple row selection.
+#'
+#' @noRd
+dt_filter_without_rows_all <- function(data, params) {
+    res <- utils::getFromNamespace("dataTablesFilter", "DT")(data, params)
+    res$DT_rows_all <- list()
+    res
+}
+
 #' Extracts the row id number from the id string
 #' @param idstr the id string formated as id_INDEX
 #'

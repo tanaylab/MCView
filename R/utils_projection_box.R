@@ -99,12 +99,7 @@ projection_box <- function(ns,
 
 projection_selectors <- function(ns, dataset, output, input, gene_modules, globals, session, weight = 1, atlas = FALSE) {
     observe({
-        shinyWidgets::updateVirtualSelect(
-            session = session,
-            inputId = "color_proj_gene",
-            choices = gene_names_label(dataset(), atlas = atlas),
-            selected = default_gene1
-        )
+        update_gene_select(session, "color_proj_gene", dataset(), selected = default_gene1, atlas = atlas)
 
         shinyWidgets::updateVirtualSelect(
             session = session,

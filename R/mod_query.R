@@ -428,7 +428,8 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
 
                     return(dt)
                 },
-                server = TRUE
+                server = TRUE,
+                funcFilter = dt_filter_without_rows_all
             )
         }
     )

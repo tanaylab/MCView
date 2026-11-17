@@ -129,7 +129,14 @@ app_server <- function(input, output, session) {
         }
     }
 
-    purrr::map(tab_defs, ~ load_tab(.x$module_name))
+    # start a tab's server only when the tab is first opened, so tabs the user
+    # never visits don't compute anything or send data to the browser
+    loaded_tabs <- character(0)
+    observeEvent(input$tab_sidebar, {
+        req(!(input$tab_sidebar %in% loaded_tabs))
+        loaded_tabs <<- c(loaded_tabs, input$tab_sidebar)
+        load_tab(input$tab_sidebar)
+    })
 
     clipboard_reactives(dataset, input, output, session, metacell_types, cell_type_colors, gene_modules, globals)
 

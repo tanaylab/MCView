@@ -43,7 +43,9 @@ plot_mc_mc_gene <- function(df, metacell1, metacell2, highlight = NULL, label_pr
         scale_y_continuous(limits = c(xylims[ymin], xylims[ymax]), trans = "log2", breaks = xylims[ymin:ymax], labels = scales::scientific(xylims[ymin:ymax])) +
         xlab(glue("Expression in {label_prefix}{metacell1}{x_label_suffix}")) +
         ylab(glue("Expression in {label_prefix}{metacell2}")) +
-        scale_color_identity() +
+        # a manual scale (rather than scale_color_identity) makes ggplotly draw a trace per
+        # color, instead of sending the color of each of the ~30K genes (the legend is hidden)
+        scale_color_manual(values = rlang::set_names(levels(df$col))) +
         theme(axis.text.x = element_text(angle = 30, vjust = 0.5, hjust = 1))
 
     return(p)

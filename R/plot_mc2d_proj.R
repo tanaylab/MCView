@@ -114,7 +114,9 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
         )
     }
 
-    fig <- plotly::plot_ly() %>% add_scatter_layer()
+    # the edges skip hover, so the points only need to be drawn once, above them
+    # (plotly takes the color scale from the first trace, hence 'colors' here)
+    fig <- plotly::plot_ly(colors = shades)
 
     if (nrow(graph) > 0) {
         edges_x <- c(rbind(graph$x_mc1, graph$x_mc2, NA))
@@ -130,6 +132,7 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
                     color = graph_color,
                     width = graph_width * 5
                 ),
+                hoverinfo = "skip",
                 showlegend = FALSE
             )
     }
@@ -179,6 +182,13 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
             req(proj_stat)
             if (proj_stat == "enrichment") {
                 req(input$lfp)
+            } else if (input$color_proj != "Scatter Axis") {
+                # wait for the "Manual range" inputs (rendered after proj_stat and set_range) so that
+                # their initialization doesn't draw the plot a second time
+                req(!is.null(input$set_range))
+                if (input$set_range) {
+                    req(input$expr_range)
+                }
             }
             if (!is.null(input$set_range) && input$set_range) {
                 min_expr <- input$expr_range[1]
@@ -277,9 +287,8 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
         }
 
         color_proj <- input$color_proj
-        color_proj_gene <- input$color_proj_gene
-        color_proj_metadata <- input$color_proj_metadata
-        color_proj_gene_module <- input$color_proj_gene_module
+        # each of these is used only when coloring by its type
+        color_proj_gene <- color_proj_metadata <- color_proj_gene_module <- proj_color_var(input)
         proj_stat <- input$proj_stat
 
         if (color_proj == "Scatter Axis") {
@@ -289,7 +298,9 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
             color_proj_metadata <- input[[glue("{input$scatter_axis_proj}_axis_var")]]
             color_proj_gene_module <- input[[glue("{input$scatter_axis_proj}_axis_var")]]
             proj_stat <- "expression"
-            req(axis_vars_ok(dataset(), input, "metadata", gene_modules, atlas = atlas))
+            # check only the axis we color by: it is the only one in the cache key, and
+            # bindCache caches req() failures too
+            req(axis_vars_ok(dataset(), input, "metadata", gene_modules, axes = glue("{input$scatter_axis_proj}_axis"), atlas = atlas))
         }
 
 
@@ -432,7 +443,8 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
         fig <- fig %>%
             sanitize_for_WebGL()
         fig <- fig %>%
-            plotly::toWebGL()
+            plotly::toWebGL() %>%
+            collapse_hoverinfo()
         # fig <- fig %>%
         #     arrange_2d_proj_tooltip()
         fig <- fig %>%
@@ -446,6 +458,16 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
 }
 
 
+
+# The variable the 2D projection is colored by. Reads only the input of the chosen coloring, so
+# the other ones changing (e.g. when they are initialized) don't re-render the plot.
+proj_color_var <- function(input) {
+    switch(input$color_proj %||% "",
+        "Gene" = input$color_proj_gene,
+        "Metadata" = input$color_proj_metadata,
+        "Gene module" = input$color_proj_gene_module
+    )
+}
 
 initial_proj_point_size <- function(dataset, screen_width = NULL, screen_height = NULL, weight = 1, atlas = FALSE) {
     if (!is.null(config$datasets[[dataset]]$projection_point_size)) {
