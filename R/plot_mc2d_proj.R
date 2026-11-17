@@ -280,9 +280,8 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
         }
 
         color_proj <- input$color_proj
-        color_proj_gene <- input$color_proj_gene
-        color_proj_metadata <- input$color_proj_metadata
-        color_proj_gene_module <- input$color_proj_gene_module
+        # each of these is used only when coloring by its type
+        color_proj_gene <- color_proj_metadata <- color_proj_gene_module <- proj_color_var(input)
         proj_stat <- input$proj_stat
 
         if (color_proj == "Scatter Axis") {
@@ -452,6 +451,16 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
 }
 
 
+
+# The variable the 2D projection is colored by. Reads only the input of the chosen coloring, so
+# the other ones changing (e.g. when they are initialized) don't re-render the plot.
+proj_color_var <- function(input) {
+    switch(input$color_proj %||% "",
+        "Gene" = input$color_proj_gene,
+        "Metadata" = input$color_proj_metadata,
+        "Gene module" = input$color_proj_gene_module
+    )
+}
 
 initial_proj_point_size <- function(dataset, screen_width = NULL, screen_height = NULL, weight = 1, atlas = FALSE) {
     if (!is.null(config$datasets[[dataset]]$projection_point_size)) {
