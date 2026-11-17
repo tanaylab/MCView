@@ -565,6 +565,13 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
             })
 
 
+            # Only Local enrichment depends on the zoom. In Global mode the zoom is applied when plotting
+            # (filter_heatmap_by_metacell), so zooming reuses the cached matrix and keeps its column order.
+            # A plain function and not a reactive, so that mat() does not depend on the zoom at all in Global mode.
+            zoom_metacells <- function() {
+                if (mat_value() == "Local") metacell_filter()
+            }
+
             mat <- reactive({
                 req(markers())
                 req(dataset())
@@ -585,7 +592,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     metadata_order = metadata_order(),
                     cell_type_metadata_order = applied_params()$metadata_order_cell_type_var,
                     recalc = mat_value() == "Local",
-                    metacells = metacell_filter()
+                    metacells = zoom_metacells()
                 )
 
 
@@ -619,7 +626,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                 }
 
                 return(m)
-            }) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), markers(), gene_modules(), applied_params(), genes(), input$show_genes, clipboard_changed(), mode, metadata_order(), metacell_filter(), mat_value())
+            }) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), markers(), gene_modules(), applied_params(), genes(), input$show_genes, clipboard_changed(), mode, metadata_order(), zoom_metacells(), mat_value())
 
             output$download_matrix <- downloadHandler(
                 filename = function() {

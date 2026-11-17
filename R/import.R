@@ -168,7 +168,7 @@ import_dataset <- function(project,
         }
 
         cli_alert_info("Reading {.file {anndata_file}}")
-        adata <- anndata::read_h5ad(anndata_file)
+        adata <- read_h5ad(anndata_file)
     }
 
     if (is.null(adata$uns$mcview_format)) {
@@ -438,6 +438,18 @@ import_dataset <- function(project,
         gene_modules <- calc_gene_modules(mc_mat[!lateral, ], k = gene_modules_k)
     }
     serialize_shiny_data(gene_modules, "gene_modules", dataset = dataset, cache_dir = cache_dir, flat = TRUE)
+
+    cli_alert_info("Clustering the metacells of the default heatmaps")
+    default_clusterings <- tryCatch(
+        calc_default_clusterings(dataset, cache_dir, list(mc_mat = mc_mat, mc_sum = mc_sum, marker_genes = marker_genes, default_markers = default_markers, default_markers_dist = default_markers_dist)),
+        error = function(e) {
+            cli_warn("Could not cluster the default heatmaps (the app will cluster them on first use): {conditionMessage(e)}")
+            NULL
+        }
+    )
+    if (!is.null(default_clusterings)) {
+        serialize_shiny_data(default_clusterings, "default_clusterings", dataset = dataset, cache_dir = cache_dir)
+    }
 
 
     if (!is.null(adata$varp$var_similarity)) {

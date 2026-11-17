@@ -138,7 +138,7 @@ get_top_marks <- function(feat, notify_var_genes = TRUE) {
 #'
 #' @noRd
 #' @return named vector with metacell order
-order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers = FALSE, force_cell_type = FALSE, metacell_types = NULL, order_each_cell_type = FALSE, epsilon = 0, notify_var_genes = FALSE, log_transform = TRUE, cached_dist = NULL, secondary_order = NULL) {
+order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers = FALSE, force_cell_type = FALSE, metacell_types = NULL, order_each_cell_type = FALSE, epsilon = 0, notify_var_genes = FALSE, log_transform = TRUE, cached_dist = NULL, secondary_order = NULL, precomputed_clusterings = NULL) {
     if (filter_markers) {
         gene_folds <- filter_markers_mat(gene_folds)
     }
@@ -178,7 +178,7 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
         return(1:ncol(feat_all))
     }
 
-    hc <- cluster_metacells(feat, cached_dist)
+    hc <- cluster_metacells(feat, cached_dist, precomputed_clusterings)
 
     reorder.hclust <- utils::getFromNamespace("reorder.hclust", "vegan")
     ord <- reorder.hclust(hc, as.numeric(feat[main_mark, ] - feat[second_mark, ]), agglo.FUN = "uwmean")$order
@@ -255,7 +255,8 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
 # The clustering is the slow part of the heatmaps and depends only on the features, while the
 # heatmap is recomputed on every zoom / annotation / ordering change. Keep it in the app cache
 # (shared by all sessions) when running inside shiny.
-cluster_metacells <- function(feat, cached_dist = NULL) {
+# precomputed_clusterings: clusterings computed at import (calc_default_clusterings), under the same keys.
+cluster_metacells <- function(feat, cached_dist = NULL, precomputed_clusterings = NULL) {
     cache <- shiny::getShinyOption("cache")
     key <- rlang::hash(list("cluster_metacells", feat, attr(cached_dist, "Labels")))
     if (!is.null(cache)) {
@@ -263,6 +264,10 @@ cluster_metacells <- function(feat, cached_dist = NULL) {
         if (!cachem::is.key_missing(hc)) {
             return(hc)
         }
+    }
+
+    if (!is.null(precomputed_clusterings[[key]])) {
+        return(precomputed_clusterings[[key]])
     }
 
     if (!is.null(cached_dist)) {
@@ -275,6 +280,53 @@ cluster_metacells <- function(feat, cached_dist = NULL) {
         cache$set(key, hc)
     }
     return(hc)
+}
+
+# Cluster the metacells of the default Markers and Gene modules heatmaps at import, since clustering is the
+# slowest part of their first render. The result is keyed like the app cache in cluster_metacells(), so the
+# app uses a clustering only when the heatmap features are unchanged (e.g. not after editing gene modules).
+# data: the dataset objects the heatmaps read (mc_mat, mc_sum, marker_genes, default_markers, default_markers_dist).
+calc_default_clusterings <- function(dataset, cache_dir, data) {
+    for (name in c("metacell_types", "cell_type_colors", "gene_modules")) {
+        data[[name]] <- load_shiny_data(name, dataset, cache_dir)
+    }
+
+    # the heatmap code reads the data through the global mc_data, and stores the clusterings in the shiny cache
+    prev_mc_data <- get0("mc_data", envir = globalenv())
+    assign("mc_data", stats::setNames(list(data), dataset), envir = globalenv())
+    prev_cache <- shiny::getShinyOption("cache")
+    cache <- cachem::cache_mem(max_size = Inf)
+    shiny::shinyOptions(cache = cache)
+    on.exit({
+        shiny::shinyOptions(cache = prev_cache)
+        if (is.null(prev_mc_data)) {
+            rm("mc_data", envir = globalenv())
+        } else {
+            assign("mc_data", prev_mc_data, envir = globalenv())
+        }
+    })
+
+    # the inputs the Markers and Gene modules tabs start with (see app_server, heatmap_reactives and mod_gene_modules)
+    metacell_types <- get_metacell_types_data(dataset)
+    cell_type_colors <- get_cell_type_data(dataset)
+    cell_types <- cell_type_colors %>%
+        filter(cell_type %in% metacell_types$cell_type) %>%
+        pull(cell_type)
+    gene_modules <- get_mc_data(dataset, "gene_modules") %>%
+        filter(gene %in% gene_names(dataset)) %>%
+        mutate(gene = as.character(gene), module = factor(module))
+    modules <- levels(gene_modules$module)
+    views <- list(
+        "Markers" = choose_markers(get_marker_genes(dataset), 100, dataset = dataset),
+        "Gene modules" = modules[modules %in% gene_modules$module]
+    )
+
+    for (mode in names(views)) {
+        get_marker_matrix(dataset, views[[mode]], cell_types, metacell_types, cell_type_colors, gene_modules, mode = mode)
+    }
+
+    keys <- cache$keys()
+    return(stats::setNames(lapply(keys, cache$get), keys))
 }
 
 # Same as as.dist(as.matrix(d)[labels, labels]) without expanding d to a full n x n matrix
@@ -408,7 +460,7 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
             # transform to match the order of mat
             mc_order <- match(mc_order, colnames(mat))
         } else {
-            mc_order <- order_mc_by_most_var_genes(mat, force_cell_type = force_cell_type, metacell_types = metacell_types, epsilon = epsilon, notify_var_genes = notify_var_genes, log_transform = log_transform, cached_dist = cached_dist, secondary_order = secondary_order)
+            mc_order <- order_mc_by_most_var_genes(mat, force_cell_type = force_cell_type, metacell_types = metacell_types, epsilon = epsilon, notify_var_genes = notify_var_genes, log_transform = log_transform, cached_dist = cached_dist, secondary_order = secondary_order, precomputed_clusterings = get_mc_data(dataset, "default_clusterings"))
 
             if (!is.null(cell_type_order)) {
                 mc_order_names <- tibble(metacell = colnames(mat)[mc_order]) %>%
