@@ -15,6 +15,49 @@ get_gene_colors <- function(genes,
 }
 
 
+# The plot of tgutil::tgplot_heatmap(mat, col_names, col_names_orient = "slanted", interleave) + fill_scale, with
+# the matrix drawn as a single raster image instead of a geom_raster layer with a row per cell, whose build
+# is most of the render time of large heatmaps. The axes and ranges are the same, so shiny's hover, click
+# and brush coordinates are unchanged.
+tgplot_heatmap_raster <- function(mat, fill_scale, col_names = FALSE, interleave = FALSE) {
+    nr <- nrow(mat)
+    nc <- ncol(mat)
+    row_names <- rownames(mat)
+    colors <- matrix(fill_scale$map(as.vector(mat)), nrow = nr)
+
+    # geom_blank trains the x, y and fill scales on the raster extent, as geom_raster did. show.legend = TRUE
+    # keeps the fill colorbar, which ggplot otherwise drops since geom_blank has no fill aesthetic.
+    extent <- data.frame(x = c(0.5, nc + 0.5), y = c(0.5, nr + 0.5), val = fill_scale$get_limits())
+    p <- ggplot(extent, aes(x = x, y = y, fill = val)) +
+        geom_blank(show.legend = TRUE) +
+        annotation_raster(colors[nr:1, , drop = FALSE], xmin = 0.5, xmax = nc + 0.5, ymin = 0.5, ymax = nr + 0.5) +
+        fill_scale +
+        theme_bw() +
+        theme(axis.ticks = element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank())
+
+    if (isFALSE(col_names)) {
+        p <- p + scale_x_continuous(expand = c(0, 0)) + theme(axis.text.x = element_blank())
+    } else {
+        p <- p +
+            scale_x_continuous(breaks = 1:nc, labels = col_names, expand = c(0, 0), sec.axis = dup_axis()) +
+            theme(
+                axis.text.x.top = element_text(color = "black", angle = -45, hjust = 1, vjust = 0),
+                axis.text.x.bottom = element_text(color = "black", angle = -45, hjust = 0, vjust = 1)
+            )
+    }
+
+    if (interleave) {
+        p <- p + scale_y_continuous(
+            breaks = seq(1, nr, 2), labels = row_names[seq(1, nr, 2)], expand = c(0, 0),
+            sec.axis = dup_axis(breaks = seq(2, nr, 2), labels = row_names[seq(2, nr, 2)])
+        )
+    } else {
+        p <- p + scale_y_continuous(breaks = 1:nr, labels = row_names, expand = c(0, 0), sec.axis = dup_axis())
+    }
+
+    return(p)
+}
+
 plot_markers_mat <- function(mat,
                              metacell_types,
                              cell_type_colors,
@@ -42,13 +85,12 @@ plot_markers_mat <- function(mat,
         col_names <- colnames(mat)
     }
 
-    p_mat <- tgutil::tgplot_heatmap(
+    p_mat <- tgplot_heatmap_raster(
         clip_vals(mat, min_lfp, max_lfp),
+        scale_fill_gradient2(name = "", low = low_color, high = high_color, mid = mid_color, midpoint = midpoint, limits = c(min_lfp, max_lfp)),
         col_names = col_names,
-        col_names_orient = "slanted",
         interleave = interleave
-    ) +
-        scale_fill_gradient2(name = "", low = low_color, high = high_color, mid = mid_color, midpoint = midpoint, limits = c(min_lfp, max_lfp))
+    )
 
     if (interleave) {
         p_mat <- p_mat +
