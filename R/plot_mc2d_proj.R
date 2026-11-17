@@ -182,6 +182,13 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
             req(proj_stat)
             if (proj_stat == "enrichment") {
                 req(input$lfp)
+            } else if (input$color_proj != "Scatter Axis") {
+                # wait for the "Manual range" inputs (rendered after proj_stat and set_range) so that
+                # their initialization doesn't draw the plot a second time
+                req(!is.null(input$set_range))
+                if (input$set_range) {
+                    req(input$expr_range)
+                }
             }
             if (!is.null(input$set_range) && input$set_range) {
                 min_expr <- input$expr_range[1]
