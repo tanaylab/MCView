@@ -540,6 +540,11 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
             metacell_filter <- reactiveVal()
             selected_metacells <- reactiveVal()
 
+            # input$mat_value starts as NULL until its renderUI is shown. Treat that as its
+            # default, "Global", so that its initialization doesn't recompute the heatmap.
+            mat_value <- reactiveVal("Global")
+            observe(mat_value(input$mat_value %||% "Global"))
+
             # Applied parameters for batched heatmap updates
             applied_params <- reactiveVal()
 
@@ -570,7 +575,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     notify_var_genes = TRUE,
                     metadata_order = input$metadata_order_var,
                     cell_type_metadata_order = applied_params()$metadata_order_cell_type_var,
-                    recalc = input$mat_value == "Local",
+                    recalc = mat_value() == "Local",
                     metacells = metacell_filter()
                 )
 
@@ -605,7 +610,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                 }
 
                 return(m)
-            }) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), markers(), gene_modules(), applied_params(), genes(), input$show_genes, clipboard_changed(), mode, input$metadata_order_var, metacell_filter(), input$mat_value)
+            }) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), markers(), gene_modules(), applied_params(), genes(), input$show_genes, clipboard_changed(), mode, input$metadata_order_var, metacell_filter(), mat_value())
 
             output$download_matrix <- downloadHandler(
                 filename = function() {
@@ -958,7 +963,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     return(structure(list(p = res$p, gtable = res$gtable), class = "gt_custom"))
                 },
                 res = 96
-            ) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), gene_modules(), lfp_range(), metacell_filter(), input$plot_legend, input$plot_cell_type_legend, input$plot_genes_legend, applied_params(), markers(), clipboard_changed(), input$high_color, input$low_color, input$mid_color, input$midpoint, genes(), input$show_genes, highlighted_genes(), input$highlight_color, input$max_gene_num, input$metadata_order_var, input$mat_value)
+            ) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), gene_modules(), lfp_range(), metacell_filter(), input$plot_legend, input$plot_cell_type_legend, input$plot_genes_legend, applied_params(), markers(), clipboard_changed(), input$high_color, input$low_color, input$mid_color, input$midpoint, genes(), input$show_genes, highlighted_genes(), input$highlight_color, input$max_gene_num, input$metadata_order_var, mat_value())
 
             observeEvent(input$heatmap_brush, {
                 req(input$brush_action)
