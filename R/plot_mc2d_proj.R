@@ -289,7 +289,9 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
             color_proj_metadata <- input[[glue("{input$scatter_axis_proj}_axis_var")]]
             color_proj_gene_module <- input[[glue("{input$scatter_axis_proj}_axis_var")]]
             proj_stat <- "expression"
-            req(axis_vars_ok(dataset(), input, "metadata", gene_modules, atlas = atlas))
+            # check only the axis we color by: it is the only one in the cache key, and
+            # bindCache caches req() failures too
+            req(axis_vars_ok(dataset(), input, "metadata", gene_modules, axes = glue("{input$scatter_axis_proj}_axis"), atlas = atlas))
         }
 
 
