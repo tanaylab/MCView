@@ -35,9 +35,15 @@ run_app <- function(project,
 
     future::plan(future::multicore)
 
+    # The UI depends only on the project, so build it once per process instead of on every
+    # page load. Building it here also loads shinyWidgets and shinyjqui, which register
+    # their input handlers on load: a browser that reconnects to a restarted app sends
+    # those inputs before requesting any page, and without the handlers the app crashed.
+    ui <- app_ui()
+
     with_golem_options(
         app = shinyApp(
-            ui = app_ui,
+            ui = function(request) ui,
             server = app_server,
             options = list(port = port, host = host, launch.browser = launch.browser)
         ),
