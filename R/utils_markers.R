@@ -175,7 +175,7 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
 
     if (!is.null(cached_dist)) {
         metacells <- colnames(feat)
-        hc <- fastcluster::hclust(as.dist(as.matrix(cached_dist)[metacells, metacells]), method = "ward.D2")
+        hc <- fastcluster::hclust(subset_dist(cached_dist, metacells), method = "ward.D2")
     } else {
         hc <- fastcluster::hclust(tgs_dist(tgs_cor(feat, pairwise.complete.obs = TRUE)), method = "ward.D2")
     }
@@ -250,6 +250,24 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
     }
 
     return(ord)
+}
+
+# Same as as.dist(as.matrix(d)[labels, labels]) without expanding d to a full n x n matrix
+subset_dist <- function(d, labels) {
+    idx <- match(labels, attr(d, "Labels"))
+    n <- attr(d, "Size")
+    if (length(idx) == n && identical(idx, seq_len(n))) {
+        return(d)
+    }
+    k <- length(idx)
+    if (k < 2 || anyNA(idx) || is.unsorted(idx, strictly = TRUE)) {
+        return(as.dist(as.matrix(d)[labels, labels]))
+    }
+    # d(i, j) for i < j is stored at n * (i - 1) - i * (i - 1) / 2 + j - i
+    i <- as.numeric(idx[-k])
+    offset <- n * (i - 1) - i * (i - 1) / 2 - i
+    pos <- unlist(lapply(seq_len(k - 1), function(a) offset[a] + idx[(a + 1):k]))
+    structure(d[pos], Size = k, Labels = labels, Diag = FALSE, Upper = FALSE, class = "dist")
 }
 
 get_markers <- function(dataset) {
