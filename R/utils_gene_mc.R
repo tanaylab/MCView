@@ -40,10 +40,8 @@ get_cached_cor <- function(gg_mc_top_cor, gene, type, exclude = NULL) {
     return(df)
 }
 
-calc_top_cors <- function(dataset, gene, type, data_vec, metacell_filter, exclude, atlas = FALSE) {
-    mc_egc <- get_mc_egc(dataset, atlas = atlas)
-
-    lfp <- log2(mc_egc + egc_epsilon)
+calc_top_cors <- function(dataset, gene, type, data_vec, metacell_filter, exclude, atlas = FALSE, lfp = NULL) {
+    lfp <- lfp %||% log2(get_mc_egc(dataset, atlas = atlas) + egc_epsilon)
     if (!is.null(exclude)) {
         lfp <- lfp[-which(rownames(lfp) %in% exclude), , drop = FALSE]
     }
@@ -59,6 +57,10 @@ calc_top_cors <- function(dataset, gene, type, data_vec, metacell_filter, exclud
         cors <- tgs_cor(t(as.matrix(lfp[gene, , drop = FALSE])), t(lfp), pairwise.complete.obs = TRUE, spearman = FALSE)[1, ]
     }
 
+    return(select_top_cors(cors, type))
+}
+
+select_top_cors <- function(cors, type) {
     if (type == "pos") {
         cors <- head(sort(cors, decreasing = TRUE), n = 30)
     } else if (type == "neg") {
@@ -121,9 +123,16 @@ calc_individual_correlations <- function(dataset, genes, n_top = 30, cell_type_f
         }
     }
 
-    # Calculate correlations for each gene
+    # Correlate all input genes at once, on t(log2(egc + egc_epsilon)) built with a single transpose
+    lfp_t <- log2(t(get_mc_data(dataset, "mc_mat", atlas = atlas)) / get_mc_sum(dataset, atlas = atlas) + egc_epsilon)
+    if (!is.null(metacell_filter)) {
+        req(metacell_filter %in% rownames(lfp_t))
+        lfp_t <- lfp_t[metacell_filter, , drop = FALSE]
+    }
+    all_cors <- tgs_cor(lfp_t[, valid_genes, drop = FALSE], lfp_t, pairwise.complete.obs = TRUE, spearman = FALSE)
+
     results <- purrr::map_dfr(valid_genes, function(gene) {
-        cors <- calc_top_cors(dataset, gene, "both", NULL, metacell_filter, NULL, atlas = atlas)
+        cors <- select_top_cors(all_cors[gene, ], "both")
 
         # Filter by threshold and take top correlations
         cors <- cors %>%
@@ -191,7 +200,7 @@ calc_module_correlations <- function(dataset, genes, n_top = 30, cell_type_filte
     module_expr <- colMeans(mc_egc[valid_genes, , drop = FALSE], na.rm = TRUE)
 
     # Use calc_top_cors with the module expression vector
-    cors <- calc_top_cors(dataset, "module", "both", module_expr, metacell_filter, valid_genes, atlas = atlas)
+    cors <- calc_top_cors(dataset, "module", "both", module_expr, metacell_filter, valid_genes, atlas = atlas, lfp = log2(mc_egc + egc_epsilon))
 
     # Format results with truncated gene list for display
     gene_display <- if (length(valid_genes) <= 3) {
@@ -222,7 +231,7 @@ calc_module_correlations <- function(dataset, genes, n_top = 30, cell_type_filte
 #' @return Data frame with gene-gene correlation results
 calc_gene_gene_correlations <- function(dataset, genes, cell_type_filter = NULL, threshold = 0, atlas = FALSE) {
     # Get expression matrix
-    mc_egc <- get_mc_egc(dataset, atlas = atlas)
+    mc_egc <- get_mc_egc(dataset, genes = genes, atlas = atlas)
     available_genes <- rownames(mc_egc)
     valid_genes <- genes[genes %in% available_genes]
 
@@ -296,7 +305,7 @@ plot_correlation_heatmap <- function(correlation_results, input_genes, dataset,
     }
 
     # Get expression matrix for these genes
-    mc_egc <- get_mc_egc(dataset)
+    mc_egc <- get_mc_egc(dataset, genes = all_genes)
     genes_in_data <- intersect(all_genes, rownames(mc_egc))
 
     if (length(genes_in_data) < 2) {

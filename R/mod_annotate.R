@@ -159,7 +159,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                     input_ok <- FALSE
                 }
 
-                metacells <- get_metacell_ids(project, dataset())
+                metacells <- colnames(get_mc_data(dataset(), "mc_mat"))
 
                 unknown_metacells <- new_metacell_types$metacell[!(new_metacell_types$metacell %in% metacells)]
                 if (length(unknown_metacells) > 0) {
