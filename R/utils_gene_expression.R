@@ -18,7 +18,7 @@ get_mc_fp <- function(dataset, genes = NULL, atlas = FALSE, metacells = NULL) {
     mc_egc <- get_mc_egc(dataset, genes = genes, atlas = atlas, metacells = metacells)
 
     mc_egc_norm <- mc_egc + 1e-5
-    mc_fp <- mc_egc_norm / apply(mc_egc_norm, 1, median, na.rm = TRUE)
+    mc_fp <- mc_egc_norm / matrixStats::rowMedians(mc_egc_norm, na.rm = TRUE)
 
     return(mc_fp)
 }
@@ -50,7 +50,7 @@ get_mc_gene_modules_fp <- function(dataset, modules = NULL, gene_modules = NULL,
     mc_egc <- get_mc_gene_modules_egc(dataset, modules = modules, gene_modules = gene_modules, atlas = atlas)
 
     mc_egc_norm <- mc_egc + 1e-5
-    mc_fp <- mc_egc_norm / apply(mc_egc_norm, 1, median, na.rm = TRUE)
+    mc_fp <- mc_egc_norm / matrixStats::rowMedians(mc_egc_norm, na.rm = TRUE)
 
     return(mc_fp)
 }
