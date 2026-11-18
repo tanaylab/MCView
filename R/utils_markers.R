@@ -388,7 +388,8 @@ calc_default_clusterings <- function(dataset, cache_dir) {
 #' \code{import_dataset} already does this. Use this function for projects imported with an older version of
 #' MCView, or after changing the gene modules with \code{update_gene_modules}.
 #'
-#' Under the hood - MCView writes a file named "default_clusterings.qs2" under \code{project/cache/dataset}.
+#' Under the hood - MCView writes a file named "default_clusterings.qs2" under \code{project/cache/dataset}, and
+#' skips datasets whose directory is a symlink to outside the project.
 #' When that directory isn't writable and the environment variable \code{MCVIEW_CLUSTERING_CACHE_DIR} is set, the
 #' clusterings are stored in that directory instead. Apps that set the variable (e.g. all the apps of a shiny
 #' server) also store there every clustering they compute and look for clusterings there, so each clustering is
@@ -406,8 +407,15 @@ calc_default_clusterings <- function(dataset, cache_dir) {
 update_default_clusterings <- function(project, overwrite = FALSE) {
     project <- init_project_dir(project)
     cache_dir <- project_cache_dir(project)
+    project_real <- normalizePath(project)
     for (dataset in dataset_ls(project)) {
         dataset_dir <- fs::path(cache_dir, dataset)
+        # a dataset linked from another project: that project may be served by an older MCView
+        dataset_real <- normalizePath(dataset_dir)
+        if (!startsWith(dataset_real, paste0(project_real, "/"))) {
+            cli_alert_info("{.field {dataset}} is a symlink to {.file {dataset_real}}, outside the project, skipping it (update that project instead)")
+            next
+        }
         if (!overwrite && any(fs::file_exists(fs::path(dataset_dir, c("default_clusterings.qs2", "default_clusterings.qs"))))) {
             cli_alert_info("{.field {dataset}} already has default_clusterings, skipping it (use {.code overwrite = TRUE} to recompute them)")
             next
