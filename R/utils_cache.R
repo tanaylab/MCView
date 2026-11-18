@@ -82,6 +82,10 @@ load_shiny_data <- function(name, dataset, cache_dir, atlas = FALSE) {
 # Bind each cache file to a promise (delayedAssign) in `env`, so a file is read only
 # when its object is first accessed and objects that are never used are never read.
 lazy_load_files <- function(env, files, dataset, cache_dir, atlas = FALSE) {
+    # load_shiny_data() reads the .qs2 when a .qs of the same name exists (e.g. after
+    # dev/convert_qs_to_qs2.R), so drop the .qs: without the qs package the check below
+    # would otherwise read the whole .qs2 at startup
+    files <- files[!(grepl("\\.qs$", files) & paste0(files, "2") %in% files)]
     for (fn in files) {
         local({
             var_name <- basename(fn) %>%

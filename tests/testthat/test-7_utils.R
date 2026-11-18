@@ -82,3 +82,14 @@ test_that("plotly_event_ids reads the ids of clicked and selected points", {
     expect_identical(plotly_event_ids(event('[{"pointNumber":3,"customdata":"M1"},{"pointNumber":4,"customdata":"M2"}]')), c("M1", "M2"))
     expect_identical(plotly_event_ids(event('[{"pointNumber":3,"customdata":["M1","a"]},{"pointNumber":0,"customdata":"M2"},{"pointNumber":1}]')), c("M1", "M2", NA))
 })
+
+test_that("lazy_load_files reads the .qs2 when a .qs of the same name exists", {
+    cache_dir <- withr::local_tempdir()
+    fs::dir_create(fs::path(cache_dir, "ds"))
+    qs2::qs_save(1:3, fs::path(cache_dir, "ds", "x.qs2"))
+    writeLines("not a qs file", fs::path(cache_dir, "ds", "x.qs"))
+    env <- new.env()
+    lazy_load_files(env, c("x.qs", "x.qs2"), "ds", cache_dir)
+    expect_identical(ls(env), "x")
+    expect_identical(env$x, 1:3)
+})
