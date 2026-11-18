@@ -1,3 +1,11 @@
+# MCView 0.2.59
+
+* Manifold tab: an error while recomputing the 2D projection (e.g. with "Number of neighbors" set to 1) is shown in a notification instead of disconnecting the session, and the button is disabled while the projection is recomputed.
+* Diff. expression scatter plots: the hover shows the diff rounded to 3 decimals again (since 0.2.56 it showed 3 significant digits, e.g. -10.2 instead of -10.225).
+* Gene correlation tab: "Individual genes" correlations no longer fail when one of the genes has no counts in the selected cell types.
+* The app no longer fails at startup when one of the processes that pick the default genes is killed (e.g. out of memory).
+* `update_default_clusterings()` skips datasets whose directory is a symlink to another project, and `dev/update_default_clusterings.R` skips bundles whose app.R loads its own MCView from a `code` directory (MCView 0.2.5 fails at startup when `default_clusterings.qs2` is in the cache).
+
 # MCView 0.2.58
 
 * Fix: in the Atlas tab, coloring by gene, gene module or metadata had no choices to pick from (since 0.2.56).
