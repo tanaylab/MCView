@@ -385,7 +385,15 @@ get_markers <- function(dataset) {
     }
 
     marker_genes <- calc_marker_genes(get_mc_egc(dataset), 20)
-    serialize_shiny_data(marker_genes, "marker_genes", dataset = dataset, cache_dir = cache_dir)
+    # keep the markers for this process even when they can't be saved (e.g. a read-only cache dir)
+    mc_data[[dataset]][["marker_genes"]] <<- marker_genes
+    tryCatch(
+        serialize_shiny_data(marker_genes, "marker_genes", dataset = dataset, cache_dir = cache_dir),
+        error = function(e) {
+            try(unlink(fs::path(cache_dir, dataset, "marker_genes.qs2")), silent = TRUE) # don't leave a partial file
+            cli_alert_warning("Could not save {.field marker_genes}: {conditionMessage(e)}")
+        }
+    )
 
     return(marker_genes)
 }
