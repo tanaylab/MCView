@@ -178,7 +178,14 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
         return(1:ncol(feat_all))
     }
 
-    hc <- cluster_metacells(feat, cached_dist, precomputed_clusterings)
+    # The key of the clustering in the app cache and in the clusterings stored with the dataset (calc_default_clusterings).
+    # The app can run on another machine than the one that stored them, so the key must not depend on the versions of
+    # R and rlang (rlang::hash() changed in rlang 1.3.0), the math library or the locale: it is a hash of the serialized
+    # features without the header (which has the R version), taken before the log and with the genes in a fixed order
+    # (choose_markers sorts them by the locale).
+    key <- list("cluster_metacells", gene_folds[order(rownames(gene_folds), method = "radix"), , drop = FALSE], epsilon, log_transform, !is.null(cached_dist))
+    key <- qs2::xxhash_raw(serialize(key, NULL, xdr = FALSE, version = 2)[-(1:14)])
+    hc <- cluster_metacells(feat, key, cached_dist, precomputed_clusterings)
 
     reorder.hclust <- utils::getFromNamespace("reorder.hclust", "vegan")
     ord <- reorder.hclust(hc, as.numeric(feat[main_mark, ] - feat[second_mark, ]), agglo.FUN = "uwmean")$order
@@ -255,10 +262,12 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
 # The clustering is the slow part of the heatmaps and depends only on the features, while the
 # heatmap is recomputed on every zoom / annotation / ordering change. Keep it in the app cache
 # (shared by all sessions) when running inside shiny.
-# precomputed_clusterings: clusterings computed at import (calc_default_clusterings), under the same keys.
-cluster_metacells <- function(feat, cached_dist = NULL, precomputed_clusterings = NULL) {
+# key: identifies the features (see order_mc_by_most_var_genes).
+# cached_dist: NULL, or a function returning the distances between the metacells to cluster by instead of the
+# features. It is called only when the clustering is neither cached nor stored, since reading them is slow.
+# precomputed_clusterings: clusterings stored with the dataset (calc_default_clusterings), by key.
+cluster_metacells <- function(feat, key, cached_dist = NULL, precomputed_clusterings = NULL) {
     cache <- shiny::getShinyOption("cache")
-    key <- rlang::hash(list("cluster_metacells", feat, attr(cached_dist, "Labels")))
     if (!is.null(cache)) {
         hc <- cache$get(key)
         if (!cachem::is.key_missing(hc)) {
@@ -271,7 +280,7 @@ cluster_metacells <- function(feat, cached_dist = NULL, precomputed_clusterings 
     }
 
     if (!is.null(cached_dist)) {
-        hc <- fastcluster::hclust(subset_dist(cached_dist, colnames(feat)), method = "ward.D2")
+        hc <- fastcluster::hclust(subset_dist(cached_dist(), colnames(feat)), method = "ward.D2")
     } else {
         hc <- fastcluster::hclust(cor_dist(feat), method = "ward.D2")
     }
@@ -282,18 +291,14 @@ cluster_metacells <- function(feat, cached_dist = NULL, precomputed_clusterings 
     return(hc)
 }
 
-# Cluster the metacells of the default Markers and Gene modules heatmaps at import, since clustering is the
-# slowest part of their first render. The result is keyed like the app cache in cluster_metacells(), so the
-# app uses a clustering only when the heatmap features are unchanged (e.g. not after editing gene modules).
-# data: the dataset objects the heatmaps read (mc_mat, mc_sum, marker_genes, default_markers, default_markers_dist).
-calc_default_clusterings <- function(dataset, cache_dir, data) {
-    for (name in c("metacell_types", "cell_type_colors", "gene_modules")) {
-        data[[name]] <- load_shiny_data(name, dataset, cache_dir)
-    }
-
+# Cluster the metacells of the default view of each heatmap tab whose data exist, since clustering is the slowest
+# part of their first render. The result is keyed like the app cache (order_mc_by_most_var_genes), so the app uses
+# a clustering only when the heatmap features are unchanged (e.g. not after editing gene modules).
+# Reads the dataset from cache_dir as the app does, and returns the clusterings by key.
+calc_default_clusterings <- function(dataset, cache_dir) {
     # the heatmap code reads the data through the global mc_data, and stores the clusterings in the shiny cache
     prev_mc_data <- get0("mc_data", envir = globalenv())
-    assign("mc_data", stats::setNames(list(data), dataset), envir = globalenv())
+    assign("mc_data", list(), envir = globalenv())
     prev_cache <- shiny::getShinyOption("cache")
     cache <- cachem::cache_mem(max_size = Inf)
     shiny::shinyOptions(cache = cache)
@@ -306,27 +311,104 @@ calc_default_clusterings <- function(dataset, cache_dir, data) {
         }
     })
 
-    # the inputs the Markers and Gene modules tabs start with (see app_server, heatmap_reactives and mod_gene_modules)
+    load_all_mc_data(dataset, cache_dir)
+    if (has_mc_data(dataset, "default_clusterings")) { # recompute them
+        rm("default_clusterings", envir = mc_data[[dataset]])
+    }
+
+    # the inputs each tab starts with (see app_server, heatmap_reactives, mod_gene_modules and mod_outliers)
     metacell_types <- get_metacell_types_data(dataset)
     cell_type_colors <- get_cell_type_data(dataset)
-    cell_types <- cell_type_colors %>%
-        filter(cell_type %in% metacell_types$cell_type) %>%
-        pull(cell_type)
-    gene_modules <- get_mc_data(dataset, "gene_modules") %>%
-        filter(gene %in% gene_names(dataset)) %>%
-        mutate(gene = as.character(gene), module = factor(module))
-    modules <- levels(gene_modules$module)
-    views <- list(
-        "Markers" = choose_markers(get_marker_genes(dataset), 100, dataset = dataset),
-        "Gene modules" = modules[modules %in% gene_modules$module]
-    )
+    gene_modules <- get_mc_data(dataset, "gene_modules")
+    if (!is.null(gene_modules)) {
+        gene_modules <- gene_modules %>%
+            filter(gene %in% gene_names(dataset)) %>%
+            mutate(gene = as.character(gene), module = factor(module))
+    }
 
-    for (mode in names(views)) {
-        get_marker_matrix(dataset, views[[mode]], cell_types, metacell_types, cell_type_colors, gene_modules, mode = mode)
+    # the data each heatmap needs (without marker_genes the Markers tab computes and saves them, which we leave to the app)
+    needs <- c("Markers" = "marker_genes", "Gene modules" = "gene_modules", "Inner" = "inner_fold_mat", "Stdev" = "inner_stdev_mat", "Proj" = "projected_fold", "Outliers" = "deviant_fold_mat")
+    for (mode in names(needs)[purrr::map_lgl(needs, ~ has_mc_data(dataset, .x))]) {
+        tryCatch(
+            {
+                mode_metacell_types <- metacell_types
+                if (mode == "Outliers") {
+                    mode_metacell_types <- get_mc_data(dataset, "outliers_metadata") %>%
+                        select(cell_id, metacell = most_similar) %>%
+                        mutate(metacell = as.character(metacell)) %>%
+                        left_join(metacell_types, by = "metacell") %>%
+                        mutate(most_similar_metacell = metacell) %>%
+                        select(-metacell) %>%
+                        rename(metacell = cell_id)
+                }
+                cell_types <- cell_type_colors %>%
+                    filter(cell_type %in% mode_metacell_types$cell_type) %>%
+                    pull(cell_type)
+                if (mode == "Gene modules") {
+                    modules <- levels(gene_modules$module)
+                    markers <- modules[modules %in% gene_modules$module]
+                } else {
+                    markers <- choose_markers(get_marker_genes(dataset, mode = mode), 100, dataset = dataset)
+                }
+                cli_alert_info("Clustering the metacells of the {.field {mode}} heatmap")
+                get_marker_matrix(dataset, markers, cell_types, mode_metacell_types, cell_type_colors, gene_modules, mode = mode)
+            },
+            error = function(e) {
+                cli_alert_warning("Could not cluster the {.field {mode}} heatmap (the app will cluster it on first use): {conditionMessage(e)}")
+            }
+        )
     }
 
     keys <- cache$keys()
     return(stats::setNames(lapply(keys, cache$get), keys))
+}
+
+#' Store the clusterings of the default heatmaps
+#'
+#' Cluster the metacells of the heatmap that each heatmap tab (Markers, Gene modules, Inner-fold, Stdev-fold,
+#' Projected-fold and Outliers) starts with, and store the clusterings in the project, so that the app doesn't
+#' cluster them the first time a tab is opened, which takes minutes for large datasets.
+#' \code{import_dataset} already does this. Use this function for projects imported with an older version of
+#' MCView, or after changing the gene modules with \code{update_gene_modules}.
+#'
+#' Under the hood - MCView writes a file named "default_clusterings.qs2" under \code{project/cache/dataset}.
+#'
+#' @param project path to the project directory
+#' @param overwrite recompute the clusterings of datasets that already have them
+#'
+#' @examples
+#' \dontrun{
+#' update_default_clusterings("PBMC")
+#' }
+#'
+#' @export
+update_default_clusterings <- function(project, overwrite = FALSE) {
+    project <- init_project_dir(project)
+    cache_dir <- project_cache_dir(project)
+    for (dataset in dataset_ls(project)) {
+        dataset_dir <- fs::path(cache_dir, dataset)
+        if (!overwrite && any(fs::file_exists(fs::path(dataset_dir, c("default_clusterings.qs2", "default_clusterings.qs"))))) {
+            cli_alert_info("{.field {dataset}} already has default_clusterings, skipping it (use {.code overwrite = TRUE} to recompute them)")
+            next
+        }
+        cli_alert_info("Clustering the metacells of the default heatmaps of {.field {dataset}}")
+        clusterings <- tryCatch(calc_default_clusterings(dataset, cache_dir), error = function(e) {
+            cli_alert_warning(conditionMessage(e))
+            list()
+        })
+        if (length(clusterings) == 0) {
+            cli_alert_warning("Could not cluster any heatmap of {.field {dataset}}")
+            next
+        }
+        # write to a temporary file and rename it, so that an app that starts meanwhile doesn't read a partial file
+        tmp <- tempfile(tmpdir = dataset_dir)
+        tryCatch(qs2::qs_save(clusterings, tmp), error = function(e) {
+            unlink(tmp)
+            stop(e)
+        })
+        fs::file_move(tmp, fs::path(dataset_dir, "default_clusterings.qs2"))
+        cli_alert_success("Saved the clusterings of {length(clusterings)} heatmap{?s} of {.field {dataset}}")
+    }
 }
 
 # Same as tgs_dist(tgs_cor(feat, pairwise.complete.obs = TRUE)): the euclidean distances between the rows of
@@ -337,6 +419,16 @@ cor_dist <- function(feat) {
     z <- scale(feat) / sqrt(nrow(feat) - 1)
     if (!all(is.finite(z))) { # missing values or constant metacells
         return(tgs_dist(tgs_cor(feat, pairwise.complete.obs = TRUE)))
+    }
+    if (nrow(z) < ncol(z) && isTRUE(getOption("tgs_use.blas"))) {
+        # The distance between rows i and j of the correlation matrix is |t(z) %*% (z_i - z_j)| = |M^(1/2) %*% (z_i - z_j)|
+        # with M = z %*% t(z), i.e. the distance between columns i and j of y = M^(1/2) %*% z, which tgs_dist computes
+        # faster than the loop below when it uses BLAS (and slower when it doesn't).
+        e <- eigen(tcrossprod(z), symmetric = TRUE)
+        y <- e$vectors %*% (sqrt(pmax(e$values, 0)) * crossprod(e$vectors, z))
+        d <- tgs_dist(t(y))
+        attributes(d) <- list(Size = ncol(z), Labels = colnames(feat), Diag = FALSE, Upper = FALSE, method = "euclidean", class = "dist")
+        return(d)
     }
     w <- tcrossprod(z) %*% z
     sq <- colSums(z * w)
@@ -438,8 +530,8 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
         epsilon <- 0
         log_transform <- TRUE
         default_markers <- get_mc_data(dataset, "default_markers")
-        if (!is.null(default_markers) && all(markers %in% default_markers) && is.null(metacells)) {
-            cached_dist <- get_mc_data(dataset, "default_markers_dist")
+        if (!is.null(default_markers) && all(markers %in% default_markers) && is.null(metacells) && has_mc_data(dataset, "default_markers_dist")) {
+            cached_dist <- function() get_mc_data(dataset, "default_markers_dist")
         }
     } else if (mode == "Gene modules") {
         mc_fp <- get_mc_gene_modules_fp(dataset, markers, gene_modules)
