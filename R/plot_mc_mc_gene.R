@@ -27,7 +27,7 @@ plot_mc_mc_gene <- function(df, metacell1, metacell2, highlight = NULL, label_pr
             gene_name_suffix = substring(gene_name, nchar(gene) + 1),
             expr_text1 = scales::scientific(!!sym(metacell1)),
             expr_text2 = scales::scientific(!!sym(metacell2)),
-            diff_text = signif(diff, digits = 3),
+            diff_text = round(diff, digits = 3),
             pval_text = ifelse(is.na(pval), "Not computed", scales::scientific(pval, digits = 2))
         )
 

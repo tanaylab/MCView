@@ -70,6 +70,16 @@ test_that("calc_diff_expr p-values match chisq.test", {
     expect_identical(df1$pval[df1$gene == "g1"], suppressWarnings(stats::chisq.test(matrix(c(500, 3, 500, 3), nrow = 2))$p.value))
 })
 
+test_that("the diff. expression hover shows the diff rounded to 3 digits", {
+    prev <- mget("expr_breaks", envir = globalenv(), ifnotfound = list(NULL))
+    withr::defer(purrr::iwalk(prev, ~ assign(.y, .x, envir = globalenv())))
+    assign("expr_breaks", c(1e-5, 2e-5, 4e-5, 1e-4, 2e-4, 4e-4, 1e-3, 2e-3, 4e-3, 1e-2, 2e-2, 4e-2, 1e-1, 2e-1, 4e-1, 1), envir = globalenv())
+    df <- tibble(gene = c("a", "b", "c"), gene_name = gene, m1 = c(1.25e-5, 0.01, 0.002), m2 = c(0.0149, 0.001, 0.002), diff = c(-10.22512, 3.32193, 0), pval = c(0, 1e-3, NA), col = factor(c("darkblue", "darkred", "gray"), levels = c("gray", "darkred", "darkblue")))
+    p <- plot_mc_mc_gene(df, "m1", "m2")
+    # set_hovertemplate writes the as.character() of each field
+    expect_identical(as.character(p$data$diff_text[match(df$gene, p$data$gene)]), c("-10.225", "3.322", "0"))
+})
+
 test_that("set_hovertemplate keeps each point's id first in its customdata", {
     df <- data.frame(id = c("a", "b", "c"), v = c(1.5, NA, 3))
     fig <- plotly::plot_ly(df, x = 1:3, y = 1:3, customdata = ~ rev(id), type = "scatter", mode = "markers")
