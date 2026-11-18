@@ -161,16 +161,18 @@ calc_individual_correlations <- function(dataset, genes, n_top = 30, cell_type_f
         }
     }
 
-    # Correlate all input genes at once, on t(log2(egc + egc_epsilon)) built with a single transpose
-    lfp_t <- log2(t(get_mc_data(dataset, "mc_mat", atlas = atlas)) / get_mc_sum(dataset, atlas = atlas) + egc_epsilon)
+    # Correlate all input genes at once, in a single pass over the genes
+    mc_mat <- get_mc_data(dataset, "mc_mat", atlas = atlas)
+    metacells <- colnames(mc_mat)
     if (!is.null(metacell_filter)) {
-        req(metacell_filter %in% rownames(lfp_t))
-        lfp_t <- lfp_t[metacell_filter, , drop = FALSE]
+        req(metacell_filter %in% metacells)
+        metacells <- metacell_filter
     }
-    all_cors <- tgs_cor(lfp_t[, valid_genes, drop = FALSE], lfp_t, pairwise.complete.obs = TRUE, spearman = FALSE)
+    x <- log2(t(mc_mat[valid_genes, metacells, drop = FALSE]) / get_mc_sum(dataset, atlas = atlas)[metacells] + egc_epsilon)
+    all_cors <- cor_log_egc(dataset, x, rownames(mc_mat), metacells, atlas = atlas)
 
     results <- purrr::map_dfr(valid_genes, function(gene) {
-        cors <- select_top_cors(all_cors[gene, ], "both")
+        cors <- select_top_cors(all_cors[, gene], "both")
 
         # Filter by threshold and take top correlations
         cors <- cors %>%
