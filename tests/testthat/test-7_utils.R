@@ -28,3 +28,24 @@ test_that("cluster_metacells returns the same clustering with and without the ap
     expect_identical(cluster_metacells(feat)$order, hc$order)
     expect_identical(cluster_metacells(feat)$order, hc$order) # cache hit
 })
+
+test_that("calc_diff_expr p-values match chisq.test", {
+    set.seed(60427)
+    # counts and projected (non-integer) counts, with many genes far from the diagonal
+    mat <- cbind(a = rpois(3000, rexp(3000, 0.01)), b = rexp(3000, 0.01) * runif(3000, 0, 5))
+    rownames(mat) <- paste0("g", 1:3000)
+    egc <- t(t(mat) / colSums(mat)) + 1e-5
+    df <- calc_diff_expr(mat, egc, c("a", "b"))
+    f <- abs(df$diff) >= 1.5
+    expect_gt(sum(f), 500)
+    m <- mat[df$gene[f], ]
+    tots <- colSums(m)
+    expected <- apply(m, 1, function(x) suppressWarnings(stats::chisq.test(matrix(c(x, tots), nrow = 2))$p.value))
+    expect_identical(df$pval[f], unname(expected))
+    expect_true(all(is.na(df$pval[!f])))
+
+    # a single gene far from the diagonal
+    mat1 <- rbind(g1 = c(a = 500, b = 3), g2 = c(a = 5000, b = 300))
+    df1 <- calc_diff_expr(mat1, t(t(mat1) / colSums(mat1)) + 1e-5, c("a", "b"))
+    expect_identical(df1$pval[df1$gene == "g1"], suppressWarnings(stats::chisq.test(matrix(c(500, 3, 500, 3), nrow = 2))$p.value))
+})

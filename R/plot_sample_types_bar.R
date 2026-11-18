@@ -1,11 +1,14 @@
 plot_sample_stacked_types <- function(dataset, globals, metacell_types, cell_type_colors, input) {
     plotly::renderPlotly({
+        # wait for the "Order by" choices (set by the server)
+        req(input$sample_types_ordering)
         samp_mc_count <- get_samp_mc_count(dataset())
         mc_types <- metacell_types() %>%
             select(metacell, cell_type) %>%
             deframe()
         mc_types <- mc_types[colnames(samp_mc_count)]
-        samp_mc_count <- t(tgs_matrix_tapply(samp_mc_count, mc_types, sum, na.rm = TRUE))
+        # rowsum rather than tgs_matrix_tapply, which forks worker processes (see get_cell_types_mat)
+        samp_mc_count <- t(rowsum(t(samp_mc_count), mc_types, na.rm = TRUE))
 
         samp_types <- samp_mc_count %>%
             as.data.frame() %>%
@@ -40,12 +43,15 @@ plot_sample_stacked_types <- function(dataset, globals, metacell_types, cell_typ
             samp_types <- samp_types %>%
                 mutate(
                     Sample = factor(Sample, levels = samp_ord),
-                    `# of cells` = paste0(`# of cells`, paste0("\n", input$sample_types_ordering, ": ", samp_md[[input$sample_types_ordering]]))
+                    # (the value of each bar's sample: this recycled the values in the order of samp_md)
+                    `# of cells` = paste0(`# of cells`, paste0("\n", input$sample_types_ordering, ": ", samp_md[[input$sample_types_ordering]][match(Sample, samp_md$samp_id)]))
                 )
             xlab <- input$sample_types_ordering
         }
 
+        # bars of zero height are not drawn: don't send them (~half of the bars)
         p <- samp_types %>%
+            filter(n > 0) %>%
             ggplot(aes(x = Sample, y = `Fraction`, fill = `Cell type`, customdata = Sample, tooltip_text = `# of cells`)) +
             geom_col() +
             scale_fill_manual(name = "", values = cell_type_colors() %>%

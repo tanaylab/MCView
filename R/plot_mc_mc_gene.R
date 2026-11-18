@@ -172,7 +172,9 @@ render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, global
             "P-value: %{customdata[5]}<extra></extra>"
         )
 
-        fig <- plotly::ggplotly(p, source = source) %>%
+        # tooltip = "none": the hover texts that ggplotly would write (~40% of its time on ~30K genes)
+        # are replaced by the hovertemplate anyway
+        fig <- plotly::ggplotly(p, source = source, tooltip = "none") %>%
             set_hovertemplate(p$data, "gene", c("gene_name_suffix", "expr_text1", "expr_text2", "diff_text", "pval_text"), hovertemplate) %>%
             plotly::hide_legend() %>%
             sanitize_for_WebGL() %>%

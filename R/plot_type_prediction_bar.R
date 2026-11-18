@@ -22,13 +22,12 @@ plot_type_predictions_bar <- function(dataset, metacell_types, cell_type_colors)
 
             # Stack the bars here (first type on top) instead of with geom_col(): ggplot stacks each
             # metacell separately, which takes ~45s for 15K metacells. Most fractions are zero.
+            # (ave() rather than a grouped mutate, which took ~0.4s for 15K metacells)
             df_fracs <- df_fracs %>%
                 filter(fraction > 0) %>%
                 mutate(i = row_number()) %>%
                 arrange(metacell, desc(type)) %>%
-                group_by(metacell) %>%
-                mutate(ymax = cumsum(fraction), ymin = lag(ymax, default = 0)) %>%
-                ungroup() %>%
+                mutate(ymax = ave(fraction, metacell, FUN = cumsum), ymin = ave(ymax, metacell, FUN = function(x) c(0, x[-length(x)]))) %>%
                 arrange(i)
 
             p_fracs <- df_fracs %>%

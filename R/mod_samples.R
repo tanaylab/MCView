@@ -143,7 +143,10 @@ mod_samples_server <- function(id, dataset, metacell_types, cell_type_colors, ge
             output$cell_type_list <- cell_type_selector(dataset, ns, id = "selected_cell_types", label = "Cell types", cell_type_colors = cell_type_colors, metacell_types = metacell_types)
 
             observe({
-                choices <- c(dataset_cell_metadata_fields_numeric(dataset()), "Default")
+                # only fields with a single value per sample can order the samples (the plot shows
+                # nothing for the others)
+                fields <- intersect(dataset_cell_metadata_fields_numeric(dataset()), colnames(get_samp_metadata(dataset())))
+                choices <- c(fields, "Default")
                 shinyWidgets::updateVirtualSelect(
                     session = session,
                     inputId = "sample_types_ordering",
@@ -158,8 +161,9 @@ mod_samples_server <- function(id, dataset, metacell_types, cell_type_colors, ge
             projection_selectors(ns, dataset, output, input, gene_modules, globals, session, weight = 0.6)
 
             output$sample_select_ui <- renderUI({
+                # (no dependency on the 2D projection coloring: it re-rendered the pickers, which
+                # reset the chosen samples)
                 req(dataset())
-                req(input$color_proj)
                 samp_list <- get_samples_list(dataset())
                 if (length(samp_list) > 1) {
                     selected2 <- samp_list[2]

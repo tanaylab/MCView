@@ -68,6 +68,14 @@ load_shiny_data <- function(name, dataset, cache_dir, atlas = FALSE) {
             column_to_rownames("__rowname__") %>%
             as.matrix()
     }
+
+    # Projects imported before the projected matrix was stored dense have it as a dgCMatrix that is
+    # mostly non-zero: a dense matrix takes less memory then (above 2/3 non-zeros), and reading a
+    # gene from it takes ~1ms instead of ~0.5s
+    if (name == "projected_mat" && methods::is(object, "dgCMatrix") && length(object@x) > 2 / 3 * prod(dim(object))) {
+        object <- as.matrix(object)
+    }
+
     return(object)
 }
 
