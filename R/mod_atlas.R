@@ -130,16 +130,9 @@ mod_atlas_server <- function(id, dataset, metacell_types, cell_type_colors, gene
 
             output$cell_type_selector <- cell_type_selector(dataset, ns, id = "selected_cell_types", label = "Cell types", cell_type_colors = cell_type_colors, selected = "all")
 
-            # once the user colors by a query metacell: the picker of all the query metacells is
-            # large (~700KB for 15K metacells)
-            metacell_selector_shown <- reactiveVal(FALSE)
-            observe({
-                if (isTRUE(input$color_proj == "Query metacell")) {
-                    metacell_selector_shown(TRUE)
-                }
-            })
+            # the picker of all the query metacells is large (~700KB for 15K metacells): it starts
+            # hidden, and shiny renders a hidden output only once it is shown
             output$metacell_selector <- renderUI({
-                req(metacell_selector_shown())
                 metacell_names <- colnames(get_mc_data(dataset(), "mc_mat"))
                 shinyWidgets::pickerInput(ns("selected_metacell"), "Metacell",
                     choices = metacell_names,
