@@ -273,7 +273,7 @@ cluster_metacells <- function(feat, cached_dist = NULL, precomputed_clusterings 
     if (!is.null(cached_dist)) {
         hc <- fastcluster::hclust(subset_dist(cached_dist, colnames(feat)), method = "ward.D2")
     } else {
-        hc <- fastcluster::hclust(tgs_dist(tgs_cor(feat, pairwise.complete.obs = TRUE)), method = "ward.D2")
+        hc <- fastcluster::hclust(cor_dist(feat), method = "ward.D2")
     }
 
     if (!is.null(cache)) {
@@ -329,6 +329,37 @@ calc_default_clusterings <- function(dataset, cache_dir, data) {
     return(stats::setNames(lapply(keys, cache$get), keys))
 }
 
+# Same as tgs_dist(tgs_cor(feat, pairwise.complete.obs = TRUE)): the euclidean distances between the rows of
+# the metacell correlation matrix, without computing it. With z the standardized columns of feat, the correlation
+# matrix is t(z) %*% z, so the dot products of its rows are t(z) %*% w with w = z %*% t(z) %*% z. That costs
+# n^2 * nrow(feat) instead of n^3 for n metacells.
+cor_dist <- function(feat) {
+    z <- scale(feat) / sqrt(nrow(feat) - 1)
+    if (!all(is.finite(z))) { # missing values or constant metacells
+        return(tgs_dist(tgs_cor(feat, pairwise.complete.obs = TRUE)))
+    }
+    w <- tcrossprod(z) %*% z
+    sq <- colSums(z * w)
+    # the squared distance sq_i + sq_j - 2 * z_i . w_j as a single matrix product
+    z <- rbind(z, sq, 1)
+    w <- rbind(-2 * w, 1, sq)
+    n <- ncol(z)
+    d <- numeric(n * (n - 1) / 2)
+    pos <- 0
+    # by blocks of columns, filling d in place
+    for (js in split(seq_len(n - 1), ceiling(seq_len(n - 1) / 200))) {
+        d2 <- crossprod(z[, js[1]:n, drop = FALSE], w[, js, drop = FALSE])
+        # d(i, j) for i > j, in the column-major order of a dist object
+        d2 <- d2[lower.tri(d2)]
+        d2[d2 < 0] <- 0 # rounding errors
+        d[(pos + 1):(pos + length(d2))] <- sqrt(d2)
+        pos <- pos + length(d2)
+    }
+    attributes(d) <- list(Size = n, Labels = colnames(feat), Diag = FALSE, Upper = FALSE, method = "euclidean", class = "dist")
+
+    return(d)
+}
+
 # Same as as.dist(as.matrix(d)[labels, labels]) without expanding d to a full n x n matrix
 subset_dist <- function(d, labels) {
     idx <- match(labels, attr(d, "Labels"))
@@ -354,7 +385,15 @@ get_markers <- function(dataset) {
     }
 
     marker_genes <- calc_marker_genes(get_mc_egc(dataset), 20)
-    serialize_shiny_data(marker_genes, "marker_genes", dataset = dataset, cache_dir = cache_dir)
+    # keep the markers for this process even when they can't be saved (e.g. a read-only cache dir)
+    mc_data[[dataset]][["marker_genes"]] <<- marker_genes
+    tryCatch(
+        serialize_shiny_data(marker_genes, "marker_genes", dataset = dataset, cache_dir = cache_dir),
+        error = function(e) {
+            try(unlink(fs::path(cache_dir, dataset, "marker_genes.qs2")), silent = TRUE) # don't leave a partial file
+            cli_alert_warning("Could not save {.field marker_genes}: {conditionMessage(e)}")
+        }
+    )
 
     return(marker_genes)
 }
@@ -364,22 +403,19 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
     if (mode == "Inner") {
         mc_fp <- get_mc_data(dataset, "inner_fold_mat")
         req(mc_fp)
-        mc_fp <- as.matrix(mc_fp[Matrix::rowSums(mc_fp) > 0, ])
-        mc_fp <- mc_fp[intersect(markers, rownames(mc_fp)), , drop = FALSE]
+        mc_fp <- as.matrix(mc_fp[intersect(markers, rownames(mc_fp)[Matrix::rowSums(mc_fp) > 0]), , drop = FALSE])
         epsilon <- 1e-5
         log_transform <- FALSE
     } else if (mode == "Stdev") {
         mc_fp <- get_mc_data(dataset, "inner_stdev_mat")
         req(mc_fp)
-        mc_fp <- as.matrix(mc_fp[Matrix::rowSums(mc_fp) > 0, ])
-        mc_fp <- mc_fp[intersect(markers, rownames(mc_fp)), , drop = FALSE]
+        mc_fp <- as.matrix(mc_fp[intersect(markers, rownames(mc_fp)[Matrix::rowSums(mc_fp) > 0]), , drop = FALSE])
         epsilon <- 1e-5
         log_transform <- FALSE
     } else if (mode == "Proj") {
         mc_fp <- get_mc_data(dataset, "projected_fold")
         req(mc_fp)
-        mc_fp <- as.matrix(mc_fp[abs(Matrix::rowSums(mc_fp)) > 0, ])
-        mc_fp <- mc_fp[intersect(markers, rownames(mc_fp)), , drop = FALSE]
+        mc_fp <- as.matrix(mc_fp[intersect(markers, rownames(mc_fp)[abs(Matrix::rowSums(mc_fp)) > 0]), , drop = FALSE])
         epsilon <- 1e-5
         log_transform <- FALSE
     } else if (mode == "Markers") {
@@ -412,8 +448,7 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
     } else if (mode == "Outliers") {
         mc_fp <- get_mc_data(dataset, "deviant_fold_mat")
         req(mc_fp)
-        mc_fp <- as.matrix(mc_fp[Matrix::rowSums(mc_fp) > 0, ])
-        mc_fp <- mc_fp[intersect(markers, rownames(mc_fp)), , drop = FALSE]
+        mc_fp <- as.matrix(mc_fp[intersect(markers, rownames(mc_fp)[Matrix::rowSums(mc_fp) > 0]), , drop = FALSE])
         epsilon <- 1e-5
         log_transform <- FALSE
     } else {

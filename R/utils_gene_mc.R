@@ -42,7 +42,6 @@ get_cached_cor <- function(gg_mc_top_cor, gene, type, exclude = NULL) {
 
 calc_top_cors <- function(dataset, gene, type, data_vec, metacell_filter, exclude, atlas = FALSE) {
     mc_mat <- get_mc_data(dataset, "mc_mat", atlas = atlas)
-    mc_sum <- get_mc_sum(dataset, atlas = atlas)
 
     genes <- rownames(mc_mat)
     if (!is.null(exclude)) {
@@ -59,25 +58,44 @@ calc_top_cors <- function(dataset, gene, type, data_vec, metacell_filter, exclud
         req(!atlas)
         x <- data_vec[metacells]
     } else {
-        x <- log2(mc_mat[gene, metacells] / mc_sum[metacells] + egc_epsilon)
+        x <- log2(mc_mat[gene, metacells] / get_mc_sum(dataset, atlas = atlas)[metacells] + egc_epsilon)
     }
 
-    # Pearson correlation of x with log2(egc + egc_epsilon) of every gene (pairwise complete),
-    # computed in chunks of genes so the full genes x metacells log2 egc matrix is never built.
-    complete <- !is.na(x)
-    metacells <- match(metacells[complete], colnames(mc_mat))
-    x <- x[complete] - mean(x[complete])
-    mc_sum <- mc_sum[metacells]
-    rows <- match(genes, rownames(mc_mat))
-    cors <- unlist(purrr::map(split(rows, ceiling(seq_along(rows) / 200)), function(chunk) {
-        m <- mc_mat[chunk, metacells, drop = FALSE]
-        # shifted by log2(egc_epsilon) so zero counts are exactly 0 and all-zero genes get NaN
-        lfp <- log2(m / rep(mc_sum, each = nrow(m)) + egc_epsilon) - log2(egc_epsilon)
-        drop(lfp %*% x) / sqrt(matrixStats::rowVars(lfp) * (length(x) - 1) * sum(x^2))
-    }), use.names = FALSE)
-    names(cors) <- genes
+    cors <- cor_log_egc(dataset, as.matrix(x), genes, metacells, atlas = atlas)[, 1]
 
     return(select_top_cors(cors, type))
+}
+
+# Pearson correlations of each column of x (a row per metacell) with log2(egc + egc_epsilon) of every gene
+# in `genes`, over `metacells`, skipping metacells with missing values in x. Computed in chunks of genes,
+# so the full genes x metacells log2 egc matrix is never built.
+# Returns a genes x ncol(x) matrix.
+cor_log_egc <- function(dataset, x, genes, metacells, atlas = FALSE) {
+    mc_mat <- get_mc_data(dataset, "mc_mat", atlas = atlas)
+    mc_sum <- get_mc_sum(dataset, atlas = atlas)
+
+    complete <- rowSums(is.na(x)) == 0
+    cols <- match(metacells[complete], colnames(mc_mat))
+    all_cols <- identical(cols, seq_len(ncol(mc_mat)))
+    x <- scale(x[complete, , drop = FALSE], scale = FALSE)
+    x_norm <- sqrt(colSums(x^2))
+    # log(egc / egc_epsilon + 1), i.e. log2(egc + egc_epsilon) shifted and scaled, which doesn't change the
+    # correlation. Zero counts are exactly 0, so all-zero genes get NaN.
+    mc_scale <- 1 / (unname(mc_sum[cols]) * egc_epsilon)
+    chunk_scale <- rep(mc_scale, each = 200) # the same for all chunks but the last
+    rows <- match(genes, rownames(mc_mat))
+    cors <- do.call(rbind, lapply(split(rows, ceiling(seq_along(rows) / 200)), function(chunk) {
+        if (length(chunk) < 200) {
+            chunk_scale <- rep(mc_scale, each = length(chunk))
+        }
+        # a single expression, so that R computes it in the memory of the subset
+        lfp <- log1p((if (all_cols) mc_mat[chunk, , drop = FALSE] else mc_mat[chunk, cols, drop = FALSE]) * chunk_scale)
+        lfp_norm <- sqrt(matrixStats::rowVars(lfp) * (nrow(x) - 1))
+        (lfp %*% x) / outer(lfp_norm, x_norm)
+    }))
+    dimnames(cors) <- list(genes, colnames(x))
+
+    return(cors)
 }
 
 select_top_cors <- function(cors, type) {
@@ -143,16 +161,18 @@ calc_individual_correlations <- function(dataset, genes, n_top = 30, cell_type_f
         }
     }
 
-    # Correlate all input genes at once, on t(log2(egc + egc_epsilon)) built with a single transpose
-    lfp_t <- log2(t(get_mc_data(dataset, "mc_mat", atlas = atlas)) / get_mc_sum(dataset, atlas = atlas) + egc_epsilon)
+    # Correlate all input genes at once, in a single pass over the genes
+    mc_mat <- get_mc_data(dataset, "mc_mat", atlas = atlas)
+    metacells <- colnames(mc_mat)
     if (!is.null(metacell_filter)) {
-        req(metacell_filter %in% rownames(lfp_t))
-        lfp_t <- lfp_t[metacell_filter, , drop = FALSE]
+        req(metacell_filter %in% metacells)
+        metacells <- metacell_filter
     }
-    all_cors <- tgs_cor(lfp_t[, valid_genes, drop = FALSE], lfp_t, pairwise.complete.obs = TRUE, spearman = FALSE)
+    x <- log2(t(mc_mat[valid_genes, metacells, drop = FALSE]) / get_mc_sum(dataset, atlas = atlas)[metacells] + egc_epsilon)
+    all_cors <- cor_log_egc(dataset, x, rownames(mc_mat), metacells, atlas = atlas)
 
     results <- purrr::map_dfr(valid_genes, function(gene) {
-        cors <- select_top_cors(all_cors[gene, ], "both")
+        cors <- select_top_cors(all_cors[, gene], "both")
 
         # Filter by threshold and take top correlations
         cors <- cors %>%
