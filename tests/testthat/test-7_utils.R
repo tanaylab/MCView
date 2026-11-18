@@ -70,6 +70,25 @@ test_that("calc_diff_expr p-values match chisq.test", {
     expect_identical(df1$pval[df1$gene == "g1"], suppressWarnings(stats::chisq.test(matrix(c(500, 3, 500, 3), nrow = 2))$p.value))
 })
 
+test_that("calc_obs_exp_mc_df tests the counts of the chosen metacell", {
+    set.seed(60427)
+    obs <- matrix(rpois(2000 * 6, rexp(2000 * 6, 0.01)), 2000, 6, dimnames = list(paste0("g", 1:2000), paste0("mc", 1:6)))
+    proj <- obs * runif(length(obs), 0, 6)
+    prev <- mget(c("mc_data", "egc_epsilon"), envir = globalenv(), ifnotfound = list(NULL, NULL))
+    withr::defer(purrr::iwalk(prev, ~ assign(.y, .x, envir = globalenv())))
+    assign("mc_data", list(toy = list(mc_mat = obs, mc_sum = colSums(obs), projected_mat = proj, projected_mat_sum = colSums(proj))), envir = globalenv())
+    assign("egc_epsilon", 1e-5, envir = globalenv())
+
+    df <- calc_obs_exp_mc_df("toy", "mc4")
+    f <- !is.na(df$pval)
+    expect_gt(sum(f), 100)
+    m <- cbind(obs[df$gene[f], "mc4"], proj[df$gene[f], "mc4"])
+    tots <- colSums(m)
+    expected <- apply(m, 1, function(x) suppressWarnings(stats::chisq.test(matrix(c(x, tots), nrow = 2))$p.value))
+    expect_equal(df$pval[f], unname(expected))
+    expect_equal(df$Observed, unname(obs[df$gene, "mc4"] / sum(obs[, "mc4"]) + 1e-5))
+})
+
 test_that("the diff. expression hover shows the diff rounded to 3 digits", {
     prev <- mget("expr_breaks", envir = globalenv(), ifnotfound = list(NULL))
     withr::defer(purrr::iwalk(prev, ~ assign(.y, .x, envir = globalenv())))
