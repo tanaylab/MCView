@@ -627,7 +627,7 @@ mod_gene_correlation_server <- function(id, dataset, metacell_types, cell_type_c
                     mask_low_correlations = input$mask_low_correlations,
                     correlation_mode = input$correlation_mode
                 )
-            }) %>% bindCache(correlation_results(), dataset(), input$heatmap_top_genes, input$cluster_heatmap, input$mask_low_correlations, input$correlation_mode)
+            }) %>% bindCache(req_plot_size(), correlation_results(), dataset(), input$heatmap_top_genes, input$cluster_heatmap, input$mask_low_correlations, input$correlation_mode, sizePolicy = plot_size_policy)
 
             # Barplot visualization
             output$correlation_barplot <- plotly::renderPlotly({
