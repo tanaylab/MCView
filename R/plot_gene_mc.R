@@ -134,16 +134,11 @@ plot_gene_time_over_mc <- function(dataset, gene, metacell_types = get_mc_data(d
 }
 
 connect_gene_plots <- function(input, output, session, ns, source) {
-    # Connect the legend of the gene/gene plot to the expression/time plots
+    # Connect the legend of the 2D projection to the gene/gene plot
     plot_gene_gene_mc_proxy <- plotly::plotlyProxy(ns("plot_gene_gene_mc"), session)
-    plot_gene_age_mc1_proxy <- plotly::plotlyProxy(ns("plot_gene_age_mc1"), session)
-    plot_gene_age_mc2_proxy <- plotly::plotlyProxy(ns("plot_gene_age_mc2"), session)
 
     observe({
         restyle_events <- plotly::event_data(source = source, event = "plotly_restyle")
-
-        plotly::plotlyProxyInvoke(plot_gene_age_mc1_proxy, "restyle", restyle_events[[1]], restyle_events[[2]])
-        plotly::plotlyProxyInvoke(plot_gene_age_mc2_proxy, "restyle", restyle_events[[1]], restyle_events[[2]])
 
         req(is.null(input$color_by_var) || input$color_by_var == "Cell type")
         plotly::plotlyProxyInvoke(plot_gene_gene_mc_proxy, "restyle", restyle_events[[1]], restyle_events[[2]])
