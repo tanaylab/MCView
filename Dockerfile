@@ -29,9 +29,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Python anndata in an isolated venv. The R 'anndata' package reads h5ad files
 # through reticulate; point reticulate at this venv so it always finds anndata.
+# The R package can't convert objects from anndata >= 0.13 or pandas >= 3, so pin both.
 RUN python3 -m venv /opt/venv && \
     /opt/venv/bin/pip install --no-cache-dir --upgrade pip && \
-    /opt/venv/bin/pip install --no-cache-dir anndata
+    /opt/venv/bin/pip install --no-cache-dir "anndata<0.13" "pandas<3"
 ENV RETICULATE_PYTHON=/opt/venv/bin/python
 
 # Resolve all R dependencies from the pinned snapshot.
