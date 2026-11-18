@@ -35,6 +35,13 @@ run_app <- function(project,
 
     future::plan(future::multicore)
 
+    # tgstat guesses whether R uses an optimized BLAS from the library's file name, which misses
+    # Debian/Ubuntu's OpenBLAS (.../openblas-pthread/libblas.so.3), and then takes a path that is
+    # ~10x slower. Check the full path instead, unless the user set the option.
+    if (is.null(getOption("tgs_use.blas")) && grepl("openblas|mkl|atlas", extSoftVersion()[["BLAS"]], ignore.case = TRUE)) {
+        options(tgs_use.blas = TRUE)
+    }
+
     # The UI depends only on the project, so build it once per process instead of on every
     # page load. Building it here also loads shinyWidgets and shinyjqui, which register
     # their input handlers on load: a browser that reconnects to a restarted app sends
