@@ -81,6 +81,12 @@ load_shiny_data <- function(name, dataset, cache_dir, atlas = FALSE) {
 
 # Bind each cache file to a promise (delayedAssign) in `env`, so a file is read only
 # when its object is first accessed and objects that are never used are never read.
+# - Never read an unread object inside a forked process (future_promise, mclapply): read it
+#   in the parent first. qs2 reads with TBB threads, which can't start after a fork, and the
+#   object would be read again in every fork.
+# - A running app reads a file when the object is first used, possibly long after it started,
+#   so it can mix files from before and after a re-import or an update_*() call: restart the
+#   app after those.
 lazy_load_files <- function(env, files, dataset, cache_dir, atlas = FALSE) {
     # load_shiny_data() reads the .qs2 when a .qs of the same name exists (e.g. after
     # dev/convert_qs_to_qs2.R), so drop the .qs: without the qs package the check below
@@ -92,7 +98,8 @@ lazy_load_files <- function(env, files, dataset, cache_dir, atlas = FALSE) {
                 sub("\\.(qs2|qs)$", "", .) %>%
                 sub("\\.tsv$", "", .)
             if (grepl("\\.qs$", fn) && !requireNamespace("qs", quietly = TRUE)) {
-                # fail at startup, as before, unless a .tsv/.qs2 copy exists
+                # fail at startup, as before, unless a .tsv of the same name exists (a .qs with a
+                # .qs2 next to it was dropped above)
                 load_shiny_data(var_name, dataset, cache_dir, atlas = atlas)
             }
             delayedAssign(var_name, load_shiny_data(var_name, dataset, cache_dir, atlas = atlas), assign.env = env)
