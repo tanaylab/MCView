@@ -444,7 +444,7 @@ update_default_clusterings <- function(project, overwrite = FALSE) {
         }
         # write to a temporary file and rename it, so that an app that starts meanwhile doesn't read a partial file,
         # and read it back first (some file systems, e.g. FUSE mounts, drop qs2's final write)
-        tmp <- tempfile(tmpdir = dataset_dir)
+        tmp <- tempfile(".default_clusterings.qs2-", tmpdir = dataset_dir) # hidden: MCView doesn't list it
         written <- tryCatch(
             {
                 qs2::qs_save(clusterings, tmp)
