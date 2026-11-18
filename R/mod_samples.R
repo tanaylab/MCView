@@ -143,7 +143,10 @@ mod_samples_server <- function(id, dataset, metacell_types, cell_type_colors, ge
             output$cell_type_list <- cell_type_selector(dataset, ns, id = "selected_cell_types", label = "Cell types", cell_type_colors = cell_type_colors, metacell_types = metacell_types)
 
             observe({
-                choices <- c(dataset_cell_metadata_fields_numeric(dataset()), "Default")
+                # only fields with a single value per sample can order the samples (the plot shows
+                # nothing for the others)
+                fields <- intersect(dataset_cell_metadata_fields_numeric(dataset()), colnames(get_samp_metadata(dataset())))
+                choices <- c(fields, "Default")
                 shinyWidgets::updateVirtualSelect(
                     session = session,
                     inputId = "sample_types_ordering",
