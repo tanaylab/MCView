@@ -106,7 +106,8 @@ select_top_cors <- function(cors, type) {
     } else {
         cors <- c(head(sort(cors, decreasing = TRUE), n = 30), head(sort(cors), n = 30))
     }
-    df <- enframe(cors, "gene2", "cor")
+    # not enframe(): c() of two empty vectors drops their names, and enframe() then numbers the rows
+    df <- tibble(gene2 = names(cors) %||% character(0), cor = unname(cors))
 
     return(df)
 }
@@ -193,7 +194,8 @@ calc_individual_correlations <- function(dataset, genes, n_top = 30, cell_type_f
             mutate(
                 input_gene = gene,
                 rank = row_number(),
-                correlation_type = ifelse(cor > 0, "positive", "negative")
+                # if_else: a character column also without rows, which map_dfr then binds with the others
+                correlation_type = if_else(cor > 0, "positive", "negative")
             )
 
         return(combined_cors)
