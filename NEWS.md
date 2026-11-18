@@ -31,6 +31,7 @@ Fixes:
 * A plot drawn at zero size could break every plotly plot of the app, for all sessions, until restart.
 * A browser reconnecting to a restarted app could crash it.
 * Import stops with a clear message when the Python anndata (>= 0.13) or pandas (>= 3) is too new for the R anndata package. The Docker image pins anndata < 0.13 and pandas < 3.
+* Multi-dataset projects: heatmaps, Annotate colors and the Genes metadata choices now follow a dataset switch.
 
 # MCView 0.2.55
 

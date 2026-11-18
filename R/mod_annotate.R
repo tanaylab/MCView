@@ -237,6 +237,13 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
             # keep the last cell type that was chosen in order for it to be defaultly selected
             last_chosen_cell_type <- reactiveVal("(Missing)")
 
+            # a dataset switch starts over, as when the tab is first opened on that dataset: all of its cell types are
+            # shown (scatter_box_outputs sets them when NULL) and no metacells are selected
+            observeEvent(dataset(), ignoreInit = TRUE, {
+                selected_cell_types(NULL)
+                selected_metacell_types(tibble(metacell = character(), cell_type = character()))
+            })
+
             observeEvent(input$reset_metacell_types, {
                 metacell_types(get_metacell_types_data(dataset()))
                 selected_metacell_types(tibble(metacell = character(), cell_type = character()))
