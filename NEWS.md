@@ -1,3 +1,8 @@
+# MCView 0.2.57
+
+* When the environment variable `MCVIEW_CLUSTERING_CACHE_DIR` is set, the heatmaps store the metacell clusterings they compute in that directory and look for them there, so on a server that sets it for all the apps each clustering is computed once rather than once per app process. `update_default_clusterings()` stores the clusterings there for projects whose cache directory isn't writable.
+* `dev/convert_qs_to_qs2.R` converts the legacy `.qs` cache files of existing projects to `.qs2`, which are about half the size and faster to read when qs2 has TBB (it reads with several threads). When both exist, MCView reads the `.qs2`.
+
 # MCView 0.2.56
 
 Performance:
@@ -7,7 +12,6 @@ Performance:
 * Gene correlations, top correlated genes, diff. expression p-values, cell type and sample comparisons are computed with fewer passes over the expression matrix.
 * Much less data is sent to the browser: hover labels are sent once per trace, the gene list is sent once per session, tab modules start when the tab is first opened, and duplicate renders were removed.
 * tgstat uses its BLAS path when R uses OpenBLAS, MKL or ATLAS (tgstat's own check missed Debian/Ubuntu's OpenBLAS).
-* `dev/convert_qs_to_qs2.R` converts the legacy `.qs` cache files of existing projects to `.qs2`, which are about half the size and faster to read when qs2 has TBB (it reads with several threads). When both exist, MCView reads the `.qs2`.
 
 Fixes:
 

@@ -20,6 +20,10 @@ MCView, or after changing the gene modules with \code{update_gene_modules}.
 }
 \details{
 Under the hood - MCView writes a file named "default_clusterings.qs2" under \code{project/cache/dataset}.
+When that directory isn't writable and the environment variable \code{MCVIEW_CLUSTERING_CACHE_DIR} is set, the
+clusterings are stored in that directory instead. Apps that set the variable (e.g. all the apps of a shiny
+server) also store there every clustering they compute and look for clusterings there, so each clustering is
+computed once per server rather than once per app process.
 }
 \examples{
 \dontrun{

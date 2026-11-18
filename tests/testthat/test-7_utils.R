@@ -40,6 +40,15 @@ test_that("cluster_metacells uses a stored clustering without reading the distan
     expect_identical(cluster_metacells(feat, "other", cached_dist = function() d, precomputed_clusterings = stored)$merge, fastcluster::hclust(d, method = "ward.D2")$merge)
 })
 
+test_that("cluster_metacells shares clusterings through MCVIEW_CLUSTERING_CACHE_DIR", {
+    withr::local_envvar(MCVIEW_CLUSTERING_CACHE_DIR = withr::local_tempdir())
+    feat <- matrix(rnorm(200), nrow = 10, dimnames = list(NULL, paste0("m", 1:20)))
+    hc <- cluster_metacells(feat, "12345")
+    expect_length(dir(Sys.getenv("MCVIEW_CLUSTERING_CACHE_DIR")), 1)
+    # the same key in another process (no app cache, nothing stored with the project): read, not computed
+    expect_identical(cluster_metacells(feat, "12345", cached_dist = function() stop("computed it again")), hc)
+})
+
 test_that("calc_diff_expr p-values match chisq.test", {
     set.seed(60427)
     # counts and projected (non-integer) counts, with many genes far from the diagonal

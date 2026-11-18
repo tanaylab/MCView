@@ -279,6 +279,20 @@ cluster_metacells <- function(feat, key, cached_dist = NULL, precomputed_cluster
         return(precomputed_clusterings[[key]])
     }
 
+    # Clusterings shared by all the apps that set MCVIEW_CLUSTERING_CACHE_DIR (e.g. on a server), across processes
+    # and restarts, for projects that don't store their own (the key identifies the features, not the project).
+    shared <- NULL
+    if (nzchar(Sys.getenv("MCVIEW_CLUSTERING_CACHE_DIR"))) {
+        shared <- tryCatch(cachem::cache_disk(Sys.getenv("MCVIEW_CLUSTERING_CACHE_DIR"), max_size = 10 * 1024^3), error = function(e) NULL)
+        hc <- tryCatch(shared$get(key), error = function(e) cachem::key_missing())
+        if (!cachem::is.key_missing(hc)) {
+            if (!is.null(cache)) {
+                cache$set(key, hc)
+            }
+            return(hc)
+        }
+    }
+
     if (!is.null(cached_dist)) {
         hc <- fastcluster::hclust(subset_dist(cached_dist(), colnames(feat)), method = "ward.D2")
     } else {
@@ -287,6 +301,9 @@ cluster_metacells <- function(feat, key, cached_dist = NULL, precomputed_cluster
 
     if (!is.null(cache)) {
         cache$set(key, hc)
+    }
+    if (!is.null(shared)) {
+        try(shared$set(key, hc), silent = TRUE)
     }
     return(hc)
 }
@@ -372,6 +389,10 @@ calc_default_clusterings <- function(dataset, cache_dir) {
 #' MCView, or after changing the gene modules with \code{update_gene_modules}.
 #'
 #' Under the hood - MCView writes a file named "default_clusterings.qs2" under \code{project/cache/dataset}.
+#' When that directory isn't writable and the environment variable \code{MCVIEW_CLUSTERING_CACHE_DIR} is set, the
+#' clusterings are stored in that directory instead. Apps that set the variable (e.g. all the apps of a shiny
+#' server) also store there every clustering they compute and look for clusterings there, so each clustering is
+#' computed once per server rather than once per app process.
 #'
 #' @param project path to the project directory
 #' @param overwrite recompute the clusterings of datasets that already have them
@@ -391,6 +412,13 @@ update_default_clusterings <- function(project, overwrite = FALSE) {
             cli_alert_info("{.field {dataset}} already has default_clusterings, skipping it (use {.code overwrite = TRUE} to recompute them)")
             next
         }
+        # a project we can't write to (e.g. another user's) can use the directory shared by the apps instead
+        shared_dir <- Sys.getenv("MCVIEW_CLUSTERING_CACHE_DIR")
+        writable <- file.access(dataset_dir, 2) == 0
+        if (!writable && !nzchar(shared_dir)) {
+            cli_alert_warning("Can't write to {.file {dataset_dir}}, skipping {.field {dataset}} (set MCVIEW_CLUSTERING_CACHE_DIR to store its clusterings in a directory shared by the apps)")
+            next
+        }
         cli_alert_info("Clustering the metacells of the default heatmaps of {.field {dataset}}")
         clusterings <- tryCatch(calc_default_clusterings(dataset, cache_dir), error = function(e) {
             cli_alert_warning(conditionMessage(e))
@@ -398,6 +426,12 @@ update_default_clusterings <- function(project, overwrite = FALSE) {
         })
         if (length(clusterings) == 0) {
             cli_alert_warning("Could not cluster any heatmap of {.field {dataset}}")
+            next
+        }
+        if (!writable) {
+            shared <- cachem::cache_disk(shared_dir, max_size = 10 * 1024^3)
+            purrr::iwalk(clusterings, function(hc, key) shared$set(key, hc))
+            cli_alert_success("Saved the clusterings of {length(clusterings)} heatmap{?s} of {.field {dataset}} in {.file {shared_dir}}")
             next
         }
         # write to a temporary file and rename it, so that an app that starts meanwhile doesn't read a partial file,
