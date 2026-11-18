@@ -69,14 +69,22 @@ load_shiny_data <- function(name, dataset, cache_dir, atlas = FALSE) {
             as.matrix()
     }
 
-    # Projects imported before the projected matrix was stored dense have it as a dgCMatrix that is
-    # mostly non-zero: a dense matrix takes less memory then (above 2/3 non-zeros), and reading a
-    # gene from it takes ~1ms instead of ~0.5s
-    if (name == "projected_mat" && methods::is(object, "dgCMatrix") && length(object@x) > 2 / 3 * prod(dim(object))) {
-        object <- as.matrix(object)
+    # projects imported before the projected matrix was stored dense
+    if (name == "projected_mat") {
+        object <- densify_if_mostly_nonzero(object)
     }
 
     return(object)
+}
+
+# A dgCMatrix that is mostly non-zero (e.g. the projected matrix) as a dense matrix: above 2/3
+# non-zeros it takes less memory (8 bytes per value instead of 12 per non-zero), and reading a
+# gene from it takes ~1ms instead of ~0.5s.
+densify_if_mostly_nonzero <- function(x) {
+    if (methods::is(x, "dgCMatrix") && length(x@x) > 2 / 3 * prod(dim(x))) {
+        x <- as.matrix(x)
+    }
+    x
 }
 
 # Bind each cache file to a promise (delayedAssign) in `env`, so a file is read only

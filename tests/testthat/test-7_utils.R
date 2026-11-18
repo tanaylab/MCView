@@ -132,6 +132,13 @@ test_that("lazy_load_files reads the .qs2 when a .qs of the same name exists", {
     expect_identical(env$x, 1:3)
 })
 
+test_that("densify_if_mostly_nonzero densifies a dgCMatrix above 2/3 non-zeros", {
+    m <- Matrix::Matrix(c(1, 2, 3, 5, 0, 4), 2, 3, sparse = TRUE)
+    expect_identical(densify_if_mostly_nonzero(m), as.matrix(m))
+    m <- Matrix::Matrix(c(1, 2, 3, 0, 0, 4), 2, 3, sparse = TRUE) # exactly 2/3
+    expect_identical(densify_if_mostly_nonzero(m), m)
+})
+
 test_that("update_default_clusterings skips only the datasets linked from outside the project", {
     project <- withr::local_tempdir()
     fs::dir_create(fs::path(project, c("config", "cache/inside")))
