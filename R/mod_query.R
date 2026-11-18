@@ -530,7 +530,15 @@ metacell_selectors_mod_query <- function(input, output, session, dataset, ns, me
                 )
             )
         }
-    })
+    }) %>% bindCache(
+        # building the metacells picker takes ~1-2s in a dataset with 5-15K metacells
+        dataset(), input$mode,
+        if (isTRUE(input$mode == "Type")) {
+            list(cell_type_colors(), metacell_types())
+        } else {
+            list(metacell_names(), metacell_colors(), get_mc_data(dataset(), "metadata")$similar)
+        }
+    )
 
     # Select metacell / cell type when clicking on it
     select_metacell_plotly_event_projection("proj_mc_plot_proj_tab", input, session, metacell_types, group)
