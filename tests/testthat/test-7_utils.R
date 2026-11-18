@@ -11,10 +11,13 @@ test_that("cor_dist matches tgs_dist(tgs_cor())", {
     set.seed(60427)
     feat <- matrix(rnorm(30 * 700), nrow = 30, dimnames = list(NULL, paste0("m", 1:700)))
     expected <- tgs_dist(tgs_cor(feat, pairwise.complete.obs = TRUE))
-    d <- cor_dist(feat)
-    expect_equal(as.vector(d), as.vector(expected))
-    expect_identical(attr(d, "Labels"), attr(expected, "Labels"))
-    expect_identical(fastcluster::hclust(d, method = "ward.D2")$merge, fastcluster::hclust(expected, method = "ward.D2")$merge)
+    for (blas in c(TRUE, FALSE)) { # with tgstat's BLAS cor_dist computes the distances differently
+        withr::local_options(tgs_use.blas = blas)
+        d <- cor_dist(feat)
+        expect_equal(as.vector(d), as.vector(expected))
+        expect_identical(attributes(d)[c("Size", "Labels", "Diag", "Upper", "method", "class")], attributes(expected)[c("Size", "Labels", "Diag", "Upper", "method", "class")])
+        expect_identical(fastcluster::hclust(d, method = "ward.D2")$merge, fastcluster::hclust(expected, method = "ward.D2")$merge)
+    }
 
     feat[, 5] <- 1 # constant metacell: falls back to tgs_dist(tgs_cor())
     expect_identical(cor_dist(feat), tgs_dist(tgs_cor(feat, pairwise.complete.obs = TRUE)))

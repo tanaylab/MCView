@@ -420,6 +420,16 @@ cor_dist <- function(feat) {
     if (!all(is.finite(z))) { # missing values or constant metacells
         return(tgs_dist(tgs_cor(feat, pairwise.complete.obs = TRUE)))
     }
+    if (nrow(z) < ncol(z) && isTRUE(getOption("tgs_use.blas"))) {
+        # The distance between rows i and j of the correlation matrix is |t(z) %*% (z_i - z_j)| = |M^(1/2) %*% (z_i - z_j)|
+        # with M = z %*% t(z), i.e. the distance between columns i and j of y = M^(1/2) %*% z, which tgs_dist computes
+        # faster than the loop below when it uses BLAS (and slower when it doesn't).
+        e <- eigen(tcrossprod(z), symmetric = TRUE)
+        y <- e$vectors %*% (sqrt(pmax(e$values, 0)) * crossprod(e$vectors, z))
+        d <- tgs_dist(t(y))
+        attributes(d) <- list(Size = ncol(z), Labels = colnames(feat), Diag = FALSE, Upper = FALSE, method = "euclidean", class = "dist")
+        return(d)
+    }
     w <- tcrossprod(z) %*% z
     sq <- colSums(z * w)
     # the squared distance sq_i + sq_j - 2 * z_i . w_j as a single matrix product
