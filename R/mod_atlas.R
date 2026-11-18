@@ -67,7 +67,9 @@ mod_atlas_sidebar_ui <- function(id) {
             ),
             uiOutput(ns("gene_selector")),
             uiOutput(ns("metadata_selector")),
-            uiOutput(ns("metacell_selector")),
+            # starts hidden, so that the picker of all the query metacells is built only when coloring
+            # by "Query metacell" shows it
+            shinyjs::hidden(uiOutput(ns("metacell_selector"))),
             uiOutput(ns("cell_type_selector")),
             uiOutput(ns("proj_gene_module_selector")),
             shinyWidgets::prettyRadioButtons(
