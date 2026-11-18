@@ -175,6 +175,19 @@ app_ui <- function(request) {
         });
     '
 
+    # Make the generic_box() boxes resizable, as shinyjqui::jqui_resizable() does, once shiny bound
+    # the outputs of the page, and again when renderUI adds boxes
+    resizable_boxes_jscode <- '(function() {
+        var timer = null;
+        $(document).on("shiny:bound", function() {
+            if (timer) return;
+            timer = setTimeout(function() {
+                timer = null;
+                shinyjqui.msgCallback({ui: ".jqui-resizable:not(.ui-resizable)", type: "interaction", func: "resizable", operation: "enable", options: {}});
+            }, 10);
+        });
+    })();'
+
     profiler <- NULL
     if (!is.null(config$profile) && config$profile) {
         if (!requireNamespace("profvis", quietly = TRUE)) {
@@ -186,6 +199,9 @@ app_ui <- function(request) {
     tagList(
         profiler,
         tags$script(screen_size_jscode),
+        # (shinyjqui's scripts: those jqui_resizable() adds)
+        htmltools::findDependencies(shinyjqui::jqui_resizable(tags$div())),
+        tags$script(HTML(resizable_boxes_jscode)),
         shinyjs::useShinyjs(), # Set up shinyjs
         golem_add_external_resources(),
         shinybusy::add_busy_spinner(spin = "breeding-rhombus", position = "bottom-right", timeout = 100),
