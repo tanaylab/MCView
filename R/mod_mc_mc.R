@@ -224,6 +224,10 @@ mod_mc_mc_server <- function(id, dataset, metacell_types, cell_type_colors, gene
             metacell_click_observer("gene_time_mc_plot2", session)
 
             # Output priorities
+            # the comparison needs the two pickers, also when another tab started this module (globals$load_tab)
+            # while the tab is hidden
+            outputOptions(output, "metacell1_select", suspendWhenHidden = FALSE)
+            outputOptions(output, "metacell2_select", suspendWhenHidden = FALSE)
             outputOptions(output, "plot_mc_proj_2d", priority = 6)
             outputOptions(output, "plot_mc_mc_gene_scatter", priority = 5)
         }

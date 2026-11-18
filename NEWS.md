@@ -1,3 +1,7 @@
+# MCView 0.2.60
+
+* Heatmaps: "Use DE genes" works again before the Diff. Expression tab is opened (since 0.2.56 it found no genes).
+
 # MCView 0.2.59
 
 * Manifold tab: an error while recomputing the 2D projection is shown instead of disconnecting the session.

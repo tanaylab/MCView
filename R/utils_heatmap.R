@@ -423,13 +423,30 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
         }
     })
 
-    observeEvent(input$use_de_genes, {
+    use_de_genes <- function() {
         if (!is.null(globals$significant_genes) && length(globals$significant_genes) > 0) {
             markers(globals$significant_genes)
             showNotification(glue("Updated markers with {length(globals$significant_genes)} significant genes from current Diff. Expression comparison"), type = "message")
         } else {
             showNotification("No significant genes available in the current Diff. Expression comparison.", type = "warning")
         }
+    }
+
+    # The comparison is computed by the Diff. Expression tab's server, which starts when that tab is first opened.
+    # If it hasn't started, start it and use its genes once they are computed.
+    de_genes_requested <- reactiveVal(FALSE)
+    observeEvent(input$use_de_genes, {
+        if (is.null(globals$significant_genes) && is.function(globals$load_tab)) {
+            de_genes_requested(TRUE)
+            globals$load_tab("mc_mc")
+        } else {
+            use_de_genes()
+        }
+    })
+    observeEvent(globals$significant_genes, {
+        req(de_genes_requested())
+        de_genes_requested(FALSE)
+        use_de_genes()
     })
 
     observeEvent(input$update_genes, {

@@ -119,24 +119,27 @@ app_server <- function(input, output, session) {
         }
     })
 
+    # start a tab's server once: when the tab is first opened, so tabs the user never visits don't compute
+    # anything or send data to the browser, or when another tab needs its results (globals$load_tab, e.g. the
+    # heatmaps' "Use DE genes" reads the Diff. Expression comparison)
+    loaded_tabs <- character(0)
     load_tab <- function(tab_name) {
+        if (tab_name %in% loaded_tabs) {
+            return(invisible(NULL))
+        }
+        loaded_tabs <<- c(loaded_tabs, tab_name)
         func_name <- glue("mod_{tab_name}_server")
         if (exists(func_name)) {
             module <- get(func_name)
-            module(tab_name, dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors, gene_modules = gene_modules, globals = globals)
+            # in the app's session, also when called from inside another module
+            withReactiveDomain(session, module(tab_name, dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors, gene_modules = gene_modules, globals = globals))
         } else {
             warning(paste0("Tab ", tab_name, " not found"))
         }
     }
 
-    # start a tab's server only when the tab is first opened, so tabs the user
-    # never visits don't compute anything or send data to the browser
-    loaded_tabs <- character(0)
-    observeEvent(input$tab_sidebar, {
-        req(!(input$tab_sidebar %in% loaded_tabs))
-        loaded_tabs <<- c(loaded_tabs, input$tab_sidebar)
-        load_tab(input$tab_sidebar)
-    })
+    globals$load_tab <- load_tab
+    observeEvent(input$tab_sidebar, load_tab(input$tab_sidebar))
 
     clipboard_reactives(dataset, input, output, session, metacell_types, cell_type_colors, gene_modules, globals)
 
