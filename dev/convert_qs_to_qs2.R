@@ -41,24 +41,8 @@ fmt_size <- function(bytes) if (is.na(bytes) || bytes >= 1e9) sprintf("%.2f GB",
 # imported from anndata keep a dead reticulate object in a pandas.index attribute): compare their serializations then
 same <- function(x, y) identical(x, y) || identical(serialize(x, NULL), serialize(y, NULL))
 
-# Why the bundle isn't served by the installed MCView, or NULL
-own_mcview <- function(bundle) {
-    app <- file.path(bundle, "app.R")
-    if (!file.exists(app)) {
-        return(NULL)
-    }
-    lines <- readLines(app, warn = FALSE)
-    if (!any(grepl("MCView::run_app", lines))) {
-        return("its app.R doesn't call MCView::run_app")
-    }
-    code <- file.path(bundle, "code")
-    target <- Sys.readlink(code) # "" for a directory, NA when there is no code
-    link <- !is.na(target) && nzchar(target)
-    if (any(grepl("load_all", lines)) && (dir.exists(code) || link)) {
-        return(paste0("its app.R loads its own MCView from code/", if (link) paste0(" (-> ", target, ")")))
-    }
-    NULL
-}
+script <- normalizePath(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)))
+source(file.path(dirname(script), "own_mcview.R"))
 
 # Convert one file. Returns what it did, or fails.
 convert <- function(qs_file) {

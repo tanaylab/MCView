@@ -6,8 +6,11 @@
 #
 # Runs the MCView of this repository, which should be the version the app runs: the app finds a stored
 # clustering by a key that its code computes. Writes only <project>/cache/<dataset>/default_clusterings.qs2,
-# and skips datasets that already have it unless --overwrite is given.
+# and skips datasets that already have it unless --overwrite is given, and datasets that are symlinks to outside
+# the project. Skips bundles whose app.R loads its own MCView from a `code` directory (see own_mcview.R): MCView
+# < 0.2.54 fails at startup when default_clusterings.qs2 is in the cache.
 script <- normalizePath(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)))
+source(file.path(dirname(script), "own_mcview.R"))
 suppressMessages(pkgload::load_all(dirname(dirname(script)), export_all = TRUE, helpers = FALSE, quiet = TRUE))
 library(shiny)
 
@@ -83,6 +86,11 @@ if (identical(args[1], "--check")) {
 }
 ok <- TRUE
 for (path in setdiff(args, "--overwrite")) {
+    why <- own_mcview(if (basename(path) == "project") dirname(path) else path)
+    if (!is.null(why)) {
+        cli::cli_alert_info("{path}: skipped, {why}")
+        next
+    }
     updated <- tryCatch(
         {
             update_default_clusterings(path, overwrite = "--overwrite" %in% args)
