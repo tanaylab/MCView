@@ -96,6 +96,12 @@ sanitize_plotly_download <- function(p, globals) {
     to_image_options <- list(format = globals$plotly_format, width = globals$plotly_width, height = globals$plotly_height, scale = globals$plotly_scale)
     # (done here because all our plotly outputs pass through this function)
     attr(p$x, "TOJSON_FUNC") <- plotly_to_json
+    # By default plotly sends every hover, relayout and redraw of a plot to the server as an input,
+    # and shiny goes over all the outputs of the session for each input it receives. Send only
+    # the events that MCView observes (click, selection and restyle).
+    for (event in c("plotly_hover", "plotly_relayout", "plotly_brushed", "plotly_brushing", "plotly_clickannotation", "plotly_doubleclick", "plotly_afterplot", "plotly_sunburstclick")) {
+        p <- plotly::event_unregister(p, event)
+    }
     p %>% plotly::config(
         toImageButtonOptions = to_image_options
     )
