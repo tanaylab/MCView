@@ -7,6 +7,19 @@ test_that("subset_dist matches subsetting the full distance matrix", {
     }
 })
 
+test_that("cor_dist matches tgs_dist(tgs_cor())", {
+    set.seed(60427)
+    feat <- matrix(rnorm(30 * 700), nrow = 30, dimnames = list(NULL, paste0("m", 1:700)))
+    expected <- tgs_dist(tgs_cor(feat, pairwise.complete.obs = TRUE))
+    d <- cor_dist(feat)
+    expect_equal(as.vector(d), as.vector(expected))
+    expect_identical(attr(d, "Labels"), attr(expected, "Labels"))
+    expect_identical(fastcluster::hclust(d, method = "ward.D2")$merge, fastcluster::hclust(expected, method = "ward.D2")$merge)
+
+    feat[, 5] <- 1 # constant metacell: falls back to tgs_dist(tgs_cor())
+    expect_identical(cor_dist(feat), tgs_dist(tgs_cor(feat, pairwise.complete.obs = TRUE)))
+})
+
 test_that("cluster_metacells returns the same clustering with and without the app cache", {
     feat <- matrix(rnorm(200), nrow = 10, dimnames = list(NULL, paste0("m", 1:20)))
     hc <- cluster_metacells(feat)

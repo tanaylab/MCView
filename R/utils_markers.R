@@ -273,7 +273,7 @@ cluster_metacells <- function(feat, cached_dist = NULL, precomputed_clusterings 
     if (!is.null(cached_dist)) {
         hc <- fastcluster::hclust(subset_dist(cached_dist, colnames(feat)), method = "ward.D2")
     } else {
-        hc <- fastcluster::hclust(tgs_dist(tgs_cor(feat, pairwise.complete.obs = TRUE)), method = "ward.D2")
+        hc <- fastcluster::hclust(cor_dist(feat), method = "ward.D2")
     }
 
     if (!is.null(cache)) {
@@ -327,6 +327,37 @@ calc_default_clusterings <- function(dataset, cache_dir, data) {
 
     keys <- cache$keys()
     return(stats::setNames(lapply(keys, cache$get), keys))
+}
+
+# Same as tgs_dist(tgs_cor(feat, pairwise.complete.obs = TRUE)): the euclidean distances between the rows of
+# the metacell correlation matrix, without computing it. With z the standardized columns of feat, the correlation
+# matrix is t(z) %*% z, so the dot products of its rows are t(z) %*% w with w = z %*% t(z) %*% z. That costs
+# n^2 * nrow(feat) instead of n^3 for n metacells.
+cor_dist <- function(feat) {
+    z <- scale(feat) / sqrt(nrow(feat) - 1)
+    if (!all(is.finite(z))) { # missing values or constant metacells
+        return(tgs_dist(tgs_cor(feat, pairwise.complete.obs = TRUE)))
+    }
+    w <- tcrossprod(z) %*% z
+    sq <- colSums(z * w)
+    # the squared distance sq_i + sq_j - 2 * z_i . w_j as a single matrix product
+    z <- rbind(z, sq, 1)
+    w <- rbind(-2 * w, 1, sq)
+    n <- ncol(z)
+    d <- numeric(n * (n - 1) / 2)
+    pos <- 0
+    # by blocks of columns, filling d in place
+    for (js in split(seq_len(n - 1), ceiling(seq_len(n - 1) / 200))) {
+        d2 <- crossprod(z[, js[1]:n, drop = FALSE], w[, js, drop = FALSE])
+        # d(i, j) for i > j, in the column-major order of a dist object
+        d2 <- d2[lower.tri(d2)]
+        d2[d2 < 0] <- 0 # rounding errors
+        d[(pos + 1):(pos + length(d2))] <- sqrt(d2)
+        pos <- pos + length(d2)
+    }
+    attributes(d) <- list(Size = n, Labels = colnames(feat), Diag = FALSE, Upper = FALSE, method = "euclidean", class = "dist")
+
+    return(d)
 }
 
 # Same as as.dist(as.matrix(d)[labels, labels]) without expanding d to a full n x n matrix
