@@ -363,6 +363,54 @@ calc_default_clusterings <- function(dataset, cache_dir) {
     return(stats::setNames(lapply(keys, cache$get), keys))
 }
 
+#' Store the clusterings of the default heatmaps
+#'
+#' Cluster the metacells of the heatmap that each heatmap tab (Markers, Gene modules, Inner-fold, Stdev-fold,
+#' Projected-fold and Outliers) starts with, and store the clusterings in the project, so that the app doesn't
+#' cluster them the first time a tab is opened, which takes minutes for large datasets.
+#' \code{import_dataset} already does this. Use this function for projects imported with an older version of
+#' MCView, or after changing the gene modules with \code{update_gene_modules}.
+#'
+#' Under the hood - MCView writes a file named "default_clusterings.qs2" under \code{project/cache/dataset}.
+#'
+#' @param project path to the project directory
+#' @param overwrite recompute the clusterings of datasets that already have them
+#'
+#' @examples
+#' \dontrun{
+#' update_default_clusterings("PBMC")
+#' }
+#'
+#' @export
+update_default_clusterings <- function(project, overwrite = FALSE) {
+    project <- init_project_dir(project)
+    cache_dir <- project_cache_dir(project)
+    for (dataset in dataset_ls(project)) {
+        dataset_dir <- fs::path(cache_dir, dataset)
+        if (!overwrite && any(fs::file_exists(fs::path(dataset_dir, c("default_clusterings.qs2", "default_clusterings.qs"))))) {
+            cli_alert_info("{.field {dataset}} already has default_clusterings, skipping it (use {.code overwrite = TRUE} to recompute them)")
+            next
+        }
+        cli_alert_info("Clustering the metacells of the default heatmaps of {.field {dataset}}")
+        clusterings <- tryCatch(calc_default_clusterings(dataset, cache_dir), error = function(e) {
+            cli_alert_warning(conditionMessage(e))
+            list()
+        })
+        if (length(clusterings) == 0) {
+            cli_alert_warning("Could not cluster any heatmap of {.field {dataset}}")
+            next
+        }
+        # write to a temporary file and rename it, so that an app that starts meanwhile doesn't read a partial file
+        tmp <- tempfile(tmpdir = dataset_dir)
+        tryCatch(qs2::qs_save(clusterings, tmp), error = function(e) {
+            unlink(tmp)
+            stop(e)
+        })
+        fs::file_move(tmp, fs::path(dataset_dir, "default_clusterings.qs2"))
+        cli_alert_success("Saved the clusterings of {length(clusterings)} heatmap{?s} of {.field {dataset}}")
+    }
+}
+
 # Same as tgs_dist(tgs_cor(feat, pairwise.complete.obs = TRUE)): the euclidean distances between the rows of
 # the metacell correlation matrix, without computing it. With z the standardized columns of feat, the correlation
 # matrix is t(z) %*% z, so the dot products of its rows are t(z) %*% w with w = z %*% t(z) %*% z. That costs
