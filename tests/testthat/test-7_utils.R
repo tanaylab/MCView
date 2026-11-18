@@ -36,6 +36,12 @@ test_that("set_hovertemplate keeps each point's id first in its customdata", {
     expect_identical(unname(tr$customdata), rbind(c("c", "3"), c("b", "NA"), c("a", "1.5")))
     expect_identical(tr$hovertemplate, "%{customdata[0]}: %{customdata[1]}")
     expect_null(tr$text)
+
+    # fields with one value for all the trace's points go in its template
+    df$p <- "Not computed"
+    tr <- set_hovertemplate(fig, df, "id", c("p", "v"), "%{customdata[0]}: %{customdata[2]} (%{customdata[1]})")$x$data[[1]]
+    expect_identical(unname(tr$customdata), rbind(c("c", "3"), c("b", "NA"), c("a", "1.5")))
+    expect_identical(tr$hovertemplate, "%{customdata[0]}: %{customdata[1]} (Not computed)")
 })
 
 test_that("plotly_event_ids reads the ids of clicked and selected points", {

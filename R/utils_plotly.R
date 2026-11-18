@@ -56,8 +56,18 @@ set_hovertemplate <- function(fig, df, id, fields, template) {
         if (is.null(tr$customdata)) {
             return(tr)
         }
-        tr$customdata <- values[match(unlist(tr$customdata), df[[id]]), , drop = FALSE]
+        customdata <- values[match(unlist(tr$customdata), df[[id]]), , drop = FALSE]
+        # a field with the same value for all the trace's points (e.g. the cell type of a trace
+        # per cell type, or p-values that weren't computed) is written in its template instead
+        constant <- c(FALSE, vapply(seq_len(ncol(customdata))[-1], function(j) nrow(customdata) > 0 && all(customdata[, j] == customdata[1, j]), TRUE))
+        index <- cumsum(!constant) - 1
         tr$hovertemplate <- template
+        placeholders <- gregexpr("%\\{customdata\\[[0-9]+\\]\\}", template)
+        regmatches(tr$hovertemplate, placeholders) <- lapply(regmatches(template, placeholders), function(ph) {
+            j <- as.integer(gsub("\\D", "", ph)) + 1
+            ifelse(constant[j], customdata[1, j], sprintf("%%{customdata[%d]}", index[j]))
+        })
+        tr$customdata <- customdata[, !constant, drop = FALSE]
         tr$text <- NULL
         tr$hoverinfo <- NULL
         tr
