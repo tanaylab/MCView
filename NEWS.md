@@ -1,3 +1,7 @@
+# MCView 0.2.58
+
+* Fix: in the Atlas tab, coloring by gene, gene module or metadata had no choices to pick from (since 0.2.56).
+
 # MCView 0.2.57
 
 * When the environment variable `MCVIEW_CLUSTERING_CACHE_DIR` is set, the heatmaps store the metacell clusterings they compute in that directory and look for them there, so on a server that sets it for all the apps each clustering is computed once rather than once per app process. `update_default_clusterings()` stores the clusterings there for projects whose cache directory isn't writable.
