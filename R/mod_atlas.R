@@ -167,7 +167,24 @@ mod_atlas_server <- function(id, dataset, metacell_types, cell_type_colors, gene
 
             output$cell_type_selector <- cell_type_selector(dataset, ns, id = "selected_cell_types", label = "Cell types", cell_type_colors = cell_type_colors, selected = "all")
 
-            output$metacell_selector <- metacell_selector(dataset, ns, id = "selected_metacell", label = "Metacell")
+            # once the user colors by a query metacell: the picker of all the query metacells is
+            # large (~700KB for 15K metacells)
+            metacell_selector_shown <- reactiveVal(FALSE)
+            observe({
+                if (isTRUE(input$color_proj == "Query metacell")) {
+                    metacell_selector_shown(TRUE)
+                }
+            })
+            output$metacell_selector <- renderUI({
+                req(metacell_selector_shown())
+                metacell_names <- colnames(get_mc_data(dataset(), "mc_mat"))
+                shinyWidgets::pickerInput(ns("selected_metacell"), "Metacell",
+                    choices = metacell_names,
+                    selected = config$selected_mc1 %||% metacell_names[1],
+                    multiple = FALSE,
+                    options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "contains", dropupAuto = FALSE)
+                )
+            })
 
             observe({
                 req(input$color_proj)
@@ -181,7 +198,9 @@ mod_atlas_server <- function(id, dataset, metacell_types, cell_type_colors, gene
             })
 
 
-            output$plot_mc_proj_2d <- render_2d_plotly(input, output, session, dataset, atlas_metacell_types, atlas_colors, globals = globals, atlas = TRUE, query_types = metacell_types, atlas_gene_modules, source = "proj_mc_plot_proj_tab") %>% bindCache(dataset(), input$color_proj, atlas_metacell_types(), atlas_colors(), metacell_types(), input$point_size, input$stroke, input$min_edge_size, input$set_range, input$proj_stat, input$expr_range, input$lfp, proj_color_var(input), input$selected_cell_types, input$selected_metacell, input$color_by_scale, input$query_threshold, input$graph_name, globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
+            # the query selectors are in the key only when coloring by them, so that their
+            # initialization doesn't draw the plot a second time
+            output$plot_mc_proj_2d <- render_2d_plotly(input, output, session, dataset, atlas_metacell_types, atlas_colors, globals = globals, atlas = TRUE, query_types = metacell_types, atlas_gene_modules, source = "proj_mc_plot_proj_tab") %>% bindCache(dataset(), input$color_proj, atlas_metacell_types(), atlas_colors(), metacell_types(), input$point_size, input$stroke, input$min_edge_size, input$set_range, input$proj_stat, input$expr_range, input$lfp, proj_color_var(input), if (isTRUE(input$color_proj %in% c("Query cell type", "Query metacell"))) list(input$selected_cell_types, input$selected_metacell, input$color_by_scale, input$query_threshold), input$graph_name, globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
         }
     )
 }

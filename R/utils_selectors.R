@@ -89,18 +89,6 @@ gene_modules_selector <- function(dataset, gene_modules, ns, id, label = "Gene m
     })
 }
 
-metacell_selector <- function(dataset, ns, id, label, selected = NULL, atlas = FALSE, ...) {
-    renderUI({
-        metacell_names <- colnames(get_mc_data(dataset(), "mc_mat", atlas = atlas))
-        shinyWidgets::pickerInput(ns(id), label,
-            choices = metacell_names,
-            selected = selected %||% config$selected_mc1 %||% metacell_names[1],
-            multiple = FALSE,
-            options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "contains", dropupAuto = FALSE, ...)
-        )
-    })
-}
-
 colored_metacell_selector <- function(dataset, ns, id, label, metacell_colors, metacell_names, selected = NULL) {
     renderUI({
         req(metacell_colors())
