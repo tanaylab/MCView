@@ -731,6 +731,19 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                 )
             })
 
+            # A dataset switch starts the heatmap over, as when the tab is first opened on that dataset. Otherwise the
+            # applied cell types are those of the previous dataset, and mat() waits forever for them to all be in
+            # cell_type_colors(); so are the zoom and the genes. The gene modules heatmap gets its "markers" (the shown
+            # modules) from its picker. Runs before the outputs, so that they don't compute the old parameters.
+            observeEvent(dataset(), ignoreInit = TRUE, priority = 1, {
+                applied_params(NULL)
+                metacell_filter(NULL)
+                selected_metacells(NULL)
+                if (mode != "Gene modules") {
+                    markers(NULL)
+                }
+            })
+
             # Initialize applied_params with default values
             observe({
                 req(cell_type_colors())

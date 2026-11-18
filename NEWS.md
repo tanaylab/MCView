@@ -1,4 +1,4 @@
-# MCView 0.2.61
+# MCView 0.2.62
 
 Performance:
 
@@ -19,6 +19,7 @@ Fixes:
 * A failed 2D projection recompute, a zero-size plot, or a browser reconnecting after a restart could break the app.
 * The clipboard-colored projection didn't refresh, and hovers on "Age" metadata showed the first metacell's age.
 * Import stops with a clear message when Python anndata >= 0.13 or pandas >= 3 is installed.
+* Multi-dataset projects: heatmaps, Annotate colors and the Genes metadata choices now follow a dataset switch.
 
 # MCView 0.2.55
 

@@ -295,14 +295,19 @@ scatter_selectors <- function(ns, dataset, output, globals, prefix = "gene_gene"
 }
 
 render_axis_select_ui <- function(axis, title, output_id, md_choices, md_selected, selected_gene, ns, input, output, dataset, gene_modules, session, cell_types = NULL, cell_type_selected = NULL, atlas = FALSE) {
+    # the callers compute these from dataset(): evaluate them on every update, so that they follow a
+    # dataset switch (an argument is evaluated only once)
+    md_choices <- rlang::enquo(md_choices)
+    md_selected <- rlang::enquo(md_selected)
+    cell_types <- rlang::enquo(cell_types)
     observe({
         req(input[[glue("{axis}_type")]])
         if (input[[glue("{axis}_type")]] == "Metadata") {
             shinyWidgets::updateVirtualSelect(
                 session = session,
                 inputId = glue("{axis}_var"),
-                choices = md_choices,
-                selected = md_selected,
+                choices = rlang::eval_tidy(md_choices),
+                selected = rlang::eval_tidy(md_selected),
                 label = title
             )
         } else if (input[[glue("{axis}_type")]] == "Gene") {
@@ -316,12 +321,13 @@ render_axis_select_ui <- function(axis, title, output_id, md_choices, md_selecte
                 label = title
             )
         } else if (input[[glue("{axis}_type")]] == "Cell type") {
-            req(cell_types)
+            types <- rlang::eval_tidy(cell_types)
+            req(types)
             shinyWidgets::updateVirtualSelect(
                 session = session,
                 inputId = glue("{axis}_var"),
-                choices = cell_types,
-                selected = cell_type_selected %||% cell_types[1],
+                choices = types,
+                selected = cell_type_selected %||% types[1],
                 label = title
             )
         }
