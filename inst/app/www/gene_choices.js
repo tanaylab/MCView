@@ -3,7 +3,11 @@
 (function() {
     var choices = {};
     Shiny.addCustomMessageHandler("mcview-gene-choices", function(msg) {
-        choices[msg.key] = msg.options;
+        // the labels that differ from the gene name come by index
+        var label = msg.genes.slice();
+        for (var i in msg.labels) label[+i] = msg.labels[i];
+        // the format shinyWidgets sends for named choices
+        choices[msg.key] = {type: "transpose", choices: {label: label, value: msg.genes}};
     });
     Shiny.addCustomMessageHandler("mcview-update-gene-select", function(msg) {
         var el = document.getElementById(msg.id);
