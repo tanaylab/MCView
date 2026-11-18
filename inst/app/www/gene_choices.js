@@ -6,13 +6,15 @@
         // the labels that differ from the gene name come by index
         var label = msg.genes.slice();
         for (var i in msg.labels) label[+i] = msg.labels[i];
-        // the format shinyWidgets sends for named choices
+        // the format shinyWidgets sends for named choices (its process_choices(), the same from
+        // 0.7.0, the minimum in DESCRIPTION, to 0.9.1)
         choices[msg.key] = {type: "transpose", choices: {label: label, value: msg.genes}};
     });
     Shiny.addCustomMessageHandler("mcview-update-gene-select", function(msg) {
         var el = document.getElementById(msg.id);
         var binding = el && $(el).data("shiny-input-binding");
         if (!binding) {
+            console.warn("mcview-update-gene-select: no bound input #" + msg.id);
             return;
         }
         var data = {};
