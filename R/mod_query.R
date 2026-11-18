@@ -313,9 +313,9 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
                     cell_type_colors = cell_type_colors(),
                     point_size = input$gene_gene_point_size,
                     stroke = input$gene_gene_stroke,
-                    plot_text = FALSE
+                    plot_text = FALSE,
+                    source = "obs_proj_plot"
                 ) %>%
-                    plotly::ggplotly(tooltip = "tooltip_text", source = "obs_proj_plot") %>%
                     sanitize_for_WebGL() %>%
                     plotly::toWebGL() %>%
                     sanitize_plotly_buttons() %>%
@@ -663,7 +663,7 @@ group_selectors_mod_query <- function(input, output, session, dataset, ns, group
     observeEvent(plotly::event_data("plotly_selected", source = "obs_proj_plot"), {
         el <- plotly::event_data("plotly_selected", source = "obs_proj_plot")
 
-        selected_metacells <- unique(el$customdata)
+        selected_metacells <- unique(plotly_event_ids(el))
         req(input$mode == "Group")
 
 

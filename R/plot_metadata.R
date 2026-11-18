@@ -880,7 +880,16 @@ plot_obs_proj_scatter <- function(dataset,
                                   point_size = initial_scatters_point_size(dataset),
                                   stroke = initial_scatters_stroke(dataset),
                                   expr_colors = c("#053061", "#2166AC", "#4393C3", "#92C5DE", "#D1E5F0", "#F7F7F7", "#FDDBC7", "#F4A582", "#D6604D", "#B2182B", "#67001F"),
-                                  plot_text = TRUE) {
+                                  plot_text = TRUE,
+                                  source = "A") {
+    # The hover labels are sent once, in a hovertemplate, and each point's values in its customdata,
+    # after the metacell. hover_value() adds a field and returns its placeholder.
+    hover_fields <- character(0)
+    hover_value <- function(field) {
+        hover_fields <<- c(hover_fields, field)
+        paste0("%{customdata[", length(hover_fields), "]}")
+    }
+
     atlas_metadata <- get_mc_data(dataset, "metadata", atlas = TRUE)
     query_metadata <- get_mc_data(dataset, "metadata", atlas = FALSE)
     if (!is.null(atlas_metadata)) {
@@ -920,8 +929,8 @@ plot_obs_proj_scatter <- function(dataset,
         y_var <- glue("{axis_var} - projected")
         df <- df %>%
             mutate(!!x_var := egc_obs[metacell], !!y_var := egc_proj[metacell]) %>%
-            mutate(x_str = glue("{axis_name} obs: {expr_text}", expr_text = scales::scientific(!!sym(x_var)))) %>%
-            mutate(y_str = glue("{axis_name} proj: {expr_text}", expr_text = scales::scientific(!!sym(y_var))))
+            mutate(x_text = scales::scientific(!!sym(x_var)), y_text = scales::scientific(!!sym(y_var)))
+        axis_hover <- paste0(axis_name, " obs: ", hover_value("x_text"), "<br />", axis_name, " proj: ", hover_value("y_text"))
 
         # get correction factor if exists
         gene_qc <- get_gene_qc(dataset)
@@ -934,8 +943,8 @@ plot_obs_proj_scatter <- function(dataset,
     color_name <- color_var
     if (is.null(color_var)) {
         df <- df %>%
-            mutate(color = cell_type, color_values = cell_type) %>%
-            mutate(color_str = glue("Cell type: {`Cell type`}"))
+            mutate(color = cell_type, color_values = cell_type)
+        color_hover <- paste0("Cell type: ", hover_value("Cell type"))
     } else if (color_type == "Metadata") {
         if (grepl("_atlas$", color_var) && !is.null(atlas_metadata) && has_name(atlas_metadata, sub("_atlas$", "", color_var))) {
             req(atlas_metadata)
@@ -969,14 +978,15 @@ plot_obs_proj_scatter <- function(dataset,
 
         if (categorical_md) {
             df <- df %>%
-                mutate(color = !!sym(color_var), color_values = !!sym(color_var)) %>%
-                mutate(color_str = glue("{color_name}: {color_values}"))
+                mutate(color = !!sym(color_var), color_values = !!sym(color_var))
+            color_hover <- paste0(color_name, ": ", hover_value("color_values"))
         } else {
             palette <- circlize::colorRamp2(colors = md_colors$colors, breaks = md_colors$breaks)
             df$color <- palette(df[[color_var]])
             df$color_values <- df[[color_var]]
             df <- df %>%
-                mutate(color_str = glue("{color_name}: {color_values}\nCell type: {`Cell type`}", color_values = round(!!sym(color_var), digits = 3)))
+                mutate(color_text = round(!!sym(color_var), digits = 3))
+            color_hover <- paste0(color_name, ": ", hover_value("color_text"), "<br />Cell type: ", hover_value("Cell type"))
         }
     } else if (color_type == "Gene") {
         egc_color <- get_gene_egc(color_var, dataset) + egc_epsilon
@@ -992,19 +1002,18 @@ plot_obs_proj_scatter <- function(dataset,
         df$color_values <- df$expression
 
         df <- df %>%
-            mutate(color_str = glue("{color_name}: {color_values}\nCell type: {`Cell type`}\n", color_values = round(expression, digits = 3)))
+            mutate(color_text = round(expression, digits = 3))
+        color_hover <- paste0(color_name, ": ", hover_value("color_text"), "<br />Cell type: ", hover_value("Cell type"))
     }
 
-    # set tooltip
-    df <- df %>%
-        mutate(
-            Metacell = paste(
-                glue("{metacell}\n{x_str}\n{y_str}\n{color_str}\nTop genes: {`Top genes`}"),
-                ifelse(has_name(df, "Age"), glue("Metacell age (E[t]): {round(Age, digits=2)}"), ""),
-                ifelse(!is.null(correction_factor), glue("Correction factor: {round(correction_factor, 3)}"), ""),
-                sep = "\n"
-            )
-        )
+    # (the age and correction factor lines are empty when missing, as in the hover text)
+    hovertemplate <- paste0("Metacell: %{customdata[0]}<br />", axis_hover, "<br />", color_hover, "<br />Top genes: ", hover_value("Top genes"), "<br />")
+    if (has_name(df, "Age")) {
+        df <- df %>%
+            mutate(age_text = round(Age, digits = 2))
+        hovertemplate <- paste0(hovertemplate, "Metacell age (E[t]): ", hover_value("age_text"))
+    }
+    hovertemplate <- paste0(hovertemplate, "<br />", if (!is.null(correction_factor)) glue("Correction factor: {round(correction_factor, 3)}"))
 
     p <- ggplot(
         data = df,
@@ -1014,8 +1023,7 @@ plot_obs_proj_scatter <- function(dataset,
             fill = color,
             color = color_values,
             label = metacell,
-            customdata = metacell,
-            tooltip_text = Metacell
+            customdata = metacell
         )
     ) +
         xlab(x_var) +
@@ -1071,5 +1079,8 @@ plot_obs_proj_scatter <- function(dataset,
         p <- p + geom_text(size = 1, color = "black")
     }
 
-    return(p)
+    # (no layer has a "tooltip_text" aesthetic now: the traces without customdata keep the empty
+    # hover texts they had)
+    plotly::ggplotly(p, tooltip = "tooltip_text", source = source) %>%
+        set_hovertemplate(df, "metacell", hover_fields, paste0(hovertemplate, "<extra></extra>"))
 }
