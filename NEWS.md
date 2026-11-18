@@ -1,3 +1,22 @@
+# MCView 0.2.56
+
+Performance:
+
+* Faster startup with less memory: the cache files are loaded when first used, the UI and the page HTML are built once per process, the default genes are picked without computing every gene's expression, and qs2 files are read with 8 threads. On the largest lab apps the time to the first usable session went down by about half, and the memory at startup by a factor of 2 to 6.
+* Heatmap tabs: the metacell correlation distances are computed without the correlation matrix (the old computation took minutes on servers where tgstat did not use BLAS). `import_dataset()` stores the clusterings of the default heatmaps, and the new `update_default_clusterings()` (and `dev/update_default_clusterings.R`) adds them to existing projects, so the first render doesn't cluster.
+* Gene correlations, top correlated genes, diff. expression p-values, cell type and sample comparisons are computed with fewer passes over the expression matrix.
+* Much less data is sent to the browser: hover labels are sent once per trace, the gene list is sent once per session, tab modules start when the tab is first opened, and duplicate renders were removed.
+* tgstat uses its BLAS path when R uses OpenBLAS, MKL or ATLAS (tgstat's own check missed Debian/Ubuntu's OpenBLAS).
+
+Fixes:
+
+* Query tab: in metacell mode the significance of the diff. expression was computed for the dataset's first metacell instead of the chosen one.
+* A plot drawn at zero size could break every plotly plot of the app, for all sessions, until restart.
+* Samples tab: changing the 2D projection coloring reset the chosen samples; "Order by" could default to a per-cell field and leave the sample types plot empty; the hover of the sample types plot could show another sample's metadata; stale cached projections.
+* Atlas tab: coloring by query cell type now draws one point per atlas metacell (the highest weight), and the plot updates after editing the annotation.
+* A browser reconnecting to a restarted app could crash it.
+* The 2D projection colored by the clipboard did not refresh when the clipboard changed.
+
 # MCView 0.2.55
 
 * Made `qs` an optional (`Suggests`) dependency instead of a hard requirement. New projects are serialized with `qs2`; `qs` is only needed to read legacy `.qs` caches from pre-0.2.54 projects, and a clear message now points to re-importing (or installing `qs`) when it is missing. This removes the archived-from-CRAN `qs` (and its `stringfish` build conflict) from the default install and the Docker image.
