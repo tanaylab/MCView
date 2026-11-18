@@ -269,6 +269,12 @@ has_samples <- function(dataset) {
     if (!has_cell_metadata(dataset)) {
         return(FALSE)
     }
+    # read only the header of the (one row per cell) table, which is otherwise loaded at the
+    # first session just for this check
+    tsv <- fs::path(project_cache_dir(project), dataset, "cell_metadata.tsv")
+    if (fs::file_exists(tsv)) {
+        return("samp_id" %in% names(fread(tsv, nrows = 0)))
+    }
     cell_md <- get_mc_data(dataset, "cell_metadata")
     return(rlang::has_name(cell_md, "samp_id"))
 }

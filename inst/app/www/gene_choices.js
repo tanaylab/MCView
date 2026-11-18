@@ -12,7 +12,11 @@
             return;
         }
         var data = {};
-        if (choices[msg.key]) data.options = choices[msg.key];
+        var options = choices[msg.key];
+        if (options && msg.plain_names) {
+            options = {type: "transpose", choices: {label: options.choices.value, value: options.choices.value}};
+        }
+        if (options) data.options = options;
         if (msg.hasOwnProperty("value")) data.value = msg.value;
         if (msg.hasOwnProperty("label")) data.label = msg.label;
         binding.receiveMessage(el, data);

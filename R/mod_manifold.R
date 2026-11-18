@@ -43,7 +43,19 @@ mod_manifold_sidebar_ui <- function(id) {
                 shinyWidgets::actionGroupButtons(ns("reset"), labels = "Restore default", size = "sm")
             ),
             tags$hr(),
-            uiOutput(ns("add_genes_ui")),
+            # the gene choices are set by the server (see update_gene_select)
+            shinyWidgets::virtualSelectInput(ns("genes_to_add"),
+                label = "Add genes",
+                choices = NULL,
+                selected = c(),
+                multiple = TRUE,
+                showSelectedOptionsFirst = TRUE,
+                search = TRUE,
+                markSearchResults = TRUE,
+                searchByStartsWith = TRUE,
+                disableSelectAll = TRUE
+            ),
+            shinyWidgets::actionGroupButtons(ns("add_genes"), labels = "Add genes", size = "sm"),
             div(
                 title = "List of genes currently used as anchors for the 2D projection. These genes define the main axes of variation. Select genes to highlight or remove them.",
                 style = "cursor: help;",
@@ -223,22 +235,8 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 updateSelectInput(session, "selected_anchor_genes", choices = globals$anchor_genes, label = glue("Anchor Genes ({length(globals$anchor_genes)})"))
             })
 
-            output$add_genes_ui <- renderUI({
-                gene_choices <- gene_names(dataset())
-                tagList(
-                    shinyWidgets::virtualSelectInput(ns("genes_to_add"),
-                        label = "Add genes",
-                        choices = gene_choices,
-                        selected = c(),
-                        multiple = TRUE,
-                        showSelectedOptionsFirst = TRUE,
-                        search = TRUE,
-                        markSearchResults = TRUE,
-                        searchByStartsWith = TRUE,
-                        disableSelectAll = TRUE
-                    ),
-                    shinyWidgets::actionGroupButtons(ns("add_genes"), labels = "Add genes", size = "sm")
-                )
+            observe({
+                update_gene_select(session, "genes_to_add", dataset(), plain_names = TRUE)
             })
 
             observeEvent(input$add_genes, {

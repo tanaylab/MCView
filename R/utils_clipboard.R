@@ -3,7 +3,7 @@ clipboard_changed_2d_reactive <- function(input, globals) {
     reactive({
         # check color_proj first so that color_proj_metadata is read (and invalidates the
         # plots' cache key) only when coloring by metadata
-        if (is.null(input$color_proj) || input$color_proj != "metadata" || is.null(input$color_proj_metadata) || input$color_proj_metadata != "Clipboard") {
+        if (is.null(input$color_proj) || input$color_proj != "Metadata" || is.null(input$color_proj_metadata) || input$color_proj_metadata != "Clipboard") {
             return(FALSE)
         } else {
             return(globals$clipboard)

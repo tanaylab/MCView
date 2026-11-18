@@ -41,6 +41,27 @@ collapse_hoverinfo <- function(p) {
     p
 }
 
+# ggplotly writes the hover text of every point as one string ("label: value<br />label: value..."),
+# so the labels are sent once per point. Send them once per trace instead, as a hovertemplate.
+# The points' customdata must be df[[id]] (unique values). It is replaced by the point's values of
+# c(id, fields) as strings, which `template` shows with %{customdata[0]}, %{customdata[1]}, ...
+# (%{x:.3~r}, %{y} and %{fullData.name} for the trace name can be used too).
+set_hovertemplate <- function(fig, df, id, fields, template) {
+    fig <- plotly::plotly_build(fig)
+    values <- do.call(cbind, lapply(df[c(id, fields)], as.character))
+    fig$x$data <- purrr::map(fig$x$data, function(tr) {
+        if (is.null(tr$customdata)) {
+            return(tr)
+        }
+        tr$customdata <- values[match(unlist(tr$customdata), df[[id]]), , drop = FALSE]
+        tr$hovertemplate <- template
+        tr$text <- NULL
+        tr$hoverinfo <- NULL
+        tr
+    })
+    fig
+}
+
 # See https://github.com/plotly/plotly.js/issues/4999
 arrange_2d_proj_tooltip <- function(fig) {
     if (fig$x$data[[1]]$mode == "lines") {
@@ -75,6 +96,12 @@ sanitize_plotly_download <- function(p, globals) {
     to_image_options <- list(format = globals$plotly_format, width = globals$plotly_width, height = globals$plotly_height, scale = globals$plotly_scale)
     # (done here because all our plotly outputs pass through this function)
     attr(p$x, "TOJSON_FUNC") <- plotly_to_json
+    # By default plotly sends every hover, relayout and redraw of a plot to the server as an input,
+    # and shiny goes over all the outputs of the session for each input it receives. Send only
+    # the events that MCView observes (click, selection and restyle).
+    for (event in c("plotly_hover", "plotly_relayout", "plotly_brushed", "plotly_brushing", "plotly_clickannotation", "plotly_doubleclick", "plotly_afterplot", "plotly_sunburstclick")) {
+        p <- plotly::event_unregister(p, event)
+    }
     p %>% plotly::config(
         toImageButtonOptions = to_image_options
     )

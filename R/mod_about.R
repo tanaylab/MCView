@@ -76,7 +76,7 @@ mod_about_server <- function(id, dataset, metacell_types, cell_type_colors, gene
                     p_proj
                 },
                 res = 96
-            ) %>% bindCache(dataset(), metacell_types(), cell_type_colors())
+            ) %>% bindCache(req_plot_size(), dataset(), metacell_types(), cell_type_colors(), sizePolicy = plot_size_policy)
 
             output$about_scatter_plot <- renderPlot(
                 {
@@ -86,7 +86,7 @@ mod_about_server <- function(id, dataset, metacell_types, cell_type_colors, gene
                         guides(color = "none")
                 },
                 res = 96
-            ) %>% bindCache(dataset(), metacell_types(), cell_type_colors())
+            ) %>% bindCache(req_plot_size(), dataset(), metacell_types(), cell_type_colors(), sizePolicy = plot_size_policy)
         }
     )
 }

@@ -106,7 +106,19 @@ mod_gene_modules_sidebar_ui <- function(id) {
     ns_genes <- NS(ns("genes_heatmap"))
     tagList(
         list(
-            uiOutput(ns("add_genes_sidebar")),
+            # the gene choices are set by the server (see update_gene_select)
+            shinyWidgets::virtualSelectInput(ns("genes_to_add"),
+                label = "Add genes:",
+                choices = NULL,
+                selected = c(),
+                multiple = TRUE,
+                showSelectedOptionsFirst = TRUE,
+                search = TRUE,
+                markSearchResults = TRUE,
+                searchByStartsWith = TRUE,
+                disableSelectAll = TRUE
+            ),
+            shinyWidgets::actionGroupButtons(ns("add_genes"), labels = "Add selected genes", size = "sm"),
             tags$hr(),
             uiOutput(ns_heatmap("reset_zoom_ui")),
             shinyWidgets::switchInput(
@@ -209,7 +221,8 @@ mod_gene_modules_server <- function(id, dataset, metacell_types, cell_type_color
 selected_genes_event_observer <- function(source, selected_genes) {
     observeEvent(plotly::event_data("plotly_selected", source = source), {
         el <- plotly::event_data("plotly_selected", source = source)
-        selected_genes(unique(el$customdata))
+        # the diff. expression scatter keeps the gene first in each point's customdata
+        selected_genes(unique(purrr::map_chr(el$customdata, 1)))
     })
 
     observeEvent(plotly::event_data("plotly_deselect", source = source), {
@@ -426,22 +439,8 @@ mod_gene_module_controllers <- function(ns, dataset, input, output, session, gen
     })
 
     # Add genes
-    output$add_genes_sidebar <- renderUI({
-        gene_choices <- gene_names(dataset())
-        tagList(
-            shinyWidgets::virtualSelectInput(ns("genes_to_add"),
-                label = "Add genes:",
-                choices = gene_choices,
-                selected = c(),
-                multiple = TRUE,
-                showSelectedOptionsFirst = TRUE,
-                search = TRUE,
-                markSearchResults = TRUE,
-                searchByStartsWith = TRUE,
-                disableSelectAll = TRUE
-            ),
-            shinyWidgets::actionGroupButtons(ns("add_genes"), labels = "Add selected genes", size = "sm")
-        )
+    observe({
+        update_gene_select(session, "genes_to_add", dataset(), plain_names = TRUE)
     })
 
     observeEvent(input$add_genes, {

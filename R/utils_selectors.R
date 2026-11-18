@@ -49,10 +49,11 @@ cell_type_selector <- function(dataset, ns, id = "selected_cell_types", label = 
 
 #' Like shinyWidgets::updateVirtualSelect(choices = gene_names_label(dataset, atlas), ...), but
 #' the gene list (~700KB for 30K genes) is sent to the browser once per session and reused by
-#' every gene selector (see inst/app/www/gene_choices.js).
+#' every gene selector (see inst/app/www/gene_choices.js). With `plain_names = TRUE` the
+#' choices are shown as plain gene names, like choices = gene_names(dataset, atlas).
 #'
 #' @noRd
-update_gene_select <- function(session, inputId, dataset, selected = NULL, label = NULL, atlas = FALSE) {
+update_gene_select <- function(session, inputId, dataset, selected = NULL, label = NULL, atlas = FALSE, plain_names = FALSE) {
     key <- paste0(dataset, if (atlas) "_atlas")
     user_data <- session$userData
     genes <- NULL
@@ -65,7 +66,7 @@ update_gene_select <- function(session, inputId, dataset, selected = NULL, label
         session$sendCustomMessage("mcview-gene-choices", list(key = key, options = options))
         user_data$gene_choices_sent <- c(user_data$gene_choices_sent, key)
     }
-    session$sendCustomMessage("mcview-update-gene-select", purrr::compact(list(id = session$ns(inputId), key = key, value = selected, label = label)))
+    session$sendCustomMessage("mcview-update-gene-select", purrr::compact(list(id = session$ns(inputId), key = key, value = selected, label = label, plain_names = if (plain_names) TRUE)))
 }
 
 gene_modules_selector <- function(dataset, gene_modules, ns, id, label = "Gene modules", selected = NULL, with_genes = TRUE) {

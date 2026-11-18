@@ -58,24 +58,40 @@ init_defs <- function() {
 init_selected_genes <- function() {
     # if selected genes are not set - choose them from the first dataset
     if (is.null(config$selected_gene1) || is.null(config$selected_gene2)) {
-        mc_egc <- get_mc_egc(dataset_ls(project)[1])
+        dataset <- dataset_ls(project)[1]
+        mc_mat <- get_mc_data(dataset, "mc_mat")
 
         # filter rows with `rows =` below instead of copying the (genes x metacells) matrix
-        f <- rep(TRUE, nrow(mc_egc))
-        if (has_atlas(dataset_ls(project)[1])) {
-            f <- rownames(mc_egc) %in% gene_names(dataset_ls(project)[1], atlas = TRUE)
+        f <- rep(TRUE, nrow(mc_mat))
+        if (has_atlas(dataset)) {
+            f <- rownames(mc_mat) %in% gene_names(dataset, atlas = TRUE)
         }
-        lateral_genes <- get_mc_data(dataset_ls(project)[1], "lateral_genes")
+        lateral_genes <- get_mc_data(dataset, "lateral_genes")
         if (!is.null(lateral_genes)) {
-            f <- f & !(rownames(mc_egc) %in% lateral_genes)
+            f <- f & !(rownames(mc_mat) %in% lateral_genes)
         }
-        noisy_genes <- get_mc_data(dataset_ls(project)[1], "noisy_genes")
+        noisy_genes <- get_mc_data(dataset, "noisy_genes")
         if (!is.null(noisy_genes)) {
-            f <- f & !(rownames(mc_egc) %in% noisy_genes)
+            f <- f & !(rownames(mc_mat) %in% noisy_genes)
         }
 
-        minmax <- matrixStats::rowMaxs(mc_egc, rows = which(f), na.rm = TRUE) - matrixStats::rowMins(mc_egc, rows = which(f), na.rm = TRUE)
-        names(minmax) <- rownames(mc_egc)[f]
+        # max and min expression of each gene, over blocks of 100 metacells: the expression of
+        # all genes in all metacells takes as much memory as mc_mat (2.3 GB in a 15K metacells
+        # dataset)
+        rows <- which(f)
+        maxs <- -Inf
+        mins <- Inf
+        for (metacells in split(colnames(mc_mat), ceiling(seq_len(ncol(mc_mat)) / 100))) {
+            mc_egc <- get_mc_egc(dataset, metacells = metacells)
+            maxs <- pmax(maxs, matrixStats::rowMaxs(mc_egc, rows = rows, na.rm = TRUE))
+            mins <- pmin(mins, matrixStats::rowMins(mc_egc, rows = rows, na.rm = TRUE))
+            # free the block now: R would collect the blocks only after it allocated many of them
+            rm(mc_egc)
+            gc(full = FALSE)
+        }
+
+        minmax <- maxs - mins
+        names(minmax) <- rownames(mc_mat)[f]
         genes <- names(head(sort(minmax, decreasing = TRUE), n = 2))
     }
 
