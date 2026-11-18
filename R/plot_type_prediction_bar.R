@@ -63,5 +63,5 @@ plot_type_predictions_bar <- function(dataset, metacell_types, cell_type_colors)
             cowplot::ggdraw(p)
         },
         res = 92
-    )
+    ) %>% bindCache(dataset(), metacell_types(), cell_type_colors())
 }
