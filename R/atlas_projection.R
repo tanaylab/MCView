@@ -155,6 +155,11 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
     if (!is.null(gene_names)) {
         rownames(projected_mat) <- modify_gene_names(rownames(projected_mat), gene_names)
     }
+
+    # projected_fraction is ~90% non-zero, so as a dense matrix it is smaller and fast to index by gene
+    if (methods::is(projected_mat, "dgCMatrix")) {
+        projected_mat <- as.matrix(projected_mat)
+    }
     serialize_shiny_data(projected_mat, "projected_mat", dataset = dataset, cache_dir = cache_dir)
 
     if (is.null(query$layers[["projected_fold"]])) {
