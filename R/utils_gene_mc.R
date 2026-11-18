@@ -71,6 +71,7 @@ calc_top_cors <- function(dataset, gene, type, data_vec, metacell_filter, exclud
 # so the full genes x metacells log2 egc matrix is never built.
 # Returns a genes x ncol(x) matrix.
 cor_log_egc <- function(dataset, x, genes, metacells, atlas = FALSE) {
+    stopifnot(nrow(x) == length(metacells))
     mc_mat <- get_mc_data(dataset, "mc_mat", atlas = atlas)
     mc_sum <- get_mc_sum(dataset, atlas = atlas)
 
@@ -82,14 +83,12 @@ cor_log_egc <- function(dataset, x, genes, metacells, atlas = FALSE) {
     # log(egc / egc_epsilon + 1), i.e. log2(egc + egc_epsilon) shifted and scaled, which doesn't change the
     # correlation. Zero counts are exactly 0, so all-zero genes get NaN.
     mc_scale <- 1 / (unname(mc_sum[cols]) * egc_epsilon)
-    chunk_scale <- rep(mc_scale, each = 200) # the same for all chunks but the last
+    chunk_size <- 200
     rows <- match(genes, rownames(mc_mat))
-    cors <- do.call(rbind, lapply(split(rows, ceiling(seq_along(rows) / 200)), function(chunk) {
-        if (length(chunk) < 200) {
-            chunk_scale <- rep(mc_scale, each = length(chunk))
-        }
-        # a single expression, so that R computes it in the memory of the subset
-        lfp <- log1p((if (all_cols) mc_mat[chunk, , drop = FALSE] else mc_mat[chunk, cols, drop = FALSE]) * chunk_scale)
+    cors <- do.call(rbind, lapply(split(rows, ceiling(seq_along(rows) / chunk_size)), function(chunk) {
+        # one expression without intermediate variables: R then writes the product and the log1p into
+        # the memory of the temporary subset instead of allocating a new matrix for each
+        lfp <- log1p((if (all_cols) mc_mat[chunk, , drop = FALSE] else mc_mat[chunk, cols, drop = FALSE]) * rep(mc_scale, each = length(chunk)))
         lfp_norm <- sqrt(matrixStats::rowVars(lfp) * (nrow(x) - 1))
         (lfp %*% x) / outer(lfp_norm, x_norm)
     }))
