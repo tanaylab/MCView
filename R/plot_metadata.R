@@ -575,9 +575,7 @@ plot_mc_scatter <- function(dataset,
         p <- p + geom_text(size = 1, color = "black")
     }
 
-    # (no layer has a "tooltip_text" aesthetic now: the traces without customdata keep the empty
-    # hover texts they had)
-    plotly::ggplotly(p, tooltip = "tooltip_text", source = source) %>%
+    plotly::ggplotly(p, tooltip = "none", source = source) %>%
         set_hovertemplate(df, "metacell", hover_fields, paste0(hovertemplate, "<extra></extra>"))
 }
 
@@ -1079,8 +1077,6 @@ plot_obs_proj_scatter <- function(dataset,
         p <- p + geom_text(size = 1, color = "black")
     }
 
-    # (no layer has a "tooltip_text" aesthetic now: the traces without customdata keep the empty
-    # hover texts they had)
-    plotly::ggplotly(p, tooltip = "tooltip_text", source = source) %>%
+    plotly::ggplotly(p, tooltip = "none", source = source) %>%
         set_hovertemplate(df, "metacell", hover_fields, paste0(hovertemplate, "<extra></extra>"))
 }
