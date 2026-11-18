@@ -433,19 +433,23 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
     }
 
     # The comparison is computed by the Diff. Expression tab's server, which starts when that tab is first opened.
-    # If it hasn't started, start it and use its genes once they are computed.
-    de_genes_requested <- reactiveVal(FALSE)
+    # If it hasn't started, start it and use its genes once they are computed (only shortly after the click, so
+    # that the markers don't change long after it).
+    de_genes_requested_at <- reactiveVal(NULL)
     observeEvent(input$use_de_genes, {
         if (is.null(globals$significant_genes) && is.function(globals$load_tab)) {
-            de_genes_requested(TRUE)
+            de_genes_requested_at(Sys.time())
+            showNotification("Computing the Diff. Expression comparison...", type = "message")
             globals$load_tab("mc_mc")
         } else {
             use_de_genes()
         }
     })
     observeEvent(globals$significant_genes, {
-        req(de_genes_requested())
-        de_genes_requested(FALSE)
+        req(de_genes_requested_at())
+        requested_at <- de_genes_requested_at()
+        de_genes_requested_at(NULL)
+        req(difftime(Sys.time(), requested_at, units = "secs") < 60)
         use_de_genes()
     })
 

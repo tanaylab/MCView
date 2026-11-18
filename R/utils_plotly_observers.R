@@ -7,7 +7,9 @@ sample_click_observer <- function(source_id, session, input_id = "samp1") {
 }
 
 plotly_click_observer <- function(source_id, session, input_id, notification_prefix = NULL, update_function = updateSelectInput) {
-    observeEvent(plotly::event_data("plotly_click", source = source_id), {
+    # ignoreInit: a tab starts when it is first opened, and must not apply a click made in another tab before that
+    # (e.g. a metacell id into a picker that shows cell types)
+    observeEvent(plotly::event_data("plotly_click", source = source_id), ignoreInit = TRUE, {
         el <- plotly::event_data("plotly_click", source = source_id)
         selected <- plotly_event_ids(el)
         update_function(session, input_id, selected = selected)

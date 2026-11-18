@@ -188,7 +188,12 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
     hc <- cluster_metacells(feat, key, cached_dist, precomputed_clusterings)
 
     reorder.hclust <- utils::getFromNamespace("reorder.hclust", "vegan")
-    ord <- reorder.hclust(hc, as.numeric(feat[main_mark, ] - feat[second_mark, ]), agglo.FUN = "uwmean")$order
+    # reorder.hclust recurses along the tree, so a very deep tree (e.g. from many exactly tied distances) can
+    # overflow the stack: keep the clustering's own order then
+    ord <- tryCatch(
+        reorder.hclust(hc, as.numeric(feat[main_mark, ] - feat[second_mark, ]), agglo.FUN = "uwmean")$order,
+        error = function(e) hc$order
+    )
 
     if (any(zero_mcs)) {
         mc_order <- c(colnames(feat)[ord], colnames(feat_zero))
@@ -467,6 +472,11 @@ update_default_clusterings <- function(project, overwrite = FALSE) {
 # matrix is t(z) %*% z, so the dot products of its rows are t(z) %*% w with w = z %*% t(z) %*% z. That costs
 # n^2 * nrow(feat) instead of n^3 for n metacells.
 cor_dist <- function(feat) {
+    # With 1 or 2 features all the correlations are +-1, so the distances below are exactly tied and hclust builds
+    # a chain thousands of merges deep. tgs_dist(tgs_cor()) gives the trees the app had before.
+    if (nrow(feat) <= 2) {
+        return(tgs_dist(tgs_cor(feat, pairwise.complete.obs = TRUE)))
+    }
     z <- scale(feat) / sqrt(nrow(feat) - 1)
     if (!all(is.finite(z))) { # missing values or constant metacells
         return(tgs_dist(tgs_cor(feat, pairwise.complete.obs = TRUE)))
