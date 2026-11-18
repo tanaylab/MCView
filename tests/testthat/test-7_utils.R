@@ -76,7 +76,7 @@ test_that("calc_obs_exp_mc_df tests the counts of the chosen metacell", {
     proj <- obs * runif(length(obs), 0, 6)
     prev <- mget(c("mc_data", "egc_epsilon"), envir = globalenv(), ifnotfound = list(NULL, NULL))
     withr::defer(purrr::iwalk(prev, ~ assign(.y, .x, envir = globalenv())))
-    assign("mc_data", list(toy = list(mc_mat = obs, mc_sum = colSums(obs), projected_mat = proj, projected_mat_sum = colSums(proj))), envir = globalenv())
+    assign("mc_data", list(toy = list2env(list(mc_mat = obs, mc_sum = colSums(obs), projected_mat = proj, projected_mat_sum = colSums(proj)))), envir = globalenv()) # an environment per dataset, as in the app
     assign("egc_epsilon", 1e-5, envir = globalenv())
 
     df <- calc_obs_exp_mc_df("toy", "mc4")
