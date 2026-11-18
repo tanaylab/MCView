@@ -75,23 +75,37 @@ init_selected_genes <- function() {
             f <- f & !(rownames(mc_mat) %in% noisy_genes)
         }
 
-        # max and min expression of each gene, over blocks of 100 metacells: the expression of
-        # all genes in all metacells takes as much memory as mc_mat (2.3 GB in a 15K metacells
-        # dataset)
+        # choose the 2 genes with the largest range (max - min) of expression over the metacells.
+        # Computing the expression of every gene in every metacell takes 20 s on 30K metacells.
+        # Instead, bound each gene's range using its range of UMIs and the smallest and largest
+        # metacell sizes, and compute the expression only of the genes whose bound reaches the
+        # second largest range among the 20 genes with the highest bounds (10-1000 genes).
         rows <- which(f)
-        maxs <- -Inf
-        mins <- Inf
-        for (metacells in split(colnames(mc_mat), ceiling(seq_len(ncol(mc_mat)) / 100))) {
-            mc_egc <- get_mc_egc(dataset, metacells = metacells)
-            maxs <- pmax(maxs, matrixStats::rowMaxs(mc_egc, rows = rows, na.rm = TRUE))
-            mins <- pmin(mins, matrixStats::rowMins(mc_egc, rows = rows, na.rm = TRUE))
-            # free the block now: R would collect the blocks only after it allocated many of them
-            rm(mc_egc)
-            gc(full = FALSE)
-        }
+        mc_sum <- as.numeric(get_mc_data(dataset, "mc_sum"))
+        # both steps below run in 8 forked processes, which also free their memory when they exit
+        cores <- if (.Platform$OS.type == "windows") 1 else 8
 
-        minmax <- maxs - mins
-        names(minmax) <- rownames(mc_mat)[f]
+        # range of UMIs of each gene, over 8 blocks of metacells (2.7 s -> 0.45 s on 30K metacells)
+        blocks <- split(seq_len(ncol(mc_mat)), cut(seq_len(ncol(mc_mat)), 8, labels = FALSE))
+        umis <- parallel::mclapply(blocks, function(cols) {
+            matrixStats::rowRanges(mc_mat, rows = rows, cols = cols, na.rm = TRUE)
+        }, mc.cores = cores)
+        umis <- cbind(do.call(pmin, lapply(umis, function(x) x[, 1])), do.call(pmax, lapply(umis, function(x) x[, 2])))
+        sizes <- range(mc_sum)
+        bound <- pmax(umis[, 2] / sizes[1], umis[, 2] / sizes[2]) - pmin(umis[, 1] / sizes[1], umis[, 1] / sizes[2])
+
+        expr_range <- function(i) {
+            # 100 genes at a time: the expression of all the genes takes as much memory as mc_mat
+            unlist(parallel::mclapply(split(rows[i], ceiling(seq_along(i) / 100)), function(genes) {
+                mc_egc <- mc_mat[genes, , drop = FALSE] / rep(mc_sum, each = length(genes))
+                matrixStats::rowMaxs(mc_egc, na.rm = TRUE) - matrixStats::rowMins(mc_egc, na.rm = TRUE)
+            }, mc.cores = cores), use.names = FALSE)
+        }
+        top <- head(order(bound, decreasing = TRUE), n = 20)
+        candidates <- which(bound >= min(head(sort(expr_range(top), decreasing = TRUE), n = 2)))
+
+        minmax <- expr_range(candidates)
+        names(minmax) <- rownames(mc_mat)[rows[candidates]]
         genes <- names(head(sort(minmax, decreasing = TRUE), n = 2))
     }
 
