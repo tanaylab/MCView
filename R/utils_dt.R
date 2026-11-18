@@ -49,7 +49,11 @@ dt_selector_column <- function(df, id, ns, choices, ...) {
 #'
 #' @noRd
 dt_filter_without_rows_all <- function(data, params) {
-    res <- utils::getFromNamespace("dataTablesFilter", "DT")(data, params)
+    res <- tryCatch(utils::getFromNamespace("dataTablesFilter", "DT")(data, params), error = function(e) NULL)
+    if (is.null(res)) {
+        # dataTablesFilter is internal to DT: if it was renamed or changed, filter as renderDT does by default
+        return(eval(formals(DT::renderDT)$funcFilter, asNamespace("DT"))(data, params))
+    }
     res$DT_rows_all <- list()
     res
 }
