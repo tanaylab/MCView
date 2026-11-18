@@ -131,3 +131,18 @@ test_that("lazy_load_files reads the .qs2 when a .qs of the same name exists", {
     expect_identical(ls(env), "x")
     expect_identical(env$x, 1:3)
 })
+
+test_that("update_default_clusterings skips only the datasets linked from outside the project", {
+    project <- withr::local_tempdir()
+    fs::dir_create(fs::path(project, c("config", "cache/inside")))
+    fs::file_create(fs::path(project, c("config/config.yaml", "cache/inside/default_clusterings.qs2")))
+    out <- paste(cli::cli_fmt(update_default_clusterings(project)), collapse = " ")
+    expect_match(out, "inside already has default_clusterings")
+    expect_no_match(out, "symlink")
+
+    skip_on_os("windows") # creating a symlink needs privileges there
+    fs::link_create(withr::local_tempdir(), fs::path(project, "cache", "linked"))
+    out <- paste(cli::cli_fmt(update_default_clusterings(project)), collapse = " ")
+    expect_match(out, "inside already has default_clusterings")
+    expect_match(out, "linked is a symlink to .* outside the project")
+})

@@ -407,12 +407,12 @@ calc_default_clusterings <- function(dataset, cache_dir) {
 update_default_clusterings <- function(project, overwrite = FALSE) {
     project <- init_project_dir(project)
     cache_dir <- project_cache_dir(project)
-    project_real <- normalizePath(project)
+    project_real <- fs::path_real(project)
     for (dataset in dataset_ls(project)) {
         dataset_dir <- fs::path(cache_dir, dataset)
         # a dataset linked from another project: that project may be served by an older MCView
-        dataset_real <- normalizePath(dataset_dir)
-        if (!startsWith(dataset_real, paste0(project_real, "/"))) {
+        dataset_real <- fs::path_real(dataset_dir)
+        if (!fs::path_has_parent(dataset_real, project_real)) {
             cli_alert_info("{.field {dataset}} is a symlink to {.file {dataset_real}}, outside the project, skipping it (update that project instead)")
             next
         }
