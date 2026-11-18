@@ -400,12 +400,21 @@ update_default_clusterings <- function(project, overwrite = FALSE) {
             cli_alert_warning("Could not cluster any heatmap of {.field {dataset}}")
             next
         }
-        # write to a temporary file and rename it, so that an app that starts meanwhile doesn't read a partial file
+        # write to a temporary file and rename it, so that an app that starts meanwhile doesn't read a partial file,
+        # and read it back first (some file systems, e.g. FUSE mounts, drop qs2's final write)
         tmp <- tempfile(tmpdir = dataset_dir)
-        tryCatch(qs2::qs_save(clusterings, tmp), error = function(e) {
+        written <- tryCatch(
+            {
+                qs2::qs_save(clusterings, tmp)
+                identical(qs2::qs_read(tmp, validate_checksum = TRUE), clusterings)
+            },
+            error = function(e) FALSE
+        )
+        if (!written) {
             unlink(tmp)
-            stop(e)
-        })
+            cli_alert_warning("Could not write the clusterings of {.field {dataset}} to {.file {dataset_dir}}, skipping it")
+            next
+        }
         fs::file_move(tmp, fs::path(dataset_dir, "default_clusterings.qs2"))
         cli_alert_success("Saved the clusterings of {length(clusterings)} heatmap{?s} of {.field {dataset}}")
     }
@@ -587,7 +596,7 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
             # transform to match the order of mat
             mc_order <- match(mc_order, colnames(mat))
         } else {
-            mc_order <- order_mc_by_most_var_genes(mat, force_cell_type = force_cell_type, metacell_types = metacell_types, epsilon = epsilon, notify_var_genes = notify_var_genes, log_transform = log_transform, cached_dist = cached_dist, secondary_order = secondary_order, precomputed_clusterings = get_mc_data(dataset, "default_clusterings"))
+            mc_order <- order_mc_by_most_var_genes(mat, force_cell_type = force_cell_type, metacell_types = metacell_types, epsilon = epsilon, notify_var_genes = notify_var_genes, log_transform = log_transform, cached_dist = cached_dist, secondary_order = secondary_order, precomputed_clusterings = tryCatch(get_mc_data(dataset, "default_clusterings"), error = function(e) NULL)) # stored clusterings only save time: if they can't be read, cluster
 
             if (!is.null(cell_type_order)) {
                 mc_order_names <- tibble(metacell = colnames(mat)[mc_order]) %>%

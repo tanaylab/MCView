@@ -65,7 +65,7 @@ check <- function(path) {
                 })),
                 error = function(e) status <<- paste("error:", conditionMessage(e))
             )
-            hit <- counts$clusterings > 0 && counts$hclust == 0
+            hit <- counts$clusterings > 0 && counts$hclust == 0 && !startsWith(status, "error")
             tab_name <- names(tab_defs)[purrr::map_chr(tab_defs, "module_name") == tab]
             res[[length(res) + 1]] <- data.frame(dataset = dataset, tab = tab_name, first_render = status, clusterings = counts$clusterings, hclust_calls = counts$hclust, stored_clustering = if (hit) "used" else "NOT used")
         }
