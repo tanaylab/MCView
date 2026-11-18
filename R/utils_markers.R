@@ -183,6 +183,13 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
     # R and rlang (rlang::hash() changed in rlang 1.3.0), the math library or the locale: it is a hash of the serialized
     # features without the header (which has the R version), taken before the log and with the genes in a fixed order
     # (choose_markers sorts them by the locale).
+    # Stored and shared clusterings are looked up by this key, so:
+    # - bump the "cluster_metacells" tag (e.g. to "cluster_metacells_v2") when the clustering method changes,
+    #   or the apps will keep using clusterings made by the old method.
+    # - keep serialize(version = 2) and dropping its 14-byte header (the format, the serialization version, the
+    #   version of R that wrote it and the minimal version that reads it), the only part that depends on the R
+    #   version. Version 3 adds the native encoding to the header. Changing either changes every key, which
+    #   invalidates all the stored and shared clusterings.
     key <- list("cluster_metacells", gene_folds[order(rownames(gene_folds), method = "radix"), , drop = FALSE], epsilon, log_transform, !is.null(cached_dist))
     key <- qs2::xxhash_raw(serialize(key, NULL, xdr = FALSE, version = 2)[-(1:14)])
     hc <- cluster_metacells(feat, key, cached_dist, precomputed_clusterings)
