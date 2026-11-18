@@ -206,9 +206,16 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
                     n_epoch = input$n_epoch, min_log_expr = input$min_log_expr,
                     genes_per_anchor = input$genes_per_anchor, random_seed = input$random_seed
                 )
+                # read them here if they weren't read yet, rather than in each forked process:
+                # qs2 reads with TBB threads, and TBB doesn't support starting them after a fork
+                get_mc_data(ds, "mc_mat")
+                get_mc_data(ds, "mc_sum")
 
                 # UMAP takes from seconds to minutes. Run it in a forked process (future::multicore,
-                # set in run_app) so it doesn't block the other sessions of the app.
+                # set in run_app) so it doesn't block the other sessions of the app. Shiny holds the
+                # later inputs of this session until it's done, so a click meanwhile would start
+                # another recompute afterwards: disable the button.
+                shinyjs::disable("recompute")
                 future_promise({
                     compute_umap(get_mc_egc(ds), anchors,
                         n_neighbors = p$n_neighbors, min_dist = p$min_dist,
@@ -218,11 +225,15 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 }) %...>% (function(mc2d) {
                     if (is.null(mc2d)) {
                         showNotification("Recomputing 2D projection failed", type = "error")
+                        return()
                     }
-                    req(mc2d)
                     globals$mc2d <- mc2d
                     shinyjs::show("reset")
-                })
+                }) %...!% (function(e) {
+                    # without this, shiny closes the session on the error
+                    showNotification(paste("Recomputing 2D projection failed:", conditionMessage(e)), type = "error")
+                }) %>%
+                    promises::finally(function() shinyjs::enable("recompute"))
             })
 
             observeEvent(input$reset, {
