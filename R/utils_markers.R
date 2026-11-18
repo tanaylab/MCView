@@ -395,22 +395,19 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
     if (mode == "Inner") {
         mc_fp <- get_mc_data(dataset, "inner_fold_mat")
         req(mc_fp)
-        mc_fp <- as.matrix(mc_fp[Matrix::rowSums(mc_fp) > 0, ])
-        mc_fp <- mc_fp[intersect(markers, rownames(mc_fp)), , drop = FALSE]
+        mc_fp <- as.matrix(mc_fp[intersect(markers, rownames(mc_fp)[Matrix::rowSums(mc_fp) > 0]), , drop = FALSE])
         epsilon <- 1e-5
         log_transform <- FALSE
     } else if (mode == "Stdev") {
         mc_fp <- get_mc_data(dataset, "inner_stdev_mat")
         req(mc_fp)
-        mc_fp <- as.matrix(mc_fp[Matrix::rowSums(mc_fp) > 0, ])
-        mc_fp <- mc_fp[intersect(markers, rownames(mc_fp)), , drop = FALSE]
+        mc_fp <- as.matrix(mc_fp[intersect(markers, rownames(mc_fp)[Matrix::rowSums(mc_fp) > 0]), , drop = FALSE])
         epsilon <- 1e-5
         log_transform <- FALSE
     } else if (mode == "Proj") {
         mc_fp <- get_mc_data(dataset, "projected_fold")
         req(mc_fp)
-        mc_fp <- as.matrix(mc_fp[abs(Matrix::rowSums(mc_fp)) > 0, ])
-        mc_fp <- mc_fp[intersect(markers, rownames(mc_fp)), , drop = FALSE]
+        mc_fp <- as.matrix(mc_fp[intersect(markers, rownames(mc_fp)[abs(Matrix::rowSums(mc_fp)) > 0]), , drop = FALSE])
         epsilon <- 1e-5
         log_transform <- FALSE
     } else if (mode == "Markers") {
@@ -443,8 +440,7 @@ get_marker_matrix <- function(dataset, markers, cell_types = NULL, metacell_type
     } else if (mode == "Outliers") {
         mc_fp <- get_mc_data(dataset, "deviant_fold_mat")
         req(mc_fp)
-        mc_fp <- as.matrix(mc_fp[Matrix::rowSums(mc_fp) > 0, ])
-        mc_fp <- mc_fp[intersect(markers, rownames(mc_fp)), , drop = FALSE]
+        mc_fp <- as.matrix(mc_fp[intersect(markers, rownames(mc_fp)[Matrix::rowSums(mc_fp) > 0]), , drop = FALSE])
         epsilon <- 1e-5
         log_transform <- FALSE
     } else {
