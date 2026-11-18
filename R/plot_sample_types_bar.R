@@ -40,7 +40,8 @@ plot_sample_stacked_types <- function(dataset, globals, metacell_types, cell_typ
             samp_types <- samp_types %>%
                 mutate(
                     Sample = factor(Sample, levels = samp_ord),
-                    `# of cells` = paste0(`# of cells`, paste0("\n", input$sample_types_ordering, ": ", samp_md[[input$sample_types_ordering]]))
+                    # (the value of each bar's sample: this recycled the values in the order of samp_md)
+                    `# of cells` = paste0(`# of cells`, paste0("\n", input$sample_types_ordering, ": ", samp_md[[input$sample_types_ordering]][match(Sample, samp_md$samp_id)]))
                 )
             xlab <- input$sample_types_ordering
         }
