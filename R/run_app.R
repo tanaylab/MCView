@@ -41,9 +41,23 @@ run_app <- function(project,
     # those inputs before requesting any page, and without the handlers the app crashed.
     ui <- app_ui()
 
+    # shiny also renders the UI to HTML on every page request, which takes ~1 s for this UI.
+    # The HTML is the same for every request, so keep the first one. shiny's renderPage() is
+    # not exported: if it fails, shiny renders the page as usual.
+    page <- NULL
+    render_page <- function() {
+        tryCatch(
+            httpResponse(200, content = utils::getFromNamespace("renderPage", "shiny")(ui, testMode = isTRUE(getShinyOption("testmode")))),
+            error = function(e) NULL
+        )
+    }
+
     with_golem_options(
         app = shinyApp(
-            ui = function(request) ui,
+            ui = function(request) {
+                page <<- page %||% render_page()
+                page %||% ui
+            },
             server = app_server,
             options = list(port = port, host = host, launch.browser = launch.browser)
         ),
