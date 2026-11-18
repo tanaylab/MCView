@@ -49,7 +49,12 @@ load_shiny_data <- function(name, dataset, cache_dir, atlas = FALSE) {
         qs2_file <- fs::path(cache_dir, glue("{name}.qs2"))
         qs_file <- fs::path(cache_dir, glue("{name}.qs"))
         if (fs::file_exists(qs2_file)) {
-            object <- qs2::qs_read(qs2_file)
+            # decompress with several threads: reading a 30K metacells mc_mat takes 8 s with one
+            # thread and 1.6 s with 8. qs2 built without TBB reads with one thread and warns.
+            object <- withCallingHandlers(
+                qs2::qs_read(qs2_file, nthreads = 8),
+                warning = function(w) if (grepl("TBB not available", conditionMessage(w))) invokeRestart("muffleWarning")
+            )
         } else if (fs::file_exists(qs_file)) {
             object <- read_legacy_qs(qs_file, name)
         } else {
