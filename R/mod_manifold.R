@@ -216,13 +216,15 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 # later inputs of this session until it's done, so a click meanwhile would start
                 # another recompute afterwards: disable the button.
                 shinyjs::disable("recompute")
+                # seed = NULL: compute_umap sets its own seed, so don't let future warn ("UNRELIABLE VALUE")
+                # that the future used random numbers
                 future_promise({
                     compute_umap(get_mc_egc(ds), anchors,
                         n_neighbors = p$n_neighbors, min_dist = p$min_dist,
                         n_epoch = p$n_epoch, min_log_expr = p$min_log_expr,
                         genes_per_anchor = p$genes_per_anchor, random_seed = p$random_seed
                     )
-                }) %...>% (function(mc2d) {
+                }, seed = NULL) %...>% (function(mc2d) {
                     if (is.null(mc2d)) {
                         showNotification("Recomputing 2D projection failed", type = "error")
                         return()
