@@ -209,13 +209,12 @@ mc2d_plot_metadata_ggp_numeric <- function(mc2d_df,
     mc2d_df <- mc2d_df %>%
         mutate(md_text = round(mc2d_df[[md]], digits = 3))
     hover_fields <- c("Cell type", "Top genes", "md_text")
-    # (the last line is empty when there is no age, as in the hover text)
-    hovertemplate <- paste0("Metacell: %{customdata[0]}<br />Cell type: %{customdata[1]}<br />Top genes: %{customdata[2]}<br />", md, ": %{customdata[3]}<br />")
+    hovertemplate <- paste0("Metacell: %{customdata[0]}<br />Cell type: %{customdata[1]}<br />Top genes: %{customdata[2]}<br />", md, ": %{customdata[3]}")
     if (has_name(mc2d_df, "Age")) {
         mc2d_df <- mc2d_df %>%
             mutate(age_text = round(Age, digits = 2))
         hover_fields <- c(hover_fields, "age_text")
-        hovertemplate <- paste0(hovertemplate, "Metacell age (E[t]): %{customdata[4]}")
+        hovertemplate <- paste0(hovertemplate, "<br />Metacell age (E[t]): %{customdata[4]}")
     }
 
     md_colors <- get_metadata_colors(dataset, md, colors = colors, color_breaks = color_breaks, metadata = metadata)
@@ -575,9 +574,7 @@ plot_mc_scatter <- function(dataset,
         p <- p + geom_text(size = 1, color = "black")
     }
 
-    # (no layer has a "tooltip_text" aesthetic now: the traces without customdata keep the empty
-    # hover texts they had)
-    plotly::ggplotly(p, tooltip = "tooltip_text", source = source) %>%
+    plotly::ggplotly(p, tooltip = "none", source = source) %>%
         set_hovertemplate(df, "metacell", hover_fields, paste0(hovertemplate, "<extra></extra>"))
 }
 
@@ -1006,14 +1003,15 @@ plot_obs_proj_scatter <- function(dataset,
         color_hover <- paste0(color_name, ": ", hover_value("color_text"), "<br />Cell type: ", hover_value("Cell type"))
     }
 
-    # (the age and correction factor lines are empty when missing, as in the hover text)
-    hovertemplate <- paste0("Metacell: %{customdata[0]}<br />", axis_hover, "<br />", color_hover, "<br />Top genes: ", hover_value("Top genes"), "<br />")
+    hovertemplate <- paste0("Metacell: %{customdata[0]}<br />", axis_hover, "<br />", color_hover, "<br />Top genes: ", hover_value("Top genes"))
     if (has_name(df, "Age")) {
         df <- df %>%
             mutate(age_text = round(Age, digits = 2))
-        hovertemplate <- paste0(hovertemplate, "Metacell age (E[t]): ", hover_value("age_text"))
+        hovertemplate <- paste0(hovertemplate, "<br />Metacell age (E[t]): ", hover_value("age_text"))
     }
-    hovertemplate <- paste0(hovertemplate, "<br />", if (!is.null(correction_factor)) glue("Correction factor: {round(correction_factor, 3)}"))
+    if (!is.null(correction_factor)) {
+        hovertemplate <- paste0(hovertemplate, "<br />Correction factor: ", round(correction_factor, 3))
+    }
 
     p <- ggplot(
         data = df,
@@ -1079,8 +1077,6 @@ plot_obs_proj_scatter <- function(dataset,
         p <- p + geom_text(size = 1, color = "black")
     }
 
-    # (no layer has a "tooltip_text" aesthetic now: the traces without customdata keep the empty
-    # hover texts they had)
-    plotly::ggplotly(p, tooltip = "tooltip_text", source = source) %>%
+    plotly::ggplotly(p, tooltip = "none", source = source) %>%
         set_hovertemplate(df, "metacell", hover_fields, paste0(hovertemplate, "<extra></extra>"))
 }

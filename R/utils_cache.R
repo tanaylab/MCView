@@ -69,18 +69,32 @@ load_shiny_data <- function(name, dataset, cache_dir, atlas = FALSE) {
             as.matrix()
     }
 
-    # Projects imported before the projected matrix was stored dense have it as a dgCMatrix that is
-    # mostly non-zero: a dense matrix takes less memory then (above 2/3 non-zeros), and reading a
-    # gene from it takes ~1ms instead of ~0.5s
-    if (name == "projected_mat" && methods::is(object, "dgCMatrix") && length(object@x) > 2 / 3 * prod(dim(object))) {
-        object <- as.matrix(object)
+    # projects imported before the projected matrix was stored dense
+    if (name == "projected_mat") {
+        object <- densify_if_mostly_nonzero(object)
     }
 
     return(object)
 }
 
+# A dgCMatrix that is mostly non-zero (e.g. the projected matrix) as a dense matrix: above 2/3
+# non-zeros it takes less memory (8 bytes per value instead of 12 per non-zero), and reading a
+# gene from it takes ~1ms instead of ~0.5s.
+densify_if_mostly_nonzero <- function(x) {
+    if (methods::is(x, "dgCMatrix") && length(x@x) > 2 / 3 * prod(dim(x))) {
+        x <- as.matrix(x)
+    }
+    x
+}
+
 # Bind each cache file to a promise (delayedAssign) in `env`, so a file is read only
 # when its object is first accessed and objects that are never used are never read.
+# - Never read an unread object inside a forked process (future_promise, mclapply): read it
+#   in the parent first. qs2 reads with TBB threads, which can't start after a fork, and the
+#   object would be read again in every fork.
+# - A running app reads a file when the object is first used, possibly long after it started,
+#   so it can mix files from before and after a re-import or an update_*() call: restart the
+#   app after those.
 lazy_load_files <- function(env, files, dataset, cache_dir, atlas = FALSE) {
     # load_shiny_data() reads the .qs2 when a .qs of the same name exists (e.g. after
     # dev/convert_qs_to_qs2.R), so drop the .qs: without the qs package the check below
@@ -92,7 +106,8 @@ lazy_load_files <- function(env, files, dataset, cache_dir, atlas = FALSE) {
                 sub("\\.(qs2|qs)$", "", .) %>%
                 sub("\\.tsv$", "", .)
             if (grepl("\\.qs$", fn) && !requireNamespace("qs", quietly = TRUE)) {
-                # fail at startup, as before, unless a .tsv/.qs2 copy exists
+                # fail at startup, as before, unless a .tsv of the same name exists (a .qs with a
+                # .qs2 next to it was dropped above)
                 load_shiny_data(var_name, dataset, cache_dir, atlas = atlas)
             }
             delayedAssign(var_name, load_shiny_data(var_name, dataset, cache_dir, atlas = atlas), assign.env = env)

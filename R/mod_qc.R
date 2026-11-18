@@ -223,8 +223,8 @@ zero_fold_gene_plot <- function(dataset, input, globals) {
             xlab("log2(gene expression)") +
             ylab("log2(# of zero cells / expected)")
 
-        # set_hovertemplate() replaces the hover texts of the points, so let ggplotly write only the line's
-        plotly::ggplotly(p, tooltip = c("intercept", "slope")) %>%
+        # set_hovertemplate() replaces the hover texts
+        plotly::ggplotly(p, tooltip = "none") %>%
             set_hovertemplate(df, "Gene", c("Observed", "Expected", "Metacell"), "Expression: %{x:.3~r}<br />FC: %{y:.3~r}<br />Gene: %{customdata[0]}<br />Type: %{fullData.name}<br />Observed: %{customdata[1]}<br />Expected: %{customdata[2]}<br />Metacell: %{customdata[3]}<extra></extra>") %>%
             sanitize_for_WebGL() %>%
             plotly::toWebGL() %>%

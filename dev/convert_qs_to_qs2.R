@@ -96,7 +96,7 @@ convert_project <- function(path) {
         return(data.frame(bundle = path, failed = 1, todo = 0, todo_bytes = 0, unwritable = 0, unwritable_bytes = 0))
     }
 
-    project_real <- normalizePath(project)
+    project_real <- normalizePath(project, winslash = "/")
     datasets <- list.files(cache, full.names = TRUE)
     dirs <- c(datasets, file.path(datasets, "atlas"))
     dirs <- sort(dirs[dir.exists(dirs)])
@@ -105,7 +105,7 @@ convert_project <- function(path) {
         qs_files <- list.files(dir, pattern = "\\.qs$", full.names = TRUE)
         if (length(qs_files) == 0) next
         rel <- substring(dir, nchar(cache) + 2)
-        real <- normalizePath(dir)
+        real <- normalizePath(dir, winslash = "/")
         if (!startsWith(real, paste0(project_real, "/"))) {
             cat("  ", rel, ": skipped, a symlink to ", real, ", outside the project (convert that project instead)\n", sep = "")
             next

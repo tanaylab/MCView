@@ -76,7 +76,7 @@ test_that("calc_obs_exp_mc_df tests the counts of the chosen metacell", {
     proj <- obs * runif(length(obs), 0, 6)
     prev <- mget(c("mc_data", "egc_epsilon"), envir = globalenv(), ifnotfound = list(NULL, NULL))
     withr::defer(purrr::iwalk(prev, ~ assign(.y, .x, envir = globalenv())))
-    assign("mc_data", list(toy = list(mc_mat = obs, mc_sum = colSums(obs), projected_mat = proj, projected_mat_sum = colSums(proj))), envir = globalenv())
+    assign("mc_data", list(toy = list2env(list(mc_mat = obs, mc_sum = colSums(obs), projected_mat = proj, projected_mat_sum = colSums(proj)))), envir = globalenv()) # an environment per dataset, as in the app
     assign("egc_epsilon", 1e-5, envir = globalenv())
 
     df <- calc_obs_exp_mc_df("toy", "mc4")
@@ -112,6 +112,17 @@ test_that("set_hovertemplate keeps each point's id first in its customdata", {
     tr <- set_hovertemplate(fig, df, "id", c("p", "v"), "%{customdata[0]}: %{customdata[2]} (%{customdata[1]})")$x$data[[1]]
     expect_identical(unname(tr$customdata), rbind(c("c", "3"), c("b", "NA"), c("a", "1.5")))
     expect_identical(tr$hovertemplate, "%{customdata[0]}: %{customdata[1]} (Not computed)")
+
+    # unless plotly would read them as a placeholder
+    df$p <- "50%{y}"
+    tr <- set_hovertemplate(fig, df, "id", c("p", "v"), "%{customdata[0]}: %{customdata[2]} (%{customdata[1]})")$x$data[[1]]
+    expect_identical(unname(tr$customdata), rbind(c("c", "50%{y}", "3"), c("b", "50%{y}", "NA"), c("a", "50%{y}", "1.5")))
+    expect_identical(tr$hovertemplate, "%{customdata[0]}: %{customdata[2]} (%{customdata[1]})")
+
+    # a point that isn't in df keeps its id
+    fig <- plotly::plot_ly(x = 1:2, y = 1:2, customdata = c("a", "z"), type = "scatter", mode = "markers")
+    tr <- set_hovertemplate(fig, df, "id", "v", "%{customdata[0]}: %{customdata[1]}")$x$data[[1]]
+    expect_identical(unname(tr$customdata), rbind(c("a", "1.5"), c("z", "NA")))
 })
 
 test_that("plotly_event_ids reads the ids of clicked and selected points", {
@@ -130,4 +141,26 @@ test_that("lazy_load_files reads the .qs2 when a .qs of the same name exists", {
     lazy_load_files(env, c("x.qs", "x.qs2"), "ds", cache_dir)
     expect_identical(ls(env), "x")
     expect_identical(env$x, 1:3)
+})
+
+test_that("densify_if_mostly_nonzero densifies a dgCMatrix above 2/3 non-zeros", {
+    m <- Matrix::Matrix(c(1, 2, 3, 5, 0, 4), 2, 3, sparse = TRUE)
+    expect_identical(densify_if_mostly_nonzero(m), as.matrix(m))
+    m <- Matrix::Matrix(c(1, 2, 3, 0, 0, 4), 2, 3, sparse = TRUE) # exactly 2/3
+    expect_identical(densify_if_mostly_nonzero(m), m)
+})
+
+test_that("update_default_clusterings skips only the datasets linked from outside the project", {
+    project <- withr::local_tempdir()
+    fs::dir_create(fs::path(project, c("config", "cache/inside")))
+    fs::file_create(fs::path(project, c("config/config.yaml", "cache/inside/default_clusterings.qs2")))
+    out <- paste(cli::cli_fmt(update_default_clusterings(project)), collapse = " ")
+    expect_match(out, "inside already has default_clusterings")
+    expect_no_match(out, "symlink")
+
+    skip_on_os("windows") # creating a symlink needs privileges there
+    fs::link_create(withr::local_tempdir(), fs::path(project, "cache", "linked"))
+    out <- paste(cli::cli_fmt(update_default_clusterings(project)), collapse = " ")
+    expect_match(out, "inside already has default_clusterings")
+    expect_match(out, "linked is a symlink to .* outside the project")
 })

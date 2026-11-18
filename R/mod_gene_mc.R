@@ -134,8 +134,7 @@ mod_gene_mc_plotly_observers <- function(input, session, source = "mc_mc_plot", 
     observeEvent(plotly::event_data("plotly_click", source = source), {
         el <- plotly::event_data("plotly_click", source = source)
 
-        # the diff. expression scatter keeps the gene first in each point's customdata
-        gene <- purrr::map_chr(el$customdata, 1)
+        gene <- plotly_event_ids(el)
         req(input$x_axis_type == "Gene")
         shinyWidgets::updatePickerInput(session, "x_axis_var", selected = gene)
         showNotification(glue("Selected {gene}{notification_suffix}"))

@@ -371,8 +371,7 @@ mod_samples_server <- function(id, dataset, metacell_types, cell_type_colors, ge
             observeEvent(plotly::event_data("plotly_click", source = "samp_samp_diff_expr_plot"), {
                 req(input$x_axis_type == "Gene")
                 el <- plotly::event_data("plotly_click", source = "samp_samp_diff_expr_plot")
-                # the diff. expression scatter keeps the gene first in each point's customdata
-                selected <- purrr::map_chr(el$customdata, 1)
+                selected <- plotly_event_ids(el)
                 shinyWidgets::updatePickerInput(session, "x_axis_var", selected = selected)
                 showNotification(glue("Selected gene {selected}"))
             })

@@ -50,17 +50,22 @@ collapse_hoverinfo <- function(p) {
 set_hovertemplate <- function(fig, df, id, fields, template) {
     fig <- plotly::plotly_build(fig)
     values <- do.call(cbind, lapply(df[c(id, fields)], as.character))
-    # as paste() and glue() write them in hover texts
-    values[is.na(values)] <- "NA"
     with_customdata <- !purrr::map_lgl(fig$x$data, ~ is.null(.x$customdata))
     ids <- purrr::map(fig$x$data[with_customdata], ~ unlist(.x$customdata))
     # the rows of each trace's points, with one match() for all the traces (e.g. a trace per cell type)
     rows <- split(match(unlist(ids), df[[id]]), factor(rep(seq_along(ids), lengths(ids)), levels = seq_along(ids)))
     fig$x$data[with_customdata] <- purrr::map2(fig$x$data[with_customdata], rows, function(tr, rows) {
         customdata <- values[rows, , drop = FALSE]
+        # the trace's own ids, also for points that aren't in df (their other values are NA)
+        customdata[, 1] <- as.character(unlist(tr$customdata))
+        # as paste() and glue() write them in hover texts
+        customdata[is.na(customdata)] <- "NA"
         # a field with the same value for all the trace's points (e.g. the cell type of a trace
-        # per cell type, or p-values that weren't computed) is written in its template instead
-        constant <- c(FALSE, vapply(seq_len(ncol(customdata))[-1], function(j) nrow(customdata) > 0 && all(customdata[, j] == customdata[1, j]), TRUE))
+        # per cell type, or p-values that weren't computed) is written in its template instead,
+        # unless plotly would read a part of it as a placeholder ("%{...}")
+        constant <- c(FALSE, vapply(seq_len(ncol(customdata))[-1], function(j) {
+            nrow(customdata) > 0 && all(customdata[, j] == customdata[1, j]) && !grepl("%{", customdata[1, j], fixed = TRUE)
+        }, TRUE))
         index <- cumsum(!constant) - 1
         tr$hovertemplate <- template
         placeholders <- gregexpr("%\\{customdata\\[[0-9]+\\]\\}", template)

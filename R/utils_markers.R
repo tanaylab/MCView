@@ -183,6 +183,13 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
     # R and rlang (rlang::hash() changed in rlang 1.3.0), the math library or the locale: it is a hash of the serialized
     # features without the header (which has the R version), taken before the log and with the genes in a fixed order
     # (choose_markers sorts them by the locale).
+    # Stored and shared clusterings are looked up by this key, so:
+    # - bump the "cluster_metacells" tag (e.g. to "cluster_metacells_v2") when the clustering method changes,
+    #   or the apps will keep using clusterings made by the old method.
+    # - keep serialize(version = 2) and dropping its 14-byte header (the format, the serialization version, the
+    #   version of R that wrote it and the minimal version that reads it), the only part that depends on the R
+    #   version. Version 3 adds the native encoding to the header. Changing either changes every key, which
+    #   invalidates all the stored and shared clusterings.
     key <- list("cluster_metacells", gene_folds[order(rownames(gene_folds), method = "radix"), , drop = FALSE], epsilon, log_transform, !is.null(cached_dist))
     key <- qs2::xxhash_raw(serialize(key, NULL, xdr = FALSE, version = 2)[-(1:14)])
     hc <- cluster_metacells(feat, key, cached_dist, precomputed_clusterings)
@@ -412,12 +419,12 @@ calc_default_clusterings <- function(dataset, cache_dir) {
 update_default_clusterings <- function(project, overwrite = FALSE) {
     project <- init_project_dir(project)
     cache_dir <- project_cache_dir(project)
-    project_real <- normalizePath(project)
+    project_real <- fs::path_real(project)
     for (dataset in dataset_ls(project)) {
         dataset_dir <- fs::path(cache_dir, dataset)
         # a dataset linked from another project: that project may be served by an older MCView
-        dataset_real <- normalizePath(dataset_dir)
-        if (!startsWith(dataset_real, paste0(project_real, "/"))) {
+        dataset_real <- fs::path_real(dataset_dir)
+        if (!fs::path_has_parent(dataset_real, project_real)) {
             cli_alert_info("{.field {dataset}} is a symlink to {.file {dataset_real}}, outside the project, skipping it (update that project instead)")
             next
         }

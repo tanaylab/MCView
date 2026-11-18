@@ -63,13 +63,12 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
             expr_text = round(expression, digits = 2),
             enrich_text = round(log2(mc_fp[metacell_names]), digits = 2)
         )
-    # (ends with an empty line, as the hover text did)
     hovertemplate <- paste0(
         "Metacell: %{customdata[0]}<br />",
         gene, " expression (log2): %{customdata[1]}<br />",
         gene, " enrichment: %{customdata[2]}<br />",
         "Cell type: %{customdata[3]}<br />",
-        "Top genes: %{customdata[4]}<br /><extra></extra>"
+        "Top genes: %{customdata[4]}<extra></extra>"
     )
 
     if (stat == "enrichment") {
