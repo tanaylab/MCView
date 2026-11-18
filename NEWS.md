@@ -1,10 +1,5 @@
 # MCView 0.2.61
 
-* Heatmaps with 2 genes or 2 gene modules no longer fail with "node stack overflow" on large datasets (since 0.2.56).
-* Heatmaps: "Use DE genes" works when a metacell was clicked in another tab before the Diff. Expression tab was opened.
-
-# MCView 0.2.60
-
 Performance:
 
 * Faster startup with less memory: on the largest lab apps the time to the first usable session went down by about half, and the memory at startup by a factor of 2 to 6.
