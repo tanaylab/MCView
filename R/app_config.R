@@ -84,22 +84,31 @@ init_selected_genes <- function() {
         mc_sum <- as.numeric(get_mc_data(dataset, "mc_sum"))
         # both steps below run in 8 forked processes, which also free their memory when they exit
         cores <- if (.Platform$OS.type == "windows") 1 else 8
+        # mclapply gives NULL (with a warning) for a process that was killed, e.g. out of memory, and a
+        # try-error for one that failed: compute those in this process. n: the length of each result.
+        mclapply_or_here <- function(X, FUN, n) {
+            res <- parallel::mclapply(X, FUN, mc.cores = cores)
+            failed <- !purrr::map2_lgl(res, n, ~ is.numeric(.x) && NROW(.x) == .y)
+            res[failed] <- lapply(X[failed], FUN)
+            res
+        }
 
         # range of UMIs of each gene, over 8 blocks of metacells (2.7 s -> 0.45 s on 30K metacells)
         blocks <- split(seq_len(ncol(mc_mat)), cut(seq_len(ncol(mc_mat)), 8, labels = FALSE))
-        umis <- parallel::mclapply(blocks, function(cols) {
+        umis <- mclapply_or_here(blocks, function(cols) {
             matrixStats::rowRanges(mc_mat, rows = rows, cols = cols, na.rm = TRUE)
-        }, mc.cores = cores)
+        }, length(rows))
         umis <- cbind(do.call(pmin, lapply(umis, function(x) x[, 1])), do.call(pmax, lapply(umis, function(x) x[, 2])))
         sizes <- range(mc_sum)
         bound <- pmax(umis[, 2] / sizes[1], umis[, 2] / sizes[2]) - pmin(umis[, 1] / sizes[1], umis[, 1] / sizes[2])
 
         expr_range <- function(i) {
             # 100 genes at a time: the expression of all the genes takes as much memory as mc_mat
-            unlist(parallel::mclapply(split(rows[i], ceiling(seq_along(i) / 100)), function(genes) {
+            chunks <- split(rows[i], ceiling(seq_along(i) / 100))
+            unlist(mclapply_or_here(chunks, function(genes) {
                 mc_egc <- mc_mat[genes, , drop = FALSE] / rep(mc_sum, each = length(genes))
                 matrixStats::rowMaxs(mc_egc, na.rm = TRUE) - matrixStats::rowMins(mc_egc, na.rm = TRUE)
-            }, mc.cores = cores), use.names = FALSE)
+            }, lengths(chunks)), use.names = FALSE)
         }
         top <- head(order(bound, decreasing = TRUE), n = 20)
         candidates <- which(bound >= min(head(sort(expr_range(top), decreasing = TRUE), n = 2)))
