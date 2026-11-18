@@ -166,6 +166,12 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
 
             group <- reactiveVal()
 
+            # The scatter depends on input$mode only through its drag mode (select in Group mode). A
+            # reactiveVal invalidates only when its value changes, so switching between MC and Type
+            # doesn't draw and send the plot again.
+            group_mode <- reactiveVal(FALSE)
+            observe(group_mode(isTRUE(input$mode %in% c("Groups", "Group"))))
+
             projected_metacell_types <- reactive({
                 get_mc_data(dataset(), "projected_metacell_types") %>%
                     mutate(metacell = as.character(metacell))
@@ -332,13 +338,13 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
                     })
                 }
 
-                if (!is.null(input$mode) && input$mode %in% c("Groups", "Group")) {
+                if (group_mode()) {
                     fig <- fig %>% plotly::layout(dragmode = "select")
                 }
 
 
                 return(fig)
-            }) %>% bindCache(dataset(), input$axis_var, input$axis_type, input$color_by_type, input$color_by_var, metacell_types(), cell_type_colors(), input$gene_gene_point_size, input$gene_gene_stroke, input$mode, globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
+            }) %>% bindCache(dataset(), input$axis_var, input$axis_type, input$color_by_type, input$color_by_var, metacell_types(), cell_type_colors(), input$gene_gene_point_size, input$gene_gene_stroke, group_mode(), globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
 
             # Point size selector
             output$point_size_ui <- renderUI({

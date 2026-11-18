@@ -166,6 +166,12 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
 }
 
 render_2d_plotly <- function(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, source, buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL, refresh_on_gene_change = FALSE, atlas = FALSE, query_types = NULL, group = NULL, groupA = NULL, groupB = NULL, selected_metacell_types = NULL, selected_cell_types = NULL) {
+    # Unless coloring by "Selected", input$mode changes only the drag mode (select in the group
+    # modes). A reactiveVal invalidates the plot only when its value changes, so switching between
+    # e.g. MC and Type doesn't draw and send the plot again.
+    group_mode <- reactiveVal(FALSE)
+    observe(group_mode(isTRUE(input$mode %in% c("Groups", "Group"))))
+
     plotly::renderPlotly({
         req(input$color_proj)
         req(input$point_size)
@@ -418,7 +424,7 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
 
         if (!is.null(dragmode)) {
             fig <- fig %>% plotly::layout(dragmode = dragmode)
-        } else if (!is.null(input$mode) && input$mode %in% c("Groups", "Group")) {
+        } else if (group_mode()) {
             fig <- fig %>% plotly::layout(dragmode = "select")
             buttons <- buttons[!(buttons %in% c("select2d", "lasso2d"))]
         }
