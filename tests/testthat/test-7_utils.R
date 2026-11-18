@@ -112,6 +112,17 @@ test_that("set_hovertemplate keeps each point's id first in its customdata", {
     tr <- set_hovertemplate(fig, df, "id", c("p", "v"), "%{customdata[0]}: %{customdata[2]} (%{customdata[1]})")$x$data[[1]]
     expect_identical(unname(tr$customdata), rbind(c("c", "3"), c("b", "NA"), c("a", "1.5")))
     expect_identical(tr$hovertemplate, "%{customdata[0]}: %{customdata[1]} (Not computed)")
+
+    # unless plotly would read them as a placeholder
+    df$p <- "50%{y}"
+    tr <- set_hovertemplate(fig, df, "id", c("p", "v"), "%{customdata[0]}: %{customdata[2]} (%{customdata[1]})")$x$data[[1]]
+    expect_identical(unname(tr$customdata), rbind(c("c", "50%{y}", "3"), c("b", "50%{y}", "NA"), c("a", "50%{y}", "1.5")))
+    expect_identical(tr$hovertemplate, "%{customdata[0]}: %{customdata[2]} (%{customdata[1]})")
+
+    # a point that isn't in df keeps its id
+    fig <- plotly::plot_ly(x = 1:2, y = 1:2, customdata = c("a", "z"), type = "scatter", mode = "markers")
+    tr <- set_hovertemplate(fig, df, "id", "v", "%{customdata[0]}: %{customdata[1]}")$x$data[[1]]
+    expect_identical(unname(tr$customdata), rbind(c("a", "1.5"), c("z", "NA")))
 })
 
 test_that("plotly_event_ids reads the ids of clicked and selected points", {
