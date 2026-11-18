@@ -291,9 +291,9 @@ atlas_gene_gene <- function(input, output, session, dataset, metacell_types, cel
             x_limits = x_limits,
             y_limits = y_limits,
             fixed_limits = input$atlas_gene_gene_fixed_limits,
-            xyline = input$atlas_gene_gene_xyline %||% FALSE
+            xyline = input$atlas_gene_gene_xyline %||% FALSE,
+            source = "atlas_md_md_plot"
         ) %>%
-            plotly::ggplotly(tooltip = "tooltip_text", source = "atlas_md_md_plot") %>%
             sanitize_for_WebGL() %>%
             plotly::toWebGL() %>%
             sanitize_plotly_buttons() %>%

@@ -28,3 +28,19 @@ test_that("cluster_metacells returns the same clustering with and without the ap
     expect_identical(cluster_metacells(feat)$order, hc$order)
     expect_identical(cluster_metacells(feat)$order, hc$order) # cache hit
 })
+
+test_that("set_hovertemplate keeps each point's id first in its customdata", {
+    df <- data.frame(id = c("a", "b", "c"), v = c(1.5, NA, 3))
+    fig <- plotly::plot_ly(df, x = 1:3, y = 1:3, customdata = ~ rev(id), type = "scatter", mode = "markers")
+    tr <- set_hovertemplate(fig, df, "id", "v", "%{customdata[0]}: %{customdata[1]}")$x$data[[1]]
+    expect_identical(unname(tr$customdata), rbind(c("c", "3"), c("b", "NA"), c("a", "1.5")))
+    expect_identical(tr$hovertemplate, "%{customdata[0]}: %{customdata[1]}")
+    expect_null(tr$text)
+})
+
+test_that("plotly_event_ids reads the ids of clicked and selected points", {
+    event <- function(json) jsonlite::parse_json(json, simplifyVector = TRUE) # as plotly::event_data()
+    expect_identical(plotly_event_ids(event('[{"pointNumber":3,"customdata":["M1","a","b"]}]')), "M1")
+    expect_identical(plotly_event_ids(event('[{"pointNumber":3,"customdata":"M1"},{"pointNumber":4,"customdata":"M2"}]')), c("M1", "M2"))
+    expect_identical(plotly_event_ids(event('[{"pointNumber":3,"customdata":["M1","a"]},{"pointNumber":0,"customdata":"M2"},{"pointNumber":1}]')), c("M1", "M2", NA))
+})

@@ -536,7 +536,7 @@ select_metacell_plotly_event_projection <- function(source, input, session, meta
     # Select metacell / cell type when clicking on it
     observeEvent(plotly::event_data("plotly_click", source = source), {
         el <- plotly::event_data("plotly_click", source = source)
-        metacell <- el$customdata
+        metacell <- plotly_event_ids(el)
 
         if (input$mode == "MC") {
             updateSelectInput(session, "metacell1", selected = metacell)
@@ -649,7 +649,7 @@ group_selectors_mod_query <- function(input, output, session, dataset, ns, group
     observeEvent(plotly::event_data("plotly_selected", source = "proj_mc_plot_proj_tab"), {
         el <- plotly::event_data("plotly_selected", source = "proj_mc_plot_proj_tab")
 
-        selected_metacells <- unique(el$customdata)
+        selected_metacells <- unique(plotly_event_ids(el))
         req(input$mode == "Group")
 
 

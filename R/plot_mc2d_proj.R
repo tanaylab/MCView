@@ -61,16 +61,16 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
         mutate(
             expr_clipped = tgutil::clip_vals(expression, min_val = min_expr, max_val = max_expr),
             expr_text = round(expression, digits = 2),
-            text = paste(
-                glue("Metacell: {metacell}"),
-                glue("{gene} expression (log2): {expr_text}"),
-                glue("{gene} enrichment: {round(log2(mc_fp[metacell_names]), digits=2)}"),
-                glue("Cell type: {`Cell type`}"),
-                glue("Top genes: {`Top genes`}"),
-                ifelse(has_name(df, "Age"), glue("Metacell age (E[t]): {round(Age, digits=2)}"), ""),
-                sep = "\n"
-            )
+            enrich_text = round(log2(mc_fp[metacell_names]), digits = 2)
         )
+    # (ends with an empty line, as the hover text did)
+    hovertemplate <- paste0(
+        "Metacell: %{customdata[0]}<br />",
+        gene, " expression (log2): %{customdata[1]}<br />",
+        gene, " enrichment: %{customdata[2]}<br />",
+        "Cell type: %{customdata[3]}<br />",
+        "Top genes: %{customdata[4]}<br /><extra></extra>"
+    )
 
     if (stat == "enrichment") {
         shades <- grDevices::colorRampPalette(colspec)(100 * (max_lfp - min_lfp) + 1)
@@ -97,9 +97,7 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
             x = ~x,
             y = ~y,
             color = ~value,
-            text = ~text,
             customdata = ~id,
-            hoverinfo = "text",
             type = "scatter",
             mode = "markers",
             colors = shades,
@@ -160,7 +158,8 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
                 pad = 0
             )
         ) %>%
-        plotly::colorbar(title = legend_title)
+        plotly::colorbar(title = legend_title) %>%
+        set_hovertemplate(df, "id", c("expr_text", "enrich_text", "Cell type", "Top genes"), hovertemplate)
 
     return(fig)
 }

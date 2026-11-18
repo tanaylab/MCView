@@ -45,10 +45,13 @@ collapse_hoverinfo <- function(p) {
 # so the labels are sent once per point. Send them once per trace instead, as a hovertemplate.
 # The points' customdata must be df[[id]] (unique values). It is replaced by the point's values of
 # c(id, fields) as strings, which `template` shows with %{customdata[0]}, %{customdata[1]}, ...
-# (%{x:.3~r}, %{y} and %{fullData.name} for the trace name can be used too).
+# (%{x:.3~r}, %{y} and %{fullData.name} for the trace name can be used too). Click and selection
+# observers get the id with plotly_event_ids().
 set_hovertemplate <- function(fig, df, id, fields, template) {
     fig <- plotly::plotly_build(fig)
     values <- do.call(cbind, lapply(df[c(id, fields)], as.character))
+    # as paste() and glue() write them in hover texts
+    values[is.na(values)] <- "NA"
     fig$x$data <- purrr::map(fig$x$data, function(tr) {
         if (is.null(tr$customdata)) {
             return(tr)

@@ -160,9 +160,9 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
             show_correlation = input$show_correlation,
             correlation_type = input$correlation_type,
             corrected = input$use_corrected %||% FALSE,
-            log_labels = input$log_labels %||% FALSE
+            log_labels = input$log_labels %||% FALSE,
+            source = plotly_source
         ) %>%
-            plotly::ggplotly(tooltip = "tooltip_text", source = plotly_source) %>%
             sanitize_for_WebGL() %>%
             plotly::toWebGL() %>%
             sanitize_plotly_buttons(buttons = plotly_buttons) %>%
