@@ -2,35 +2,23 @@
 
 Performance:
 
-* Faster startup with less memory: on the largest lab apps the time to the first usable session went down by about half, and the memory at startup by a factor of 2 to 6.
-* An app reads each cache file when it is first used, so restart a running app after re-importing its project or calling an `update_*()` function on it.
-* Heatmap tabs no longer cluster the metacells when first opened: `import_dataset()` stores the clusterings of the default heatmaps, and the new `update_default_clusterings()` adds them to existing projects.
-* Clustering the metacells of a heatmap no longer takes minutes on servers where tgstat doesn't use BLAS.
-* With the environment variable `MCVIEW_CLUSTERING_CACHE_DIR` set, the apps share their heatmap clusterings through that directory, so each is computed once per server rather than once per app process.
-* tgstat uses BLAS when R uses OpenBLAS, MKL or ATLAS (tgstat's own check missed Debian/Ubuntu's OpenBLAS).
-* Gene correlations, top correlated genes, diff. expression and the cell type and sample comparisons are faster.
-* Much less data is sent to the browser, and each tab starts when it is first opened.
-* Manifold tab: recomputing the 2D projection no longer blocks the other sessions of the app.
-* Scripts in the repository's dev/ folder add the stored clusterings to existing projects and convert their legacy `.qs` cache files to `.qs2` (about half the size, and faster to read).
+* Apps start about twice as fast and use 2 to 6 times less memory.
+* Tabs load when first opened and send much less data to the browser.
+* Heatmaps open without clustering the metacells (`update_default_clusterings()` for existing projects; `MCVIEW_CLUSTERING_CACHE_DIR` shares clusterings between a server's apps).
+* Faster gene correlations, diff. expression, and cell type and sample comparisons.
+* Recomputing the 2D projection no longer blocks the other users of the app.
+* Restart a running app after re-importing its project or calling an `update_*()` function.
 
 Fixes:
 
-* Query tab: in metacell mode, the significance of the diff. expression was computed for the dataset's first metacell instead of the chosen one.
-* Gene correlation tab: Module mode now applies the cell type filter.
-* Gene correlation tab: "Individual genes" no longer fails when a gene has no counts in the selected cell types.
-* Samples tab: the sample types plot is drawn again (it failed since 0.2.48), its "Order by" offers only per-sample fields, and its hover shows each sample's own value of that field.
-* Samples tab: diff. expression no longer fails when another sample has no metacells of the chosen cell types, and no longer shows the result of the previous cell types.
-* Samples tab: changing the 2D projection coloring no longer resets the chosen samples, and the projection colored by a gene or metadata field no longer shows the plot of a previous one.
-* Hovers: on plots of a metadata field named "Age", "Metacell age" shows each metacell's own value (it showed the first metacell's for every point).
-* Heatmaps: "Order by" is no longer reset when the markers change.
-* Heatmaps: zooming in Global mode keeps the order of the zoomed metacells instead of clustering them again.
-* Markers tab: the heatmap no longer fails when the marker genes have to be computed and the project's cache directory isn't writable.
-* Atlas tab: coloring by query cell type draws one point per atlas metacell (the highest weight), and the plot updates after editing the annotation.
-* Manifold tab: an error while recomputing the 2D projection is shown instead of disconnecting the session.
-* The 2D projection colored by the clipboard now refreshes when the clipboard changes.
-* A plot drawn at zero size could break every plotly plot of the app, for all sessions, until restart.
-* A browser reconnecting to a restarted app could crash it.
-* Import stops with a clear message when the Python anndata (>= 0.13) or pandas (>= 3) is too new for the R anndata package. The Docker image pins anndata < 0.13 and pandas < 3.
+* Query tab: metacell mode tested the dataset's first metacell instead of the chosen one.
+* Gene correlation tab: Module mode ignored the cell type filter, and "Individual genes" failed for a gene without counts.
+* Samples tab: the sample types plot failed (since 0.2.48), diff. expression could fail or show stale results, and changing the projection coloring reset the chosen samples.
+* Heatmaps: "Order by" was reset when the markers changed, zooming re-clustered the metacells, and the Markers heatmap failed when the project wasn't writable.
+* Atlas tab: coloring by query cell type drew stacked duplicate points and didn't follow annotation edits.
+* A failed 2D projection recompute, a zero-size plot, or a browser reconnecting after a restart could break the app.
+* The clipboard-colored projection didn't refresh, and hovers on "Age" metadata showed the first metacell's age.
+* Import stops with a clear message when Python anndata >= 0.13 or pandas >= 3 is installed.
 
 # MCView 0.2.55
 
