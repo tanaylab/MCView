@@ -267,8 +267,11 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
                     filter(query == input$selected_metacell)
             }
 
+            # one point per atlas metacell: with several query metacells (a query cell type), take the
+            # highest weight, so an atlas metacell is above the threshold when any of them is
             mc_proj_w <- mc_proj_w %>%
-                select(metacell = atlas, Weight = weight) %>%
+                group_by(metacell = atlas) %>%
+                summarise(Weight = max(weight), .groups = "drop") %>%
                 mutate(query = "query")
             metadata <- tibble(metacell = colnames(get_mc_data(dataset(), "mc_mat", atlas = TRUE))) %>%
                 left_join(mc_proj_w, by = "metacell") %>%
