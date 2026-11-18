@@ -22,9 +22,17 @@ test_that("cor_dist matches tgs_dist(tgs_cor())", {
 
 test_that("cluster_metacells returns the same clustering with and without the app cache", {
     feat <- matrix(rnorm(200), nrow = 10, dimnames = list(NULL, paste0("m", 1:20)))
-    hc <- cluster_metacells(feat)
+    hc <- cluster_metacells(feat, "key")
     shiny::shinyOptions(cache = cachem::cache_mem())
     withr::defer(shiny::shinyOptions(cache = NULL))
-    expect_identical(cluster_metacells(feat)$order, hc$order)
-    expect_identical(cluster_metacells(feat)$order, hc$order) # cache hit
+    expect_identical(cluster_metacells(feat, "key")$order, hc$order)
+    expect_identical(cluster_metacells(feat, "key")$order, hc$order) # cache hit
+})
+
+test_that("cluster_metacells uses a stored clustering without reading the distances", {
+    feat <- matrix(rnorm(200), nrow = 10, dimnames = list(NULL, paste0("m", 1:20)))
+    stored <- list(key = fastcluster::hclust(dist(t(feat))))
+    expect_identical(cluster_metacells(feat, "key", cached_dist = function() stop("read the distances"), precomputed_clusterings = stored), stored$key)
+    d <- dist(t(feat))
+    expect_identical(cluster_metacells(feat, "other", cached_dist = function() d, precomputed_clusterings = stored)$merge, fastcluster::hclust(d, method = "ward.D2")$merge)
 })

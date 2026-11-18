@@ -439,19 +439,6 @@ import_dataset <- function(project,
     }
     serialize_shiny_data(gene_modules, "gene_modules", dataset = dataset, cache_dir = cache_dir, flat = TRUE)
 
-    cli_alert_info("Clustering the metacells of the default heatmaps")
-    default_clusterings <- tryCatch(
-        calc_default_clusterings(dataset, cache_dir, list(mc_mat = mc_mat, mc_sum = mc_sum, marker_genes = marker_genes, default_markers = default_markers, default_markers_dist = default_markers_dist)),
-        error = function(e) {
-            cli_warn("Could not cluster the default heatmaps (the app will cluster them on first use): {conditionMessage(e)}")
-            NULL
-        }
-    )
-    if (!is.null(default_clusterings)) {
-        serialize_shiny_data(default_clusterings, "default_clusterings", dataset = dataset, cache_dir = cache_dir)
-    }
-
-
     if (!is.null(adata$varp$var_similarity)) {
         if (!methods::is(adata$varp$var_similarity, "sparseMatrix")) {
             cli_abort("{.field var_similarity} matrix is not a sparse matrix. This probably means that you are running an old version of the {.field metacells} python moudle. Please update the module, rerun {.field compute_for_mcview} and try again.")
@@ -640,6 +627,19 @@ import_dataset <- function(project,
         }
 
         import_atlas(adata, atlas_project, atlas_dataset, projection_weights_file, dataset = dataset, cache_dir = cache_dir, copy_atlas = copy_atlas, gene_names = gene_names)
+    }
+
+    # after everything the heatmaps read was saved
+    cli_alert_info("Clustering the metacells of the default heatmaps")
+    default_clusterings <- tryCatch(
+        calc_default_clusterings(dataset, cache_dir),
+        error = function(e) {
+            cli_warn("Could not cluster the default heatmaps (the app will cluster them on first use): {conditionMessage(e)}")
+            NULL
+        }
+    )
+    if (length(default_clusterings) > 0) {
+        serialize_shiny_data(default_clusterings, "default_clusterings", dataset = dataset, cache_dir = cache_dir)
     }
 
     # write the version of the package
