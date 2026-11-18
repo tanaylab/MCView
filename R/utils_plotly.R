@@ -52,11 +52,12 @@ set_hovertemplate <- function(fig, df, id, fields, template) {
     values <- do.call(cbind, lapply(df[c(id, fields)], as.character))
     # as paste() and glue() write them in hover texts
     values[is.na(values)] <- "NA"
-    fig$x$data <- purrr::map(fig$x$data, function(tr) {
-        if (is.null(tr$customdata)) {
-            return(tr)
-        }
-        customdata <- values[match(unlist(tr$customdata), df[[id]]), , drop = FALSE]
+    with_customdata <- !purrr::map_lgl(fig$x$data, ~ is.null(.x$customdata))
+    ids <- purrr::map(fig$x$data[with_customdata], ~ unlist(.x$customdata))
+    # the rows of each trace's points, with one match() for all the traces (e.g. a trace per cell type)
+    rows <- split(match(unlist(ids), df[[id]]), factor(rep(seq_along(ids), lengths(ids)), levels = seq_along(ids)))
+    fig$x$data[with_customdata] <- purrr::map2(fig$x$data[with_customdata], rows, function(tr, rows) {
+        customdata <- values[rows, , drop = FALSE]
         # a field with the same value for all the trace's points (e.g. the cell type of a trace
         # per cell type, or p-values that weren't computed) is written in its template instead
         constant <- c(FALSE, vapply(seq_len(ncol(customdata))[-1], function(j) nrow(customdata) > 0 && all(customdata[, j] == customdata[1, j]), TRUE))
