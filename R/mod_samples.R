@@ -158,8 +158,9 @@ mod_samples_server <- function(id, dataset, metacell_types, cell_type_colors, ge
             projection_selectors(ns, dataset, output, input, gene_modules, globals, session, weight = 0.6)
 
             output$sample_select_ui <- renderUI({
+                # (no dependency on the 2D projection coloring: it re-rendered the pickers, which
+                # reset the chosen samples)
                 req(dataset())
-                req(input$color_proj)
                 samp_list <- get_samples_list(dataset())
                 if (length(samp_list) > 1) {
                     selected2 <- samp_list[2]
