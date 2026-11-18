@@ -49,3 +49,25 @@ test_that("calc_diff_expr p-values match chisq.test", {
     df1 <- calc_diff_expr(mat1, t(t(mat1) / colSums(mat1)) + 1e-5, c("a", "b"))
     expect_identical(df1$pval[df1$gene == "g1"], suppressWarnings(stats::chisq.test(matrix(c(500, 3, 500, 3), nrow = 2))$p.value))
 })
+
+test_that("set_hovertemplate keeps each point's id first in its customdata", {
+    df <- data.frame(id = c("a", "b", "c"), v = c(1.5, NA, 3))
+    fig <- plotly::plot_ly(df, x = 1:3, y = 1:3, customdata = ~ rev(id), type = "scatter", mode = "markers")
+    tr <- set_hovertemplate(fig, df, "id", "v", "%{customdata[0]}: %{customdata[1]}")$x$data[[1]]
+    expect_identical(unname(tr$customdata), rbind(c("c", "3"), c("b", "NA"), c("a", "1.5")))
+    expect_identical(tr$hovertemplate, "%{customdata[0]}: %{customdata[1]}")
+    expect_null(tr$text)
+
+    # fields with one value for all the trace's points go in its template
+    df$p <- "Not computed"
+    tr <- set_hovertemplate(fig, df, "id", c("p", "v"), "%{customdata[0]}: %{customdata[2]} (%{customdata[1]})")$x$data[[1]]
+    expect_identical(unname(tr$customdata), rbind(c("c", "3"), c("b", "NA"), c("a", "1.5")))
+    expect_identical(tr$hovertemplate, "%{customdata[0]}: %{customdata[1]} (Not computed)")
+})
+
+test_that("plotly_event_ids reads the ids of clicked and selected points", {
+    event <- function(json) jsonlite::parse_json(json, simplifyVector = TRUE) # as plotly::event_data()
+    expect_identical(plotly_event_ids(event('[{"pointNumber":3,"customdata":["M1","a","b"]}]')), "M1")
+    expect_identical(plotly_event_ids(event('[{"pointNumber":3,"customdata":"M1"},{"pointNumber":4,"customdata":"M2"}]')), c("M1", "M2"))
+    expect_identical(plotly_event_ids(event('[{"pointNumber":3,"customdata":["M1","a"]},{"pointNumber":0,"customdata":"M2"},{"pointNumber":1}]')), c("M1", "M2", NA))
+})

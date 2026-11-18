@@ -45,16 +45,30 @@ collapse_hoverinfo <- function(p) {
 # so the labels are sent once per point. Send them once per trace instead, as a hovertemplate.
 # The points' customdata must be df[[id]] (unique values). It is replaced by the point's values of
 # c(id, fields) as strings, which `template` shows with %{customdata[0]}, %{customdata[1]}, ...
-# (%{x:.3~r}, %{y} and %{fullData.name} for the trace name can be used too).
+# (%{x:.3~r}, %{y} and %{fullData.name} for the trace name can be used too). Click and selection
+# observers get the id with plotly_event_ids().
 set_hovertemplate <- function(fig, df, id, fields, template) {
     fig <- plotly::plotly_build(fig)
     values <- do.call(cbind, lapply(df[c(id, fields)], as.character))
-    fig$x$data <- purrr::map(fig$x$data, function(tr) {
-        if (is.null(tr$customdata)) {
-            return(tr)
-        }
-        tr$customdata <- values[match(unlist(tr$customdata), df[[id]]), , drop = FALSE]
+    # as paste() and glue() write them in hover texts
+    values[is.na(values)] <- "NA"
+    with_customdata <- !purrr::map_lgl(fig$x$data, ~ is.null(.x$customdata))
+    ids <- purrr::map(fig$x$data[with_customdata], ~ unlist(.x$customdata))
+    # the rows of each trace's points, with one match() for all the traces (e.g. a trace per cell type)
+    rows <- split(match(unlist(ids), df[[id]]), factor(rep(seq_along(ids), lengths(ids)), levels = seq_along(ids)))
+    fig$x$data[with_customdata] <- purrr::map2(fig$x$data[with_customdata], rows, function(tr, rows) {
+        customdata <- values[rows, , drop = FALSE]
+        # a field with the same value for all the trace's points (e.g. the cell type of a trace
+        # per cell type, or p-values that weren't computed) is written in its template instead
+        constant <- c(FALSE, vapply(seq_len(ncol(customdata))[-1], function(j) nrow(customdata) > 0 && all(customdata[, j] == customdata[1, j]), TRUE))
+        index <- cumsum(!constant) - 1
         tr$hovertemplate <- template
+        placeholders <- gregexpr("%\\{customdata\\[[0-9]+\\]\\}", template)
+        regmatches(tr$hovertemplate, placeholders) <- lapply(regmatches(template, placeholders), function(ph) {
+            j <- as.integer(gsub("\\D", "", ph)) + 1
+            ifelse(constant[j], customdata[1, j], sprintf("%%{customdata[%d]}", index[j]))
+        })
+        tr$customdata <- customdata[, !constant, drop = FALSE]
         tr$text <- NULL
         tr$hoverinfo <- NULL
         tr

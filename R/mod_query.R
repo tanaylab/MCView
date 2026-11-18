@@ -319,9 +319,9 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
                     cell_type_colors = cell_type_colors(),
                     point_size = input$gene_gene_point_size,
                     stroke = input$gene_gene_stroke,
-                    plot_text = FALSE
+                    plot_text = FALSE,
+                    source = "obs_proj_plot"
                 ) %>%
-                    plotly::ggplotly(tooltip = "tooltip_text", source = "obs_proj_plot") %>%
                     sanitize_for_WebGL() %>%
                     plotly::toWebGL() %>%
                     sanitize_plotly_buttons() %>%
@@ -550,7 +550,7 @@ select_metacell_plotly_event_projection <- function(source, input, session, meta
     # Select metacell / cell type when clicking on it
     observeEvent(plotly::event_data("plotly_click", source = source), {
         el <- plotly::event_data("plotly_click", source = source)
-        metacell <- el$customdata
+        metacell <- plotly_event_ids(el)
 
         if (input$mode == "MC") {
             updateSelectInput(session, "metacell1", selected = metacell)
@@ -663,7 +663,7 @@ group_selectors_mod_query <- function(input, output, session, dataset, ns, group
     observeEvent(plotly::event_data("plotly_selected", source = "proj_mc_plot_proj_tab"), {
         el <- plotly::event_data("plotly_selected", source = "proj_mc_plot_proj_tab")
 
-        selected_metacells <- unique(el$customdata)
+        selected_metacells <- unique(plotly_event_ids(el))
         req(input$mode == "Group")
 
 
@@ -677,7 +677,7 @@ group_selectors_mod_query <- function(input, output, session, dataset, ns, group
     observeEvent(plotly::event_data("plotly_selected", source = "obs_proj_plot"), {
         el <- plotly::event_data("plotly_selected", source = "obs_proj_plot")
 
-        selected_metacells <- unique(el$customdata)
+        selected_metacells <- unique(plotly_event_ids(el))
         req(input$mode == "Group")
 
 

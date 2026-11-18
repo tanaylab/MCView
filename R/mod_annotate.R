@@ -862,7 +862,7 @@ observe_mc_click_event <- function(source, input, session, cell_type_colors, met
     observeEvent(plotly::event_data("plotly_click", source = source), {
         el <- plotly::event_data("plotly_click", source = source)
 
-        selected_metacell <- el$customdata
+        selected_metacell <- plotly_event_ids(el)
 
         new_selected_annot <- metacell_types() %>% filter(metacell == selected_metacell)
 
@@ -881,7 +881,7 @@ observer_mc_select_event <- function(source, input, cell_type_colors, metacell_t
     observeEvent(plotly::event_data("plotly_selected", source = source), {
         el <- plotly::event_data("plotly_selected", source = source)
 
-        selected_metacells <- unique(el$customdata)
+        selected_metacells <- unique(plotly_event_ids(el))
 
         new_selected_annot <- metacell_types() %>% filter(metacell %in% selected_metacells)
         if (!is.null(input$add_to_selection) && input$add_to_selection) {
