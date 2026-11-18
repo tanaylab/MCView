@@ -161,7 +161,29 @@ heatmap_sidebar <- function(id, ..., show_fitted_filter = FALSE) {
             style = "cursor: help;",
             shinyWidgets::actionGroupButtons(ns("remove_genes"), labels = "Remove selected genes", size = "sm")
         )
-        add_genes_ui <- uiOutput(ns("add_genes_ui"))
+        # the gene choices are set by the server
+        add_genes_ui <- tagList(
+            div(
+                title = "Search and select additional genes to add to the current heatmap display",
+                style = "cursor: help;",
+                shinyWidgets::virtualSelectInput(ns("genes_to_add"),
+                    label = "Add genes",
+                    choices = NULL,
+                    selected = c(),
+                    multiple = TRUE,
+                    showSelectedOptionsFirst = TRUE,
+                    search = TRUE,
+                    markSearchResults = TRUE,
+                    searchByStartsWith = TRUE,
+                    disableSelectAll = TRUE
+                )
+            ),
+            div(
+                title = "Add the selected genes to the heatmap display",
+                style = "cursor: help; display: inline-block;",
+                shinyWidgets::actionGroupButtons(ns("add_genes"), labels = "Add genes", size = "sm")
+            )
+        )
         update_genes_ui <- div(
             title = "Recalculate which genes to display based on current filters and settings",
             style = "cursor: help;",
@@ -489,7 +511,9 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
         shinyWidgets::updateVirtualSelect(session = session, inputId = "genes_to_add", selected = c())
     })
 
-    output$add_genes_ui <- renderUI({
+    # choices of the "Add genes" picker of heatmap_sidebar (which the light version doesn't have)
+    observe({
+        req(!config$light_version)
         if (mode %in% c("Inner", "Outliers", "Stdev")) {
             if (mode == "Inner") {
                 mc_fp <- get_mc_data(dataset(), "inner_fold_mat")
@@ -502,33 +526,10 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
             gene_choices <- rownames(mc_fp)[Matrix::rowSums(mc_fp) > 0]
             req(markers)
             gene_choices <- gene_choices[!(gene_choices %in% markers())]
+            shinyWidgets::updateVirtualSelect(session = session, inputId = "genes_to_add", choices = gene_choices, selected = character(0))
         } else {
-            gene_choices <- gene_names(dataset())
+            update_gene_select(session, "genes_to_add", dataset(), plain_names = TRUE)
         }
-
-
-        tagList(
-            div(
-                title = "Search and select additional genes to add to the current heatmap display",
-                style = "cursor: help;",
-                shinyWidgets::virtualSelectInput(ns("genes_to_add"),
-                    label = "Add genes",
-                    choices = gene_choices,
-                    selected = c(),
-                    multiple = TRUE,
-                    showSelectedOptionsFirst = TRUE,
-                    search = TRUE,
-                    markSearchResults = TRUE,
-                    searchByStartsWith = TRUE,
-                    disableSelectAll = TRUE
-                )
-            ),
-            div(
-                title = "Add the selected genes to the heatmap display",
-                style = "cursor: help; display: inline-block;",
-                shinyWidgets::actionGroupButtons(ns("add_genes"), labels = "Add genes", size = "sm")
-            )
-        )
     })
 
     observeEvent(input$add_genes, {
