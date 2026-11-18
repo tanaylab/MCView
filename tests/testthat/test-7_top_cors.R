@@ -27,4 +27,9 @@ test_that("calc_top_cors matches stats::cor on log2 egc", {
     res <- calc_top_cors("toy", "x", "both", vec, NULL, c("g2", "g3"))
     expect_equal(res$gene2, names(expected))
     expect_equal(res$cor, unname(expected))
+
+    # several genes at once
+    genes <- c("g4", "g1", "g10")
+    expected <- suppressWarnings(cor(t(lfp[, mcs]), t(lfp[genes, mcs])))
+    expect_equal(cor_log_egc("toy", t(lfp[genes, mcs]), rownames(mat), mcs), expected)
 })
