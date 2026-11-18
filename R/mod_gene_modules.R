@@ -209,7 +209,8 @@ mod_gene_modules_server <- function(id, dataset, metacell_types, cell_type_color
 selected_genes_event_observer <- function(source, selected_genes) {
     observeEvent(plotly::event_data("plotly_selected", source = source), {
         el <- plotly::event_data("plotly_selected", source = source)
-        selected_genes(unique(el$customdata))
+        # the diff. expression scatter keeps the gene first in each point's customdata
+        selected_genes(unique(purrr::map_chr(el$customdata, 1)))
     })
 
     observeEvent(plotly::event_data("plotly_deselect", source = source), {

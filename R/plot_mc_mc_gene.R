@@ -20,24 +20,19 @@ plot_mc_mc_gene <- function(df, metacell1, metacell2, highlight = NULL, label_pr
             mutate(col = factor(col, levels = c("green", prev_levels)))
     }
 
+    # hover texts (see the hovertemplate in render_mc_mc_gene_plotly)
     df <- df %>%
         arrange(col) %>%
         mutate(
+            gene_name_suffix = substring(gene_name, nchar(gene) + 1),
             expr_text1 = scales::scientific(!!sym(metacell1)),
             expr_text2 = scales::scientific(!!sym(metacell2)),
-            pval_text = ifelse(is.na(pval), "Not computed", scales::scientific(pval, digits = 2)),
-            Gene = paste(
-                glue("{gene_name}"),
-                glue("{label_prefix}{metacell1} expression: {expr_text1}"),
-                glue("{label_prefix}{metacell2} expression: {expr_text2}"),
-                glue("Diff (log2): {round(diff, digits=3)}"),
-                glue("P-value: {pval_text}"),
-                sep = "\n"
-            )
+            diff_text = signif(diff, digits = 3),
+            pval_text = ifelse(is.na(pval), "Not computed", scales::scientific(pval, digits = 2))
         )
 
     p <- df %>%
-        ggplot(aes(x = !!sym(metacell1), y = !!sym(metacell2), label = gene, customdata = gene, col = col, tooltip_text = Gene)) +
+        ggplot(aes(x = !!sym(metacell1), y = !!sym(metacell2), label = gene, customdata = gene, col = col)) +
         geom_point(size = 1, alpha = 1) +
         scale_x_continuous(limits = c(xylims[xmin], xylims[xmax]), trans = "log2", breaks = xylims[xmin:xmax], labels = scales::scientific(xylims[xmin:xmax])) +
         scale_y_continuous(limits = c(xylims[ymin], xylims[ymax]), trans = "log2", breaks = xylims[ymin:ymax], labels = scales::scientific(xylims[ymin:ymax])) +
@@ -158,19 +153,27 @@ render_mc_mc_gene_plotly <- function(input, output, session, ns, dataset, global
         df <- df %>%
             mutate(gene_name = gene_label(gene, dataset(), gene_modules()))
 
-        fig <- plotly::ggplotly(
-            plot_mc_mc_gene(
-                df,
-                xlab,
-                ylab,
-                highlight = gene,
-                label_prefix = label_prefix,
-                x_label_suffix = x_label_suffix
-            ) +
-                theme(axis.title.y = element_text(colour = "darkblue"), axis.title.x = element_text(colour = "darkred")),
-            tooltip = "tooltip_text",
-            source = source
-        ) %>%
+        p <- plot_mc_mc_gene(
+            df,
+            xlab,
+            ylab,
+            highlight = gene,
+            label_prefix = label_prefix,
+            x_label_suffix = x_label_suffix
+        ) +
+            theme(axis.title.y = element_text(colour = "darkblue"), axis.title.x = element_text(colour = "darkred"))
+
+        # customdata[0] stays the gene, which the click and selection observers read
+        hovertemplate <- paste0(
+            "Gene: %{customdata[0]}%{customdata[1]}<br />",
+            label_prefix, xlab, " expression: %{customdata[2]}<br />",
+            label_prefix, ylab, " expression: %{customdata[3]}<br />",
+            "Diff (log2): %{customdata[4]}<br />",
+            "P-value: %{customdata[5]}<extra></extra>"
+        )
+
+        fig <- plotly::ggplotly(p, source = source) %>%
+            set_hovertemplate(p$data, "gene", c("gene_name_suffix", "expr_text1", "expr_text2", "diff_text", "pval_text"), hovertemplate) %>%
             plotly::hide_legend() %>%
             sanitize_for_WebGL() %>%
             plotly::toWebGL() %>%
