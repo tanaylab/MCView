@@ -112,8 +112,9 @@ calc_obs_exp_mc_df <- function(dataset, metacell, diff_thresh = 1.5, pval_thresh
     exp_egc <- get_metacells_egc(metacell, dataset, projected = TRUE) + egc_epsilon
 
     genes <- intersect(rownames(obs_mat), rownames(exp_mat))
-    mat <- as.matrix(data.frame(Observed = obs_mat[genes, 1], Projected = exp_mat[, 1]))
-    egc <- as.matrix(data.frame(Observed = obs_egc[genes, 1], Projected = exp_egc[, 1]))
+    # the counts of the chosen metacell (this used the first metacell of the dataset)
+    mat <- as.matrix(data.frame(Observed = obs_mat[genes, metacell], Projected = exp_mat[genes, metacell]))
+    egc <- as.matrix(data.frame(Observed = obs_egc[genes, 1], Projected = exp_egc[genes, 1]))
 
     df <- calc_diff_expr(mat, egc, c("Observed", "Projected"), diff_thresh, pval_thresh)
 
