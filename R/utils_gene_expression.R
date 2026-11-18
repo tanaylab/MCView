@@ -35,9 +35,9 @@ get_mc_gene_modules_egc <- function(dataset, modules = NULL, gene_modules = NULL
             mutate(module = forcats::fct_drop(module))
     }
 
-    mc_mat <- mc_mat[gene_modules$gene, ]
-
-    mc_mat <- tgs_matrix_tapply(t(mc_mat), gene_modules$module, sum)
+    # rowsum rather than tgs_matrix_tapply: tgstat forks worker processes, which costs seconds
+    # when the app process holds a large dataset
+    mc_mat <- rowsum(mc_mat[gene_modules$gene, , drop = FALSE], gene_modules$module)
 
     return(t(t(mc_mat) / mc_sum))
 }
@@ -135,7 +135,9 @@ get_cell_types_mat <- function(cell_types, metacell_types, dataset, projected = 
 
     mc_mat <- mc_mat[, names(mc_types), drop = FALSE]
 
-    ct_mat <- t(tgs_matrix_tapply(mc_mat, mc_types, sum))
+    # rowSums per cell type rather than tgs_matrix_tapply (which forks worker processes, slow when
+    # the app holds a large dataset). Works for both dense and sparse (projected) matrices.
+    ct_mat <- sapply(split(colnames(mc_mat), mc_types), function(mcs) rowSums(mc_mat[, mcs, drop = FALSE]))
 
     return(ct_mat)
 }

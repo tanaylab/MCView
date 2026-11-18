@@ -186,19 +186,31 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
             observeEvent(input$recompute, {
                 req(globals$anchor_genes)
                 showNotification("Recomputing 2D projection")
-                mc_egc <- get_mc_egc(dataset())
-
-                mc2d <- compute_umap(mc_egc, globals$anchor_genes,
+                # reactive values can't be read inside the future
+                ds <- dataset()
+                anchors <- globals$anchor_genes
+                p <- list(
                     n_neighbors = input$n_neighbors, min_dist = input$min_dist,
                     n_epoch = input$n_epoch, min_log_expr = input$min_log_expr,
                     genes_per_anchor = input$genes_per_anchor, random_seed = input$random_seed
                 )
-                if (is.null(mc2d)) {
-                    showNotification("Recomputing 2D projection failed", type = "error")
-                }
-                req(mc2d)
-                globals$mc2d <- mc2d
-                shinyjs::show("reset")
+
+                # UMAP takes from seconds to minutes. Run it in a forked process (future::multicore,
+                # set in run_app) so it doesn't block the other sessions of the app.
+                future_promise({
+                    compute_umap(get_mc_egc(ds), anchors,
+                        n_neighbors = p$n_neighbors, min_dist = p$min_dist,
+                        n_epoch = p$n_epoch, min_log_expr = p$min_log_expr,
+                        genes_per_anchor = p$genes_per_anchor, random_seed = p$random_seed
+                    )
+                }) %...>% (function(mc2d) {
+                    if (is.null(mc2d)) {
+                        showNotification("Recomputing 2D projection failed", type = "error")
+                    }
+                    req(mc2d)
+                    globals$mc2d <- mc2d
+                    shinyjs::show("reset")
+                })
             })
 
             observeEvent(input$reset, {

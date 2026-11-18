@@ -41,23 +41,41 @@ get_cached_cor <- function(gg_mc_top_cor, gene, type, exclude = NULL) {
 }
 
 calc_top_cors <- function(dataset, gene, type, data_vec, metacell_filter, exclude, atlas = FALSE) {
-    # t(log2(egc + egc_epsilon)), built with a single transpose
-    lfp_t <- log2(t(get_mc_data(dataset, "mc_mat", atlas = atlas)) / get_mc_sum(dataset, atlas = atlas) + egc_epsilon)
+    mc_mat <- get_mc_data(dataset, "mc_mat", atlas = atlas)
+    mc_sum <- get_mc_sum(dataset, atlas = atlas)
+
+    genes <- rownames(mc_mat)
     if (!is.null(exclude)) {
-        lfp_t <- lfp_t[, !(colnames(lfp_t) %in% exclude), drop = FALSE]
+        genes <- genes[!(genes %in% exclude)]
     }
 
+    metacells <- colnames(mc_mat)
     if (!is.null(metacell_filter)) {
-        req(metacell_filter %in% rownames(lfp_t))
-        lfp_t <- lfp_t[metacell_filter, , drop = FALSE]
+        req(metacell_filter %in% metacells)
+        metacells <- metacell_filter
     }
 
     if (!is.null(data_vec)) {
         req(!atlas)
-        cors <- tgs_cor(as.matrix(data_vec[rownames(lfp_t)]), lfp_t, pairwise.complete.obs = TRUE, spearman = FALSE)[1, ]
+        x <- data_vec[metacells]
     } else {
-        cors <- tgs_cor(lfp_t[, gene, drop = FALSE], lfp_t, pairwise.complete.obs = TRUE, spearman = FALSE)[1, ]
+        x <- log2(mc_mat[gene, metacells] / mc_sum[metacells] + egc_epsilon)
     }
+
+    # Pearson correlation of x with log2(egc + egc_epsilon) of every gene (pairwise complete),
+    # computed in chunks of genes so the full genes x metacells log2 egc matrix is never built.
+    complete <- !is.na(x)
+    metacells <- match(metacells[complete], colnames(mc_mat))
+    x <- x[complete] - mean(x[complete])
+    mc_sum <- mc_sum[metacells]
+    rows <- match(genes, rownames(mc_mat))
+    cors <- unlist(purrr::map(split(rows, ceiling(seq_along(rows) / 200)), function(chunk) {
+        m <- mc_mat[chunk, metacells, drop = FALSE]
+        # shifted by log2(egc_epsilon) so zero counts are exactly 0 and all-zero genes get NaN
+        lfp <- log2(m / rep(mc_sum, each = nrow(m)) + egc_epsilon) - log2(egc_epsilon)
+        drop(lfp %*% x) / sqrt(matrixStats::rowVars(lfp) * (length(x) - 1) * sum(x^2))
+    }), use.names = FALSE)
+    names(cors) <- genes
 
     return(select_top_cors(cors, type))
 }
