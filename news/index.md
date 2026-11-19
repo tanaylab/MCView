@@ -1,5 +1,45 @@
 # Changelog
 
+## MCView 0.2.62
+
+Performance:
+
+- Apps start about twice as fast and use 2 to 6 times less memory.
+- Tabs load when first opened and send much less data to the browser.
+- Heatmaps open without clustering the metacells
+  ([`update_default_clusterings()`](../reference/update_default_clusterings.md)
+  for existing projects; `MCVIEW_CLUSTERING_CACHE_DIR` shares
+  clusterings between a server’s apps).
+- Faster gene correlations, diff. expression, and cell type and sample
+  comparisons.
+- Recomputing the 2D projection no longer blocks the other users of the
+  app.
+- Restart a running app after re-importing its project or calling an
+  `update_*()` function.
+
+Fixes:
+
+- Query tab: metacell mode tested the dataset’s first metacell instead
+  of the chosen one.
+- Gene correlation tab: Module mode ignored the cell type filter, and
+  “Individual genes” failed for a gene without counts.
+- Samples tab: the sample types plot failed (since 0.2.48), diff.
+  expression could fail or show stale results, and changing the
+  projection coloring reset the chosen samples.
+- Heatmaps: “Order by” was reset when the markers changed, zooming
+  re-clustered the metacells, and the Markers heatmap failed when the
+  project wasn’t writable.
+- Atlas tab: coloring by query cell type drew stacked duplicate points
+  and didn’t follow annotation edits.
+- A failed 2D projection recompute, a zero-size plot, or a browser
+  reconnecting after a restart could break the app.
+- The clipboard-colored projection didn’t refresh, and hovers on “Age”
+  metadata showed the first metacell’s age.
+- Import stops with a clear message when Python anndata \>= 0.13 or
+  pandas \>= 3 is installed.
+- Multi-dataset projects: heatmaps, Annotate colors and the Genes
+  metadata choices now follow a dataset switch.
+
 ## MCView 0.2.55
 
 - Made `qs` an optional (`Suggests`) dependency instead of a hard

@@ -103,6 +103,8 @@ Rscript start_app.R PBMC
   2D projection for a dataset
 - [`update_cell_type_colors()`](update_cell_type_colors.md) : Update
   color assignment for each cell type
+- [`update_default_clusterings()`](update_default_clusterings.md) :
+  Store the clusterings of the default heatmaps
 - [`update_gene_modules()`](update_gene_modules.md) : Update gene
   modules
 - [`update_metacell_types()`](update_metacell_types.md) : Update cell

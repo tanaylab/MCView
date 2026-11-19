@@ -100,8 +100,8 @@ create_bundle(
 
   :   a string or a callback function to get passwords for
       authentication or password protected ssh keys. Defaults to
-      [askpass](https://r-lib.r-universe.dev/askpass/reference/askpass.html)
-      which checks `getOption('askpass')`.
+      [askpass](https://rdrr.io/pkg/askpass/man/askpass.html) which
+      checks `getOption('askpass')`.
 
   `ssh_key`
 
