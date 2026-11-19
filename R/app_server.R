@@ -57,29 +57,10 @@ app_server <- function(input, output, session) {
     })
 
     observe({
-        available_tabs <- names(tab_defs)
-        if (!has_atlas(dataset())) {
-            available_tabs <- available_tabs[!(available_tabs %in% c("Atlas", "Query", "Projected-fold"))]
-        }
-        if (!has_samples(dataset())) {
-            available_tabs <- available_tabs[available_tabs != "Samples"]
-        }
-        if (!has_mc_data(dataset(), "inner_fold_mat")) {
-            available_tabs <- available_tabs[available_tabs != "Inner-fold"]
-        }
-        if (!has_mc_data(dataset(), "inner_stdev_mat")) {
-            available_tabs <- available_tabs[available_tabs != "Stdev-fold"]
-        }
-        if (!has_mc_data(dataset(), "deviant_fold_mat")) {
-            available_tabs <- available_tabs[available_tabs != "Outliers"]
-        }
-        if (!has_mc_data(dataset(), "type_flow")) {
-            available_tabs <- available_tabs[available_tabs != "Flow"]
-        }
         updateCheckboxGroupInput(
             inputId = "selected_tabs",
             selected = globals$active_tabs,
-            choices = available_tabs
+            choices = available_tabs(dataset())
         )
     })
 
@@ -160,4 +141,28 @@ app_server <- function(input, output, session) {
         #     Rprof(NULL)
         # })
     }
+}
+
+# The tabs that dataset has the data for
+available_tabs <- function(dataset) {
+    tabs <- names(tab_defs)
+    if (!has_atlas(dataset)) {
+        tabs <- tabs[!(tabs %in% c("Atlas", "Query", "Projected-fold"))]
+    }
+    if (!has_samples(dataset)) {
+        tabs <- tabs[tabs != "Samples"]
+    }
+    if (!has_mc_data(dataset, "inner_fold_mat")) {
+        tabs <- tabs[tabs != "Inner-fold"]
+    }
+    if (!has_mc_data(dataset, "inner_stdev_mat")) {
+        tabs <- tabs[tabs != "Stdev-fold"]
+    }
+    if (!has_mc_data(dataset, "deviant_fold_mat")) {
+        tabs <- tabs[tabs != "Outliers"]
+    }
+    if (!has_mc_data(dataset, "type_flow")) {
+        tabs <- tabs[tabs != "Flow"]
+    }
+    tabs
 }

@@ -5,7 +5,10 @@
 #' @import shiny
 #' @noRd
 app_ui <- function(request) {
-    modules <- purrr::map_chr(tab_defs, "module_name")
+    # the UI of the tabs that some dataset has the data for (or that the config lists): building and
+    # rendering the UI of every tab took ~0.1 s per tab
+    tabs <- union(config$tabs, unlist(purrr::map(dataset_ls(project), available_tabs)))
+    modules <- purrr::map_chr(tab_defs[names(tab_defs) %in% tabs], "module_name")
 
     ui_sidebar_funcs <- purrr::map(modules, ~ {
         func_name <- glue("mod_{.x}_sidebar_ui")
@@ -55,7 +58,7 @@ app_ui <- function(request) {
                 checkboxGroupInput(
                     "selected_tabs",
                     label = "Tabs",
-                    choices = names(tab_defs),
+                    choices = names(tab_defs)[names(tab_defs) %in% tabs],
                     selected = intersect(config$tabs, names(tab_defs)),
                 ),
                 actionButton("update_tabs", "Update Tabs")
