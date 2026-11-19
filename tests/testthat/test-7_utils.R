@@ -164,3 +164,36 @@ test_that("update_default_clusterings skips only the datasets linked from outsid
     expect_match(out, "inside already has default_clusterings")
     expect_match(out, "linked is a symlink to .* outside the project")
 })
+
+test_that("caches imported with MCView 0.2.7 to 0.2.9 are read in the current format", {
+    prev <- mget("mc_data", envir = globalenv(), ifnotfound = list(NULL))
+    withr::defer(purrr::iwalk(prev, ~ assign(.y, .x, envir = globalenv())))
+    cache_dir <- withr::local_tempdir()
+    ds_dir <- fs::path(cache_dir, "old")
+    fs::dir_create(ds_dir)
+    mcs <- c("M1", "M2", "M3")
+    # metacells as rownames, and no max inner-fold without lateral genes
+    qs2::qs_save(data.frame(umis = c(10, 20, 30), cells = 1:3, max_inner_fold = c(5, 3, 1), row.names = mcs), fs::path(ds_dir, "mc_qc_metadata.qs2"))
+    qs2::qs_save(Matrix::sparseMatrix(i = c(1, 2, 3, 1), j = c(1, 1, 2, 3), x = c(5, 2, 3, 1), dims = c(3, 3), dimnames = list(c("lat", "g1", "g2"), mcs)), fs::path(ds_dir, "inner_fold_mat.qs2"))
+    qs2::qs_save("lat", fs::path(ds_dir, "lateral_genes.qs2"))
+    # `lateral` instead of `type`
+    qs2::qs_save(tibble(gene = c("lat", "g1"), zero_fold = c(2, 1), avg = -5, obs = 3, exp = 1, metacell = "M1", lateral = c(TRUE, FALSE)), fs::path(ds_dir, "gene_zero_fold.qs2"))
+    data.table::fwrite(data.frame(metacell = mcs, age = 1:3), fs::path(ds_dir, "metadata.tsv"), sep = "\t")
+    # the first zero-fold format: no gene expression and no gene type
+    older_dir <- fs::path(cache_dir, "older")
+    fs::dir_create(older_dir)
+    qs2::qs_save(matrix(c(2, 2, 0, 1, 1, 2, 0, 3, 1), 3, 3, dimnames = list(c("lat", "g1", "g2"), mcs)), fs::path(older_dir, "mc_mat.qs2"))
+    qs2::qs_save(c(4, 4, 4), fs::path(older_dir, "mc_sum.qs2"))
+    qs2::qs_save("lat", fs::path(older_dir, "lateral_genes.qs2"))
+    qs2::qs_save(tibble(gene = c("lat", "g1"), zero_fold = c(2, 1), obs = 3, exp = 1, metacell = "M1"), fs::path(older_dir, "gene_zero_fold.qs2"))
+
+    load_all_data(cache_dir, datasets = c("old", "older"))
+    qc <- get_mc_data("old", "mc_qc_metadata")
+    expect_identical(qc$metacell, mcs)
+    expect_equal(qc$max_inner_fold_no_lateral, c(2, 3, 0))
+    expect_equal(get_metadata("old")$umis, c(10, 20, 30))
+    expect_identical(get_mc_data("old", "gene_zero_fold")$type, c("lateral", "other"))
+    zero_fold <- get_mc_data("older", "gene_zero_fold")
+    expect_identical(zero_fold$type, c("lateral", "other"))
+    expect_equal(zero_fold$avg, log2(c(0.25, 0.5) + 1e-5))
+})
