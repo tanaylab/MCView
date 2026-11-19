@@ -61,6 +61,43 @@ run_app <- function(project,
         )
     }
 
+    # Render it now, in a forked process, while this one reads the expression matrix: the first
+    # session reads it anyway (to check the genes of the gene modules), and both take ~1.5 s for a
+    # large project. Rendering registers the resource paths of the UI's dependencies (its JS and
+    # CSS files): register them here too. Without fork (Windows), or when the forked process fails
+    # or doesn't finish within a minute, the page is rendered on the first request, as before.
+    # The forked process must not read cache files (qs2 can't start its threads after a fork, and
+    # this process wouldn't get the data), so it runs without them: UI code that read data would
+    # fail there, and the page would be rendered here instead.
+    if (.Platform$OS.type == "unix") {
+        job <- tryCatch(
+            parallel::mcparallel(
+                {
+                    rm(list = "mc_data", envir = globalenv())
+                    list(page = render_page(), paths = resourcePaths())
+                },
+                silent = TRUE
+            ),
+            error = function(e) NULL
+        )
+        if (has_mc_data(dataset_ls(project)[1], "gene_modules")) {
+            invisible(gene_names(dataset_ls(project)[1]))
+        }
+        if (!is.null(job)) {
+            res <- parallel::mccollect(job, wait = FALSE, timeout = 60)[[1]]
+            if (is.null(res)) {
+                tools::pskill(job$pid)
+                suppressWarnings(parallel::mccollect(job, wait = FALSE, timeout = 5))
+            }
+            if (is.list(res) && inherits(res$page, "httpResponse")) {
+                for (prefix in setdiff(names(res$paths), names(resourcePaths()))) {
+                    addResourcePath(prefix, res$paths[[prefix]])
+                }
+                page <- res$page
+            }
+        }
+    }
+
     with_golem_options(
         app = shinyApp(
             ui = function(request) {
