@@ -51,7 +51,7 @@ permissions would not be changed.}
 
 \item{excluded_tabs}{a character vector of tabs to exclude from the light version of the bundle.}
 
-\item{shiny_cache_dir}{a path to a directory in which to store shiny cache, can be relative to the bundle, e.g. "./shiny_cache". If set to TRUE, a temporary directory would be set. If NULL - shiny would cache objects in memory.}
+\item{shiny_cache_dir}{a path to a directory in which to store shiny cache, can be relative to the bundle, e.g. "./shiny_cache". The app's next processes reuse it until the project changes (see \code{\link{run_app}}). If set to TRUE, a temporary directory would be set. If NULL - shiny would cache objects in memory, or under the environment variable \code{MCVIEW_SHINY_CACHE_DIR} when it is set.}
 
 \item{shiny_cache_max_size}{maximum size of the shiny cache in bytes. Default is 200e6.}
 

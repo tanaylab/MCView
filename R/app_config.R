@@ -50,7 +50,17 @@ init_defs <- function() {
 
     init_tab_defs()
 
-    init_selected_genes()
+    # Choosing the default genes reads the expression matrices (the project's and the atlas's) when
+    # the config doesn't set them, which took seconds for large projects: do it when a tab first uses
+    # them instead of at startup. (init_selected_genes() replaces both bindings.)
+    delayedAssign("default_gene1", {
+        init_selected_genes()
+        default_gene1
+    }, assign.env = globalenv())
+    delayedAssign("default_gene2", {
+        init_selected_genes()
+        default_gene2
+    }, assign.env = globalenv())
 
     expr_breaks <<- c(1e-5, 2e-5, 4e-5, 1e-4, 2e-4, 4e-4, 1e-3, 2e-3, 4e-3, 1e-2, 2e-2, 4e-2, 1e-1, 2e-1, 4e-1, 1)
 }

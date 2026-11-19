@@ -113,7 +113,8 @@ mod_qc_server <- function(id, dataset, metacell_types, cell_type_colors, gene_mo
 qc_value_box <- function(field, title, dataset, color = "black") {
     shinydashboard::renderValueBox({
         if (field == "n_metacells") {
-            stat <- ncol(get_mc_data(dataset(), "mc_mat"))
+            # (mc_sum has a value per metacell: reading mc_mat here took seconds for large projects)
+            stat <- length(get_mc_data(dataset(), "mc_sum"))
         } else {
             qc_stats <- get_mc_data(dataset(), "qc_stats")
             req(qc_stats)
@@ -342,40 +343,73 @@ qc_stat_plot <- function(field, xlab, dataset, input, plot_type_id, globals, yla
     }) %>% bindCache(dataset(), input[[plot_type_id]], field, plot_type_id, input[[field_input]], globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
 }
 
+# Drawn with plotly directly, as ggplotly() drew the ggplot of geom_density() with geom_vline()s and
+# theme_classic(): converting the ggplot took ~0.3 s per plot, and the QC tab, often the first tab
+# users see, has five of them.
 qc_density <- function(qc_df, field, xlab, ylab, globals, log_scale = FALSE) {
     if (is.null(ylab)) {
         ylab <- "Density"
     }
     quants <- quantile(qc_df[[field]], probs = c(0.1, 0.5, 0.9))
-    if (log_scale) {
-        qc_df[[glue("log10({field})")]] <- qc_df[[field]]
-        p <- qc_df %>%
-            ggplot(aes(x = !!sym(glue("log10({field})"))))
-    } else {
-        p <- qc_df %>%
-            ggplot(aes(x = !!sym(field)))
-    }
-
-    p <- p +
-        geom_density(fill = "black", alpha = 0.2, color = "black") +
-        xlab(xlab) +
-        ylab(ylab) +
-        geom_vline(xintercept = quants[2], color = "red", linetype = "dashed") +
-        geom_vline(xintercept = quants[c(1, 3)], color = "black", linetype = "dashed")
-
     quants_text <- c(
         glue("bottom 10%: {round(quants[1], digits = 2)}"),
         glue("median: {round(quants[2], digits = 2)}"),
         glue("top 10%: {round(quants[3], digits = 2)}")
     )
 
+    x <- qc_df[[field]]
+    x_name <- field
     if (log_scale) {
-        p <- p + scale_x_log10(labels = scales::scientific)
+        x <- log10(x)
+        x_name <- glue("log10({field})")
         quants <- log10(quants)
     }
+    x <- x[is.finite(x)]
+    # as geom_density(): bw.nrd0(), 512 points over the range of the values
+    d <- stats::density(x, n = 512, from = min(x), to = max(x))
+    max_y <- max(d$y)
+    # ggplot's axes: 5% wider than the data, its breaks and labels
+    x_range <- range(x) + c(-0.05, 0.05) * diff(range(x))
+    y_range <- c(-0.05, 1.05) * max_y
+    if (log_scale) {
+        x_breaks <- scales::breaks_log(base = 10)(10^range(x))
+        x_breaks <- x_breaks[log10(x_breaks) >= x_range[1] & log10(x_breaks) <= x_range[2]]
+        x_ticks <- list(tickvals = log10(x_breaks), ticktext = scales::scientific(x_breaks))
+    } else {
+        x_breaks <- scales::breaks_extended()(range(x))
+        x_ticks <- list(tickvals = x_breaks, ticktext = format(x_breaks, trim = TRUE))
+    }
+    y_breaks <- scales::breaks_extended()(c(0, max_y))
+    axis <- function(title, range, ticks) {
+        c(list(
+            title = list(text = title, font = list(color = "rgba(0,0,0,1)", size = 14.6119)),
+            type = "linear", autorange = FALSE, range = range, tickmode = "array", ticks = "outside",
+            tickcolor = "rgba(0,0,0,1)", ticklen = 3.653, tickwidth = 0.6642, tickfont = list(color = "rgba(0,0,0,1)", size = 11.6895),
+            showline = TRUE, linecolor = "rgba(0,0,0,1)", linewidth = 0.6642, showgrid = FALSE, zeroline = FALSE, hoverformat = ".2f"
+        ), ticks)
+    }
+    vline <- function(p, v, color) {
+        plotly::add_trace(p,
+            x = rep(v, each = 3), y = rep(c(y_range, NA), length(v)), text = rep(paste("xintercept:", signif(v, 7)), each = 3),
+            type = "scatter", mode = "lines", line = list(width = 1.8898, color = color, dash = "dash"),
+            hoverinfo = "text", showlegend = FALSE, fill = "none", inherit = FALSE
+        )
+    }
 
-    max_y <- layer_scales(p)$y$get_limits()[2]
-    p <- plotly::ggplotly(p) %>%
+    p <- plotly::plot_ly(
+        x = d$x, y = d$y, text = paste0("density: ", signif(d$y, 8), "<br />", x_name, ": ", signif(d$x, 7)),
+        type = "scatter", mode = "lines", fill = "tozeroy", fillcolor = "rgba(0,0,0,0.2)",
+        line = list(width = 1.8898, color = "rgba(0,0,0,0.2)"), hoverinfo = "text", showlegend = FALSE
+    ) %>%
+        vline(quants[2], "rgba(255,0,0,1)") %>%
+        vline(quants[c(1, 3)], "rgba(0,0,0,1)") %>%
+        plotly::layout(
+            margin = list(t = 23.3059, r = 7.3059, b = 37.2603, l = 43.105),
+            font = list(color = "rgba(0,0,0,1)", size = 14.6119),
+            xaxis = axis(xlab, x_range, x_ticks),
+            yaxis = axis(ylab, y_range, list(tickvals = y_breaks, ticktext = format(y_breaks, trim = TRUE))),
+            showlegend = FALSE, hovermode = "closest"
+        ) %>%
         plotly::add_annotations(
             x = quants,
             y = c(0.75, 0.75, 0.75) * max_y,
@@ -388,6 +422,7 @@ qc_density <- function(qc_df, field, xlab, ylab, globals, log_scale = FALSE) {
             ax = 0,
             ay = 0
         ) %>%
+        collapse_hoverinfo() %>%
         sanitize_plotly_buttons() %>%
         sanitize_plotly_download(globals)
 
