@@ -113,7 +113,8 @@ mod_qc_server <- function(id, dataset, metacell_types, cell_type_colors, gene_mo
 qc_value_box <- function(field, title, dataset, color = "black") {
     shinydashboard::renderValueBox({
         if (field == "n_metacells") {
-            stat <- ncol(get_mc_data(dataset(), "mc_mat"))
+            # (mc_sum has a value per metacell: reading mc_mat here took seconds for large projects)
+            stat <- length(get_mc_data(dataset(), "mc_sum"))
         } else {
             qc_stats <- get_mc_data(dataset(), "qc_stats")
             req(qc_stats)
