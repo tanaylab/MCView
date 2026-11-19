@@ -8,7 +8,8 @@ read_legacy_qs <- function(qs_file, name = fs::path_file(qs_file)) {
             "i" = "Re-import this project with the current MCView (it serializes with {.pkg qs2}), or install the archived {.pkg qs} package to read the old cache."
         ))
     }
-    qs::qread(qs_file)
+    # decompress with several threads: ~3x faster on large matrices
+    qs::qread(qs_file, nthreads = 4)
 }
 
 serialize_shiny_data <- function(object, name, dataset, cache_dir, df2mat = FALSE, flat = FALSE, ...) {
@@ -48,7 +49,12 @@ load_shiny_data <- function(name, dataset, cache_dir, atlas = FALSE) {
         qs2_file <- fs::path(cache_dir, glue("{name}.qs2"))
         qs_file <- fs::path(cache_dir, glue("{name}.qs"))
         if (fs::file_exists(qs2_file)) {
-            object <- qs2::qs_read(qs2_file)
+            # decompress with several threads: reading a 30K metacells mc_mat takes 8 s with one
+            # thread and 1.6 s with 8. qs2 built without TBB reads with one thread and warns.
+            object <- withCallingHandlers(
+                qs2::qs_read(qs2_file, nthreads = 8),
+                warning = function(w) if (grepl("TBB not available", conditionMessage(w))) invokeRestart("muffleWarning")
+            )
         } else if (fs::file_exists(qs_file)) {
             object <- read_legacy_qs(qs_file, name)
         } else {
@@ -62,7 +68,51 @@ load_shiny_data <- function(name, dataset, cache_dir, atlas = FALSE) {
             column_to_rownames("__rowname__") %>%
             as.matrix()
     }
+
+    # projects imported before the projected matrix was stored dense
+    if (name == "projected_mat") {
+        object <- densify_if_mostly_nonzero(object)
+    }
+
     return(object)
+}
+
+# A dgCMatrix that is mostly non-zero (e.g. the projected matrix) as a dense matrix: above 2/3
+# non-zeros it takes less memory (8 bytes per value instead of 12 per non-zero), and reading a
+# gene from it takes ~1ms instead of ~0.5s.
+densify_if_mostly_nonzero <- function(x) {
+    if (methods::is(x, "dgCMatrix") && length(x@x) > 2 / 3 * prod(dim(x))) {
+        x <- as.matrix(x)
+    }
+    x
+}
+
+# Bind each cache file to a promise (delayedAssign) in `env`, so a file is read only
+# when its object is first accessed and objects that are never used are never read.
+# - Never read an unread object inside a forked process (future_promise, mclapply): read it
+#   in the parent first. qs2 reads with TBB threads, which can't start after a fork, and the
+#   object would be read again in every fork.
+# - A running app reads a file when the object is first used, possibly long after it started,
+#   so it can mix files from before and after a re-import or an update_*() call: restart the
+#   app after those.
+lazy_load_files <- function(env, files, dataset, cache_dir, atlas = FALSE) {
+    # load_shiny_data() reads the .qs2 when a .qs of the same name exists (e.g. after
+    # dev/convert_qs_to_qs2.R), so drop the .qs: without the qs package the check below
+    # would otherwise read the whole .qs2 at startup
+    files <- files[!(grepl("\\.qs$", files) & paste0(files, "2") %in% files)]
+    for (fn in files) {
+        local({
+            var_name <- basename(fn) %>%
+                sub("\\.(qs2|qs)$", "", .) %>%
+                sub("\\.tsv$", "", .)
+            if (grepl("\\.qs$", fn) && !requireNamespace("qs", quietly = TRUE)) {
+                # fail at startup, as before, unless a .tsv of the same name exists (a .qs with a
+                # .qs2 next to it was dropped above)
+                load_shiny_data(var_name, dataset, cache_dir, atlas = atlas)
+            }
+            delayedAssign(var_name, load_shiny_data(var_name, dataset, cache_dir, atlas = atlas), assign.env = env)
+        })
+    }
 }
 
 load_all_mc_data_atlas <- function(dataset, cache_dir) {
@@ -71,21 +121,14 @@ load_all_mc_data_atlas <- function(dataset, cache_dir) {
         files <- list.files(atlas_dir, pattern = "*\\.(qs2|qs|tsv|csv)")
 
         if (is.null(mc_data[[dataset]])) {
-            mc_data[[dataset]] <<- list()
+            mc_data[[dataset]] <<- new.env(parent = emptyenv())
         }
 
         if (is.null(mc_data[[dataset]]$atlas)) {
-            mc_data[[dataset]]$atlas <<- list()
+            mc_data[[dataset]]$atlas <<- new.env(parent = emptyenv())
         }
 
-        for (fn in files) {
-            var_name <- basename(fn) %>%
-                sub("\\.(qs2|qs)$", "", .) %>%
-                sub("\\.tsv$", "", .)
-            obj <- load_shiny_data(var_name, dataset, cache_dir, atlas = TRUE)
-
-            mc_data[[dataset]]$atlas[[var_name]] <<- obj
-        }
+        lazy_load_files(mc_data[[dataset]]$atlas, files, dataset, cache_dir, atlas = TRUE)
     }
 }
 
@@ -98,17 +141,10 @@ load_all_mc_data <- function(dataset, cache_dir) {
     files <- list.files(fs::path(cache_dir, dataset), pattern = "*\\.(qs2|qs|tsv|csv)")
 
     if (is.null(mc_data[[dataset]])) {
-        mc_data[[dataset]] <<- list()
+        mc_data[[dataset]] <<- new.env(parent = emptyenv())
     }
 
-    for (fn in files) {
-        var_name <- basename(fn) %>%
-            sub("\\.(qs2|qs)$", "", .) %>%
-            sub("\\.tsv$", "", .)
-        obj <- load_shiny_data(var_name, dataset, cache_dir)
-
-        mc_data[[dataset]][[var_name]] <<- obj
-    }
+    lazy_load_files(mc_data[[dataset]], files, dataset, cache_dir)
 }
 
 verify_app_cache <- function(project, required_files = c("mc_mat", "mc_sum", "mc2d", "metacell_types", "cell_type_colors"), datasets = NULL) {
@@ -189,6 +225,10 @@ get_metadata <- function(dataset, atlas = FALSE) {
     }
 
     if (!is.null(metadata)) {
+        # get_metadata() is called dozens of times per session, so join only once
+        if (!is.null(mc_data[[dataset]][["metadata_with_qc"]])) {
+            return(mc_data[[dataset]][["metadata_with_qc"]])
+        }
         mc_qc_metadata <- mc_data[[dataset]][["mc_qc_metadata"]]
         if (!is.null(mc_qc_metadata)) {
             same_colnames <- intersect(colnames(mc_qc_metadata), colnames(metadata))
@@ -202,6 +242,7 @@ get_metadata <- function(dataset, atlas = FALSE) {
                     left_join(mc_qc_metadata, by = "metacell")
             }
         }
+        mc_data[[dataset]][["metadata_with_qc"]] <<- metadata
     }
 
 
@@ -234,36 +275,48 @@ get_mc_config <- function(dataset, var_name) {
     config$datasets[[dataset]][[var_name]]
 }
 
+# Check that an object exists without reading it from disk
+has_mc_data <- function(dataset, var_name, atlas = FALSE) {
+    env <- if (atlas) mc_data[[dataset]]$atlas else mc_data[[dataset]]
+    !is.null(env) && exists(var_name, envir = env, inherits = FALSE)
+}
+
 has_network <- function(dataset) {
-    !is.null(get_mc_data(dataset, "mc_network"))
+    has_mc_data(dataset, "mc_network")
 }
 
 has_time <- function(dataset) {
-    !is.null(get_mc_data(dataset, "time_annot"))
+    has_mc_data(dataset, "time_annot")
 }
 
 has_metadata <- function(dataset, atlas = FALSE) {
-    !is.null(get_mc_data(dataset, "metadata", atlas = atlas))
+    has_mc_data(dataset, "metadata", atlas = atlas)
 }
 
 has_cell_metadata <- function(dataset) {
-    !is.null(get_mc_data(dataset, "cell_metadata"))
+    has_mc_data(dataset, "cell_metadata")
 }
 
 has_samples <- function(dataset) {
     if (!has_cell_metadata(dataset)) {
         return(FALSE)
     }
+    # read only the header of the (one row per cell) table, which is otherwise loaded at the
+    # first session just for this check
+    tsv <- fs::path(project_cache_dir(project), dataset, "cell_metadata.tsv")
+    if (fs::file_exists(tsv)) {
+        return("samp_id" %in% names(fread(tsv, nrows = 0)))
+    }
     cell_md <- get_mc_data(dataset, "cell_metadata")
     return(rlang::has_name(cell_md, "samp_id"))
 }
 
 has_projection <- function(dataset) {
-    !is.null(get_mc_data(dataset, "query_md"))
+    has_mc_data(dataset, "query_md")
 }
 
 has_corrected <- function(dataset) {
-    !is.null(get_mc_data(dataset, "mc_mat_corrected"))
+    has_mc_data(dataset, "mc_mat_corrected")
 }
 
 has_atlas <- function(dataset) {
@@ -437,7 +490,7 @@ get_metacell_ids <- function(project, dataset) {
 }
 
 has_gg_mc_top_cor <- function(project, dataset) {
-    !is.null(get_mc_data(dataset, "gg_mc_top_cor"))
+    has_mc_data(dataset, "gg_mc_top_cor")
 }
 
 get_mc_sum <- function(dataset, atlas = FALSE) {

@@ -236,7 +236,7 @@ globalVariables(unique(c(
     # plot_markers_mat:
     "cell_type", "color",
     # plot_mc_mc_gene:
-    "expr_breaks", "gene", "Gene", "pval",
+    "expr_breaks", "gene", "gene_name", "pval",
     # plot_mc_scatter:
     "cell_type", "color", "color_values", "egc_epsilon", "expr_breaks", "metacell", "Metacell",
     # plot_mc_time_dist:

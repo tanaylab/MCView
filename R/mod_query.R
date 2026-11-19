@@ -166,6 +166,12 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
 
             group <- reactiveVal()
 
+            # The scatter depends on input$mode only through its drag mode (select in Group mode). A
+            # reactiveVal invalidates only when its value changes, so switching between MC and Type
+            # doesn't draw and send the plot again.
+            group_mode <- reactiveVal(FALSE)
+            observe(group_mode(isTRUE(input$mode %in% c("Groups", "Group"))))
+
             projected_metacell_types <- reactive({
                 get_mc_data(dataset(), "projected_metacell_types") %>%
                     mutate(metacell = as.character(metacell))
@@ -313,9 +319,9 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
                     cell_type_colors = cell_type_colors(),
                     point_size = input$gene_gene_point_size,
                     stroke = input$gene_gene_stroke,
-                    plot_text = FALSE
+                    plot_text = FALSE,
+                    source = "obs_proj_plot"
                 ) %>%
-                    plotly::ggplotly(tooltip = "tooltip_text", source = "obs_proj_plot") %>%
                     sanitize_for_WebGL() %>%
                     plotly::toWebGL() %>%
                     sanitize_plotly_buttons() %>%
@@ -332,13 +338,13 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
                     })
                 }
 
-                if (!is.null(input$mode) && input$mode %in% c("Groups", "Group")) {
+                if (group_mode()) {
                     fig <- fig %>% plotly::layout(dragmode = "select")
                 }
 
 
                 return(fig)
-            }) %>% bindCache(dataset(), input$axis_var, input$axis_type, input$color_by_type, input$color_by_var, metacell_types(), cell_type_colors(), input$gene_gene_point_size, input$gene_gene_stroke, input$mode, globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
+            }) %>% bindCache(dataset(), input$axis_var, input$axis_type, input$color_by_type, input$color_by_var, metacell_types(), cell_type_colors(), input$gene_gene_point_size, input$gene_gene_stroke, group_mode(), globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
 
             # Point size selector
             output$point_size_ui <- renderUI({
@@ -428,7 +434,8 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
 
                     return(dt)
                 },
-                server = TRUE
+                server = TRUE,
+                funcFilter = dt_filter_without_rows_all
             )
         }
     )
@@ -523,7 +530,15 @@ metacell_selectors_mod_query <- function(input, output, session, dataset, ns, me
                 )
             )
         }
-    })
+    }) %>% bindCache(
+        # building the metacells picker takes ~1-2s in a dataset with 5-15K metacells
+        dataset(), input$mode,
+        if (isTRUE(input$mode == "Type")) {
+            list(cell_type_colors(), metacell_types())
+        } else {
+            list(metacell_names(), metacell_colors(), get_mc_data(dataset(), "metadata")$similar)
+        }
+    )
 
     # Select metacell / cell type when clicking on it
     select_metacell_plotly_event_projection("proj_mc_plot_proj_tab", input, session, metacell_types, group)
@@ -535,7 +550,7 @@ select_metacell_plotly_event_projection <- function(source, input, session, meta
     # Select metacell / cell type when clicking on it
     observeEvent(plotly::event_data("plotly_click", source = source), {
         el <- plotly::event_data("plotly_click", source = source)
-        metacell <- el$customdata
+        metacell <- plotly_event_ids(el)
 
         if (input$mode == "MC") {
             updateSelectInput(session, "metacell1", selected = metacell)
@@ -648,7 +663,7 @@ group_selectors_mod_query <- function(input, output, session, dataset, ns, group
     observeEvent(plotly::event_data("plotly_selected", source = "proj_mc_plot_proj_tab"), {
         el <- plotly::event_data("plotly_selected", source = "proj_mc_plot_proj_tab")
 
-        selected_metacells <- unique(el$customdata)
+        selected_metacells <- unique(plotly_event_ids(el))
         req(input$mode == "Group")
 
 
@@ -662,7 +677,7 @@ group_selectors_mod_query <- function(input, output, session, dataset, ns, group
     observeEvent(plotly::event_data("plotly_selected", source = "obs_proj_plot"), {
         el <- plotly::event_data("plotly_selected", source = "obs_proj_plot")
 
-        selected_metacells <- unique(el$customdata)
+        selected_metacells <- unique(plotly_event_ids(el))
         req(input$mode == "Group")
 
 

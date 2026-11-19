@@ -27,6 +27,60 @@ sanitize_for_WebGL <- function(p) {
     return(p)
 }
 
+# plotly_build() repeats a trace's hoverinfo for every point (with NA for NA points). Send it
+# once per trace. Needed for hoverinfo = "skip" to work, and smaller.
+collapse_hoverinfo <- function(p) {
+    p <- plotly::plotly_build(p)
+    p$x$data <- purrr::map(p$x$data, function(tr) {
+        h <- unique(tr$hoverinfo[!is.na(tr$hoverinfo)])
+        if (length(tr$hoverinfo) > 1 && length(h) == 1) {
+            tr$hoverinfo <- h
+        }
+        tr
+    })
+    p
+}
+
+# ggplotly writes the hover text of every point as one string ("label: value<br />label: value..."),
+# so the labels are sent once per point. Send them once per trace instead, as a hovertemplate.
+# The points' customdata must be df[[id]] (unique values). It is replaced by the point's values of
+# c(id, fields) as strings, which `template` shows with %{customdata[0]}, %{customdata[1]}, ...
+# (%{x:.3~r}, %{y} and %{fullData.name} for the trace name can be used too). Click and selection
+# observers get the id with plotly_event_ids().
+set_hovertemplate <- function(fig, df, id, fields, template) {
+    fig <- plotly::plotly_build(fig)
+    values <- do.call(cbind, lapply(df[c(id, fields)], as.character))
+    with_customdata <- !purrr::map_lgl(fig$x$data, ~ is.null(.x$customdata))
+    ids <- purrr::map(fig$x$data[with_customdata], ~ unlist(.x$customdata))
+    # the rows of each trace's points, with one match() for all the traces (e.g. a trace per cell type)
+    rows <- split(match(unlist(ids), df[[id]]), factor(rep(seq_along(ids), lengths(ids)), levels = seq_along(ids)))
+    fig$x$data[with_customdata] <- purrr::map2(fig$x$data[with_customdata], rows, function(tr, rows) {
+        customdata <- values[rows, , drop = FALSE]
+        # the trace's own ids, also for points that aren't in df (their other values are NA)
+        customdata[, 1] <- as.character(unlist(tr$customdata))
+        # as paste() and glue() write them in hover texts
+        customdata[is.na(customdata)] <- "NA"
+        # a field with the same value for all the trace's points (e.g. the cell type of a trace
+        # per cell type, or p-values that weren't computed) is written in its template instead,
+        # unless plotly would read a part of it as a placeholder ("%{...}")
+        constant <- c(FALSE, vapply(seq_len(ncol(customdata))[-1], function(j) {
+            nrow(customdata) > 0 && all(customdata[, j] == customdata[1, j]) && !grepl("%{", customdata[1, j], fixed = TRUE)
+        }, TRUE))
+        index <- cumsum(!constant) - 1
+        tr$hovertemplate <- template
+        placeholders <- gregexpr("%\\{customdata\\[[0-9]+\\]\\}", template)
+        regmatches(tr$hovertemplate, placeholders) <- lapply(regmatches(template, placeholders), function(ph) {
+            j <- as.integer(gsub("\\D", "", ph)) + 1
+            ifelse(constant[j], customdata[1, j], sprintf("%%{customdata[%d]}", index[j]))
+        })
+        tr$customdata <- customdata[, !constant, drop = FALSE]
+        tr$text <- NULL
+        tr$hoverinfo <- NULL
+        tr
+    })
+    fig
+}
+
 # See https://github.com/plotly/plotly.js/issues/4999
 arrange_2d_proj_tooltip <- function(fig) {
     if (fig$x$data[[1]]$mode == "lines") {
@@ -59,9 +113,24 @@ sanitize_plotly_buttons <- function(p,
 
 sanitize_plotly_download <- function(p, globals) {
     to_image_options <- list(format = globals$plotly_format, width = globals$plotly_width, height = globals$plotly_height, scale = globals$plotly_scale)
+    # (done here because all our plotly outputs pass through this function)
+    attr(p$x, "TOJSON_FUNC") <- plotly_to_json
+    # By default plotly sends every hover, relayout and redraw of a plot to the server as an input,
+    # and shiny goes over all the outputs of the session for each input it receives. Send only
+    # the events that MCView observes (click, selection and restyle).
+    for (event in c("plotly_hover", "plotly_relayout", "plotly_brushed", "plotly_brushing", "plotly_clickannotation", "plotly_doubleclick", "plotly_afterplot", "plotly_sunburstclick")) {
+        p <- plotly::event_unregister(p, event)
+    }
     p %>% plotly::config(
         toImageButtonOptions = to_image_options
     )
+}
+
+# plotly's own serializer (plotly:::to_JSON) writes numbers with 15-17 significant digits. 6 are
+# plenty for drawing (hover texts are formatted in R), make the plots' JSON ~10% smaller and are
+# faster to write.
+plotly_to_json <- function(x, ...) {
+    jsonlite::toJSON(x, digits = I(6), auto_unbox = TRUE, force = TRUE, null = "null", na = "null", time_format = "%Y-%m-%d %H:%M:%OS6", ...)
 }
 
 plotly_text_plot <- function(text) {

@@ -61,16 +61,15 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
         mutate(
             expr_clipped = tgutil::clip_vals(expression, min_val = min_expr, max_val = max_expr),
             expr_text = round(expression, digits = 2),
-            text = paste(
-                glue("Metacell: {metacell}"),
-                glue("{gene} expression (log2): {expr_text}"),
-                glue("{gene} enrichment: {round(log2(mc_fp[metacell_names]), digits=2)}"),
-                glue("Cell type: {`Cell type`}"),
-                glue("Top genes: {`Top genes`}"),
-                ifelse(has_name(df, "Age"), glue("Metacell age (E[t]): {round(Age, digits=2)}"), ""),
-                sep = "\n"
-            )
+            enrich_text = round(log2(mc_fp[metacell_names]), digits = 2)
         )
+    hovertemplate <- paste0(
+        "Metacell: %{customdata[0]}<br />",
+        gene, " expression (log2): %{customdata[1]}<br />",
+        gene, " enrichment: %{customdata[2]}<br />",
+        "Cell type: %{customdata[3]}<br />",
+        "Top genes: %{customdata[4]}<extra></extra>"
+    )
 
     if (stat == "enrichment") {
         shades <- grDevices::colorRampPalette(colspec)(100 * (max_lfp - min_lfp) + 1)
@@ -97,9 +96,7 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
             x = ~x,
             y = ~y,
             color = ~value,
-            text = ~text,
             customdata = ~id,
-            hoverinfo = "text",
             type = "scatter",
             mode = "markers",
             colors = shades,
@@ -114,7 +111,9 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
         )
     }
 
-    fig <- plotly::plot_ly() %>% add_scatter_layer()
+    # the edges skip hover, so the points only need to be drawn once, above them
+    # (plotly takes the color scale from the first trace, hence 'colors' here)
+    fig <- plotly::plot_ly(colors = shades)
 
     if (nrow(graph) > 0) {
         edges_x <- c(rbind(graph$x_mc1, graph$x_mc2, NA))
@@ -130,6 +129,7 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
                     color = graph_color,
                     width = graph_width * 5
                 ),
+                hoverinfo = "skip",
                 showlegend = FALSE
             )
     }
@@ -157,12 +157,19 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
                 pad = 0
             )
         ) %>%
-        plotly::colorbar(title = legend_title)
+        plotly::colorbar(title = legend_title) %>%
+        set_hovertemplate(df, "id", c("expr_text", "enrich_text", "Cell type", "Top genes"), hovertemplate)
 
     return(fig)
 }
 
 render_2d_plotly <- function(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, source, buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL, refresh_on_gene_change = FALSE, atlas = FALSE, query_types = NULL, group = NULL, groupA = NULL, groupB = NULL, selected_metacell_types = NULL, selected_cell_types = NULL) {
+    # Unless coloring by "Selected", input$mode changes only the drag mode (select in the group
+    # modes). A reactiveVal invalidates the plot only when its value changes, so switching between
+    # e.g. MC and Type doesn't draw and send the plot again.
+    group_mode <- reactiveVal(FALSE)
+    observe(group_mode(isTRUE(input$mode %in% c("Groups", "Group"))))
+
     plotly::renderPlotly({
         req(input$color_proj)
         req(input$point_size)
@@ -179,6 +186,13 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
             req(proj_stat)
             if (proj_stat == "enrichment") {
                 req(input$lfp)
+            } else if (input$color_proj != "Scatter Axis") {
+                # wait for the "Manual range" inputs (rendered after proj_stat and set_range) so that
+                # their initialization doesn't draw the plot a second time
+                req(!is.null(input$set_range))
+                if (input$set_range) {
+                    req(input$expr_range)
+                }
             }
             if (!is.null(input$set_range) && input$set_range) {
                 min_expr <- input$expr_range[1]
@@ -251,8 +265,11 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
                     filter(query == input$selected_metacell)
             }
 
+            # one point per atlas metacell: with several query metacells (a query cell type), take the
+            # highest weight, so an atlas metacell is above the threshold when any of them is
             mc_proj_w <- mc_proj_w %>%
-                select(metacell = atlas, Weight = weight) %>%
+                group_by(metacell = atlas) %>%
+                summarise(Weight = max(weight), .groups = "drop") %>%
                 mutate(query = "query")
             metadata <- tibble(metacell = colnames(get_mc_data(dataset(), "mc_mat", atlas = TRUE))) %>%
                 left_join(mc_proj_w, by = "metacell") %>%
@@ -277,9 +294,8 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
         }
 
         color_proj <- input$color_proj
-        color_proj_gene <- input$color_proj_gene
-        color_proj_metadata <- input$color_proj_metadata
-        color_proj_gene_module <- input$color_proj_gene_module
+        # each of these is used only when coloring by its type
+        color_proj_gene <- color_proj_metadata <- color_proj_gene_module <- proj_color_var(input)
         proj_stat <- input$proj_stat
 
         if (color_proj == "Scatter Axis") {
@@ -289,7 +305,9 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
             color_proj_metadata <- input[[glue("{input$scatter_axis_proj}_axis_var")]]
             color_proj_gene_module <- input[[glue("{input$scatter_axis_proj}_axis_var")]]
             proj_stat <- "expression"
-            req(axis_vars_ok(dataset(), input, "metadata", gene_modules, atlas = atlas))
+            # check only the axis we color by: it is the only one in the cache key, and
+            # bindCache caches req() failures too
+            req(axis_vars_ok(dataset(), input, "metadata", gene_modules, axes = glue("{input$scatter_axis_proj}_axis"), atlas = atlas))
         }
 
 
@@ -407,7 +425,7 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
 
         if (!is.null(dragmode)) {
             fig <- fig %>% plotly::layout(dragmode = dragmode)
-        } else if (!is.null(input$mode) && input$mode %in% c("Groups", "Group")) {
+        } else if (group_mode()) {
             fig <- fig %>% plotly::layout(dragmode = "select")
             buttons <- buttons[!(buttons %in% c("select2d", "lasso2d"))]
         }
@@ -432,7 +450,8 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
         fig <- fig %>%
             sanitize_for_WebGL()
         fig <- fig %>%
-            plotly::toWebGL()
+            plotly::toWebGL() %>%
+            collapse_hoverinfo()
         # fig <- fig %>%
         #     arrange_2d_proj_tooltip()
         fig <- fig %>%
@@ -446,6 +465,16 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
 }
 
 
+
+# The variable the 2D projection is colored by. Reads only the input of the chosen coloring, so
+# the other ones changing (e.g. when they are initialized) don't re-render the plot.
+proj_color_var <- function(input) {
+    switch(input$color_proj %||% "",
+        "Gene" = input$color_proj_gene,
+        "Metadata" = input$color_proj_metadata,
+        "Gene module" = input$color_proj_gene_module
+    )
+}
 
 initial_proj_point_size <- function(dataset, screen_width = NULL, screen_height = NULL, weight = 1, atlas = FALSE) {
     if (!is.null(config$datasets[[dataset]]$projection_point_size)) {

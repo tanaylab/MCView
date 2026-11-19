@@ -11,14 +11,15 @@ get_mc_egc <- function(dataset, genes = NULL, atlas = FALSE, metacells = NULL) {
         mc_sum <- mc_sum[intersect(metacells, names(mc_sum))]
     }
 
-    return(t(t(mc_mat) / mc_sum))
+    # same values as t(t(mc_mat) / mc_sum) without the two transposed copies
+    return(mc_mat / rep(unname(mc_sum), each = nrow(mc_mat)))
 }
 
 get_mc_fp <- function(dataset, genes = NULL, atlas = FALSE, metacells = NULL) {
     mc_egc <- get_mc_egc(dataset, genes = genes, atlas = atlas, metacells = metacells)
 
     mc_egc_norm <- mc_egc + 1e-5
-    mc_fp <- mc_egc_norm / apply(mc_egc_norm, 1, median, na.rm = TRUE)
+    mc_fp <- mc_egc_norm / matrixStats::rowMedians(mc_egc_norm, na.rm = TRUE)
 
     return(mc_fp)
 }
@@ -34,9 +35,9 @@ get_mc_gene_modules_egc <- function(dataset, modules = NULL, gene_modules = NULL
             mutate(module = forcats::fct_drop(module))
     }
 
-    mc_mat <- mc_mat[gene_modules$gene, ]
-
-    mc_mat <- tgs_matrix_tapply(t(mc_mat), gene_modules$module, sum)
+    # rowsum rather than tgs_matrix_tapply: tgstat forks worker processes, which costs seconds
+    # when the app process holds a large dataset
+    mc_mat <- rowsum(mc_mat[gene_modules$gene, , drop = FALSE], gene_modules$module)
 
     return(t(t(mc_mat) / mc_sum))
 }
@@ -50,7 +51,7 @@ get_mc_gene_modules_fp <- function(dataset, modules = NULL, gene_modules = NULL,
     mc_egc <- get_mc_gene_modules_egc(dataset, modules = modules, gene_modules = gene_modules, atlas = atlas)
 
     mc_egc_norm <- mc_egc + 1e-5
-    mc_fp <- mc_egc_norm / apply(mc_egc_norm, 1, median, na.rm = TRUE)
+    mc_fp <- mc_egc_norm / matrixStats::rowMedians(mc_egc_norm, na.rm = TRUE)
 
     return(mc_fp)
 }
@@ -134,7 +135,9 @@ get_cell_types_mat <- function(cell_types, metacell_types, dataset, projected = 
 
     mc_mat <- mc_mat[, names(mc_types), drop = FALSE]
 
-    ct_mat <- t(tgs_matrix_tapply(mc_mat, mc_types, sum))
+    # rowSums per cell type rather than tgs_matrix_tapply (which forks worker processes, slow when
+    # the app holds a large dataset). Works for both dense and sparse (projected) matrices.
+    ct_mat <- sapply(split(colnames(mc_mat), mc_types), function(mcs) rowSums(mc_mat[, mcs, drop = FALSE]))
 
     return(ct_mat)
 }
@@ -147,7 +150,7 @@ get_cell_types_egc <- function(cell_types, metacell_types, dataset, mat = NULL, 
     return(ct_egc)
 }
 
-get_samples_mat <- function(cell_types, metacell_types, dataset) {
+get_samples_mat <- function(cell_types, metacell_types, dataset, samples = NULL) {
     mc_mat <- get_mc_data(dataset, "mc_mat")
 
     mc_types <- metacell_types %>%
@@ -156,12 +159,11 @@ get_samples_mat <- function(cell_types, metacell_types, dataset) {
         deframe()
 
     mc_mat <- mc_mat[, names(mc_types), drop = FALSE]
-    samp_mc_frac <- get_samp_mc_frac(dataset)[, names(mc_types)]
+    samp_mc_frac <- get_samp_mc_frac(dataset)[samples %||% TRUE, names(mc_types), drop = FALSE]
     samp_sums <- rowSums(samp_mc_frac)
 
     # remove samples with no metacells
-    samp_mc_frac <- samp_mc_frac[samp_sums > 0, ]
-    mc_mat <- mc_mat[samp_sums > 0, ]
+    samp_mc_frac <- samp_mc_frac[samp_sums > 0, , drop = FALSE]
     samp_mc_frac <- samp_mc_frac / rowSums(samp_mc_frac)
 
     samp_mat <- mc_mat %*% t(samp_mc_frac)
@@ -169,19 +171,19 @@ get_samples_mat <- function(cell_types, metacell_types, dataset) {
     return(samp_mat)
 }
 
-get_samples_egc <- function(cell_types, metacell_types, dataset) {
-    mc_egc <- get_mc_egc(dataset)
-
+get_samples_egc <- function(cell_types, metacell_types, dataset, samples = NULL) {
     mc_types <- metacell_types %>%
         filter(cell_type %in% cell_types) %>%
         select(metacell, cell_type) %>%
         deframe()
 
-    mc_egc <- mc_egc[, names(mc_types)]
-    samp_mc_frac <- get_samp_mc_frac(dataset)[, names(mc_types)]
+    mc_mat <- get_mc_data(dataset, "mc_mat")[, names(mc_types), drop = FALSE]
+    mc_sum <- get_mc_sum(dataset)[names(mc_types)]
+    samp_mc_frac <- get_samp_mc_frac(dataset)[samples %||% TRUE, names(mc_types), drop = FALSE]
     samp_mc_frac <- samp_mc_frac / rowSums(samp_mc_frac)
 
-    samp_egc <- mc_egc %*% t(samp_mc_frac)
+    # egc %*% t(samp_mc_frac), folding the normalization into the weights instead of normalizing the matrix
+    samp_egc <- mc_mat %*% (t(samp_mc_frac) / mc_sum)
 
     return(samp_egc)
 }

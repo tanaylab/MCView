@@ -210,17 +210,22 @@ zero_fold_gene_plot <- function(dataset, input, globals) {
         zero_fold_df <- get_mc_data(dataset(), "gene_zero_fold")
         req(zero_fold_df)
 
-        p <- zero_fold_df %>%
+        df <- zero_fold_df %>%
             rename(Expression = avg, FC = zero_fold, Gene = gene, Type = type, Metacell = metacell) %>%
-            mutate(Observed = obs, Expected = round(exp, digits = 1)) %>%
-            ggplot(aes(x = Expression, y = FC, label = Gene, color = Type, Observed = Observed, Expected = Expected, Metacell = Metacell)) +
+            mutate(Observed = obs, Expected = formatC(exp, format = "f", digits = 1))
+
+        # group = Type: by default ggplot makes a group of every Type and Gene pair (a group per point)
+        p <- df %>%
+            ggplot(aes(x = Expression, y = FC, color = Type, customdata = Gene, group = Type)) +
             scale_color_manual(values = c("other" = "gray", "lateral" = "blue", "noisy" = "red", "lateral, noisy" = "purple")) +
             geom_point(size = 0.5) +
             geom_abline(intercept = 0, slope = 1, color = "black", linetype = "dashed") +
             xlab("log2(gene expression)") +
             ylab("log2(# of zero cells / expected)")
 
-        plotly::ggplotly(p) %>%
+        # set_hovertemplate() replaces the hover texts
+        plotly::ggplotly(p, tooltip = "none") %>%
+            set_hovertemplate(df, "Gene", c("Observed", "Expected", "Metacell"), "Expression: %{x:.3~r}<br />FC: %{y:.3~r}<br />Gene: %{customdata[0]}<br />Type: %{fullData.name}<br />Observed: %{customdata[1]}<br />Expected: %{customdata[2]}<br />Metacell: %{customdata[3]}<extra></extra>") %>%
             sanitize_for_WebGL() %>%
             plotly::toWebGL() %>%
             sanitize_plotly_buttons() %>%
@@ -288,13 +293,15 @@ gene_inner_fold_scatter_plot <- function(dataset, input, globals) {
         p <- gene_inner_fold_df %>%
             mutate(max_expr = log2(max_expr + 1e-5)) %>%
             rename(Gene = gene, `# of metacells` = significant_inner_folds_count, `Max expression` = max_expr, Type = type) %>%
-            ggplot(aes(x = `Max expression`, y = `# of metacells`, label = Gene, color = Type)) +
+            ggplot(aes(x = `Max expression`, y = `# of metacells`, color = Type, customdata = Gene, group = Type)) +
             scale_color_manual(values = c("other" = "gray", "lateral" = "blue", "noisy" = "red", "lateral, noisy" = "purple")) +
             geom_point(size = 0.5) +
             xlab("log2(gene expression)") +
             ylab("# of metacells with significant inner-fold")
 
-        plotly::ggplotly(p) %>%
+        # set_hovertemplate() replaces the hover texts
+        plotly::ggplotly(p, tooltip = "none") %>%
+            set_hovertemplate(gene_inner_fold_df, "gene", c(), "Max expression: %{x:.3~r}<br /># of metacells: %{y:~r}<br />Gene: %{customdata[0]}<br />Type: %{fullData.name}<extra></extra>") %>%
             sanitize_for_WebGL() %>%
             plotly::toWebGL() %>%
             sanitize_plotly_buttons() %>%

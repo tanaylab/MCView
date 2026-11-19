@@ -45,47 +45,48 @@ download_modal_reactives <- function(input, output, session, globals) {
 }
 
 download_data_modal_reactives <- function(input, output, session, globals) {
-    creation_text <- ""
-    if (fs::file_exists(command_file_path(project)) && !(!is.null(config$show_command) && !config$show_command) && !config$light_version) {
-        cmd_text <- readLines(command_file_path(project))
-        cmd_text <- paste0(cmd_text, collapse = "\n")
-        cmd_text <- paste0("```r\n", cmd_text, "\n```")
-        creation_text <- glue("The MCView app was created using the following commands:\n\n{cmd_text}")
-        creation_text <- markdown::markdownToHTML(text = creation_text, fragment.only = TRUE)
-        Encoding(creation_text) <- "UTF-8"
-        creation_text <- HTML(creation_text)
-    }
+    # built when the dialog is opened: the import commands can be tens of MB, and converting them
+    # to HTML took most of the session start in such apps
+    observeEvent(input$download_data_modal, {
+        creation_text <- ""
+        if (fs::file_exists(command_file_path(project)) && !(!is.null(config$show_command) && !config$show_command) && !config$light_version) {
+            cmd_text <- readLines(command_file_path(project))
+            cmd_text <- paste0(cmd_text, collapse = "\n")
+            cmd_text <- paste0("```r\n", cmd_text, "\n```")
+            creation_text <- glue("The MCView app was created using the following commands:\n\n{cmd_text}")
+            creation_text <- markdown::markdownToHTML(text = creation_text, fragment.only = TRUE)
+            Encoding(creation_text) <- "UTF-8"
+            creation_text <- HTML(creation_text)
+        }
 
-    if (file.exists(source_metacells_file_path(project))) {
-        file_size <- fs::file_info(source_metacells_file_path(project), follow = TRUE)$size
-        if (!is.na(file_size)) {
+        if (file.exists(source_metacells_file_path(project))) {
+            file_size <- fs::file_info(source_metacells_file_path(project), follow = TRUE)$size
+            if (!is.na(file_size)) {
+                dialog <- modalDialog(
+                    title = "Download data",
+                    "To download the metacells anndata file, press the download button below:",
+                    br(),
+                    br(),
+                    downloadButton("download_mc_data", glue("Download ({file_size})"), style = "align-items: center;"),
+                    br(),
+                    br(),
+                    creation_text,
+                    easyClose = TRUE
+                )
+            }
+        } else {
             dialog <- modalDialog(
                 title = "Download data",
-                "To download the metacells anndata file, press the download button below:",
-                br(),
-                br(),
-                downloadButton("download_mc_data", glue("Download ({file_size})"), style = "align-items: center;"),
+                "The metacells anndata file is not available. Run the import commands with copy_source_file=TRUE to make it available.",
                 br(),
                 br(),
                 creation_text,
                 easyClose = TRUE
             )
         }
-    } else {
-        dialog <- modalDialog(
-            title = "Download data",
-            "The metacells anndata file is not available. Run the import commands with copy_source_file=TRUE to make it available.",
-            br(),
-            br(),
-            creation_text,
-            easyClose = TRUE
-        )
-    }
 
-    observeEvent(
-        input$download_data_modal,
         showModal(dialog)
-    )
+    })
 
     output$download_mc_data <- downloadHandler(
         filename = function() {

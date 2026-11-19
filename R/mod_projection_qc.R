@@ -75,7 +75,7 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
 
             output$num_metacells_atlas <- shinydashboard::renderValueBox({
                 mc_mat <- get_mc_data(dataset(), "mc_mat", atlas = TRUE)
-                req(mc_mat)
+                req(!is.null(mc_mat))
                 num_metacells <- ncol(mc_mat)
                 shinydashboard::valueBox(
                     scales::comma(num_metacells),
@@ -86,7 +86,7 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
             output$num_metacells_query <- qc_value_box("n_metacells", "Number of query metacells", dataset, color = "purple")
             output$num_metacells_similar <- shinydashboard::renderValueBox({
                 mc_mat <- get_mc_data(dataset(), "mc_mat")
-                req(mc_mat)
+                req(!is.null(mc_mat))
 
                 num_metacells <- ncol(mc_mat)
                 req(num_metacells)
@@ -114,8 +114,8 @@ mod_projection_qc_server <- function(id, dataset, metacell_types, cell_type_colo
             output$common_genes <- shinydashboard::renderValueBox({
                 query_mat <- get_mc_data(dataset(), "mc_mat")
                 atlas_mat <- get_mc_data(dataset(), "mc_mat", atlas = TRUE)
-                req(query_mat)
-                req(atlas_mat)
+                req(!is.null(query_mat))
+                req(!is.null(atlas_mat))
 
                 common_genes <- intersect(rownames(query_mat), rownames(atlas_mat))
 

@@ -50,3 +50,18 @@ save_function_call <- function(command_file = "IMPORT_COMMAND", call_depth = 1, 
     writeLines(call_string, command_file)
     return(invisible(command_file))
 }
+
+# anndata::read_h5ad, failing early when the R anndata package could not convert the Python objects to R.
+# This happens with Python anndata >= 0.13 or pandas >= 3.0 (both renamed their classes), and otherwise
+# surfaces later as cryptic errors.
+read_h5ad <- function(file) {
+    adata <- anndata::read_h5ad(file)
+    if (!inherits(adata, "AnnDataR6") || !is.data.frame(adata$obs) || !is.character(adata$obs_names)) {
+        cli_abort(c(
+            "Could not convert {.file {file}} to R objects.",
+            "i" = "This happens when the Python used by {.pkg reticulate} has anndata >= 0.13 or pandas >= 3.0, which the R {.pkg anndata} package does not support.",
+            "i" = "Install supported versions in that Python environment (e.g. {.code pip install \"anndata<0.13\" \"pandas<3\"}) and try again."
+        ))
+    }
+    adata
+}

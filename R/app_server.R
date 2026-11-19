@@ -64,16 +64,16 @@ app_server <- function(input, output, session) {
         if (!has_samples(dataset())) {
             available_tabs <- available_tabs[available_tabs != "Samples"]
         }
-        if (is.null(get_mc_data(dataset(), "inner_fold_mat"))) {
+        if (!has_mc_data(dataset(), "inner_fold_mat")) {
             available_tabs <- available_tabs[available_tabs != "Inner-fold"]
         }
-        if (is.null(get_mc_data(dataset(), "inner_stdev_mat"))) {
+        if (!has_mc_data(dataset(), "inner_stdev_mat")) {
             available_tabs <- available_tabs[available_tabs != "Stdev-fold"]
         }
-        if (is.null(get_mc_data(dataset(), "deviant_fold_mat"))) {
+        if (!has_mc_data(dataset(), "deviant_fold_mat")) {
             available_tabs <- available_tabs[available_tabs != "Outliers"]
         }
-        if (is.null(get_mc_data(dataset(), "type_flow"))) {
+        if (!has_mc_data(dataset(), "type_flow")) {
             available_tabs <- available_tabs[available_tabs != "Flow"]
         }
         updateCheckboxGroupInput(
@@ -119,17 +119,27 @@ app_server <- function(input, output, session) {
         }
     })
 
+    # start a tab's server once: when the tab is first opened, so tabs the user never visits don't compute
+    # anything or send data to the browser, or when another tab needs its results (globals$load_tab, e.g. the
+    # heatmaps' "Use DE genes" reads the Diff. Expression comparison)
+    loaded_tabs <- character(0)
     load_tab <- function(tab_name) {
+        if (tab_name %in% loaded_tabs) {
+            return(invisible(NULL))
+        }
+        loaded_tabs <<- c(loaded_tabs, tab_name)
         func_name <- glue("mod_{tab_name}_server")
         if (exists(func_name)) {
             module <- get(func_name)
-            module(tab_name, dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors, gene_modules = gene_modules, globals = globals)
+            # in the app's session, also when called from inside another module
+            withReactiveDomain(session, module(tab_name, dataset = dataset, metacell_types = metacell_types, cell_type_colors = cell_type_colors, gene_modules = gene_modules, globals = globals))
         } else {
             warning(paste0("Tab ", tab_name, " not found"))
         }
     }
 
-    purrr::map(tab_defs, ~ load_tab(.x$module_name))
+    globals$load_tab <- load_tab
+    observeEvent(input$tab_sidebar, load_tab(input$tab_sidebar))
 
     clipboard_reactives(dataset, input, output, session, metacell_types, cell_type_colors, gene_modules, globals)
 

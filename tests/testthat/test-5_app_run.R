@@ -8,6 +8,23 @@ test_that("app ui", {
     expect_shinytaglist(ui)
 })
 
+test_that("default genes are the two with the largest range of expression", {
+    init_config(project = project_dir)
+    load_all_data(cache_dir = project_cache_dir(project_dir))
+    config$selected_gene1 <<- NULL
+    init_selected_genes()
+
+    dataset <- dataset_ls(project_dir)[1]
+    egc <- get_mc_egc(dataset)
+    egc <- egc[!(rownames(egc) %in% c(get_mc_data(dataset, "lateral_genes"), get_mc_data(dataset, "noisy_genes"))), ]
+    if (has_atlas(dataset)) {
+        egc <- egc[rownames(egc) %in% gene_names(dataset, atlas = TRUE), ]
+    }
+    expr_range <- matrixStats::rowMaxs(egc) - matrixStats::rowMins(egc)
+    names(expr_range) <- rownames(egc)
+    expect_equal(c(default_gene1, default_gene2), names(head(sort(expr_range, decreasing = TRUE), n = 2)))
+})
+
 test_that("app server", {
     init_config(project = project_dir)
     load_all_data(cache_dir = project_cache_dir(project_dir))

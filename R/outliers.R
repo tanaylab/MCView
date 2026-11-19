@@ -1,7 +1,7 @@
 load_outliers <- function(outliers_anndata_file, project, dataset, gene_names = NULL) {
     cache_dir <- project_cache_dir(project)
     cli_alert_info("Loading anndata file: {.file {outliers_anndata_file}}")
-    outliers <- anndata::read_h5ad(outliers_anndata_file)
+    outliers <- read_h5ad(outliers_anndata_file)
     cli_alert_info("Processing outliers")
 
     # outliers_mat <- t(outliers$X)

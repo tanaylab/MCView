@@ -99,12 +99,7 @@ projection_box <- function(ns,
 
 projection_selectors <- function(ns, dataset, output, input, gene_modules, globals, session, weight = 1, atlas = FALSE) {
     observe({
-        shinyWidgets::updateVirtualSelect(
-            session = session,
-            inputId = "color_proj_gene",
-            choices = gene_names_label(dataset(), atlas = atlas),
-            selected = default_gene1
-        )
+        update_gene_select(session, "color_proj_gene", dataset(), selected = default_gene1, atlas = atlas)
 
         shinyWidgets::updateVirtualSelect(
             session = session,
@@ -179,10 +174,13 @@ projection_selectors <- function(ns, dataset, output, input, gene_modules, globa
         numericInput(ns("stroke"), label = "Stroke width", value = initial_proj_stroke(dataset()), min = 0, max = 3, step = 0.01)
     })
 
-    # Minimal edge length selector
+    # Minimal edge length selector. (graph_name() changes only when the graph does, so that the
+    # graph selector's initialization doesn't render the slider a second time)
+    graph_name <- reactiveVal("metacell")
+    observe(graph_name(input$graph_name %||% "metacell"))
     output$edge_distance_ui <- renderUI({
-        graph <- input$graph_name
-        if (is.null(graph) || graph == "metacell") {
+        graph <- graph_name()
+        if (graph == "metacell") {
             sliderInput(ns("min_edge_size"), label = "Min edge length", min = 0, max = 0.3, value = min_edge_length(dataset()), step = 0.001)
         } else {
             graph <- get_mc_data(dataset(), "metacell_graphs")[[graph]]

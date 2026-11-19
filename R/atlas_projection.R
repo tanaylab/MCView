@@ -155,6 +155,9 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
     if (!is.null(gene_names)) {
         rownames(projected_mat) <- modify_gene_names(rownames(projected_mat), gene_names)
     }
+
+    # projected_fraction is usually ~90% non-zero
+    projected_mat <- densify_if_mostly_nonzero(projected_mat)
     serialize_shiny_data(projected_mat, "projected_mat", dataset = dataset, cache_dir = cache_dir)
 
     if (is.null(query$layers[["projected_fold"]])) {

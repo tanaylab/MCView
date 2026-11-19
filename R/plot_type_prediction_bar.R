@@ -20,9 +20,19 @@ plot_type_predictions_bar <- function(dataset, metacell_types, cell_type_colors)
                 mutate(metacell = factor(metacell, levels = rownames(fracs_mat)[ord$rows])) %>%
                 mutate(type = factor(type, levels = colnames(fracs_mat)[ord$cols]))
 
+            # Stack the bars here (first type on top) instead of with geom_col(): ggplot stacks each
+            # metacell separately, which takes ~45s for 15K metacells. Most fractions are zero.
+            # (ave() rather than a grouped mutate, which took ~0.4s for 15K metacells)
+            df_fracs <- df_fracs %>%
+                filter(fraction > 0) %>%
+                mutate(i = row_number()) %>%
+                arrange(metacell, desc(type)) %>%
+                mutate(ymax = ave(fraction, metacell, FUN = cumsum), ymin = ave(ymax, metacell, FUN = function(x) c(0, x[-length(x)]))) %>%
+                arrange(i)
+
             p_fracs <- df_fracs %>%
-                ggplot(aes(x = metacell, y = fraction, fill = type, customdata = metacell)) +
-                geom_col() +
+                ggplot(aes(x = metacell, y = (ymin + ymax) / 2, height = ymax - ymin, fill = type, customdata = metacell)) +
+                geom_tile(width = 0.9) +
                 scale_fill_manual(name = "", values = atlas_colors) +
                 theme(
                     panel.grid.minor = element_blank(),
@@ -30,6 +40,7 @@ plot_type_predictions_bar <- function(dataset, metacell_types, cell_type_colors)
                     axis.text.x = element_blank(),
                     axis.ticks.x = element_blank()
                 ) +
+                scale_x_discrete(drop = FALSE) +
                 scale_y_continuous(expand = c(0, 0)) +
                 ylab("Fraction") +
                 xlab("Metacell") +
@@ -51,5 +62,5 @@ plot_type_predictions_bar <- function(dataset, metacell_types, cell_type_colors)
             cowplot::ggdraw(p)
         },
         res = 92
-    )
+    ) %>% bindCache(req_plot_size(), dataset(), metacell_types(), cell_type_colors(), sizePolicy = plot_size_policy)
 }

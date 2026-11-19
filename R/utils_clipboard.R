@@ -1,7 +1,9 @@
 clipboard_changed_2d_reactive <- function(input, globals) {
     # We use this reactive in order to invalidate the cache only when needed
     reactive({
-        if (is.null(input$color_proj) || is.null(input$color_proj_metadata) || input$color_proj != "metadata" || input$color_proj_metadata != "Clipboard") {
+        # check color_proj first so that color_proj_metadata is read (and invalidates the
+        # plots' cache key) only when coloring by metadata
+        if (is.null(input$color_proj) || input$color_proj != "Metadata" || is.null(input$color_proj_metadata) || input$color_proj_metadata != "Clipboard") {
             return(FALSE)
         } else {
             return(globals$clipboard)

@@ -41,24 +41,63 @@ get_cached_cor <- function(gg_mc_top_cor, gene, type, exclude = NULL) {
 }
 
 calc_top_cors <- function(dataset, gene, type, data_vec, metacell_filter, exclude, atlas = FALSE) {
-    mc_egc <- get_mc_egc(dataset, atlas = atlas)
+    mc_mat <- get_mc_data(dataset, "mc_mat", atlas = atlas)
 
-    lfp <- log2(mc_egc + egc_epsilon)
+    genes <- rownames(mc_mat)
     if (!is.null(exclude)) {
-        lfp <- lfp[-which(rownames(lfp) %in% exclude), , drop = FALSE]
+        genes <- genes[!(genes %in% exclude)]
+    }
+
+    metacells <- colnames(mc_mat)
+    if (!is.null(metacell_filter)) {
+        req(metacell_filter %in% metacells)
+        metacells <- metacell_filter
     }
 
     if (!is.null(data_vec)) {
         req(!atlas)
-        cors <- tgs_cor(as.matrix(data_vec[colnames(lfp)]), t(lfp), pairwise.complete.obs = TRUE, spearman = FALSE)[1, ]
+        x <- data_vec[metacells]
     } else {
-        if (!is.null(metacell_filter)) {
-            req(metacell_filter %in% colnames(lfp))
-            lfp <- lfp[, metacell_filter, drop = FALSE]
-        }
-        cors <- tgs_cor(t(as.matrix(lfp[gene, , drop = FALSE])), t(lfp), pairwise.complete.obs = TRUE, spearman = FALSE)[1, ]
+        x <- log2(mc_mat[gene, metacells] / get_mc_sum(dataset, atlas = atlas)[metacells] + egc_epsilon)
     }
 
+    cors <- cor_log_egc(dataset, as.matrix(x), genes, metacells, atlas = atlas)[, 1]
+
+    return(select_top_cors(cors, type))
+}
+
+# Pearson correlations of each column of x (a row per metacell) with log2(egc + egc_epsilon) of every gene
+# in `genes`, over `metacells`, skipping metacells with missing values in x. Computed in chunks of genes,
+# so the full genes x metacells log2 egc matrix is never built.
+# Returns a genes x ncol(x) matrix.
+cor_log_egc <- function(dataset, x, genes, metacells, atlas = FALSE) {
+    stopifnot(nrow(x) == length(metacells))
+    mc_mat <- get_mc_data(dataset, "mc_mat", atlas = atlas)
+    mc_sum <- get_mc_sum(dataset, atlas = atlas)
+
+    complete <- rowSums(is.na(x)) == 0
+    cols <- match(metacells[complete], colnames(mc_mat))
+    all_cols <- identical(cols, seq_len(ncol(mc_mat)))
+    x <- scale(x[complete, , drop = FALSE], scale = FALSE)
+    x_norm <- sqrt(colSums(x^2))
+    # log(egc / egc_epsilon + 1), i.e. log2(egc + egc_epsilon) shifted and scaled, which doesn't change the
+    # correlation. Zero counts are exactly 0, so all-zero genes get NaN.
+    mc_scale <- 1 / (unname(mc_sum[cols]) * egc_epsilon)
+    chunk_size <- 200
+    rows <- match(genes, rownames(mc_mat))
+    cors <- do.call(rbind, lapply(split(rows, ceiling(seq_along(rows) / chunk_size)), function(chunk) {
+        # one expression without intermediate variables: R then writes the product and the log1p into
+        # the memory of the temporary subset instead of allocating a new matrix for each
+        lfp <- log1p((if (all_cols) mc_mat[chunk, , drop = FALSE] else mc_mat[chunk, cols, drop = FALSE]) * rep(mc_scale, each = length(chunk)))
+        lfp_norm <- sqrt(matrixStats::rowVars(lfp) * (nrow(x) - 1))
+        (lfp %*% x) / outer(lfp_norm, x_norm)
+    }))
+    dimnames(cors) <- list(genes, colnames(x))
+
+    return(cors)
+}
+
+select_top_cors <- function(cors, type) {
     if (type == "pos") {
         cors <- head(sort(cors, decreasing = TRUE), n = 30)
     } else if (type == "neg") {
@@ -66,7 +105,8 @@ calc_top_cors <- function(dataset, gene, type, data_vec, metacell_filter, exclud
     } else {
         cors <- c(head(sort(cors, decreasing = TRUE), n = 30), head(sort(cors), n = 30))
     }
-    df <- enframe(cors, "gene2", "cor")
+    # not enframe(): c() of two empty vectors drops their names, and enframe() then numbers the rows
+    df <- tibble(gene2 = names(cors) %||% character(0), cor = unname(cors))
 
     return(df)
 }
@@ -121,9 +161,18 @@ calc_individual_correlations <- function(dataset, genes, n_top = 30, cell_type_f
         }
     }
 
-    # Calculate correlations for each gene
+    # Correlate all input genes at once, in a single pass over the genes
+    mc_mat <- get_mc_data(dataset, "mc_mat", atlas = atlas)
+    metacells <- colnames(mc_mat)
+    if (!is.null(metacell_filter)) {
+        req(metacell_filter %in% metacells)
+        metacells <- metacell_filter
+    }
+    x <- log2(t(mc_mat[valid_genes, metacells, drop = FALSE]) / get_mc_sum(dataset, atlas = atlas)[metacells] + egc_epsilon)
+    all_cors <- cor_log_egc(dataset, x, rownames(mc_mat), metacells, atlas = atlas)
+
     results <- purrr::map_dfr(valid_genes, function(gene) {
-        cors <- calc_top_cors(dataset, gene, "both", NULL, metacell_filter, NULL, atlas = atlas)
+        cors <- select_top_cors(all_cors[, gene], "both")
 
         # Filter by threshold and take top correlations
         cors <- cors %>%
@@ -144,7 +193,8 @@ calc_individual_correlations <- function(dataset, genes, n_top = 30, cell_type_f
             mutate(
                 input_gene = gene,
                 rank = row_number(),
-                correlation_type = ifelse(cor > 0, "positive", "negative")
+                # if_else: a character column also without rows, which map_dfr then binds with the others
+                correlation_type = if_else(cor > 0, "positive", "negative")
             )
 
         return(combined_cors)
@@ -162,9 +212,7 @@ calc_individual_correlations <- function(dataset, genes, n_top = 30, cell_type_f
 #' @param threshold Minimum correlation threshold to include
 #' @return Data frame with correlation results
 calc_module_correlations <- function(dataset, genes, n_top = 30, cell_type_filter = NULL, threshold = 0, atlas = FALSE) {
-    # Get expression matrix
-    mc_egc <- get_mc_egc(dataset, atlas = atlas)
-    available_genes <- rownames(mc_egc)
+    available_genes <- rownames(get_mc_data(dataset, "mc_mat", atlas = atlas))
     valid_genes <- genes[genes %in% available_genes]
 
     if (length(valid_genes) == 0) {
@@ -188,7 +236,7 @@ calc_module_correlations <- function(dataset, genes, n_top = 30, cell_type_filte
     }
 
     # Calculate module expression as mean of constituent genes
-    module_expr <- colMeans(mc_egc[valid_genes, , drop = FALSE], na.rm = TRUE)
+    module_expr <- colMeans(get_mc_egc(dataset, genes = valid_genes, atlas = atlas), na.rm = TRUE)
 
     # Use calc_top_cors with the module expression vector
     cors <- calc_top_cors(dataset, "module", "both", module_expr, metacell_filter, valid_genes, atlas = atlas)
@@ -222,7 +270,7 @@ calc_module_correlations <- function(dataset, genes, n_top = 30, cell_type_filte
 #' @return Data frame with gene-gene correlation results
 calc_gene_gene_correlations <- function(dataset, genes, cell_type_filter = NULL, threshold = 0, atlas = FALSE) {
     # Get expression matrix
-    mc_egc <- get_mc_egc(dataset, atlas = atlas)
+    mc_egc <- get_mc_egc(dataset, genes = genes, atlas = atlas)
     available_genes <- rownames(mc_egc)
     valid_genes <- genes[genes %in% available_genes]
 
@@ -296,7 +344,7 @@ plot_correlation_heatmap <- function(correlation_results, input_genes, dataset,
     }
 
     # Get expression matrix for these genes
-    mc_egc <- get_mc_egc(dataset)
+    mc_egc <- get_mc_egc(dataset, genes = all_genes)
     genes_in_data <- intersect(all_genes, rownames(mc_egc))
 
     if (length(genes_in_data) < 2) {

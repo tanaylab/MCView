@@ -224,6 +224,10 @@ mod_mc_mc_server <- function(id, dataset, metacell_types, cell_type_colors, gene
             metacell_click_observer("gene_time_mc_plot2", session)
 
             # Output priorities
+            # the comparison needs the two pickers, also when another tab started this module (globals$load_tab)
+            # while the tab is hidden
+            outputOptions(output, "metacell1_select", suspendWhenHidden = FALSE)
+            outputOptions(output, "metacell2_select", suspendWhenHidden = FALSE)
             outputOptions(output, "plot_mc_proj_2d", priority = 6)
             outputOptions(output, "plot_mc_mc_gene_scatter", priority = 5)
         }
@@ -344,7 +348,7 @@ metacell_selectors <- function(input, output, session, dataset, ns, metacell_nam
     # Select metacell / cell type when clicking on it
     observeEvent(plotly::event_data("plotly_click", source = "proj_mc_plot"), {
         el <- plotly::event_data("plotly_click", source = "proj_mc_plot")
-        metacell <- el$customdata
+        metacell <- plotly_event_ids(el)
         req(input$proj_select_main)
 
         if (input$mode == "MCs") {
@@ -539,7 +543,7 @@ group_selectors <- function(input, output, session, dataset, ns, groupA, groupB,
     observeEvent(plotly::event_data("plotly_selected", source = "proj_mc_plot"), {
         el <- plotly::event_data("plotly_selected", source = "proj_mc_plot")
 
-        selected_metacells <- unique(el$customdata)
+        selected_metacells <- unique(plotly_event_ids(el))
         req(input$mode == "Groups")
 
         if (input$proj_select_main == "Group A") {

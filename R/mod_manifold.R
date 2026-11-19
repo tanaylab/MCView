@@ -43,7 +43,19 @@ mod_manifold_sidebar_ui <- function(id) {
                 shinyWidgets::actionGroupButtons(ns("reset"), labels = "Restore default", size = "sm")
             ),
             tags$hr(),
-            uiOutput(ns("add_genes_ui")),
+            # the gene choices are set by the server (see update_gene_select)
+            shinyWidgets::virtualSelectInput(ns("genes_to_add"),
+                label = "Add genes",
+                choices = NULL,
+                selected = c(),
+                multiple = TRUE,
+                showSelectedOptionsFirst = TRUE,
+                search = TRUE,
+                markSearchResults = TRUE,
+                searchByStartsWith = TRUE,
+                disableSelectAll = TRUE
+            ),
+            shinyWidgets::actionGroupButtons(ns("add_genes"), labels = "Add genes", size = "sm"),
             div(
                 title = "List of genes currently used as anchors for the 2D projection. These genes define the main axes of variation. Select genes to highlight or remove them.",
                 style = "cursor: help;",
@@ -186,19 +198,44 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
             observeEvent(input$recompute, {
                 req(globals$anchor_genes)
                 showNotification("Recomputing 2D projection")
-                mc_egc <- get_mc_egc(dataset())
-
-                mc2d <- compute_umap(mc_egc, globals$anchor_genes,
+                # reactive values can't be read inside the future
+                ds <- dataset()
+                anchors <- globals$anchor_genes
+                p <- list(
                     n_neighbors = input$n_neighbors, min_dist = input$min_dist,
                     n_epoch = input$n_epoch, min_log_expr = input$min_log_expr,
                     genes_per_anchor = input$genes_per_anchor, random_seed = input$random_seed
                 )
-                if (is.null(mc2d)) {
-                    showNotification("Recomputing 2D projection failed", type = "error")
-                }
-                req(mc2d)
-                globals$mc2d <- mc2d
-                shinyjs::show("reset")
+                # read them here if they weren't read yet, rather than in each forked process:
+                # qs2 reads with TBB threads, and TBB doesn't support starting them after a fork
+                get_mc_data(ds, "mc_mat")
+                get_mc_data(ds, "mc_sum")
+
+                # UMAP takes from seconds to minutes. Run it in a forked process (future::multicore,
+                # set in run_app) so it doesn't block the other sessions of the app. Shiny holds the
+                # later inputs of this session until it's done, so a click meanwhile would start
+                # another recompute afterwards: disable the button.
+                shinyjs::disable("recompute")
+                # seed = NULL: compute_umap sets its own seed, so don't let future warn ("UNRELIABLE VALUE")
+                # that the future used random numbers
+                future_promise({
+                    compute_umap(get_mc_egc(ds), anchors,
+                        n_neighbors = p$n_neighbors, min_dist = p$min_dist,
+                        n_epoch = p$n_epoch, min_log_expr = p$min_log_expr,
+                        genes_per_anchor = p$genes_per_anchor, random_seed = p$random_seed
+                    )
+                }, seed = NULL) %...>% (function(mc2d) {
+                    if (is.null(mc2d)) {
+                        showNotification("Recomputing 2D projection failed", type = "error")
+                        return()
+                    }
+                    globals$mc2d <- mc2d
+                    shinyjs::show("reset")
+                }) %...!% (function(e) {
+                    # without this, shiny closes the session on the error
+                    showNotification(paste("Recomputing 2D projection failed:", conditionMessage(e)), type = "error")
+                }) %>%
+                    promises::finally(function() shinyjs::enable("recompute"))
             })
 
             observeEvent(input$reset, {
@@ -211,22 +248,8 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 updateSelectInput(session, "selected_anchor_genes", choices = globals$anchor_genes, label = glue("Anchor Genes ({length(globals$anchor_genes)})"))
             })
 
-            output$add_genes_ui <- renderUI({
-                gene_choices <- gene_names(dataset())
-                tagList(
-                    shinyWidgets::virtualSelectInput(ns("genes_to_add"),
-                        label = "Add genes",
-                        choices = gene_choices,
-                        selected = c(),
-                        multiple = TRUE,
-                        showSelectedOptionsFirst = TRUE,
-                        search = TRUE,
-                        markSearchResults = TRUE,
-                        searchByStartsWith = TRUE,
-                        disableSelectAll = TRUE
-                    ),
-                    shinyWidgets::actionGroupButtons(ns("add_genes"), labels = "Add genes", size = "sm")
-                )
+            observe({
+                update_gene_select(session, "genes_to_add", dataset(), plain_names = TRUE)
             })
 
             observeEvent(input$add_genes, {
@@ -361,9 +384,7 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
                     input$proj_stat,
                     input$expr_range,
                     input$lfp,
-                    input$color_proj_gene,
-                    input$color_proj_metadata,
-                    input$color_proj_gene_module,
+                    proj_color_var(input),
                     clipboard_changed(),
                     input$graph_name,
                     input$legend_orientation,

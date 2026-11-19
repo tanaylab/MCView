@@ -159,7 +159,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                     input_ok <- FALSE
                 }
 
-                metacells <- get_metacell_ids(project, dataset())
+                metacells <- colnames(get_mc_data(dataset(), "mc_mat"))
 
                 unknown_metacells <- new_metacell_types$metacell[!(new_metacell_types$metacell %in% metacells)]
                 if (length(unknown_metacells) > 0) {
@@ -236,6 +236,13 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
 
             # keep the last cell type that was chosen in order for it to be defaultly selected
             last_chosen_cell_type <- reactiveVal("(Missing)")
+
+            # a dataset switch starts over, as when the tab is first opened on that dataset: all of its cell types are
+            # shown (scatter_box_outputs sets them when NULL) and no metacells are selected
+            observeEvent(dataset(), ignoreInit = TRUE, {
+                selected_cell_types(NULL)
+                selected_metacell_types(tibble(metacell = character(), cell_type = character()))
+            })
 
             observeEvent(input$reset_metacell_types, {
                 metacell_types(get_metacell_types_data(dataset()))
@@ -862,7 +869,7 @@ observe_mc_click_event <- function(source, input, session, cell_type_colors, met
     observeEvent(plotly::event_data("plotly_click", source = source), {
         el <- plotly::event_data("plotly_click", source = source)
 
-        selected_metacell <- el$customdata
+        selected_metacell <- plotly_event_ids(el)
 
         new_selected_annot <- metacell_types() %>% filter(metacell == selected_metacell)
 
@@ -881,7 +888,7 @@ observer_mc_select_event <- function(source, input, cell_type_colors, metacell_t
     observeEvent(plotly::event_data("plotly_selected", source = source), {
         el <- plotly::event_data("plotly_selected", source = source)
 
-        selected_metacells <- unique(el$customdata)
+        selected_metacells <- unique(plotly_event_ids(el))
 
         new_selected_annot <- metacell_types() %>% filter(metacell %in% selected_metacells)
         if (!is.null(input$add_to_selection) && input$add_to_selection) {

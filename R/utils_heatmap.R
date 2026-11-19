@@ -161,7 +161,29 @@ heatmap_sidebar <- function(id, ..., show_fitted_filter = FALSE) {
             style = "cursor: help;",
             shinyWidgets::actionGroupButtons(ns("remove_genes"), labels = "Remove selected genes", size = "sm")
         )
-        add_genes_ui <- uiOutput(ns("add_genes_ui"))
+        # the gene choices are set by the server
+        add_genes_ui <- tagList(
+            div(
+                title = "Search and select additional genes to add to the current heatmap display",
+                style = "cursor: help;",
+                shinyWidgets::virtualSelectInput(ns("genes_to_add"),
+                    label = "Add genes",
+                    choices = NULL,
+                    selected = c(),
+                    multiple = TRUE,
+                    showSelectedOptionsFirst = TRUE,
+                    search = TRUE,
+                    markSearchResults = TRUE,
+                    searchByStartsWith = TRUE,
+                    disableSelectAll = TRUE
+                )
+            ),
+            div(
+                title = "Add the selected genes to the heatmap display",
+                style = "cursor: help; display: inline-block;",
+                shinyWidgets::actionGroupButtons(ns("add_genes"), labels = "Add genes", size = "sm")
+            )
+        )
         update_genes_ui <- div(
             title = "Recalculate which genes to display based on current filters and settings",
             style = "cursor: help;",
@@ -308,15 +330,22 @@ heatmap_sidebar <- function(id, ..., show_fitted_filter = FALSE) {
 }
 
 heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metacell_types, cell_type_colors, globals, markers, lfp_range, mode, metacell_filter, mat) {
+    # separate observers, so that changing the markers or the checkboxes below doesn't reset
+    # the order inputs (which recomputes the heatmap)
     observe({
         choices <- markers()
         if (!is.null(choices)) {
             names(choices) <- gene_label(choices, dataset())
             updateSelectInput(session, "selected_marker_genes", choices = choices)
         }
+    })
+
+    observe({
         shinyWidgets::updateVirtualSelect(session = session, inputId = "metadata_order_var", choices = c("Hierarchical-Clustering", dataset_metadata_fields_numeric(dataset())), selected = "Hierarchical-Clustering")
         shinyWidgets::updateVirtualSelect(session = session, inputId = "metadata_order_cell_type_var", choices = c("Hierarchical-Clustering", "Colors table", dataset_metadata_fields_numeric(dataset())), selected = "Hierarchical-Clustering")
+    })
 
+    observe({
         shinyjs::toggle(id = "metadata_order_cell_type_var", condition = input$force_cell_type)
         shinyjs::toggle(id = "categorical_filter_ui", condition = input$enable_categorical_filter)
     })
@@ -394,13 +423,34 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
         }
     })
 
-    observeEvent(input$use_de_genes, {
+    use_de_genes <- function() {
         if (!is.null(globals$significant_genes) && length(globals$significant_genes) > 0) {
             markers(globals$significant_genes)
             showNotification(glue("Updated markers with {length(globals$significant_genes)} significant genes from current Diff. Expression comparison"), type = "message")
         } else {
             showNotification("No significant genes available in the current Diff. Expression comparison.", type = "warning")
         }
+    }
+
+    # The comparison is computed by the Diff. Expression tab's server, which starts when that tab is first opened.
+    # If it hasn't started, start it and use its genes once they are computed (only shortly after the click, so
+    # that the markers don't change long after it).
+    de_genes_requested_at <- reactiveVal(NULL)
+    observeEvent(input$use_de_genes, {
+        if (is.null(globals$significant_genes) && is.function(globals$load_tab)) {
+            de_genes_requested_at(Sys.time())
+            showNotification("Computing the Diff. Expression comparison...", type = "message")
+            globals$load_tab("mc_mc")
+        } else {
+            use_de_genes()
+        }
+    })
+    observeEvent(globals$significant_genes, {
+        req(de_genes_requested_at())
+        requested_at <- de_genes_requested_at()
+        de_genes_requested_at(NULL)
+        req(difftime(Sys.time(), requested_at, units = "secs") < 60)
+        use_de_genes()
     })
 
     observeEvent(input$update_genes, {
@@ -482,7 +532,9 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
         shinyWidgets::updateVirtualSelect(session = session, inputId = "genes_to_add", selected = c())
     })
 
-    output$add_genes_ui <- renderUI({
+    # choices of the "Add genes" picker of heatmap_sidebar (which the light version doesn't have)
+    observe({
+        req(!config$light_version)
         if (mode %in% c("Inner", "Outliers", "Stdev")) {
             if (mode == "Inner") {
                 mc_fp <- get_mc_data(dataset(), "inner_fold_mat")
@@ -495,33 +547,10 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
             gene_choices <- rownames(mc_fp)[Matrix::rowSums(mc_fp) > 0]
             req(markers)
             gene_choices <- gene_choices[!(gene_choices %in% markers())]
+            shinyWidgets::updateVirtualSelect(session = session, inputId = "genes_to_add", choices = gene_choices, selected = character(0))
         } else {
-            gene_choices <- gene_names(dataset())
+            update_gene_select(session, "genes_to_add", dataset(), plain_names = TRUE)
         }
-
-
-        tagList(
-            div(
-                title = "Search and select additional genes to add to the current heatmap display",
-                style = "cursor: help;",
-                shinyWidgets::virtualSelectInput(ns("genes_to_add"),
-                    label = "Add genes",
-                    choices = gene_choices,
-                    selected = c(),
-                    multiple = TRUE,
-                    showSelectedOptionsFirst = TRUE,
-                    search = TRUE,
-                    markSearchResults = TRUE,
-                    searchByStartsWith = TRUE,
-                    disableSelectAll = TRUE
-                )
-            ),
-            div(
-                title = "Add the selected genes to the heatmap display",
-                style = "cursor: help; display: inline-block;",
-                shinyWidgets::actionGroupButtons(ns("add_genes"), labels = "Add genes", size = "sm")
-            )
-        )
     })
 
     observeEvent(input$add_genes, {
@@ -540,6 +569,13 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
             metacell_filter <- reactiveVal()
             selected_metacells <- reactiveVal()
 
+            # These inputs are NULL until they are initialized. Treat that as their defaults, so
+            # that their initialization doesn't recompute the heatmap.
+            mat_value <- reactiveVal("Global")
+            observe(mat_value(input$mat_value %||% "Global"))
+            metadata_order <- reactiveVal("Hierarchical-Clustering")
+            observe(metadata_order(if (isTruthy(input$metadata_order_var)) input$metadata_order_var else "Hierarchical-Clustering"))
+
             # Applied parameters for batched heatmap updates
             applied_params <- reactiveVal()
 
@@ -550,6 +586,13 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                 showModal(create_heatmap_help_modal(mode))
             })
 
+
+            # Only Local enrichment depends on the zoom. In Global mode the zoom is applied when plotting
+            # (filter_heatmap_by_metacell), so zooming reuses the cached matrix and keeps its column order.
+            # A plain function and not a reactive, so that mat() does not depend on the zoom at all in Global mode.
+            zoom_metacells <- function() {
+                if (mat_value() == "Local") metacell_filter()
+            }
 
             mat <- reactive({
                 req(markers())
@@ -568,10 +611,10 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     force_cell_type = applied_params()$force_cell_type %||% TRUE,
                     mode = mode,
                     notify_var_genes = TRUE,
-                    metadata_order = input$metadata_order_var,
+                    metadata_order = metadata_order(),
                     cell_type_metadata_order = applied_params()$metadata_order_cell_type_var,
-                    recalc = input$mat_value == "Local",
-                    metacells = metacell_filter()
+                    recalc = mat_value() == "Local",
+                    metacells = zoom_metacells()
                 )
 
 
@@ -605,7 +648,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                 }
 
                 return(m)
-            }) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), markers(), gene_modules(), applied_params(), genes(), input$show_genes, clipboard_changed(), mode, input$metadata_order_var, metacell_filter(), input$mat_value)
+            }) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), markers(), gene_modules(), applied_params(), genes(), input$show_genes, clipboard_changed(), mode, metadata_order(), zoom_metacells(), mat_value())
 
             output$download_matrix <- downloadHandler(
                 filename = function() {
@@ -686,6 +729,19 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     style = "cursor: help;",
                     metadata_selector(dataset, ns, id = "selected_md", label = "Metadata", metadata_id = "metadata", additional_fields = "Clipboard")
                 )
+            })
+
+            # A dataset switch starts the heatmap over, as when the tab is first opened on that dataset. Otherwise the
+            # applied cell types are those of the previous dataset, and mat() waits forever for them to all be in
+            # cell_type_colors(); so are the zoom and the genes. The gene modules heatmap gets its "markers" (the shown
+            # modules) from its picker. Runs before the outputs, so that they don't compute the old parameters.
+            observeEvent(dataset(), ignoreInit = TRUE, priority = 1, {
+                applied_params(NULL)
+                metacell_filter(NULL)
+                selected_metacells(NULL)
+                if (mode != "Gene modules") {
+                    markers(NULL)
+                }
             })
 
             # Initialize applied_params with default values
@@ -881,7 +937,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     cowplot::ggdraw(legend)
                 },
                 res = 96
-            ) %>% bindCache(id, dataset(), cell_type_colors(), input$plot_legend, input$plot_cell_type_legend, input$plot_genes_legend)
+            ) %>% bindCache(req_plot_size(), id, dataset(), cell_type_colors(), input$plot_legend, input$plot_cell_type_legend, input$plot_genes_legend, sizePolicy = plot_size_policy)
 
             # We use this reactive in order to invalidate the cache only when input$filter_by_clipboard is TRUE
             clipboard_changed <- reactive({
@@ -955,10 +1011,10 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     )
 
                     # we are returning the gtable and ggplot object separatly in order to allow shiny to infer positions correctly.
-                    return(structure(list(p = res$p, gtable = res$gtable), class = "gt_custom"))
+                    return(structure(list(p = res$p, build = res$build, gtable = res$gtable), class = "gt_custom"))
                 },
                 res = 96
-            ) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), gene_modules(), lfp_range(), metacell_filter(), input$plot_legend, input$plot_cell_type_legend, input$plot_genes_legend, applied_params(), markers(), clipboard_changed(), input$high_color, input$low_color, input$mid_color, input$midpoint, genes(), input$show_genes, highlighted_genes(), input$highlight_color, input$max_gene_num, input$metadata_order_var, input$mat_value)
+            ) %>% bindCache(req_plot_size(), id, dataset(), metacell_types(), cell_type_colors(), gene_modules(), lfp_range(), metacell_filter(), input$plot_legend, input$plot_cell_type_legend, input$plot_genes_legend, applied_params(), markers(), clipboard_changed(), input$high_color, input$low_color, input$mid_color, input$midpoint, genes(), input$show_genes, highlighted_genes(), input$highlight_color, input$max_gene_num, metadata_order(), mat_value(), sizePolicy = plot_size_policy)
 
             observeEvent(input$heatmap_brush, {
                 req(input$brush_action)
@@ -1090,7 +1146,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
 #' @export print.gt_custom
 #' @export
 print.gt_custom <- function(x) {
-    build <- ggplot_build(x$p)
+    build <- x$build %||% ggplot_build(x$p)
 
     grid::grid.newpage()
     grid::grid.draw(x$gtable)

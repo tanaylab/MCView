@@ -58,25 +58,63 @@ init_defs <- function() {
 init_selected_genes <- function() {
     # if selected genes are not set - choose them from the first dataset
     if (is.null(config$selected_gene1) || is.null(config$selected_gene2)) {
-        mc_egc <- get_mc_egc(dataset_ls(project)[1])
-        if (has_atlas(dataset_ls(project)[1])) {
-            mc_egc_atlas <- get_mc_egc(dataset_ls(project)[1], atlas = TRUE)
-            mc_egc <- mc_egc[intersect(rownames(mc_egc), rownames(mc_egc_atlas)), ]
-        }
+        dataset <- dataset_ls(project)[1]
+        mc_mat <- get_mc_data(dataset, "mc_mat")
 
-        f <- rep(TRUE, nrow(mc_egc))
-        lateral_genes <- get_mc_data(dataset_ls(project)[1], "lateral_genes")
+        # filter rows with `rows =` below instead of copying the (genes x metacells) matrix
+        f <- rep(TRUE, nrow(mc_mat))
+        if (has_atlas(dataset)) {
+            f <- rownames(mc_mat) %in% gene_names(dataset, atlas = TRUE)
+        }
+        lateral_genes <- get_mc_data(dataset, "lateral_genes")
         if (!is.null(lateral_genes)) {
-            f <- f & !(rownames(mc_egc) %in% lateral_genes)
+            f <- f & !(rownames(mc_mat) %in% lateral_genes)
         }
-        noisy_genes <- get_mc_data(dataset_ls(project)[1], "noisy_genes")
+        noisy_genes <- get_mc_data(dataset, "noisy_genes")
         if (!is.null(noisy_genes)) {
-            f <- f & !(rownames(mc_egc) %in% noisy_genes)
+            f <- f & !(rownames(mc_mat) %in% noisy_genes)
         }
-        mc_egc <- mc_egc[f, ]
 
-        minmax <- matrixStats::rowMaxs(mc_egc, na.rm = TRUE) - matrixStats::rowMins(mc_egc, na.rm = TRUE)
-        names(minmax) <- rownames(mc_egc)
+        # choose the 2 genes with the largest range (max - min) of expression over the metacells.
+        # Computing the expression of every gene in every metacell takes 20 s on 30K metacells.
+        # Instead, bound each gene's range using its range of UMIs and the smallest and largest
+        # metacell sizes, and compute the expression only of the genes whose bound reaches the
+        # second largest range among the 20 genes with the highest bounds (10-1000 genes).
+        rows <- which(f)
+        mc_sum <- as.numeric(get_mc_data(dataset, "mc_sum"))
+        # both steps below run in 8 forked processes, which also free their memory when they exit
+        cores <- if (.Platform$OS.type == "windows") 1 else 8
+        # mclapply gives NULL (with a warning) for a process that was killed, e.g. out of memory, and a
+        # try-error for one that failed: compute those in this process. n: the length of each result.
+        mclapply_or_here <- function(X, FUN, n) {
+            res <- parallel::mclapply(X, FUN, mc.cores = cores)
+            failed <- !purrr::map2_lgl(res, n, ~ is.numeric(.x) && NROW(.x) == .y)
+            res[failed] <- lapply(X[failed], FUN)
+            res
+        }
+
+        # range of UMIs of each gene, over 8 blocks of metacells (2.7 s -> 0.45 s on 30K metacells)
+        blocks <- split(seq_len(ncol(mc_mat)), cut(seq_len(ncol(mc_mat)), 8, labels = FALSE))
+        umis <- mclapply_or_here(blocks, function(cols) {
+            matrixStats::rowRanges(mc_mat, rows = rows, cols = cols, na.rm = TRUE)
+        }, length(rows))
+        umis <- cbind(do.call(pmin, lapply(umis, function(x) x[, 1])), do.call(pmax, lapply(umis, function(x) x[, 2])))
+        sizes <- range(mc_sum)
+        bound <- pmax(umis[, 2] / sizes[1], umis[, 2] / sizes[2]) - pmin(umis[, 1] / sizes[1], umis[, 1] / sizes[2])
+
+        expr_range <- function(i) {
+            # 100 genes at a time: the expression of all the genes takes as much memory as mc_mat
+            chunks <- split(rows[i], ceiling(seq_along(i) / 100))
+            unlist(mclapply_or_here(chunks, function(genes) {
+                mc_egc <- mc_mat[genes, , drop = FALSE] / rep(mc_sum, each = length(genes))
+                matrixStats::rowMaxs(mc_egc, na.rm = TRUE) - matrixStats::rowMins(mc_egc, na.rm = TRUE)
+            }, lengths(chunks)), use.names = FALSE)
+        }
+        top <- head(order(bound, decreasing = TRUE), n = 20)
+        candidates <- which(bound >= min(head(sort(expr_range(top), decreasing = TRUE), n = 2)))
+
+        minmax <- expr_range(candidates)
+        names(minmax) <- rownames(mc_mat)[rows[candidates]]
         genes <- names(head(sort(minmax, decreasing = TRUE), n = 2))
     }
 

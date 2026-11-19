@@ -14,6 +14,7 @@
 #' @importFrom rlang has_name
 #' @importFrom glue glue
 #' @importFrom promises %...>%
+#' @importFrom promises %...!%
 #' @importFrom promises future_promise
 #' @importFrom shiny shinyApp
 #' @importFrom golem with_golem_options

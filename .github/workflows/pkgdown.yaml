@@ -35,7 +35,9 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libcurl4-openssl-dev libharfbuzz-dev libfribidi-dev
+          # libgit2: the gert binary from Posit Package Manager links it, and
+          # pkgdown loads gert when building the reference pages.
+          sudo apt-get install -y libcurl4-openssl-dev libharfbuzz-dev libfribidi-dev libgit2-dev
 
       - name: Install BiocManager and set version
         run: |

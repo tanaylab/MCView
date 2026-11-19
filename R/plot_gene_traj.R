@@ -1,6 +1,7 @@
 calc_mc_egc_t <- function(dataset, metacell, genes = NULL) {
     mct_probs_trans <- get_mc_data(dataset, "mct_probs_trans")
-    mc_egc <- get_mc_egc(dataset)
+    mc_mat <- get_mc_data(dataset, "mc_mat")
+    mc_sum <- get_mc_sum(dataset)
 
     flow_prob <- mct_probs_trans[[metacell]]$probs
 
@@ -16,11 +17,11 @@ calc_mc_egc_t <- function(dataset, metacell, genes = NULL) {
     }
     flow_prob_n <- t(t(flow_prob_f) / colSums(flow_prob_f))
 
-    if (is.null(genes)) {
-        egc_t <- mc_egc %*% flow_prob_n
-    } else {
-        egc_t <- mc_egc[genes, ] %*% flow_prob_n
+    # egc %*% flow_prob_n == mc_mat %*% (flow_prob_n / mc_sum), without building the full egc matrix
+    if (!is.null(genes)) {
+        mc_mat <- mc_mat[genes, ]
     }
+    egc_t <- mc_mat %*% (flow_prob_n / mc_sum)
 
 
     return(egc_t)

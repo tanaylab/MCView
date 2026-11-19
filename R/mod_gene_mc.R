@@ -97,9 +97,7 @@ mod_gene_mc_server <- function(id, dataset, metacell_types, cell_type_colors, ge
                     input$proj_stat,
                     input$expr_range,
                     input$lfp,
-                    input$color_proj_gene,
-                    input$color_proj_metadata,
-                    input$color_proj_gene_module,
+                    proj_color_var(input),
                     clipboard_changed(),
                     input$graph_name,
                     input$legend_orientation,
@@ -136,7 +134,7 @@ mod_gene_mc_plotly_observers <- function(input, session, source = "mc_mc_plot", 
     observeEvent(plotly::event_data("plotly_click", source = source), {
         el <- plotly::event_data("plotly_click", source = source)
 
-        gene <- el$customdata
+        gene <- plotly_event_ids(el)
         req(input$x_axis_type == "Gene")
         shinyWidgets::updatePickerInput(session, "x_axis_var", selected = gene)
         showNotification(glue("Selected {gene}{notification_suffix}"))
@@ -292,9 +290,9 @@ atlas_gene_gene <- function(input, output, session, dataset, metacell_types, cel
             x_limits = x_limits,
             y_limits = y_limits,
             fixed_limits = input$atlas_gene_gene_fixed_limits,
-            xyline = input$atlas_gene_gene_xyline %||% FALSE
+            xyline = input$atlas_gene_gene_xyline %||% FALSE,
+            source = "atlas_md_md_plot"
         ) %>%
-            plotly::ggplotly(tooltip = "tooltip_text", source = "atlas_md_md_plot") %>%
             sanitize_for_WebGL() %>%
             plotly::toWebGL() %>%
             sanitize_plotly_buttons() %>%

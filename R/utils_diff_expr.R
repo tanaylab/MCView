@@ -14,7 +14,19 @@ calc_diff_expr <- function(mat, egc, columns, diff_thresh = 1.5, pval_thresh = 0
     if (nrow(m) > 0) {
         tots <- colSums(m)
 
-        pvals <- apply(m, 1, function(x) suppressWarnings(stats::chisq.test(matrix(c(x, tots), nrow = 2))$p.value))
+        # chisq.test(matrix(c(m[i, ], tots), nrow = 2))$p.value of every row i (with Yates' continuity
+        # correction), computed for all rows at once: calling chisq.test per gene took ~0.3s for 3K
+        # genes. The sums are rowSums of the cells in the order chisq.test sums them, so the p-values
+        # are the same to the last bit. Unlike chisq.test, this doesn't stop on the tiny negative
+        # values (down to -1e-5) of projected counts.
+        x <- cbind(m[, 1], m[, 2], tots[1], tots[2]) # the cells of each table, column by column
+        n <- rowSums(x)
+        sr <- cbind(rowSums(x[, c(1, 3), drop = FALSE]), rowSums(x[, c(2, 4), drop = FALSE]))
+        sc <- cbind(rowSums(x[, c(1, 2), drop = FALSE]), rowSums(x[, c(3, 4), drop = FALSE]))
+        e <- cbind(sr[, 1] * sc[, 1], sr[, 2] * sc[, 1], sr[, 1] * sc[, 2], sr[, 2] * sc[, 2]) / n
+        d <- abs(x - e)
+        yates <- pmin(0.5, d[, 1], d[, 2], d[, 3], d[, 4])
+        pvals <- stats::pchisq(rowSums((d - yates)^2 / e), 1, lower.tail = FALSE)
 
         df[f, ]$pval <- pvals
     }
@@ -66,7 +78,7 @@ calc_mc_mc_gene_df <- function(dataset, metacell1, metacell2, diff_thresh = 1.5,
 #' @noRd
 calc_ct_ct_gene_df <- function(dataset, cell_type1, cell_type2, metacell_types, diff_thresh = 1.5, pval_thresh = 0.01) {
     mat <- get_cell_types_mat(c(cell_type1, cell_type2), metacell_types, dataset)
-    egc <- get_cell_types_egc(c(cell_type1, cell_type2), metacell_types, dataset) + egc_epsilon
+    egc <- get_cell_types_egc(c(cell_type1, cell_type2), metacell_types, dataset, mat = mat) + egc_epsilon
 
     df <- calc_diff_expr(mat, egc, c(cell_type1, cell_type2), diff_thresh, pval_thresh)
 
@@ -81,8 +93,9 @@ calc_ct_ct_gene_df <- function(dataset, cell_type1, cell_type2, metacell_types, 
 #'
 #' @noRd
 calc_samp_samp_gene_df <- function(dataset, samp1, samp2, metacell_types, cell_types, diff_thresh = 1.5, pval_thresh = 0.01) {
-    mat <- get_samples_mat(cell_types, metacell_types, dataset)
-    egc <- get_samples_egc(cell_types, metacell_types, dataset) + egc_epsilon
+    samples <- unique(c(samp1, samp2))
+    mat <- get_samples_mat(cell_types, metacell_types, dataset, samples = samples)
+    egc <- get_samples_egc(cell_types, metacell_types, dataset, samples = samples) + egc_epsilon
 
     df <- calc_diff_expr(mat, egc, c(samp1, samp2), diff_thresh, pval_thresh)
 
@@ -99,8 +112,9 @@ calc_obs_exp_mc_df <- function(dataset, metacell, diff_thresh = 1.5, pval_thresh
     exp_egc <- get_metacells_egc(metacell, dataset, projected = TRUE) + egc_epsilon
 
     genes <- intersect(rownames(obs_mat), rownames(exp_mat))
-    mat <- as.matrix(data.frame(Observed = obs_mat[genes, 1], Projected = exp_mat[, 1]))
-    egc <- as.matrix(data.frame(Observed = obs_egc[genes, 1], Projected = exp_egc[, 1]))
+    # the counts of the chosen metacell (this used the first metacell of the dataset)
+    mat <- as.matrix(data.frame(Observed = obs_mat[genes, metacell], Projected = exp_mat[genes, metacell]))
+    egc <- as.matrix(data.frame(Observed = obs_egc[genes, 1], Projected = exp_egc[genes, 1]))
 
     df <- calc_diff_expr(mat, egc, c("Observed", "Projected"), diff_thresh, pval_thresh)
 
@@ -111,8 +125,8 @@ calc_obs_exp_type_df <- function(dataset, cell_type, metacell_types, diff_thresh
     obs_mat <- get_cell_types_mat(cell_type, metacell_types, dataset, corrected = TRUE)
     exp_mat <- get_cell_types_mat(cell_type, metacell_types, dataset, projected = TRUE)
 
-    obs_egc <- get_cell_types_egc(cell_type, metacell_types, dataset, corrected = TRUE) + egc_epsilon
-    exp_egc <- get_cell_types_egc(cell_type, metacell_types, dataset, projected = TRUE) + egc_epsilon
+    obs_egc <- get_cell_types_egc(cell_type, metacell_types, dataset, mat = obs_mat, corrected = TRUE) + egc_epsilon
+    exp_egc <- get_cell_types_egc(cell_type, metacell_types, dataset, mat = exp_mat, projected = TRUE) + egc_epsilon
 
     genes <- intersect(rownames(obs_mat), rownames(exp_mat))
     mat <- as.matrix(data.frame(Observed = obs_mat[genes, 1], Projected = exp_mat[genes, 1]))

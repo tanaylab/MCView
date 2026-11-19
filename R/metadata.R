@@ -24,7 +24,7 @@ update_metadata <- function(project,
             }
 
             cli_alert_info("Reading {.file {anndata_file}}")
-            adata <- anndata::read_h5ad(anndata_file)
+            adata <- read_h5ad(anndata_file)
         }
     } else {
         adata <- NULL
@@ -424,7 +424,7 @@ cell_metadata_to_metacell_from_h5ad <- function(anndata_file, metadata_fields, f
     }
 
     cli_alert_info("Reading {.file {anndata_file}}")
-    adata <- anndata::read_h5ad(anndata_file)
+    adata <- read_h5ad(anndata_file)
 
     if (!("metacell_name" %in% colnames(adata$obs))) {
         cli_abort("h5ad object doesn't have a 'metacell_name' field.")

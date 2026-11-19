@@ -43,7 +43,6 @@ mod_atlas_ui <- function(id) {
     )
 }
 
-
 #' atlas sidebar UI Function
 #'
 #' @description A shiny Module.
@@ -65,11 +64,13 @@ mod_atlas_sidebar_ui <- function(id) {
                 status = "danger",
                 fill = TRUE
             ),
-            uiOutput(ns("gene_selector")),
-            uiOutput(ns("metadata_selector")),
-            uiOutput(ns("metacell_selector")),
+            div(id = ns("gene_selector"), shinyWidgets::virtualSelectInput(ns("color_proj_gene"), "Gene:", choices = c(), multiple = FALSE, search = TRUE, dropboxWrapper = "body", markSearchResults = TRUE, searchByStartsWith = TRUE)),
+            div(id = ns("metadata_selector"), shinyWidgets::virtualSelectInput(ns("color_proj_metadata"), "Metadata:", choices = c(), multiple = FALSE, search = TRUE, dropboxWrapper = "body")),
+            # starts hidden, so that the picker of all the query metacells is built only when coloring
+            # by "Query metacell" shows it
+            shinyjs::hidden(uiOutput(ns("metacell_selector"))),
             uiOutput(ns("cell_type_selector")),
-            uiOutput(ns("proj_gene_module_selector")),
+            div(id = ns("proj_gene_module_selector"), shinyWidgets::virtualSelectInput(ns("color_proj_gene_module"), "Gene module:", choices = c(), multiple = FALSE, search = TRUE, dropboxWrapper = "body")),
             shinyWidgets::prettyRadioButtons(
                 ns("color_by_scale"),
                 label = "Color scale:",
@@ -127,47 +128,19 @@ mod_atlas_server <- function(id, dataset, metacell_types, cell_type_colors, gene
                 )
             })
 
-            output$gene_selector <- renderUI({
-                req(dataset())
-                shinyWidgets::virtualSelectInput(
-                    ns("color_proj_gene"),
-                    "Gene:",
-                    choices = c(),
-                    multiple = FALSE,
-                    search = TRUE,
-                    dropboxWrapper = "body",
-                    markSearchResults = TRUE,
-                    searchByStartsWith = TRUE
-                )
-            })
-
-            output$metadata_selector <- renderUI({
-                req(dataset())
-                shinyWidgets::virtualSelectInput(
-                    ns("color_proj_metadata"),
-                    "Metadata:",
-                    choices = c(),
-                    multiple = FALSE,
-                    search = TRUE,
-                    dropboxWrapper = "body"
-                )
-            })
-
-            output$proj_gene_module_selector <- renderUI({
-                req(dataset())
-                shinyWidgets::virtualSelectInput(
-                    ns("color_proj_gene_module"),
-                    "Gene module:",
-                    choices = c(),
-                    multiple = FALSE,
-                    search = TRUE,
-                    dropboxWrapper = "body"
-                )
-            })
-
             output$cell_type_selector <- cell_type_selector(dataset, ns, id = "selected_cell_types", label = "Cell types", cell_type_colors = cell_type_colors, selected = "all")
 
-            output$metacell_selector <- metacell_selector(dataset, ns, id = "selected_metacell", label = "Metacell")
+            # the picker of all the query metacells is large (~700KB for 15K metacells): it starts
+            # hidden, and shiny renders a hidden output only once it is shown
+            output$metacell_selector <- renderUI({
+                metacell_names <- colnames(get_mc_data(dataset(), "mc_mat"))
+                shinyWidgets::pickerInput(ns("selected_metacell"), "Metacell",
+                    choices = metacell_names,
+                    selected = config$selected_mc1 %||% metacell_names[1],
+                    multiple = FALSE,
+                    options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "contains", dropupAuto = FALSE)
+                )
+            })
 
             observe({
                 req(input$color_proj)
@@ -180,8 +153,9 @@ mod_atlas_server <- function(id, dataset, metacell_types, cell_type_colors, gene
                 shinyjs::toggle(id = "query_threshold", condition = input$color_proj %in% c("Query metacell", "Query cell type"))
             })
 
-
-            output$plot_mc_proj_2d <- render_2d_plotly(input, output, session, dataset, atlas_metacell_types, atlas_colors, globals = globals, atlas = TRUE, query_types = metacell_types, atlas_gene_modules, source = "proj_mc_plot_proj_tab") %>% bindCache(dataset(), input$color_proj, atlas_metacell_types(), atlas_colors(), input$point_size, input$stroke, input$min_edge_size, input$set_range, input$proj_stat, input$expr_range, input$lfp, input$color_proj_gene, input$color_proj_metadata, input$selected_cell_types, input$selected_metacell, input$color_by_scale, input$query_threshold, input$color_proj_gene_module, input$graph_name, globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
+            # the query selectors are in the key only when coloring by them, so that their
+            # initialization doesn't draw the plot a second time
+            output$plot_mc_proj_2d <- render_2d_plotly(input, output, session, dataset, atlas_metacell_types, atlas_colors, globals = globals, atlas = TRUE, query_types = metacell_types, atlas_gene_modules, source = "proj_mc_plot_proj_tab") %>% bindCache(dataset(), input$color_proj, atlas_metacell_types(), atlas_colors(), metacell_types(), input$point_size, input$stroke, input$min_edge_size, input$set_range, input$proj_stat, input$expr_range, input$lfp, proj_color_var(input), if (isTRUE(input$color_proj %in% c("Query cell type", "Query metacell"))) list(input$selected_cell_types, input$selected_metacell, input$color_by_scale, input$query_threshold), input$graph_name, globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
         }
     )
 }

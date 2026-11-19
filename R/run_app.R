@@ -35,9 +35,38 @@ run_app <- function(project,
 
     future::plan(future::multicore)
 
+    # tgstat guesses whether R uses an optimized BLAS from the library's file name, which misses
+    # Debian/Ubuntu's OpenBLAS (.../openblas-pthread/libblas.so.3), and then takes a path that is
+    # ~10x slower. Check the full path instead, unless the user set the option. The option is
+    # global: it applies to every tgstat call in this R process, not only MCView's.
+    # Drop this when MCView requires tgstat >= 2.5.0 (tanaylab/tgstat#26 fixed its BLAS detection).
+    if (is.null(getOption("tgs_use.blas")) && grepl("openblas|mkl|atlas", extSoftVersion()[["BLAS"]], ignore.case = TRUE)) {
+        options(tgs_use.blas = TRUE)
+    }
+
+    # The UI depends only on the project, so build it once per process instead of on every
+    # page load. Building it here also loads shinyWidgets and shinyjqui, which register
+    # their input handlers on load: a browser that reconnects to a restarted app sends
+    # those inputs before requesting any page, and without the handlers the app crashed.
+    ui <- app_ui()
+
+    # shiny also renders the UI to HTML on every page request, which takes ~1 s for this UI.
+    # The HTML is the same for every request, so keep the first one. shiny's renderPage() is
+    # not exported: if it fails, shiny renders the page as usual, and it isn't tried again.
+    page <- NULL # FALSE once renderPage() failed
+    render_page <- function() {
+        tryCatch(
+            httpResponse(200, content = utils::getFromNamespace("renderPage", "shiny")(ui, testMode = isTRUE(getShinyOption("testmode")))),
+            error = function(e) FALSE
+        )
+    }
+
     with_golem_options(
         app = shinyApp(
-            ui = app_ui,
+            ui = function(request) {
+                page <<- page %||% render_page()
+                if (isFALSE(page)) ui else page
+            },
             server = app_server,
             options = list(port = port, host = host, launch.browser = launch.browser)
         ),

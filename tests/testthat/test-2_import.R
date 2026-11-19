@@ -17,6 +17,15 @@ test_that("dataset_ls works", {
     expect_equal(dataset_ls(project_dir), c("PBMC163k"))
 })
 
+test_that("update_default_clusterings stores the clusterings that import_dataset stores", {
+    file <- fs::path(project_dir, "cache", "PBMC163k", "default_clusterings.qs2")
+    stored <- qs2::qs_read(file)
+    update_default_clusterings(project_dir) # skips the dataset
+    fs::file_delete(file)
+    update_default_clusterings(project_dir)
+    expect_identical(qs2::qs_read(file), stored)
+})
+
 test_that("import_dataset works when project was not created yet", {
     set.seed(60427)
     MCView::import_dataset(
