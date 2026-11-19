@@ -1,3 +1,8 @@
+# MCView 0.2.64
+
+* Apps open 2 to 3 s faster when they start.
+* `MCVIEW_SHINY_CACHE_DIR` (or `shiny_cache_dir` in the config) keeps an app's plots across restarts, so it opens faster after one.
+
 # MCView 0.2.63
 
 * Projects imported before June 2023: the QC tab's max inner-fold and zero-fold plots work again, and projects imported with MCView 0.2.7 to 0.2.9 that have metadata no longer disconnect.
