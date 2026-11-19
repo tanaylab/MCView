@@ -1,5 +1,11 @@
 # Changelog
 
+## MCView 0.2.63
+
+- Projects imported before June 2023: the QC tab’s max inner-fold and
+  zero-fold plots work again, and projects imported with MCView 0.2.7 to
+  0.2.9 that have metadata no longer disconnect.
+
 ## MCView 0.2.62
 
 Performance:
