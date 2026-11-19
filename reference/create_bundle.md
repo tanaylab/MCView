@@ -84,8 +84,11 @@ create_bundle(
 - shiny_cache_dir:
 
   a path to a directory in which to store shiny cache, can be relative
-  to the bundle, e.g. "./shiny_cache". If set to TRUE, a temporary
-  directory would be set. If NULL - shiny would cache objects in memory.
+  to the bundle, e.g. "./shiny_cache". The app's next processes reuse it
+  until the project changes (see [`run_app`](run_app.md)). If set to
+  TRUE, a temporary directory would be set. If NULL - shiny would cache
+  objects in memory, or under the environment variable
+  `MCVIEW_SHINY_CACHE_DIR` when it is set.
 
 - shiny_cache_max_size:
 

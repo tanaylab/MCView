@@ -34,6 +34,8 @@ clusterings are stored in that directory instead. Apps that set the
 variable (e.g. all the apps of a shiny server) also store there every
 clustering they compute and look for clusterings there, so each
 clustering is computed once per server rather than once per app process.
+(`MCVIEW_SHINY_CACHE_DIR` keeps the apps' plots and tables across
+restarts in the same way, see [`run_app`](run_app.md).)
 
 ## Examples
 

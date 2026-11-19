@@ -86,6 +86,20 @@ run_app(
       [`enableBookmarking()`](https://rdrr.io/pkg/shiny/man/enableBookmarking.html)
       for more information on bookmarking your app.
 
+## Details
+
+The app caches the plots and tables it computes (the shiny cache), by
+default in memory, so a restarted app computes them again. When the
+project's config sets `shiny_cache_dir` to a path, or when it doesn't
+set it and the environment variable `MCVIEW_SHINY_CACHE_DIR` is set
+(e.g. for all the apps of a shiny server), the cache is also kept on
+disk, in a directory under that path that the next processes of the app
+reuse until the project changes. Directories under that path that
+weren't used for 30 days are removed. Apps that set
+`MCVIEW_CLUSTERING_CACHE_DIR` share the clusterings of their heatmaps in
+that directory (see
+[`update_default_clusterings`](update_default_clusterings.md)).
+
 ## Examples
 
 ``` r
