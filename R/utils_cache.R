@@ -74,6 +74,31 @@ load_shiny_data <- function(name, dataset, cache_dir, atlas = FALSE) {
         object <- densify_if_mostly_nonzero(object)
     }
 
+    # projects imported with MCView 0.2.7 to 0.2.9 (2023)
+    if (name == "mc_qc_metadata") {
+        if (!has_name(object, "metacell")) {
+            object <- rownames_to_column(as.data.frame(object), "metacell")
+        }
+        # the QC tab shows the max inner-fold without lateral and noisy genes by default
+        if (has_name(object, "max_inner_fold") && !has_name(object, "max_inner_fold_no_lateral") && has_mc_data(dataset, "inner_fold_mat", atlas = atlas)) {
+            mat <- get_mc_data(dataset, "inner_fold_mat", atlas = atlas)
+            excluded <- c(get_mc_data(dataset, "lateral_genes", atlas = atlas), get_mc_data(dataset, "noisy_genes", atlas = atlas))
+            mat <- mat[!(rownames(mat) %in% excluded), , drop = FALSE]
+            # densify a block of metacells at a time: the whole sparse matrix can take GBs dense
+            blocks <- split(seq_len(ncol(mat)), ceiling(seq_len(ncol(mat)) / 256))
+            maxs <- unlist(lapply(blocks, function(j) matrixStats::colMaxs(as.matrix(mat[, j, drop = FALSE]), na.rm = TRUE)), use.names = FALSE)
+            object$max_inner_fold_no_lateral <- maxs[match(object$metacell, colnames(mat))]
+        }
+    }
+    if (name == "gene_zero_fold" && !atlas && !has_name(object, "type")) {
+        object$type <- annotate_genes(object$gene, dataset)
+        if (!has_name(object, "avg")) { # log2 of the gene's mean fraction over the metacells, as import_dataset() computes it
+            mc_mat <- get_mc_data(dataset, "mc_mat")
+            avg <- log2(as.vector(mc_mat %*% (1 / get_mc_sum(dataset))) / ncol(mc_mat) + 1e-5)
+            object$avg <- avg[match(object$gene, rownames(mc_mat))]
+        }
+    }
+
     return(object)
 }
 
