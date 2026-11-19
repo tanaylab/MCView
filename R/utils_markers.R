@@ -405,7 +405,8 @@ calc_default_clusterings <- function(dataset, cache_dir) {
 #' When that directory isn't writable and the environment variable \code{MCVIEW_CLUSTERING_CACHE_DIR} is set, the
 #' clusterings are stored in that directory instead. Apps that set the variable (e.g. all the apps of a shiny
 #' server) also store there every clustering they compute and look for clusterings there, so each clustering is
-#' computed once per server rather than once per app process.
+#' computed once per server rather than once per app process. (\code{MCVIEW_SHINY_CACHE_DIR} keeps the apps' plots and
+#' tables across restarts in the same way, see \code{\link{run_app}}.)
 #'
 #' @param project path to the project directory
 #' @param overwrite recompute the clusterings of datasets that already have them

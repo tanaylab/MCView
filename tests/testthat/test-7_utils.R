@@ -197,3 +197,72 @@ test_that("caches imported with MCView 0.2.7 to 0.2.9 are read in the current fo
     expect_identical(zero_fold$type, c("lateral", "other"))
     expect_equal(zero_fold$avg, log2(c(0.25, 0.5) + 1e-5))
 })
+
+test_that("MCVIEW_SHINY_CACHE_DIR keeps a shiny cache per project version across processes", {
+    prev <- mget(c("config", "project"), envir = globalenv(), ifnotfound = list(NULL, NULL))
+    withr::defer({
+        purrr::iwalk(prev, ~ assign(.y, .x, envir = globalenv()))
+        shiny::shinyOptions(cache = NULL)
+    })
+    root <- withr::local_tempdir()
+    withr::local_envvar(MCVIEW_SHINY_CACHE_DIR = root)
+    projects <- fs::path(withr::local_tempdir(), c("a", "b"))
+    for (p in projects) {
+        fs::dir_create(fs::path(p, c("config", "cache/ds")))
+        writeLines("title: x", fs::path(p, "config", "config.yaml"))
+        writeLines("metacell\tx", fs::path(p, "cache", "ds", "mc2d.tsv"))
+    }
+    start <- function(p) { # what run_app() does for the cache
+        assign("project", p, envir = globalenv())
+        assign("config", list(), envir = globalenv())
+        config_shiny_cache()
+        shiny::getShinyOption("cache")
+    }
+    n_dirs <- function() length(list.dirs(root, recursive = FALSE))
+
+    cache <- start(projects[1])
+    cache$set("plot", list(value = 1, error = FALSE))
+    cache$set("failed", list(value = NULL, error = TRUE))
+    expect_equal(n_dirs(), 1)
+    # the next process of the same project
+    cache <- start(projects[1])
+    expect_equal(n_dirs(), 1)
+    expect_equal(cache$get("plot")$value, 1)
+    expect_true(cachem::is.key_missing(cache$get("failed"))) # errors are kept in memory only
+    # another project with the same files
+    start(projects[2])
+    expect_equal(n_dirs(), 2)
+    # a changed file
+    writeLines("metacell\tx\ty", fs::path(projects[1], "cache", "ds", "mc2d.tsv"))
+    cache <- start(projects[1])
+    expect_equal(n_dirs(), 3)
+    expect_true(cachem::is.key_missing(cache$get("plot")))
+    # the config's shiny_cache_dir comes first
+    assign("config", list(shiny_cache_dir = FALSE), envir = globalenv())
+    config_shiny_cache()
+    expect_equal(n_dirs(), 3)
+})
+
+test_that("the shiny cache directories not used for 30 days are removed", {
+    prev <- mget(c("config", "project"), envir = globalenv(), ifnotfound = list(NULL, NULL))
+    withr::defer({
+        purrr::iwalk(prev, ~ assign(.y, .x, envir = globalenv()))
+        shiny::shinyOptions(cache = NULL)
+    })
+    root <- withr::local_tempdir()
+    old <- fs::path(root, c("shiny_cache_old_1", "other"))
+    recent <- fs::path(root, "shiny_cache_recent_1")
+    fs::dir_create(c(old, recent))
+    writeLines("x", fs::path(old[1], "x.qs2"))
+    Sys.setFileTime(old, Sys.time() - 31 * 24 * 3600)
+    Sys.setFileTime(recent, Sys.time() - 29 * 24 * 3600)
+    p <- withr::local_tempdir()
+    fs::dir_create(fs::path(p, c("config", "cache")))
+    assign("project", p, envir = globalenv())
+    assign("config", list(shiny_cache_dir = root), envir = globalenv())
+    config_shiny_cache()
+    expect_false(fs::dir_exists(old[1]))
+    expect_true(fs::dir_exists(old[2])) # not a shiny cache directory
+    expect_true(fs::dir_exists(recent))
+    expect_length(list.dirs(root, recursive = FALSE), 3) # and this project's
+})

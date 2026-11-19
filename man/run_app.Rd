@@ -56,6 +56,15 @@ for more information on bookmarking your app.}
 \description{
 Load project cache and run the MCView application.
 }
+\details{
+The app caches the plots and tables it computes (the shiny cache), by default in memory, so a restarted
+app computes them again. When the project's config sets \code{shiny_cache_dir} to a path, or when it doesn't
+set it and the environment variable \code{MCVIEW_SHINY_CACHE_DIR} is set (e.g. for all the apps of a shiny
+server), the cache is also kept on disk, in a directory under that path that the next processes of the app
+reuse until the project changes. Directories under that path that weren't used for 30 days are removed.
+Apps that set \code{MCVIEW_CLUSTERING_CACHE_DIR} share the clusterings of their heatmaps in that directory
+(see \code{\link{update_default_clusterings}}).
+}
 \examples{
 \dontrun{
 MCView::run_app("PBMC")
