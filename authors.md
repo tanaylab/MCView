@@ -7,7 +7,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/tanaylab/MCView/blob/master/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/tanaylab/MCView/blob/v0.2.64/DESCRIPTION)
 
 Lifshitz A (2026). *MCView: A Shiny App for Metacell Analysis*. R
 package version 0.2.64, <https://tanaylab.github.io/MCView>.
