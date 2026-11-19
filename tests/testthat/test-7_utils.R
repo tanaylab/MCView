@@ -266,3 +266,17 @@ test_that("the shiny cache directories not used for 30 days are removed", {
     expect_true(fs::dir_exists(recent))
     expect_length(list.dirs(root, recursive = FALSE), 3) # and this project's
 })
+
+test_that("available_tabs leaves out the tabs a dataset has no data for", {
+    prev <- mget(c("mc_data", "tab_defs"), envir = globalenv(), ifnotfound = list(NULL, NULL))
+    withr::defer(purrr::iwalk(prev, ~ assign(.y, .x, envir = globalenv())))
+    init_tab_defs()
+    ds <- new.env()
+    ds$inner_fold_mat <- matrix(1)
+    assign("mc_data", list(ds = ds), envir = globalenv())
+    tabs <- available_tabs("ds")
+    expect_true(all(c("QC", "Manifold", "Inner-fold") %in% tabs))
+    expect_false(any(c("Atlas", "Query", "Projected-fold", "Samples", "Stdev-fold", "Outliers", "Flow") %in% tabs))
+    ds$atlas <- new.env()
+    expect_true(all(c("Atlas", "Query", "Projected-fold") %in% available_tabs("ds")))
+})
