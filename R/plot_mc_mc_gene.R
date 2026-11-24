@@ -121,8 +121,12 @@ diff_expr_plot_df <- function(df, input, dataset, mode, metacell_types = NULL, g
 
     if (isTRUE(input$show_only_fitted)) {
         req(metacell_types)
-        if (mode == "MC" || mode == "Group") {
+        if (mode == "MC") {
             types <- metacells_to_types(input$metacell1, metacell_types())
+        } else if (mode == "Group") {
+            # the types of the group's metacells (input$metacell1 is the metacell of the MC mode)
+            req(group)
+            types <- metacells_to_types(group(), metacell_types())
         } else if (mode == "Type") {
             types <- input$metacell1
         } else {

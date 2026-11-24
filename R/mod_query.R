@@ -299,7 +299,7 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
                 )
 
             # Differential expression
-            output$plot_mc_mc_gene_scatter <- render_mc_mc_gene_plotly(input, output, session, ns, dataset, globals, gene_modules, mc_mc_gene_scatter_df, metacell_names, atlas_colors, metacell_types = metacell_types)
+            output$plot_mc_mc_gene_scatter <- render_mc_mc_gene_plotly(input, output, session, ns, dataset, globals, gene_modules, mc_mc_gene_scatter_df, metacell_names, atlas_colors, metacell_types = metacell_types, group = group)
 
             # Select a gene when clicking on it
             plotly_click_observer("projection_diff_expr_plot", session, "axis_var", notification_prefix = "Selected ", update_function = shinyWidgets::updatePickerInput)

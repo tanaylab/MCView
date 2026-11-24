@@ -120,3 +120,21 @@ test_that("the cached diff. expression follows every input of the comparison", {
         expect_equal(scatter_df(), ab)
     })
 })
+
+test_that("'Show only fitted genes' of a group uses the cell types of the group's metacells", {
+    gene_metadata <- tibble(
+        gene = c("g1", "g2", "g3", "g4"),
+        cell_type = c("A", "B", "C", "C"),
+        fitted_gene = c(TRUE, TRUE, TRUE, FALSE)
+    )
+    with_toy_mc_data(environment(), list(gene_metadata = gene_metadata))
+    df <- tibble(gene = paste0("g", 1:5), diff = 0)
+    metacell_types <- function() tibble(metacell = c("m1", "m2", "m3"), cell_type = c("A", "B", "C"))
+    # input$metacell1 is still the metacell chosen in the MC mode
+    input <- list(show_only_fitted = TRUE, metacell1 = "m1")
+
+    expect_identical(diff_expr_plot_df(df, input, function() "toy", "Group", metacell_types, group = function() c("m2", "m3"))$gene, c("g2", "g3"))
+    expect_identical(diff_expr_plot_df(df, input, function() "toy", "MC", metacell_types)$gene, "g1")
+    expect_identical(diff_expr_plot_df(df, list(show_only_fitted = TRUE, metacell1 = "C"), function() "toy", "Type", metacell_types)$gene, "g3")
+    expect_identical(diff_expr_plot_df(df, list(show_only_fitted = FALSE), function() "toy", "Group", metacell_types)$gene, df$gene)
+})
