@@ -199,3 +199,70 @@ test_that("calc_module_correlations is unchanged for n_top <= 30, and returns n_
     new <- calc_module_correlations("toy", genes, n_top = 50)
     expect_equal(as.vector(table(new$correlation_type)), c(50L, 50L))
 })
+
+test_that("the stored top correlations of a gene are the same through the index of gg_mc_top_cor", {
+    # the implementation before: filter the whole table for every lookup
+    old_get_cached_cor <- function(gg_mc_top_cor, gene, type, exclude = NULL) {
+        df <- gg_mc_top_cor %>%
+            filter(gene1 == gene)
+        if (type %in% c("pos", "neg")) {
+            df <- df %>%
+                filter(type == !!type)
+        }
+        df <- df %>%
+            filter(gene1 != gene2)
+        if (!is.null(exclude)) {
+            df <- df %>%
+                filter(!(gene2 %in% exclude))
+        }
+        return(df)
+    }
+    old_get_top_cor_gene <- function(dataset, gene, type = "pos", atlas = FALSE, data_vec = NULL, exclude = NULL, metacell_filter = NULL) {
+        gg_mc_top_cor <- get_mc_data(dataset, "gg_mc_top_cor", atlas = atlas)
+        if (is.null(data_vec) && is.null(metacell_filter) && gene %in% gg_mc_top_cor$gene1) {
+            df <- old_get_cached_cor(gg_mc_top_cor, gene, type, exclude = exclude)
+        } else {
+            df <- calc_top_cors(dataset, gene, type, data_vec, metacell_filter, exclude, atlas = atlas)
+        }
+        df %>%
+            mutate(
+                gene2 = as.character(gene2),
+                gene_name = gene_label(gene2, dataset),
+                label = glue("{gene_name} ({cr})", cr = round(cor, digits = 2))
+            ) %>%
+            select(label, gene2) %>%
+            tibble::deframe()
+    }
+
+    mat <- toy_mc_mat()
+    genes <- rownames(mat)
+    set.seed(5)
+    # in no particular order (calc_gg_mc_top_cor doesn't sort it), with self-correlations, and without g300 as gene1
+    gg <- tibble(gene1 = rep(genes[-300], each = 8), gene2 = sample(genes, 299 * 8, replace = TRUE), cor = runif(299 * 8, -1, 1)) %>%
+        mutate(type = ifelse(cor > 0, "pos", "neg"))
+    gg$gene2[c(1, 50, 51)] <- gg$gene1[c(1, 50, 51)]
+    gg <- gg[sample(nrow(gg)), ]
+    lookups <- c("g1", "g6", "g7", "g120", "g299", "g300", "not_a_gene")
+    for (gg_mc_top_cor in list(gg, as.data.frame(gg), mutate(gg, gene1 = factor(gene1, levels = genes), gene2 = factor(gene2, levels = genes)))) {
+        local_toy_dataset(mat, gg_mc_top_cor = gg_mc_top_cor, lateral_genes = c("g3", "g10"), noisy_genes = "g10")
+        for (gene in lookups) {
+            for (type in c("pos", "neg", "both")) {
+                for (exclude in list(NULL, c("g2", "g5", gg$gene2[gg$gene1 == gene][1:2]))) {
+                    rows <- get_gg_mc_top_cor_index("toy")[[gene]]
+                    expect_identical(get_cached_cor(gg_mc_top_cor, gene, type, exclude = exclude, rows = rows), old_get_cached_cor(gg_mc_top_cor, gene, type, exclude = exclude))
+                    expect_identical(get_cached_cor(gg_mc_top_cor, gene, type, exclude = exclude), old_get_cached_cor(gg_mc_top_cor, gene, type, exclude = exclude))
+                    if (gene != "not_a_gene") { # calc_top_cors() req()s a gene of the dataset
+                        expect_identical(get_top_cor_gene("toy", gene, type = type, exclude = exclude), old_get_top_cor_gene("toy", gene, type = type, exclude = exclude))
+                    }
+                }
+            }
+        }
+        # the index is kept with the dataset
+        expect_true(exists("gg_mc_top_cor_index", envir = mc_data$toy, inherits = FALSE))
+    }
+
+    # without stored correlations
+    local_toy_dataset(mat)
+    expect_null(get_gg_mc_top_cor_index("toy"))
+    expect_identical(get_top_cor_gene("toy", "g1", type = "both"), old_get_top_cor_gene("toy", "g1", type = "both"))
+})

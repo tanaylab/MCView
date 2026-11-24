@@ -518,6 +518,28 @@ has_gg_mc_top_cor <- function(project, dataset) {
     has_mc_data(dataset, "gg_mc_top_cor")
 }
 
+# The rows of each gene in gg_mc_top_cor (a list named by gene1), or NULL without gg_mc_top_cor. Finding the rows of a
+# gene in the table (~1M rows) takes tens of ms, and the selectors of correlated genes do it several times per render,
+# so index the table once per dataset.
+get_gg_mc_top_cor_index <- function(dataset, atlas = FALSE) {
+    env <- if (atlas) mc_data[[dataset]]$atlas else mc_data[[dataset]]
+    if (is.null(env)) {
+        return(NULL)
+    }
+    index <- env[["gg_mc_top_cor_index"]]
+    if (is.null(index)) {
+        gg_mc_top_cor <- get_mc_data(dataset, "gg_mc_top_cor", atlas = atlas)
+        if (is.null(gg_mc_top_cor)) {
+            return(NULL)
+        }
+        index <- split(seq_len(nrow(gg_mc_top_cor)), gg_mc_top_cor$gene1)
+        if (is.environment(env)) {
+            assign("gg_mc_top_cor_index", index, envir = env)
+        }
+    }
+    return(index)
+}
+
 get_mc_sum <- function(dataset, atlas = FALSE) {
     mc_sum <- get_mc_data(dataset, "mc_sum", atlas = atlas)
     mc_mat <- get_mc_data(dataset, "mc_mat", atlas = atlas)

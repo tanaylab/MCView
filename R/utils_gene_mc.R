@@ -21,23 +21,23 @@ get_cell_type_colors <- function(dataset, cell_type_colors = NULL, na_color = "g
     return(res)
 }
 
-get_cached_cor <- function(gg_mc_top_cor, gene, type, exclude = NULL) {
-    df <- gg_mc_top_cor %>%
-        filter(gene1 == gene)
+# The stored top correlations of gene. rows: its rows in gg_mc_top_cor (get_gg_mc_top_cor_index), instead of
+# looking for them in the whole table.
+get_cached_cor <- function(gg_mc_top_cor, gene, type, exclude = NULL, rows = NULL) {
+    if (is.null(rows)) {
+        rows <- which(gg_mc_top_cor$gene1 == gene)
+    }
 
+    gene2 <- gg_mc_top_cor$gene2[rows]
+    keep <- gg_mc_top_cor$gene1[rows] != gene2
     if (type %in% c("pos", "neg")) {
-        df <- df %>%
-            filter(type == !!type)
+        keep <- keep & gg_mc_top_cor$type[rows] == type
     }
-
-    df <- df %>%
-        filter(gene1 != gene2)
-
     if (!is.null(exclude)) {
-        df <- df %>%
-            filter(!(gene2 %in% exclude))
+        keep <- keep & !(gene2 %in% exclude)
     }
-    return(df)
+    # slice() as filter() does
+    return(dplyr::slice(gg_mc_top_cor, rows[which(keep)]))
 }
 
 calc_top_cors <- function(dataset, gene, type, data_vec, metacell_filter, exclude, atlas = FALSE, n = 30) {
@@ -119,9 +119,12 @@ select_top_cors <- function(cors, type, n = 30) {
 }
 
 get_top_cor_gene <- function(dataset, gene, type = "pos", atlas = FALSE, data_vec = NULL, exclude = NULL, metacell_filter = NULL) {
-    gg_mc_top_cor <- get_mc_data(dataset, "gg_mc_top_cor", atlas = atlas)
-    if (is.null(data_vec) && is.null(metacell_filter) && gene %in% gg_mc_top_cor$gene1) {
-        df <- get_cached_cor(gg_mc_top_cor, gene, type, exclude = exclude)
+    rows <- NULL
+    if (is.null(data_vec) && is.null(metacell_filter)) {
+        rows <- get_gg_mc_top_cor_index(dataset, atlas = atlas)[[gene]]
+    }
+    if (length(rows) > 0) {
+        df <- get_cached_cor(get_mc_data(dataset, "gg_mc_top_cor", atlas = atlas), gene, type, exclude = exclude, rows = rows)
     } else {
         df <- calc_top_cors(dataset, gene, type, data_vec, metacell_filter, exclude, atlas = atlas)
     }
