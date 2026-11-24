@@ -40,7 +40,45 @@ get_cached_cor <- function(gg_mc_top_cor, gene, type, exclude = NULL, rows = NUL
     return(dplyr::slice(gg_mc_top_cor, rows[which(keep)]))
 }
 
+# The top correlations of a gene or a data vector (gene module, metadata field) with all the genes take ~0.1-0.5 s,
+# and the selectors of correlated genes compute them on every render (four selectors in the Genes tab, again on every
+# change of the selected cell types), in every session. Keep them with the data of the dataset, shared by all the
+# sessions and dropped when the data are loaded again, under a key of everything else they depend on.
 calc_top_cors <- function(dataset, gene, type, data_vec, metacell_filter, exclude, atlas = FALSE, n = 30) {
+    cache <- top_cors_cache(dataset, atlas = atlas)
+    if (is.null(cache)) {
+        return(calc_top_cors_uncached(dataset, gene, type, data_vec, metacell_filter, exclude, atlas = atlas, n = n))
+    }
+    key <- top_cors_key(dataset, gene, type, data_vec, metacell_filter, exclude, atlas = atlas, n = n)
+    res <- cache$get(key)
+    if (cachem::is.key_missing(res)) {
+        res <- calc_top_cors_uncached(dataset, gene, type, data_vec, metacell_filter, exclude, atlas = atlas, n = n)
+        cache$set(key, res)
+    }
+    return(res)
+}
+
+# The cache of calc_top_cors in the environment of the data of the dataset, or NULL when the data aren't in one
+top_cors_cache <- function(dataset, atlas = FALSE) {
+    env <- if (atlas) mc_data[[dataset]]$atlas else mc_data[[dataset]]
+    if (!is.environment(env)) {
+        return(NULL)
+    }
+    if (is.null(env[["top_cors_cache"]])) {
+        assign("top_cors_cache", cachem::cache_mem(max_size = 50e6), envir = env)
+    }
+    return(env[["top_cors_cache"]])
+}
+
+# The gene is used only without a data vector
+top_cors_key <- function(dataset, gene, type, data_vec, metacell_filter, exclude, atlas = FALSE, n = 30) {
+    rlang::hash(list(
+        dataset = dataset, atlas = atlas, gene = if (is.null(data_vec)) gene, data_vec = data_vec, type = type,
+        exclude = exclude, metacell_filter = metacell_filter, n = n, egc_epsilon = egc_epsilon
+    ))
+}
+
+calc_top_cors_uncached <- function(dataset, gene, type, data_vec, metacell_filter, exclude, atlas = FALSE, n = 30) {
     mc_mat <- get_mc_data(dataset, "mc_mat", atlas = atlas)
 
     genes <- rownames(mc_mat)
