@@ -571,7 +571,8 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                     metacell_types(
                         metacell_types() %>%
                             mutate(
-                                cell_type = ifelse(cell_type %in% to_delete$cell_type, NA, cell_type),
+                                # "(Missing)" and not NA: metacells without a cell type are shown and can be annotated again
+                                cell_type = ifelse(cell_type %in% to_delete$cell_type, "(Missing)", as.character(cell_type)),
                             )
                     )
                 }

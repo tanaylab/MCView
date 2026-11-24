@@ -5,8 +5,9 @@ sanitize_metacell_types <- function(metacell_types, cell_type_colors, dataset) {
         if (sum(bad_inds) > 0) {
             bad_cell_types <- unique(metacell_types$cell_type[bad_inds]) %>% paste(collapse = ", ")
             showNotification(glue("The following cell types are invalid: {bad_cell_types}"), type = "warning", duration = 10)
-            metacell_types$cell_type[bad_inds] <- NA
-            metacell_types$cell_type[bad_inds] <- NA
+            # "(Missing)" and not NA: metacells without a cell type are shown and can be annotated again
+            metacell_types$cell_type <- as.character(metacell_types$cell_type)
+            metacell_types$cell_type[bad_inds] <- "(Missing)"
         }
     }
 
