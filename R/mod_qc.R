@@ -17,9 +17,12 @@ mod_qc_ui <- function(id) {
             value_box_output(ns("median_cells_per_metacell")),
             value_box_output(ns("num_outliers"))
         ),
+        # two columns of plots, and one on screens narrower than 992 px, where the plots of two columns were
+        # too narrow for their titles and axes
         fluidRow(
             generic_column(
-                width = 6,
+                width = 12,
+                class = "col-md-6",
                 qc_stat_box(ns, id, "# of UMIs per metacell", "plot_qc_umis"),
                 qc_stat_box(ns, id, "Max inner-fold per metacell", "plot_qc_inner_fold",
                     width = 12, height = "27vh",
@@ -29,7 +32,8 @@ mod_qc_ui <- function(id) {
                 qc_stat_box(ns, id, "Max inner-stdev per metacell", "plot_qc_std")
             ),
             generic_column(
-                width = 6,
+                width = 12,
+                class = "col-md-6",
                 qc_stat_box(ns, id, "# of cells per metacell", "plot_qc_cell_num"),
                 qc_stat_box(ns, id, "Max zero-fold per metacell", "plot_mc_zero_fold"),
                 zero_fold_stat_box(ns, id, "# of cells with zero UMIs per gene", "plot_zero_fold")
