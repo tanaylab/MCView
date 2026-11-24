@@ -275,3 +275,31 @@ test_that("a gene's expression in the samples is matched by metacell", {
     f <- f / rowSums(f)
     expect_equal(get_samples_gene_egc("g1", "toy", chosen), (f %*% egc[c("m10", "m2", "m25")])[, 1])
 })
+
+test_that("the update functions write into the project of an old bundle (a 'project' subdirectory)", {
+    bundle <- withr::local_tempdir()
+    project <- file.path(bundle, "project")
+    dataset_dir <- file.path(project, "cache", "ds")
+    dir.create(file.path(project, "config"), recursive = TRUE)
+    dir.create(dataset_dir, recursive = TRUE)
+    writeLines("title: test", file.path(project, "config", "config.yaml"))
+    for (f in c("mc_mat.qs2", "mc_sum.qs2", "mc2d.qs2")) {
+        file.create(file.path(dataset_dir, f))
+    }
+    data.table::fwrite(tibble(metacell = c("m1", "m2"), cell_type = c("A", "B")), file.path(dataset_dir, "metacell_types.tsv"), sep = "\t")
+    data.table::fwrite(tibble(cell_type = c("A", "B"), color = c("red", "blue")), file.path(dataset_dir, "cell_type_colors.tsv"), sep = "\t")
+    expect_identical(as.character(init_project_dir(bundle)), project)
+
+    modules_file <- file.path(bundle, "modules.csv")
+    data.table::fwrite(tibble(gene = c("g1", "g2"), module = c("1", "2")), modules_file)
+    suppressMessages(update_gene_modules(bundle, "ds", modules_file))
+    expect_identical(data.table::fread(file.path(dataset_dir, "gene_modules.tsv"))$gene, c("g1", "g2"))
+
+    types_file <- file.path(bundle, "types.csv")
+    data.table::fwrite(tibble(metacell = c("m1", "m2"), cell_type = c("B", "C"), color = c("blue", "green")), types_file)
+    suppressMessages(update_metacell_types(bundle, "ds", types_file))
+    expect_identical(data.table::fread(file.path(dataset_dir, "metacell_types.tsv"))$cell_type, c("B", "C"))
+    expect_identical(data.table::fread(file.path(dataset_dir, "cell_type_colors.tsv"))$color, c("blue", "green"))
+
+    expect_false(dir.exists(file.path(bundle, "cache")))
+})

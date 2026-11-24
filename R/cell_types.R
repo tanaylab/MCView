@@ -29,7 +29,8 @@
 #'
 #' @export
 update_metacell_types <- function(project, dataset, metacell_types_file) {
-    init_project_dir(project)
+    # an old bundle has the project in a "project" subdirectory
+    project <- init_project_dir(project)
     verify_app_cache(project)
 
     prev_metacell_types <- load_shiny_data("metacell_types", dataset, project_cache_dir(project))
@@ -85,7 +86,8 @@ update_metacell_types <- function(project, dataset, metacell_types_file) {
 #'
 #' @export
 update_cell_type_colors <- function(project, dataset, cell_type_colors_file) {
-    init_project_dir(project)
+    # an old bundle has the project in a "project" subdirectory
+    project <- init_project_dir(project)
     verify_app_cache(project)
 
     cell_type_colors <- parse_cell_type_colors(cell_type_colors_file)
