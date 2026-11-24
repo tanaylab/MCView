@@ -183,9 +183,8 @@ atlas_gene_gene <- function(input, output, session, dataset, metacell_types, cel
             collapsible = TRUE,
             closable = FALSE,
             width = 12,
-            sidebar = shinydashboardPlus::boxSidebar(
+            sidebar = plot_box_sidebar(
                 startOpen = FALSE,
-                width = 100,
                 id = ns("atlas_gene_gene_sidebar"),
                 uiOutput(ns("atlas_gene_gene_xyline_ui")),
                 uiOutput(ns("atlas_gene_gene_fixed_limits_ui")),

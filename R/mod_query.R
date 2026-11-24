@@ -31,9 +31,8 @@ mod_query_ui <- function(id) {
                     collapsible = TRUE,
                     closable = FALSE,
                     width = 12,
-                    sidebar = shinydashboardPlus::boxSidebar(
+                    sidebar = plot_box_sidebar(
                         startOpen = FALSE,
-                        width = 80,
                         id = ns("mc_mc_sidebar"),
                         checkboxInput(ns("hide_lateral"), "Hide lateral genes", value = FALSE),
                         checkboxInput(ns("hide_noisy"), "Hide noisy genes", value = FALSE),
@@ -73,9 +72,8 @@ mod_query_ui <- function(id) {
                     collapsible = TRUE,
                     closable = FALSE,
                     width = 12,
-                    sidebar = shinydashboardPlus::boxSidebar(
+                    sidebar = plot_box_sidebar(
                         startOpen = FALSE,
-                        width = 100,
                         id = ns("gene_gene_sidebar"),
                         uiOutput(ns("gene_gene_point_size_ui")),
                         uiOutput(ns("gene_gene_stroke_ui"))

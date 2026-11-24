@@ -20,9 +20,8 @@ mod_mc_mc_ui <- function(id) {
                     collapsible = TRUE,
                     closable = FALSE,
                     width = 12,
-                    sidebar = shinydashboardPlus::boxSidebar(
+                    sidebar = plot_box_sidebar(
                         startOpen = FALSE,
-                        width = 80,
                         id = ns("mc_mc_sidebar"),
                         div(
                             title = "Hide lateral genes (genes expressed in multiple cell types) from the differential expression analysis",
@@ -56,9 +55,8 @@ mod_mc_mc_ui <- function(id) {
                     collapsible = TRUE,
                     closable = FALSE,
                     width = 12,
-                    sidebar = shinydashboardPlus::boxSidebar(
+                    sidebar = plot_box_sidebar(
                         startOpen = FALSE,
-                        width = 80,
                         id = ns("gene_projection_sidebar"),
                         uiOutput(ns("projection_color_selectors")),
                         uiOutput(ns("point_size_ui")),
