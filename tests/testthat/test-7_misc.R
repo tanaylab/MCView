@@ -47,3 +47,24 @@ test_that("calc_top_cors keeps its results with the data of the dataset", {
     expect_null(top_cors_cache("toy"))
     expect_identical(calc_top_cors("toy", "g1", "both", NULL, mcs, NULL), direct)
 })
+
+test_that("natural_sort_cell_types orders the numbers in the names as numbers", {
+    expect_identical(natural_sort_cell_types(c("10", "2", "1", "20", "3", "11")), c("1", "2", "3", "10", "11", "20"))
+    expect_identical(natural_sort_cell_types(c("C10", "C2", "C1")), c("C1", "C2", "C10"))
+    expect_identical(natural_sort_cell_types(c("T cells 10", "B cells", "T cells 9")), c("B cells", "T cells 9", "T cells 10"))
+    expect_identical(natural_sort_cell_types(c("12345678901234567890", "9")), c("9", "12345678901234567890"))
+    # names without numbers as sort() orders them, missing names last
+    plain <- c("NK", "Mono", "B", "T", "DC")
+    expect_identical(natural_sort_cell_types(plain), sort(plain))
+    expect_identical(natural_sort_cell_types(c("2", NA, "1")), c("1", "2", NA))
+    expect_identical(natural_sort_cell_types(character(0)), character(0))
+    expect_identical(natural_order_cell_types(factor(c("10", "9"))), c(2L, 1L))
+
+    # the order of sort() becomes natural, any other order is kept; "(Missing)" keeps its place
+    expect_identical(cell_types_display_order(c("(Missing)", "1", "10", "2")), c(1L, 2L, 4L, 3L))
+    expect_identical(cell_types_display_order(c("1", "10", "2", "(Missing)")), c(1L, 3L, 2L, 4L))
+    expect_identical(cell_types_display_order(c("10", "1", "2")), 1:3)
+    expect_identical(cell_types_display_order(c("Mono", "B", "T")), 1:3)
+    expect_identical(cell_types_display_order(c("B", "Mono", "T")), 1:3)
+    expect_identical(cell_types_display_order("1"), 1L)
+})

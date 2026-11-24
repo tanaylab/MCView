@@ -322,7 +322,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
 
             output$update_all_selectors <- renderUI({
                 req(nrow(selected_metacell_types()) > 0)
-                shinyWidgets::pickerInput(ns("selected_cell_type_update_all"), "Cell type", choices = c("(Missing)", cell_type_colors() %>% pull(cell_type) %>% as.character() %>% unique() %>% sort()), multiple = FALSE, selected = last_chosen_cell_type())
+                shinyWidgets::pickerInput(ns("selected_cell_type_update_all"), "Cell type", choices = c("(Missing)", cell_type_colors() %>% pull(cell_type) %>% as.character() %>% unique() %>% natural_sort_cell_types()), multiple = FALSE, selected = last_chosen_cell_type())
             })
 
 

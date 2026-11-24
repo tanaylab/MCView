@@ -12,6 +12,9 @@ cell_type_selector <- function(dataset, ns, id = "selected_cell_types", label = 
 
         cell_types_hex <- col2hex(get_cell_type_colors(dataset(), colors))
         cell_types <- names(get_cell_type_colors(dataset(), colors))
+        ord <- cell_types_display_order(cell_types)
+        cell_types_hex <- cell_types_hex[ord]
+        cell_types <- cell_types[ord]
 
         if (!is.null(selected) && selected == "all") {
             selected <- cell_types
