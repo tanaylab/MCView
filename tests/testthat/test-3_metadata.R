@@ -589,8 +589,11 @@ test_that("update_metadata_colors work", {
         overwrite = FALSE
     )
 
+    # the colors of the fields that were not updated (md1) are kept
     saved_md_colors <- qs2::qs_read(fs::path(project_dir, "cache", dataset, "metadata_colors.qs2"))
-    expect_equivalent(metadata_colors_modified, saved_md_colors)
+    expect_setequal(names(saved_md_colors), c("md1", "md2", "md3"))
+    expect_equivalent(saved_md_colors[c("md2", "md3")], metadata_colors_modified[c("md2", "md3")])
+    expect_equivalent(saved_md_colors$md1$colors, metadata_colors$md1$colors)
 
     withr::defer(unlink(fs::path(project_dir, "cache", dataset)))
     withr::defer(gc())

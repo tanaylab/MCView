@@ -45,7 +45,7 @@ update_metadata <- function(project,
             mutate(metacell = as.character(metacell)) %>%
             as_tibble()
         metadata <- prev_metadata %>%
-            select(-any_of(colnames(metadata)[-1])) %>%
+            select(-any_of(setdiff(colnames(metadata), "metacell"))) %>%
             left_join(metadata, by = "metacell")
     }
 
@@ -93,13 +93,13 @@ update_metadata_colors <- function(project,
     prev_colors_file_qs <- fs::path(cache_dir, dataset, "metadata_colors.qs")
     if (!overwrite && fs::file_exists(prev_colors_file_qs2)) {
         metadata_colors <- qs2::qs_read(prev_colors_file_qs2)
-        for (f in names(metadata_colors)) {
+        for (f in names(new_metadata_colors)) {
             metadata_colors[[f]] <- NULL
         }
         metadata_colors <- c(metadata_colors, new_metadata_colors)
     } else if (!overwrite && fs::file_exists(prev_colors_file_qs)) {
         metadata_colors <- read_legacy_qs(prev_colors_file_qs, "metadata_colors")
-        for (f in names(metadata_colors)) {
+        for (f in names(new_metadata_colors)) {
             metadata_colors[[f]] <- NULL
         }
         metadata_colors <- c(metadata_colors, new_metadata_colors)

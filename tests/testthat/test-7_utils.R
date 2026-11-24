@@ -280,3 +280,22 @@ test_that("available_tabs leaves out the tabs a dataset has no data for", {
     ds$atlas <- new.env()
     expect_true(all(c("Atlas", "Query", "Projected-fold") %in% available_tabs("ds")))
 })
+
+test_that("order_mc_by_most_var_genes orders all the metacells when some have too few non-zero genes", {
+    set.seed(60427)
+    feat <- matrix(abs(rnorm(8 * 30)) + 0.1, nrow = 8, dimnames = list(paste0("g", 1:8), paste0("m", 1:30)))
+    feat[, c(4, 17)] <- 0 # metacells without non-zero genes are clustered separately
+    feat[1, 4] <- 1
+    ord <- order_mc_by_most_var_genes(feat, log_transform = FALSE)
+    expect_setequal(ord, 1:30)
+    expect_setequal(tail(ord, 2), c(4, 17))
+})
+
+test_that("initial point sizes take a few values", {
+    sizes <- c(
+        purrr::map_dbl(c(1280, 1440, 1920, 2560, 3840), ~ initial_proj_point_size_value(588, .x, .x * 9 / 16, weight = 0.6)),
+        purrr::map_dbl(c(1280, 1440, 1920, 2560, 3840), ~ initial_proj_point_size_value(5320, .x, .x * 9 / 16))
+    )
+    expect_true(all(sizes * 4 == round(sizes * 4)))
+    expect_true(all(sizes >= 1 & sizes <= 3))
+})

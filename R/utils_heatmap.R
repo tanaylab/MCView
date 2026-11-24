@@ -977,7 +977,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     )
 
                     if (!is.null(genes) && length(genes()) > 0 && !is.null(input$show_genes) && input$show_genes) {
-                        gene_colors <- ifelse(names(gene_colors) %in% genes(), gene_colors, "#012901")
+                        gene_colors[!(names(gene_colors) %in% genes())] <- "#012901"
                     }
 
                     if (!is.null(highlighted_genes) && length(highlighted_genes()) > 0) {

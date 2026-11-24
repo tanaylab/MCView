@@ -36,7 +36,7 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
     min_expr <- min_expr %||% min(mc2d_df$expression, na.rm = TRUE)
     max_expr <- max_expr %||% max(mc2d_df$expression, na.rm = TRUE)
 
-    if (has_name(df, "mc_age")) {
+    if (has_name(mc2d_df, "mc_age")) {
         mc2d_df <- mc2d_df %>% rename(`Age` = mc_age)
     }
 
@@ -483,12 +483,17 @@ initial_proj_point_size <- function(dataset, screen_width = NULL, screen_height 
         return(config$projection_point_size * weight)
     }
     n_metacells <- length(get_mc_data(dataset, "mc_sum", atlas = atlas))
+    initial_proj_point_size_value(n_metacells, screen_width, screen_height, weight)
+}
+
+initial_proj_point_size_value <- function(n_metacells, screen_width = NULL, screen_height = NULL, weight = 1) {
     screen_width <- screen_width %||% 1920
     screen_height <- screen_height %||% 1080
     desired_area <- (screen_width * screen_height) / (n_metacells * 100) * weight
     size_pixels <- sqrt(desired_area / pi)
 
-    return(max(1, min(3, size_pixels)))
+    # rounded: the size is in the cache key of the plots and shown in the point size input
+    return(round(max(1, min(3, size_pixels)) * 4) / 4)
 }
 
 initial_proj_stroke <- function(dataset) {

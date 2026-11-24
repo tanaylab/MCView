@@ -48,7 +48,7 @@ mc2d_plot_metadata_ggp <- function(dataset,
         }
     }
 
-    if (has_name(df, "mc_age")) {
+    if (has_name(mc2d_df, "mc_age")) {
         mc2d_df <- mc2d_df %>% rename(`Age` = mc_age)
     }
 

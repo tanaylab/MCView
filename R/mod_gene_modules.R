@@ -538,7 +538,8 @@ mod_gene_module_controllers <- function(ns, dataset, input, output, session, gen
 
 add_genes_to_gene_module <- function(new_genes_input, gene_modules, genes) {
     req(new_genes_input)
-    to_add <- new_genes_input[!(new_genes_input %in% gene_modules()$gene)]
+    to_add <- unique(new_genes_input[!(new_genes_input %in% gene_modules()$gene)])
+    to_add <- to_add[!(to_add %in% genes())]
     if (any(new_genes_input %in% gene_modules()$gene)) {
         existing_genes <- gene_modules() %>%
             filter(gene %in% new_genes_input) %>%

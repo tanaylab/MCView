@@ -205,6 +205,8 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
     if (any(zero_mcs)) {
         mc_order <- c(colnames(feat)[ord], colnames(feat_zero))
         feat <- feat_all
+        # positions in the full matrix: the caller orders all the metacells by them
+        ord <- match(mc_order, colnames(feat))
     } else {
         mc_order <- colnames(feat)[ord]
     }

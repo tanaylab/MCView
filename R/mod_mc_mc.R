@@ -558,7 +558,7 @@ group_selectors <- function(input, output, session, dataset, ns, groupA, groupB,
             if (is.null(groupB())) {
                 groupB(selected_metacells)
             } else {
-                groupB(c(unique(groupB(), selected_metacells)))
+                groupB(unique(c(groupB(), selected_metacells)))
             }
         }
     })

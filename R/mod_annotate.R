@@ -16,7 +16,6 @@ mod_annotate_ui <- function(id) {
                 style = "padding-right:0px;",
                 projection_box(ns, "gene_projection", color_choices = c("Cell type", "Gene", "Gene module", "Metadata", "Selected")),
                 fluidRow(
-                    uiOutput(ns("time_box_ui_column")),
                     column(
                         width = 6,
                         offset = 0,

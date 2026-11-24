@@ -196,7 +196,7 @@ gene_correction_factor_stat_box <- function(ns, id, dataset, title, output_id, w
         req(gene_qc)
         req(has_name(gene_qc, "correction_factor"))
         generic_box(
-            id = ns(id),
+            id = ns(paste0(output_id, "_box")),
             title = title,
             status = "primary",
             solidHeader = TRUE,
@@ -276,7 +276,7 @@ gene_correction_factor_table <- function(dataset, input) {
 
 fitted_genes_per_cell_type_stat_box <- function(ns, id, title, output_id, width = 12, height = "35vh") {
     generic_box(
-        id = ns(id),
+        id = ns(paste0(output_id, "_box")),
         title = title,
         status = "primary",
         solidHeader = TRUE,

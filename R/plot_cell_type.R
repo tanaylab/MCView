@@ -66,7 +66,7 @@ cell_type_gene_boxplot <- function(gene,
         if (facet_var == "cell_type") {
             # Facet by cell type (already have cell_type column)
             df <- df %>%
-                mutate(`Facet variable` = factor(cell_type))
+                mutate(`Facet variable` = factor(if (x_axis_var == "cell_type") `X axis` else cell_type))
             facet_label <- "Cell type"
         } else {
             # Facet by metadata variable
@@ -221,7 +221,7 @@ cell_type_metadata_boxplot <- function(var,
         if (facet_var == "cell_type") {
             # Facet by cell type (already have cell_type column)
             df <- df %>%
-                mutate(`Facet variable` = factor(cell_type))
+                mutate(`Facet variable` = factor(if (x_axis_var == "cell_type") `X axis` else cell_type))
             facet_label <- "Cell type"
         } else {
             # Facet by metadata variable

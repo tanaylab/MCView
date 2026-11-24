@@ -132,7 +132,7 @@ qc_value_box <- function(field, title, dataset, color = "black") {
 
 qc_stat_box <- function(ns, id, title, output_id, width = 12, height = "27vh", ...) {
     generic_box(
-        id = ns(id),
+        id = ns(paste0(output_id, "_box")),
         title = title,
         status = "primary",
         solidHeader = TRUE,
@@ -161,7 +161,7 @@ qc_stat_box <- function(ns, id, title, output_id, width = 12, height = "27vh", .
 
 zero_fold_stat_box <- function(ns, id, title, output_id, width = 12, height = "35vh") {
     generic_box(
-        id = ns(id),
+        id = ns(paste0(output_id, "_box")),
         title = title,
         status = "primary",
         solidHeader = TRUE,
@@ -236,7 +236,7 @@ zero_fold_gene_plot <- function(dataset, input, globals) {
 
 gene_inner_fold_stat_box <- function(ns, id, title, output_id, width = 12, height = "35vh") {
     generic_box(
-        id = ns(id),
+        id = ns(paste0(output_id, "_box")),
         title = title,
         status = "primary",
         solidHeader = TRUE,
