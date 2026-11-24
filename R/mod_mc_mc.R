@@ -294,6 +294,17 @@ keep_selected <- function(current, choices, default) {
     if (length(current) == 1 && !is.na(current) && current %in% choices) current else default
 }
 
+# The choices of a metacell picker, with "(dissimilar)" after the metacells that the projection on an atlas
+# marks as dissimilar. Matched by metacell: the metadata can be in another order, or miss metacells.
+metacell_choices_with_similarity <- function(metacells, md) {
+    choices <- metacells
+    if (!is.null(md) && has_name(md, "similar")) {
+        dissimilar <- md$similar[match(metacells, as.character(md$metacell))] %in% "dissimilar"
+        names(choices) <- ifelse(dissimilar, paste0(metacells, " (dissimilar)"), metacells)
+    }
+    choices
+}
+
 metacell_selectors <- function(input, output, session, dataset, ns, metacell_names, metacell_colors, metacell_types, cell_type_colors, groupA, groupB) {
     output$metacell1_select <- renderUI({
         req(dataset())
@@ -303,15 +314,7 @@ metacell_selectors <- function(input, output, session, dataset, ns, metacell_nam
             req(metacell_names())
             cell_types_hex <- col2hex(metacell_colors())
             # add 'similar' annotation
-            md <- get_mc_data(dataset(), "metadata")
-            if (!is.null(md) && has_name(md, "similar")) {
-                choices <- metacell_names()
-                # match by metacell: the metadata can be in another order, or miss metacells
-                dissimilar <- md$similar[match(metacell_names(), md$metacell)] %in% "dissimilar"
-                names(choices) <- ifelse(dissimilar, paste0(metacell_names(), " (dissimilar)"), metacell_names())
-            } else {
-                choices <- metacell_names()
-            }
+            choices <- metacell_choices_with_similarity(metacell_names(), get_mc_data(dataset(), "metadata"))
             shinyWidgets::pickerInput(ns("metacell1"), "Metacell A",
                 choices = choices,
                 selected = keep_selected(isolate(input$metacell1), metacell_names(), config$selected_mc1 %||% metacell_names()[1]),

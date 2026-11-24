@@ -503,14 +503,9 @@ metacell_selectors_mod_query <- function(input, output, session, dataset, ns, me
         if (input$mode == "MC") {
             req(metacell_colors())
             req(metacell_names())
-            # add 'similar' annotation
-            md <- get_mc_data(dataset(), "metadata")
-            if (!is.null(md) && has_name(md, "similar")) {
-                choices <- metacell_names()
-                names(choices) <- ifelse(md$similar == "dissimilar", paste0(metacell_names(), " (dissimilar)"), metacell_names())
-            } else {
-                choices <- metacell_names()
-            }
+            # add 'similar' annotation (matched by metacell: the metadata can be in another order, or miss
+            # metacells)
+            choices <- metacell_choices_with_similarity(metacell_names(), get_mc_data(dataset(), "metadata"))
 
             cell_types_hex <- col2hex(metacell_colors())
             shinyWidgets::pickerInput(ns("metacell1"), "Metacell",

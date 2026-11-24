@@ -121,6 +121,38 @@ test_that("the cached diff. expression follows every input of the comparison", {
     })
 })
 
+test_that("metacell pickers mark the dissimilar metacells by metacell, not by position", {
+    # metadata in another order, without m4
+    md <- tibble(metacell = c("m3", "m1", "m2"), similar = c("dissimilar", "similar", "similar"))
+    choices <- metacell_choices_with_similarity(c("m1", "m2", "m3", "m4"), md)
+    expect_identical(unname(choices), c("m1", "m2", "m3", "m4"))
+    expect_identical(names(choices), c("m1", "m2", "m3 (dissimilar)", "m4"))
+    expect_identical(metacell_choices_with_similarity(c("m1", "m2"), tibble(metacell = c("m1", "m2"), x = 1)), c("m1", "m2"))
+    expect_identical(metacell_choices_with_similarity(c("m1", "m2"), NULL), c("m1", "m2"))
+})
+
+test_that("the projection's similarity is added to the metadata by metacell", {
+    proj <- tibble(metacell = c("m1", "m2", "m3", "m4"), cell_type = "A", similar = c(TRUE, FALSE, TRUE, FALSE))
+
+    expect_identical(add_similar_to_metadata(NULL, proj), tibble(metacell = proj$metacell, similar = proj$similar))
+
+    # another order, a metacell the projection doesn't have, numeric ids
+    prev <- tibble(metacell = c(4, 2, 1, 5), x = 1:4)
+    res <- add_similar_to_metadata(prev, proj %>% mutate(metacell = sub("m", "", metacell)))
+    expect_identical(res$metacell, c("4", "2", "1", "5"))
+    expect_identical(res$x, 1:4)
+    expect_identical(res$similar, c(FALSE, FALSE, TRUE, NA))
+
+    # a 'similar' field from a previous import (as strings), the same: no warning
+    prev <- tibble(metacell = c("m3", "m1", "m2"), similar = c("similar", "similar", "dissimilar"))
+    expect_no_warning(res <- add_similar_to_metadata(prev, proj))
+    expect_identical(res$similar, c(TRUE, TRUE, FALSE))
+    # a different one is overwritten, with a warning
+    prev$similar <- c(FALSE, TRUE, FALSE)
+    expect_warning(res <- add_similar_to_metadata(prev, proj), "similar")
+    expect_identical(res$similar, c(TRUE, TRUE, FALSE))
+})
+
 test_that("'Show only fitted genes' of a group uses the cell types of the group's metacells", {
     gene_metadata <- tibble(
         gene = c("g1", "g2", "g3", "g4"),
