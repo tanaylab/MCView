@@ -40,7 +40,7 @@ get_cached_cor <- function(gg_mc_top_cor, gene, type, exclude = NULL) {
     return(df)
 }
 
-calc_top_cors <- function(dataset, gene, type, data_vec, metacell_filter, exclude, atlas = FALSE) {
+calc_top_cors <- function(dataset, gene, type, data_vec, metacell_filter, exclude, atlas = FALSE, n = 30) {
     mc_mat <- get_mc_data(dataset, "mc_mat", atlas = atlas)
 
     genes <- rownames(mc_mat)
@@ -63,7 +63,7 @@ calc_top_cors <- function(dataset, gene, type, data_vec, metacell_filter, exclud
 
     cors <- cor_log_egc(dataset, as.matrix(x), genes, metacells, atlas = atlas)[, 1]
 
-    return(select_top_cors(cors, type))
+    return(select_top_cors(cors, type, n = n))
 }
 
 # Pearson correlations of each column of x (a row per metacell) with log2(egc + egc_epsilon) of every gene
@@ -103,13 +103,14 @@ cor_log_egc <- function(dataset, x, genes, metacells, atlas = FALSE) {
     return(cors)
 }
 
-select_top_cors <- function(cors, type) {
+# The n highest and/or lowest correlations
+select_top_cors <- function(cors, type, n = 30) {
     if (type == "pos") {
-        cors <- head(sort(cors, decreasing = TRUE), n = 30)
+        cors <- head(sort(cors, decreasing = TRUE), n = n)
     } else if (type == "neg") {
-        cors <- head(sort(cors), n = 30)
+        cors <- head(sort(cors), n = n)
     } else {
-        cors <- c(head(sort(cors, decreasing = TRUE), n = 30), head(sort(cors), n = 30))
+        cors <- c(head(sort(cors, decreasing = TRUE), n = n), head(sort(cors), n = n))
     }
     # not enframe(): c() of two empty vectors drops their names, and enframe() then numbers the rows
     df <- tibble(gene2 = names(cors) %||% character(0), cor = unname(cors))
@@ -143,7 +144,7 @@ get_top_cor_gene <- function(dataset, gene, type = "pos", atlas = FALSE, data_ve
 #'
 #' @param dataset Dataset name
 #' @param genes Vector of gene names
-#' @param n_top Number of top correlations to return per gene
+#' @param n_top Number of top positive and of top negative correlations to return per gene
 #' @param cell_type_filter Optional vector of cell types to filter metacells
 #' @param threshold Minimum correlation threshold to include
 #' @param metacell_types Metacell annotation to take the cell types from (default: the stored annotation)
@@ -178,34 +179,43 @@ calc_individual_correlations <- function(dataset, genes, n_top = 30, cell_type_f
     x <- log2(t(mc_mat[valid_genes, metacells, drop = FALSE]) / get_mc_sum(dataset, atlas = atlas)[metacells] + egc_epsilon)
     all_cors <- cor_log_egc(dataset, x, rownames(mc_mat), metacells, atlas = atlas)
 
-    results <- purrr::map_dfr(valid_genes, function(gene) {
-        cors <- select_top_cors(all_cors[, gene], "both")
-
-        # Filter by threshold and take top correlations
-        cors <- cors %>%
-            filter(abs(cor) >= threshold)
-
-        pos_cors <- cors %>%
-            filter(cor > 0) %>%
-            arrange(desc(cor)) %>%
-            head(n_top)
-        neg_cors <- cors %>%
-            filter(cor < 0) %>%
-            arrange(cor) %>%
-            head(n_top)
-
-        combined_cors <- bind_rows(pos_cors, neg_cors) %>%
-            arrange(desc(abs(cor))) %>%
-            head(n_top * 2) %>%
-            mutate(
-                input_gene = gene,
-                rank = row_number(),
-                # if_else: a character column also without rows, which map_dfr then binds with the others
-                correlation_type = if_else(cor > 0, "positive", "negative")
-            )
-
-        return(combined_cors)
+    # For each input gene, the rows (genes) of its n_top highest positive and n_top lowest negative correlations
+    # with an absolute value of at least threshold, ordered by absolute value. Ties keep the order of the genes in
+    # mc_mat. A gene without counts has only NaN correlations: as 0, which neither direction keeps.
+    all_cors[is.na(all_cors)] <- 0
+    n_top <- max(0L, as.integer(n_top))
+    # only the correlations from the n_top-th highest (lowest) up (down) need to be ordered
+    if (n_top > 0 && n_top < nrow(all_cors)) {
+        hi <- matrixStats::colOrderStats(all_cors, which = nrow(all_cors) - n_top + 1)
+        lo <- matrixStats::colOrderStats(all_cors, which = n_top)
+    } else {
+        hi <- rep(-Inf, ncol(all_cors))
+        lo <- rep(Inf, ncol(all_cors))
+    }
+    hi <- pmax(hi, threshold)
+    lo <- pmin(lo, -threshold)
+    rows <- lapply(seq_along(valid_genes), function(j) {
+        cors <- all_cors[, j]
+        pos <- which(cors >= hi[j])
+        pos <- pos[cors[pos] > 0]
+        pos <- pos[order(cors[pos], decreasing = TRUE, method = "radix")[seq_len(min(n_top, length(pos)))]]
+        neg <- which(cors <= lo[j])
+        neg <- neg[cors[neg] < 0]
+        neg <- neg[order(cors[neg], method = "radix")[seq_len(min(n_top, length(neg)))]]
+        top <- c(pos, neg)
+        top[order(abs(cors[top]), decreasing = TRUE, method = "radix")]
     })
+    n_rows <- lengths(rows)
+    rows <- unlist(rows, use.names = FALSE)
+    cors <- all_cors[cbind(rows, rep(seq_along(valid_genes), n_rows))]
+
+    results <- tibble(
+        gene2 = rownames(all_cors)[rows],
+        cor = cors,
+        input_gene = rep(valid_genes, n_rows),
+        rank = sequence(n_rows),
+        correlation_type = if_else(cors > 0, "positive", "negative")
+    )
 
     return(results)
 }
@@ -246,8 +256,9 @@ calc_module_correlations <- function(dataset, genes, n_top = 30, cell_type_filte
     # Calculate module expression as mean of constituent genes
     module_expr <- colMeans(get_mc_egc(dataset, genes = valid_genes, atlas = atlas), na.rm = TRUE)
 
-    # Use calc_top_cors with the module expression vector
-    cors <- calc_top_cors(dataset, "module", "both", module_expr, metacell_filter, valid_genes, atlas = atlas)
+    # Use calc_top_cors with the module expression vector. The top 30 in each direction at least, so that the
+    # top n_top * 2 by absolute value below are as before for n_top <= 30, and n_top per direction for more.
+    cors <- calc_top_cors(dataset, "module", "both", module_expr, metacell_filter, valid_genes, atlas = atlas, n = max(30, n_top))
 
     # Format results with truncated gene list for display
     gene_display <- if (length(valid_genes) <= 3) {
