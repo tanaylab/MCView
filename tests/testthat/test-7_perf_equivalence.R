@@ -266,3 +266,52 @@ test_that("the stored top correlations of a gene are the same through the index 
     expect_null(get_gg_mc_top_cor_index("toy"))
     expect_identical(get_top_cor_gene("toy", "g1", type = "both"), old_get_top_cor_gene("toy", "g1", type = "both"))
 })
+
+test_that("choose_markers matches the implementation with group_by() and slice()", {
+    old_choose_markers <- function(marker_genes, max_markers, dataset = NULL) {
+        if (has_name(marker_genes, "metacell")) {
+            n_metacells <- length(unique(marker_genes$metacell))
+            genes_per_metacell <- min(10, max(1, round(max_markers / n_metacells)))
+            markers <- marker_genes %>%
+                group_by(metacell) %>%
+                slice(1:genes_per_metacell) %>%
+                pull(gene) %>%
+                unique()
+        } else {
+            markers <- unique(marker_genes$gene)
+        }
+        if (length(markers) > max_markers) {
+            markers <- markers[1:max_markers]
+        } else if (length(markers) < max_markers) {
+            more_genes <- marker_genes %>%
+                filter(!(gene %in% markers)) %>%
+                arrange(desc(fp)) %>%
+                slice(1:(max_markers - length(markers))) %>%
+                pull(gene) %>%
+                unique()
+            markers <- c(markers, more_genes)
+        }
+        markers <- sort(unique(markers))
+        return(markers)
+    }
+
+    set.seed(17)
+    fold <- matrix(rnorm(500 * 60, sd = 2), 500, 60, dimnames = list(paste0("g", 1:500), paste0("M", 1:60)))
+    marker_genes <- select_top_fold_genes_per_metacell(fold, genes_per_metacell = 20, minimal_relative_log_fraction = 0)
+    # metacells whose order differs between the C locale (group_by) and others, and fewer genes for some metacells
+    marker_genes$metacell[marker_genes$metacell == "M1"] <- "m1"
+    marker_genes$metacell[marker_genes$metacell == "M2"] <- "a2"
+    marker_genes <- marker_genes[!(marker_genes$metacell == "M3" & marker_genes$rank > 2), ]
+    variants <- list(
+        sorted = marker_genes,
+        shuffled = marker_genes[sample(nrow(marker_genes)), ], # the rows of each metacell in no particular order
+        factor = mutate(marker_genes[sample(nrow(marker_genes)), ], metacell = factor(metacell, levels = sample(unique(metacell)))),
+        no_rank = select(marker_genes[sample(nrow(marker_genes)), ], -rank),
+        no_metacell = tibble(gene = sample(rownames(fold), 300, replace = TRUE), fp = runif(300))
+    )
+    for (variant in names(variants)) {
+        for (max_markers in c(5, 30, 60, 100, 300, 1000)) {
+            expect_identical(choose_markers(variants[[variant]], max_markers), old_choose_markers(variants[[variant]], max_markers), label = paste(variant, max_markers))
+        }
+    }
+})
