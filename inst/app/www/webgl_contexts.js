@@ -56,4 +56,25 @@
     $(document).on("shown.bs.tab", function() {
         setTimeout(sync, 0);
     });
+
+    // A plot that is redrawn several times (e.g. a new comparison) makes new contexts before the browser
+    // collects those of its previous draws, so the browser can still drop the context of a plot that is
+    // shown. Draw such a plot again. (The canvases of freed plots are not in the page: only the context
+    // of a live plot gets here. The event doesn't bubble, hence the capturing listener.)
+    document.addEventListener("webglcontextlost", function(e) {
+        var el = e.target && e.target.closest && e.target.closest(".plotly.html-widget");
+        if (!el || el.mcviewReleased || el.mcviewRedraw || !el.mcviewValue || el.offsetParent === null) return;
+        el.mcviewRedraw = setTimeout(function() {
+            el.mcviewRedraw = null;
+            if (el.offsetParent === null || !window.Plotly) return;
+            console.info("mcview: drawing the plot " + el.id + " again, its WebGL context was lost");
+            try {
+                window.Plotly.purge(el);
+                el.mcviewReleased = true;
+                restore(el);
+            } catch (err) {
+                console.warn("mcview: could not draw the plot " + el.id, err);
+            }
+        }, 200);
+    }, true);
 })();
