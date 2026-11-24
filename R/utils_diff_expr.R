@@ -187,7 +187,17 @@ mc_mc_gene_scatter_df_reactive <- function(dataset, input, output, session, meta
 
             calc_ct_ct_gene_df(dataset(), "Group A", "Group B", group_types_df)
         }
-    })
+    }) %>% bindCache(
+        # the comparison of two cell types or groups of a large dataset takes seconds
+        dataset(),
+        input$mode,
+        if (isTRUE(input$mode == "MCs")) list(input$metacell1, input$metacell2),
+        if (isTRUE(input$mode == "Types")) list(input$metacell1, input$metacell2, cell_type_colors()$cell_type, metacell_types()),
+        if (isTRUE(input$mode == "Groups")) list(if (!is.null(groupA)) groupA(), if (!is.null(groupB)) groupB()),
+        # the metacells (all the modes check that the compared ones exist)
+        metacell_types()$metacell,
+        if (isTRUE(input$filter_by_clipboard)) list(TRUE, globals$clipboard)
+    )
 }
 
 diff_expr_switch_metacells <- function(dataset, input, output, session, groupA = NULL, groupB = NULL) {
