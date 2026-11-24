@@ -37,6 +37,7 @@ Imports:
     fastcluster,
     gert,
     grid,
+    gtable,
     ggplot2,
     grDevices,
     glue,
