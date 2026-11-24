@@ -737,6 +737,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
             # modules) from its picker. Runs before the outputs, so that they don't compute the old parameters.
             observeEvent(dataset(), ignoreInit = TRUE, priority = 1, {
                 applied_params(NULL)
+                known_cell_types(NULL)
                 metacell_filter(NULL)
                 selected_metacells(NULL)
                 if (mode != "Gene modules") {
@@ -760,6 +761,31 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                         categorical_filter_field = NULL,
                         categorical_filter_values = NULL
                     ))
+                }
+            })
+
+            # Follow annotation edits: a cell type that was renamed, merged or deleted no longer exists, and the
+            # heatmap was not drawn until the next "Update Heatmap". Drop such types from the applied ones and add
+            # the types that were created since, so that their metacells stay in the heatmap.
+            known_cell_types <- reactiveVal(NULL)
+            observe({
+                req(cell_type_colors())
+                req(metacell_types())
+                current <- cell_type_colors() %>%
+                    filter(cell_type %in% metacell_types()$cell_type) %>%
+                    pull(cell_type) %>%
+                    as.character()
+                known <- isolate(known_cell_types())
+                known_cell_types(current)
+                params <- isolate(applied_params())
+                if (is.null(params) || is.null(known) || is.null(params$selected_cell_types)) {
+                    return()
+                }
+                applied <- as.character(params$selected_cell_types)
+                updated <- c(applied[applied %in% c(current, "(Missing)")], setdiff(current, known))
+                if (!identical(updated, applied)) {
+                    params$selected_cell_types <- updated
+                    applied_params(params)
                 }
             })
 

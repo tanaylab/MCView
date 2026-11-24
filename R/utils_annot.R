@@ -12,3 +12,16 @@ sanitize_metacell_types <- function(metacell_types, cell_type_colors, dataset) {
 
     return(metacell_types)
 }
+
+# All the cell types that metacells can have: those with a color and "(Missing)", the type of the metacells
+# without annotation. The default of the cell type filters, so that unannotated metacells are shown.
+all_cell_types <- function(cell_type_colors) {
+    unique(c(as.character(cell_type_colors$cell_type), "(Missing)"))
+}
+
+# Cell types as shown to the user: metacells without a cell type (NA, e.g. after their type was deleted) are "(Missing)"
+cell_type_or_missing <- function(cell_type) {
+    cell_type <- as.character(cell_type)
+    cell_type[is.na(cell_type)] <- "(Missing)"
+    cell_type
+}

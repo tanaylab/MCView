@@ -140,8 +140,9 @@ get_top_cor_gene <- function(dataset, gene, type = "pos", atlas = FALSE, data_ve
 #' @param n_top Number of top correlations to return per gene
 #' @param cell_type_filter Optional vector of cell types to filter metacells
 #' @param threshold Minimum correlation threshold to include
+#' @param metacell_types Metacell annotation to take the cell types from (default: the stored annotation)
 #' @return Data frame with correlation results
-calc_individual_correlations <- function(dataset, genes, n_top = 30, cell_type_filter = NULL, threshold = 0, atlas = FALSE) {
+calc_individual_correlations <- function(dataset, genes, n_top = 30, cell_type_filter = NULL, threshold = 0, atlas = FALSE, metacell_types = NULL) {
     # Get available genes to validate input
     available_genes <- gene_names(dataset, atlas = atlas)
     valid_genes <- genes[genes %in% available_genes]
@@ -153,7 +154,7 @@ calc_individual_correlations <- function(dataset, genes, n_top = 30, cell_type_f
     # Calculate metacell filter if cell types specified
     metacell_filter <- NULL
     if (!is.null(cell_type_filter)) {
-        metacell_types <- get_mc_data(dataset, "metacell_types")
+        metacell_types <- metacell_types %||% get_mc_data(dataset, "metacell_types")
         if (!is.null(metacell_types)) {
             metacell_filter <- metacell_types %>%
                 filter(cell_type %in% cell_type_filter) %>%
@@ -210,8 +211,9 @@ calc_individual_correlations <- function(dataset, genes, n_top = 30, cell_type_f
 #' @param n_top Number of top correlations to return
 #' @param cell_type_filter Optional vector of cell types to filter metacells
 #' @param threshold Minimum correlation threshold to include
+#' @param metacell_types Metacell annotation to take the cell types from (default: the stored annotation)
 #' @return Data frame with correlation results
-calc_module_correlations <- function(dataset, genes, n_top = 30, cell_type_filter = NULL, threshold = 0, atlas = FALSE) {
+calc_module_correlations <- function(dataset, genes, n_top = 30, cell_type_filter = NULL, threshold = 0, atlas = FALSE, metacell_types = NULL) {
     available_genes <- rownames(get_mc_data(dataset, "mc_mat", atlas = atlas))
     valid_genes <- genes[genes %in% available_genes]
 
@@ -221,13 +223,13 @@ calc_module_correlations <- function(dataset, genes, n_top = 30, cell_type_filte
 
     if (length(valid_genes) == 1) {
         # Fall back to individual correlation for single gene
-        return(calc_individual_correlations(dataset, valid_genes, n_top, cell_type_filter, threshold, atlas))
+        return(calc_individual_correlations(dataset, valid_genes, n_top, cell_type_filter, threshold, atlas, metacell_types = metacell_types))
     }
 
     # Calculate metacell filter if cell types specified
     metacell_filter <- NULL
     if (!is.null(cell_type_filter)) {
-        metacell_types <- get_mc_data(dataset, "metacell_types")
+        metacell_types <- metacell_types %||% get_mc_data(dataset, "metacell_types")
         if (!is.null(metacell_types)) {
             metacell_filter <- metacell_types %>%
                 filter(cell_type %in% cell_type_filter) %>%
@@ -267,8 +269,9 @@ calc_module_correlations <- function(dataset, genes, n_top = 30, cell_type_filte
 #' @param genes Vector of gene names
 #' @param cell_type_filter Optional vector of cell types to filter metacells
 #' @param threshold Minimum correlation threshold to include
+#' @param metacell_types Metacell annotation to take the cell types from (default: the stored annotation)
 #' @return Data frame with gene-gene correlation results
-calc_gene_gene_correlations <- function(dataset, genes, cell_type_filter = NULL, threshold = 0, atlas = FALSE) {
+calc_gene_gene_correlations <- function(dataset, genes, cell_type_filter = NULL, threshold = 0, atlas = FALSE, metacell_types = NULL) {
     # Get expression matrix
     mc_egc <- get_mc_egc(dataset, genes = genes, atlas = atlas)
     available_genes <- rownames(mc_egc)
@@ -281,7 +284,7 @@ calc_gene_gene_correlations <- function(dataset, genes, cell_type_filter = NULL,
     # Calculate metacell filter if cell types specified
     metacell_filter <- NULL
     if (!is.null(cell_type_filter)) {
-        metacell_types <- get_mc_data(dataset, "metacell_types")
+        metacell_types <- metacell_types %||% get_mc_data(dataset, "metacell_types")
         if (!is.null(metacell_types)) {
             metacell_filter <- metacell_types %>%
                 filter(cell_type %in% cell_type_filter) %>%

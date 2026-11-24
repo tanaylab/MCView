@@ -195,7 +195,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                     new_metacell_types <- sanitize_metacell_types(new_metacell_types, cell_type_colors(), dataset())
                     metacell_types(new_metacell_types)
                     # Reset the selected cell types to match the (possibly) new cell type list that was just loaded
-                    selected_cell_types(unique(cell_type_colors()$cell_type))
+                    selected_cell_types(all_cell_types(cell_type_colors()))
                     values$file_status <- NULL
                 }
             })
@@ -249,7 +249,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 to_show(NULL)
                 last_chosen_cell_type("(Missing)")
                 # After resetting, make all current cell types selected by default
-                selected_cell_types(unique(cell_type_colors()$cell_type))
+                selected_cell_types(all_cell_types(cell_type_colors()))
                 values$file_status <- NULL
             })
 
@@ -301,6 +301,16 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 }
             })
 
+            # The metacells of the rows to change. The rows are those of the table, which shows to_show()
+            # (in the order of metacell_types()), not selected_metacell_types() (in the order of selection).
+            table_metacells <- function() {
+                req(input$update_option)
+                rows <- if (input$update_option == "Change all") input$mc_type_table_rows_all else input$mc_type_table_rows_selected
+                req(rows)
+                req(to_show())
+                to_show()$metacell[rows]
+            }
+
             output$number_of_selected_metacells <- renderPrint(glue("Selected {nrow(selected_metacell_types())} metacells"))
             output$please_select_metacells <- renderPrint(glue("Please select metacells"))
 
@@ -318,13 +328,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 req(input$selected_cell_type_update_all)
                 req(selected_metacell_types())
 
-                if (input$update_option == "Change all") {
-                    req(input$mc_type_table_rows_all)
-                    metacells <- selected_metacell_types()[input$mc_type_table_rows_all, ] %>% pull(metacell)
-                } else {
-                    req(input$mc_type_table_rows_selected)
-                    metacells <- selected_metacell_types()[input$mc_type_table_rows_selected, ] %>% pull(metacell)
-                }
+                metacells <- table_metacells()
 
                 new_metacell_types <- new_metacell_types %>% mutate(
                     cell_type = ifelse(metacell %in% metacells, input$selected_cell_type_update_all, cell_type)
@@ -383,6 +387,9 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                     req(FALSE)
                 }
 
+                # before adding the cell type: without rows to change, nothing is created
+                metacells <- table_metacells()
+
                 # Add the new cell type to cell_type_colors
                 new_cell_type_colors <- cell_type_colors()
                 new_row <- tibble(
@@ -402,14 +409,6 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 cell_type_colors(new_cell_type_colors)
 
                 # Update the metacell types for the selected metacells
-                if (input$update_option == "Change all") {
-                    req(input$mc_type_table_rows_all)
-                    metacells <- selected_metacell_types()[input$mc_type_table_rows_all, ] %>% pull(metacell)
-                } else {
-                    req(input$mc_type_table_rows_selected)
-                    metacells <- selected_metacell_types()[input$mc_type_table_rows_selected, ] %>% pull(metacell)
-                }
-
                 new_metacell_types <- metacell_types() %>% mutate(
                     cell_type = ifelse(metacell %in% metacells, input$new_cell_type_name_from_selection, cell_type)
                 )

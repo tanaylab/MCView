@@ -49,7 +49,7 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
     if (!is.null(selected_cell_types)) {
         observe({
             if (is.null(selected_cell_types())) {
-                selected_cell_types(unique(cell_type_colors()$cell_type))
+                selected_cell_types(all_cell_types(cell_type_colors()))
             }
         })
 
@@ -130,7 +130,7 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
             metacell_filter <- globals$clipboard
         } else if (!is.null(selected_cell_types) && length(selected_cell_types()) > 0) {
             metacell_filter <- metacell_types() %>%
-                filter(cell_type %in% selected_cell_types()) %>%
+                filter(cell_type_or_missing(cell_type) %in% selected_cell_types()) %>%
                 pull(metacell)
         } else {
             metacell_filter <- NULL

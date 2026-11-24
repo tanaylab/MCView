@@ -68,7 +68,7 @@ mc2d_plot_metadata_ggp <- function(dataset,
 
     if (!is.null(selected_cell_types)) {
         mc2d_df <- mc2d_df %>%
-            filter(`Cell type` %in% selected_cell_types())
+            filter(cell_type_or_missing(`Cell type`) %in% selected_cell_types())
     }
 
     if (is_numeric_field(mc2d_df, md)) {

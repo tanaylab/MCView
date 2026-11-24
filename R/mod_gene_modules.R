@@ -197,7 +197,7 @@ mod_gene_modules_server <- function(id, dataset, metacell_types, cell_type_color
             # Keep the selected cell types list consistent with the current cell_type_colors()
             observe({
                 req(cell_type_colors())
-                selected_cell_types(unique(cell_type_colors()$cell_type))
+                selected_cell_types(all_cell_types(cell_type_colors()))
             })
             scatter_box_outputs(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, ns, selected_cell_types = selected_cell_types, plotly_source = "gene_modules_md_md_plot")
 
@@ -389,6 +389,14 @@ mod_gene_module_controllers <- function(ns, dataset, input, output, session, gen
             req(FALSE)
         }
 
+        # genes that the dataset doesn't have (e.g. a file of another dataset) would fail every gene module view
+        unknown_genes <- setdiff(new_gene_modules$gene, gene_names(dataset()))
+        if (length(unknown_genes) > 0) {
+            showNotification(glue("{length(unknown_genes)} genes of the file are not in the dataset and were ignored: {genes}", genes = paste(utils::head(unknown_genes, 10), collapse = ", ")), type = "warning", duration = 10)
+            new_gene_modules <- new_gene_modules %>% filter(gene %in% gene_names(dataset()))
+        }
+        req(nrow(new_gene_modules) > 0)
+
         gene_modules(new_gene_modules)
     })
 
@@ -409,7 +417,13 @@ mod_gene_module_controllers <- function(ns, dataset, input, output, session, gen
     # 'Reset' button
     observeEvent(input$reset_gene_modules, {
         req(dataset())
-        gene_modules(get_mc_data(dataset(), "gene_modules"))
+        stored_gene_modules <- get_mc_data(dataset(), "gene_modules")
+        if (!is.null(stored_gene_modules)) {
+            stored_gene_modules <- stored_gene_modules %>%
+                filter(gene %in% gene_names(dataset())) %>%
+                mutate(gene = as.character(gene))
+        }
+        gene_modules(stored_gene_modules)
         values$file_status <- NULL
     })
 

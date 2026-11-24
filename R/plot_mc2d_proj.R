@@ -87,7 +87,7 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
 
     if (!is.null(selected_cell_types)) {
         df <- df %>%
-            filter(`Cell type` %in% selected_cell_types())
+            filter(cell_type_or_missing(`Cell type`) %in% selected_cell_types())
     }
 
     add_scatter_layer <- function(x, showlegend = FALSE) {
