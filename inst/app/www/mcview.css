@@ -67,3 +67,11 @@
     white-space: normal;
     overflow-wrap: anywhere;
 }
+
+/* The buttons below the file input of the Annotate tab's "Metacell annotation" box */
+.mcv-annotate-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 10px;
+}

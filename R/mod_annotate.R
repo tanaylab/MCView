@@ -48,25 +48,28 @@ mod_annotate_ui <- function(id) {
                         checkboxInput(ns("add_to_selection"), label = "Add to\ncurrent selection", value = TRUE),
                         checkboxInput(ns("reset_on_apply"), label = "Reset selection\non apply", value = TRUE)
                     ),
-                    splitLayout(
-                        cellWidths = c("30%", rep("auto", 4)),
-                        fileInput(ns("metacell_types_fn"),
-                            label = NULL,
-                            buttonLabel = "Load",
-                            multiple = FALSE,
-                            accept =
-                                c(
-                                    "text/csv",
-                                    "text/comma-separated-values,text/plain",
-                                    "text/tab-separated-values",
-                                    ".csv",
-                                    ".tsv"
-                                )
-                        ),
-                        actionButton(ns("reset_metacell_types"), "Reset", style = "align-items: center;"),
-                        actionButton(ns("paste_metacells"), "Paste", style = "align-items: center;"),
-                        actionButton(ns("copy_metacells"), "Copy", style = "align-items: center;"),
-                        downloadButton(ns("metacell_types_download"), "", style = "align-items: center;")
+                    # the file input on a row of its own, as wide as the box: next to the buttons it was too
+                    # narrow to show the file's name ("No fil")
+                    fileInput(ns("metacell_types_fn"),
+                        label = NULL,
+                        buttonLabel = "Load",
+                        multiple = FALSE,
+                        width = "100%",
+                        accept =
+                            c(
+                                "text/csv",
+                                "text/comma-separated-values,text/plain",
+                                "text/tab-separated-values",
+                                ".csv",
+                                ".tsv"
+                            )
+                    ),
+                    div(
+                        class = "mcv-annotate-toolbar",
+                        actionButton(ns("reset_metacell_types"), "Reset"),
+                        actionButton(ns("paste_metacells"), "Paste"),
+                        actionButton(ns("copy_metacells"), "Copy"),
+                        downloadButton(ns("metacell_types_download"), "")
                     ),
                     uiOutput(ns("annotation_box")),
                     uiOutput(ns("update_all_selectors")),
@@ -469,20 +472,28 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
             )
 
             output$cell_type_table <- DT::renderDataTable(
-                DT::datatable(cell_type_colors() %>% select(cell_type, color),
-                    editable = "cell",
-                    rownames = FALSE,
-                    options = list(
-                        paging = FALSE
-                    )
-                ) %>%
-                    DT::formatStyle(
-                        "color", "cell_type",
-                        backgroundColor = DT::styleEqual(
-                            cell_type_colors()$cell_type,
-                            col2hex(cell_type_colors()$color)
+                {
+                    colors <- col2hex(cell_type_colors()$color)
+                    # each color's hex code in white on dark colors and in black on light ones: black when it
+                    # contrasts more with the color than white, by the color's relative luminance (as WCAG's)
+                    rgb <- grDevices::col2rgb(colors) / 255
+                    linear_rgb <- ifelse(rgb <= 0.03928, rgb / 12.92, ((rgb + 0.055) / 1.055)^2.4)
+                    luminance <- colSums(linear_rgb * c(0.2126, 0.7152, 0.0722))
+                    text_colors <- ifelse(luminance > 0.179, "black", "white")
+
+                    DT::datatable(cell_type_colors() %>% select(cell_type, color),
+                        editable = "cell",
+                        rownames = FALSE,
+                        options = list(
+                            paging = FALSE
                         )
-                    ),
+                    ) %>%
+                        DT::formatStyle(
+                            "color", "cell_type",
+                            backgroundColor = DT::styleEqual(cell_type_colors()$cell_type, colors),
+                            color = DT::styleEqual(cell_type_colors()$cell_type, text_colors)
+                        )
+                },
                 server = TRUE # see https://github.com/rstudio/DT/issues/598
             )
 
