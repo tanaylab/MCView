@@ -269,6 +269,26 @@ mc2d_plot_metadata_ggp_numeric <- function(mc2d_df,
 }
 
 
+# The breaks of a log2 expression axis, from all the values of `breaks` in its range (every log2
+# unit, or 1, 2, 4 x 10^k), thinned to at most `max_n` so that their labels don't run into each
+# other: the powers of 2 whose exponent is a multiple of a step, or the powers of 10 (every
+# k-th of them if needed).
+thin_log_breaks <- function(breaks, max_n = 6) {
+    if (length(breaks) <= max_n) {
+        return(breaks)
+    }
+    l2 <- log2(breaks)
+    if (all(abs(l2 - round(l2)) < 1e-8)) {
+        exponents <- round(l2)
+    } else {
+        l10 <- log10(breaks)
+        breaks <- breaks[abs(l10 - round(l10)) < 1e-8]
+        exponents <- round(log10(breaks))
+    }
+    step <- ceiling(length(breaks) / max_n)
+    breaks[exponents %% step == 0]
+}
+
 plot_mc_scatter <- function(dataset,
                             x_var,
                             y_var,
@@ -500,21 +520,22 @@ plot_mc_scatter <- function(dataset,
         xmax <- min(c(1:length(xylims))[xylims >= x_limits[2] - 1e-10])
         xmin <- max(c(1:length(xylims))[xylims <= x_limits[1] + 1e-10])
         lab <- glue("{x_var} Expression")
+        # a label at every log2 unit ran into the next ones
+        breaks <- thin_log_breaks(xylims[xmin:xmax])
 
         if (log_labels) {
-            labels <- log2(xylims[xmin:xmax])
+            labels <- log2(breaks)
             lab <- glue("{lab} (log2)")
         } else {
-            labels <- scales::scientific(xylims[xmin:xmax])
+            labels <- scales::scientific(breaks)
         }
 
         if (corrected) {
             lab <- glue("{lab} (corrected)")
         }
         p <- p +
-            scale_x_continuous(limits = c(xylims[xmin], xylims[xmax]), trans = "log2", breaks = xylims[xmin:xmax], labels = labels) +
-            xlab(lab) +
-            theme(axis.text.x = element_text(angle = 30, vjust = 0.5, hjust = 1))
+            scale_x_continuous(limits = c(xylims[xmin], xylims[xmax]), trans = "log2", breaks = breaks, labels = labels) +
+            xlab(lab)
     }
 
     if (y_type %in% c("Gene", "Gene module")) {
@@ -522,11 +543,12 @@ plot_mc_scatter <- function(dataset,
         ymax <- min(c(1:length(xylims))[xylims >= y_limits[2] - 1e-10])
         ymin <- max(c(1:length(xylims))[xylims <= y_limits[1] + 1e-10])
         lab <- glue("{y_var} Expression")
+        breaks <- thin_log_breaks(xylims[ymin:ymax])
         if (log_labels) {
-            labels <- log2(xylims[ymin:ymax])
+            labels <- log2(breaks)
             lab <- glue("{lab} (log2)")
         } else {
-            labels <- scales::scientific(xylims[ymin:ymax])
+            labels <- scales::scientific(breaks)
         }
 
         if (corrected) {
@@ -534,7 +556,7 @@ plot_mc_scatter <- function(dataset,
         }
 
         p <- p +
-            scale_y_continuous(limits = c(xylims[ymin], xylims[ymax]), trans = "log2", breaks = xylims[ymin:ymax], labels = labels) +
+            scale_y_continuous(limits = c(xylims[ymin], xylims[ymax]), trans = "log2", breaks = breaks, labels = labels) +
             ylab(lab)
     }
 

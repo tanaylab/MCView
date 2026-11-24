@@ -55,14 +55,18 @@ plot_gg_over_mc <- function(dataset, g1, g2, metacell_types = get_mc_data(datase
             )
         )
 
+    # fewer breaks than xylims, with horizontal labels: rotated labels at every break ran into each
+    # other and into the axis title
+    x_breaks <- thin_log_breaks(xylims[xmin:xmax])
+    y_breaks <- thin_log_breaks(xylims[ymin:ymax])
+
     p <- ggplot(data = df, aes(x = !!sym(g1), y = !!sym(g2), fill = `Cell type`, label = metacell, customdata = metacell, tooltip_text = Metacell)) +
         geom_point(size = point_size, shape = 21, stroke = stroke) +
-        scale_x_continuous(limits = c(xylims[xmin], xylims[xmax]), trans = "log2", breaks = xylims[xmin:xmax], labels = scales::scientific(xylims[xmin:xmax])) +
-        scale_y_continuous(limits = c(xylims[ymin], xylims[ymax]), trans = "log2", breaks = xylims[ymin:ymax], labels = scales::scientific(xylims[ymin:ymax])) +
+        scale_x_continuous(limits = c(xylims[xmin], xylims[xmax]), trans = "log2", breaks = x_breaks, labels = scales::scientific(x_breaks)) +
+        scale_y_continuous(limits = c(xylims[ymin], xylims[ymax]), trans = "log2", breaks = y_breaks, labels = scales::scientific(y_breaks)) +
         scale_fill_manual(values = col_to_ct) +
         xlab(glue("{g1} Expression")) +
-        ylab(glue("{g2} Expression")) +
-        theme(axis.text.x = element_text(angle = 30, vjust = 0.5, hjust = 1))
+        ylab(glue("{g2} Expression"))
 
     if (plot_text) {
         p <- p + geom_text(size = 1, color = "black")
