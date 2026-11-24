@@ -1037,7 +1037,8 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                         top_cell_type_bar = ncol(m) <= 100,
                         interleave = nrow(m) > 80,
                         vertial_gridlines = mode %in% c("Inner", "Proj", "Stdev"),
-                        separate_gtable = TRUE
+                        separate_gtable = TRUE,
+                        values_title = heatmap_values_title(mode)
                     )
 
                     # we are returning the gtable and ggplot object separatly in order to allow shiny to infer positions correctly.

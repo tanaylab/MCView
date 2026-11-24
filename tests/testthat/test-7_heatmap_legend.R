@@ -69,3 +69,9 @@ test_that("the heatmap legend is drawn with or without each of its parts", {
     expect_match(short, "^Lateral .*…$")
     expect_lte(label_widths(short) * 10, 1)
 })
+
+test_that("every heatmap mode has a color bar title", {
+    for (mode in c("Markers", "Gene modules", "Inner", "Stdev", "Proj", "Outliers")) {
+        expect_true(nzchar(heatmap_values_title(mode)))
+    }
+})

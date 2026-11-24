@@ -88,6 +88,22 @@ gene_labels_theme <- function(gene_colors, interleave, element = element_text) {
     }
 }
 
+#' The title of the color bar of a heatmap: what its values are (see get_marker_matrix() and the help of the heatmaps)
+#'
+#' @param mode the mode of the heatmap (as in get_marker_matrix())
+#' @noRd
+heatmap_values_title <- function(mode) {
+    switch(mode,
+        "Markers" = ,
+        "Gene modules" = "log2 fold over\nmedian of metacells",
+        "Inner" = "strongest log2 fold,\ncell vs. metacell",
+        "Stdev" = "stdev of log2\nexpr. in metacell",
+        "Proj" = "log2 fold over\natlas projection",
+        "Outliers" = "log2 fold over\nclosest metacell",
+        ""
+    )
+}
+
 plot_markers_mat <- function(mat,
                              metacell_types,
                              cell_type_colors,
@@ -105,7 +121,8 @@ plot_markers_mat <- function(mat,
                              col_names = FALSE,
                              interleave = TRUE,
                              vertial_gridlines = FALSE,
-                             separate_gtable = FALSE) {
+                             separate_gtable = FALSE,
+                             values_title = "") {
     min_lfp <- min_lfp %||% -3
     max_lfp <- max_lfp %||% 3
 
@@ -117,7 +134,7 @@ plot_markers_mat <- function(mat,
 
     p_mat <- tgplot_heatmap_raster(
         clip_vals(mat, min_lfp, max_lfp),
-        scale_fill_gradient2(name = "", low = low_color, high = high_color, mid = mid_color, midpoint = midpoint, limits = c(min_lfp, max_lfp)),
+        scale_fill_gradient2(name = values_title, low = low_color, high = high_color, mid = mid_color, midpoint = midpoint, limits = c(min_lfp, max_lfp)),
         col_names = col_names,
         interleave = interleave
     )
@@ -133,7 +150,9 @@ plot_markers_mat <- function(mat,
         left_join(metacell_types %>% select("metacell", "cell_type"), by = "metacell") %>%
         left_join(cell_type_colors, by = "cell_type")
 
-    p_mat <- p_mat + theme(legend.position = "top")
+    # the color bar above the heatmap, its title (what the values are) at its left, as small as its labels, beside
+    # the bar and clear of the label of the bar's left end
+    p_mat <- p_mat + theme(legend.position = "top", legend.title = element_text(size = rel(0.8), hjust = 1, vjust = 1, lineheight = 0.9, margin = margin(r = 12)))
     p_plain <- p_mat
 
     # build the heatmap once: the gtable is made from it and print.gt_custom reuses it for the plot coordinates
