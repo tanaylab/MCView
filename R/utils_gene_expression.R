@@ -165,40 +165,44 @@ get_cell_types_egc <- function(cell_types, metacell_types, dataset, mat = NULL, 
     return(ct_egc)
 }
 
-get_samples_mat <- function(cell_types, metacell_types, dataset, samples = NULL) {
-    mc_mat <- get_mc_data(dataset, "mc_mat")
+# The weights of the metacells in each sample: a matrix of all the metacells of mc_mat x the samples, with the
+# fraction of the sample's cells (of the chosen cell types) in each metacell of these types, and zero rows for
+# the other metacells. Samples without cells of the cell types are left out, as are metacells without cells
+# in the cell metadata (which have no column in the samples' fractions).
+get_samples_mc_weights <- function(cell_types, metacell_types, dataset, samples = NULL) {
+    mc_names <- colnames(get_mc_data(dataset, "mc_mat"))
+    samp_mc_frac <- get_samp_mc_frac(dataset)
 
-    mc_types <- metacell_types %>%
-        filter(cell_type %in% cell_types) %>%
-        select(metacell, cell_type) %>%
-        deframe()
+    metacells <- metacell_types$metacell[metacell_types$cell_type %in% cell_types]
+    metacells <- unique(metacells[metacells %in% colnames(samp_mc_frac) & metacells %in% mc_names])
 
-    mc_mat <- mc_mat[, names(mc_types), drop = FALSE]
-    samp_mc_frac <- get_samp_mc_frac(dataset)[samples %||% TRUE, names(mc_types), drop = FALSE]
-    samp_sums <- rowSums(samp_mc_frac)
-
-    # remove samples with no metacells
-    samp_mc_frac <- samp_mc_frac[samp_sums > 0, , drop = FALSE]
+    samp_mc_frac <- samp_mc_frac[samples %||% TRUE, metacells, drop = FALSE]
+    samp_mc_frac <- samp_mc_frac[rowSums(samp_mc_frac) > 0, , drop = FALSE]
     samp_mc_frac <- samp_mc_frac / rowSums(samp_mc_frac)
 
-    samp_mat <- mc_mat %*% t(samp_mc_frac)
+    weights <- matrix(0, nrow = length(mc_names), ncol = nrow(samp_mc_frac), dimnames = list(mc_names, rownames(samp_mc_frac)))
+    weights[match(metacells, mc_names), ] <- t(samp_mc_frac)
+
+    return(weights)
+}
+
+# The UMIs of the samples: each sample's metacells of the chosen cell types, weighted by its cells in them. One
+# product with the whole matrix (zero weights for the other metacells): subsetting its columns first copied them.
+get_samples_mat <- function(cell_types, metacell_types, dataset, samples = NULL) {
+    weights <- get_samples_mc_weights(cell_types, metacell_types, dataset, samples = samples)
+
+    samp_mat <- get_mc_data(dataset, "mc_mat") %*% weights
 
     return(samp_mat)
 }
 
 get_samples_egc <- function(cell_types, metacell_types, dataset, samples = NULL) {
-    mc_types <- metacell_types %>%
-        filter(cell_type %in% cell_types) %>%
-        select(metacell, cell_type) %>%
-        deframe()
+    weights <- get_samples_mc_weights(cell_types, metacell_types, dataset, samples = samples)
 
-    mc_mat <- get_mc_data(dataset, "mc_mat")[, names(mc_types), drop = FALSE]
-    mc_sum <- get_mc_sum(dataset)[names(mc_types)]
-    samp_mc_frac <- get_samp_mc_frac(dataset)[samples %||% TRUE, names(mc_types), drop = FALSE]
-    samp_mc_frac <- samp_mc_frac / rowSums(samp_mc_frac)
-
-    # egc %*% t(samp_mc_frac), folding the normalization into the weights instead of normalizing the matrix
-    samp_egc <- mc_mat %*% (t(samp_mc_frac) / mc_sum)
+    # egc %*% weights, folding the normalization into the weights instead of normalizing the matrix
+    used <- which(rowSums(weights) > 0)
+    weights[used, ] <- weights[used, , drop = FALSE] / get_mc_sum(dataset)[used]
+    samp_egc <- get_mc_data(dataset, "mc_mat") %*% weights
 
     return(samp_egc)
 }
@@ -206,9 +210,11 @@ get_samples_egc <- function(cell_types, metacell_types, dataset, samples = NULL)
 get_samples_gene_egc <- function(gene, dataset, metacells = NULL) {
     g <- get_gene_egc(gene, dataset)
     samp_mc_frac <- get_samp_mc_frac(dataset)
+    # by metacell: the fractions have a column only for the metacells with cells, in their own order
+    metacells_with_cells <- intersect(metacells %||% names(g), intersect(names(g), colnames(samp_mc_frac)))
+    g <- g[metacells_with_cells]
+    samp_mc_frac <- samp_mc_frac[, metacells_with_cells, drop = FALSE]
     if (!is.null(metacells)) {
-        g <- g[metacells]
-        samp_mc_frac <- samp_mc_frac[, metacells]
         samp_mc_frac <- samp_mc_frac / rowSums(samp_mc_frac)
         samp_mc_frac[is.na(samp_mc_frac)] <- 0
     }

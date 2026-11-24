@@ -281,6 +281,13 @@ mod_samples_server <- function(id, dataset, metacell_types, cell_type_colors, ge
                 req(input$samp2 %in% rownames(samp_frac))
                 req(sum(samp_frac[input$samp1, ], na.rm = TRUE) > 0)
                 req(sum(samp_frac[input$samp2, ], na.rm = TRUE) > 0)
+                samples <- unique(c(input$samp1, input$samp2))
+                weights <- get_samples_mc_weights(input$selected_cell_types, metacell_types(), dataset(), samples = samples)
+                no_cells <- setdiff(samples, colnames(weights))
+                validate(need(
+                    length(no_cells) == 0,
+                    glue("The chosen cell types have no metacells in {if (length(no_cells) > 1) 'samples' else 'sample'} {paste(no_cells, collapse = ' and ')}. Please choose other cell types or samples.")
+                ))
                 calc_samp_samp_gene_df(dataset(), input$samp1, input$samp2, metacell_types(), cell_types = input$selected_cell_types)
             }) %>% bindCache(dataset(), input$selected_cell_types, input$samp1, input$samp2, metacell_types())
 

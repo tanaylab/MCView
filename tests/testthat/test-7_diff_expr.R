@@ -15,16 +15,17 @@ toy_diff_expr_data <- function() {
     )
 }
 
-with_toy_mc_data <- function(env, mc_data_env, envir = parent.frame()) {
+# mc_data of a dataset named "toy" (an environment per dataset, as in the app), until the calling test ends
+with_toy_mc_data <- function(mc_data_env, envir = parent.frame()) {
     prev <- mget(c("mc_data", "egc_epsilon"), envir = globalenv(), ifnotfound = list(NULL, NULL))
     withr::defer(purrr::iwalk(prev, ~ assign(.y, .x, envir = globalenv())), envir = envir)
-    assign("mc_data", list(toy = list2env(mc_data_env)), envir = globalenv()) # an environment per dataset, as in the app
+    assign("mc_data", list(toy = list2env(mc_data_env)), envir = globalenv())
     assign("egc_epsilon", 1e-5, envir = globalenv())
 }
 
 test_that("the cached diff. expression follows every input of the comparison", {
     toy <- toy_diff_expr_data()
-    with_toy_mc_data(environment(), list(mc_mat = toy$mat, mc_sum = colSums(toy$mat)))
+    with_toy_mc_data(list(mc_mat = toy$mat, mc_sum = colSums(toy$mat)))
 
     metacell_types <- reactiveVal(toy$metacell_types)
     cell_type_colors <- reactiveVal(toy$cell_type_colors)
@@ -159,7 +160,7 @@ test_that("'Show only fitted genes' of a group uses the cell types of the group'
         cell_type = c("A", "B", "C", "C"),
         fitted_gene = c(TRUE, TRUE, TRUE, FALSE)
     )
-    with_toy_mc_data(environment(), list(gene_metadata = gene_metadata))
+    with_toy_mc_data(list(gene_metadata = gene_metadata))
     df <- tibble(gene = paste0("g", 1:5), diff = 0)
     metacell_types <- function() tibble(metacell = c("m1", "m2", "m3"), cell_type = c("A", "B", "C"))
     # input$metacell1 is still the metacell chosen in the MC mode
@@ -169,4 +170,108 @@ test_that("'Show only fitted genes' of a group uses the cell types of the group'
     expect_identical(diff_expr_plot_df(df, input, function() "toy", "MC", metacell_types)$gene, "g1")
     expect_identical(diff_expr_plot_df(df, list(show_only_fitted = TRUE, metacell1 = "C"), function() "toy", "Type", metacell_types)$gene, "g3")
     expect_identical(diff_expr_plot_df(df, list(show_only_fitted = FALSE), function() "toy", "Group", metacell_types)$gene, df$gene)
+})
+
+# The implementations before the samples were weighted without copying the matrix (reference)
+old_get_samples_mat <- function(cell_types, metacell_types, dataset, samples = NULL) {
+    mc_mat <- get_mc_data(dataset, "mc_mat")
+    mc_types <- metacell_types %>%
+        filter(cell_type %in% cell_types) %>%
+        select(metacell, cell_type) %>%
+        deframe()
+    mc_mat <- mc_mat[, names(mc_types), drop = FALSE]
+    samp_mc_frac <- get_samp_mc_frac(dataset)[samples %||% TRUE, names(mc_types), drop = FALSE]
+    samp_sums <- rowSums(samp_mc_frac)
+    samp_mc_frac <- samp_mc_frac[samp_sums > 0, , drop = FALSE]
+    samp_mc_frac <- samp_mc_frac / rowSums(samp_mc_frac)
+    mc_mat %*% t(samp_mc_frac)
+}
+
+old_get_samples_egc <- function(cell_types, metacell_types, dataset, samples = NULL) {
+    mc_types <- metacell_types %>%
+        filter(cell_type %in% cell_types) %>%
+        select(metacell, cell_type) %>%
+        deframe()
+    mc_mat <- get_mc_data(dataset, "mc_mat")[, names(mc_types), drop = FALSE]
+    mc_sum <- get_mc_sum(dataset)[names(mc_types)]
+    samp_mc_frac <- get_samp_mc_frac(dataset)[samples %||% TRUE, names(mc_types), drop = FALSE]
+    samp_mc_frac <- samp_mc_frac / rowSums(samp_mc_frac)
+    mc_mat %*% (t(samp_mc_frac) / mc_sum)
+}
+
+# Cells of 4 samples in the toy metacells: S4 has cells only in metacells of type C
+toy_cell_metadata <- function(metacell_types, without = character(0)) {
+    set.seed(19)
+    purrr::map_dfr(seq_len(nrow(metacell_types)), function(i) {
+        samples <- if (metacell_types$cell_type[i] == "C") c("S1", "S2", "S3", "S4") else c("S1", "S2", "S3")
+        n <- sample(5:20, 1)
+        tibble(metacell = metacell_types$metacell[i], samp_id = sample(samples, n, replace = TRUE))
+    }) %>%
+        filter(!(metacell %in% without)) %>%
+        mutate(cell_id = paste0("c", row_number()))
+}
+
+test_that("the samples' expression is computed without copying the matrix, as before", {
+    toy <- toy_diff_expr_data()
+    with_toy_mc_data(list(mc_mat = toy$mat, mc_sum = colSums(toy$mat) * 1.1, cell_metadata = toy_cell_metadata(toy$metacell_types)))
+    mt <- toy$metacell_types
+
+    for (cell_types in list(c("A", "B"), "B", c("A", "B", "C"))) {
+        for (samples in list(NULL, c("S2", "S1"), "S3")) {
+            new_mat <- get_samples_mat(cell_types, mt, "toy", samples = samples)
+            expect_equal(new_mat, old_get_samples_mat(cell_types, mt, "toy", samples = samples))
+            if (!("S4" %in% colnames(old_get_samples_mat(cell_types, mt, "toy", samples = NULL))) && is.null(samples)) {
+                # a sample without cells of the cell types: left out (the old egc had NaN for it)
+                expect_false("S4" %in% colnames(get_samples_egc(cell_types, mt, "toy", samples = samples)))
+                expect_true(all(is.nan(old_get_samples_egc(cell_types, mt, "toy", samples = samples)[, "S4"])))
+                expect_equal(get_samples_egc(cell_types, mt, "toy", samples = samples), old_get_samples_egc(cell_types, mt, "toy", samples = samples)[, c("S1", "S2", "S3")])
+            } else {
+                expect_equal(get_samples_egc(cell_types, mt, "toy", samples = samples), old_get_samples_egc(cell_types, mt, "toy", samples = samples))
+            }
+        }
+    }
+    # metacells in another order in the annotation than in the matrix
+    shuffled <- mt[sample(nrow(mt)), ]
+    expect_equal(get_samples_mat(c("A", "C"), shuffled, "toy"), old_get_samples_mat(c("A", "C"), mt, "toy"))
+    expect_equal(get_samples_egc(c("A", "C"), shuffled, "toy"), old_get_samples_egc(c("A", "C"), mt, "toy"))
+})
+
+test_that("samples are compared when a metacell has no cells, and a sample without the cell types is reported", {
+    toy <- toy_diff_expr_data()
+    mt <- toy$metacell_types
+    with_toy_mc_data(list(mc_mat = toy$mat, mc_sum = colSums(toy$mat), cell_metadata = toy_cell_metadata(mt, without = "m3")))
+    expect_false("m3" %in% colnames(get_samp_mc_frac("toy")))
+
+    # "subscript out of bounds" before
+    expect_error(old_get_samples_mat("A", mt, "toy"))
+    without_m3 <- mt %>% filter(metacell != "m3")
+    expect_equal(get_samples_mat("A", mt, "toy"), old_get_samples_mat("A", without_m3, "toy"))
+    expect_equal(get_samples_egc("A", mt, "toy"), old_get_samples_egc("A", without_m3, "toy")[, c("S1", "S2", "S3")])
+    weights <- get_samples_mc_weights("A", mt, "toy")
+    expect_identical(unname(weights["m3", ]), c(0, 0, 0))
+    expect_equal(unname(colSums(weights)), c(1, 1, 1))
+
+    df <- calc_samp_samp_gene_df("toy", "S1", "S2", mt, cell_types = c("A", "B"))
+    expect_setequal(df$gene, rownames(toy$mat))
+    expect_equal(df$S1[match(rownames(toy$mat), df$gene)], unname(old_get_samples_egc(c("A", "B"), without_m3, "toy")[, "S1"]) + 1e-5)
+
+    # S4 has no metacells of type A: it is left out of the weights, which the Samples tab reports
+    expect_identical(colnames(get_samples_mc_weights("A", mt, "toy", samples = c("S1", "S4"))), "S1")
+    expect_identical(colnames(get_samples_mc_weights(c("A", "C"), mt, "toy", samples = c("S1", "S4"))), c("S1", "S4"))
+})
+
+test_that("a gene's expression in the samples is matched by metacell", {
+    toy <- toy_diff_expr_data()
+    mt <- toy$metacell_types
+    with_toy_mc_data(list(mc_mat = toy$mat, mc_sum = colSums(toy$mat), cell_metadata = toy_cell_metadata(mt, without = "m3")))
+    frac <- get_samp_mc_frac("toy")
+    egc <- toy$mat["g1", ] / colSums(toy$mat)
+
+    mcs <- colnames(frac)
+    expect_equal(get_samples_gene_egc("g1", "toy"), (frac %*% egc[mcs])[, 1])
+    # the chosen metacells, one without cells
+    chosen <- c("m10", "m2", "m3", "m25")
+    f <- frac[, c("m10", "m2", "m25")]
+    f <- f / rowSums(f)
+    expect_equal(get_samples_gene_egc("g1", "toy", chosen), (f %*% egc[c("m10", "m2", "m25")])[, 1])
 })
