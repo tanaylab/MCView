@@ -13,7 +13,11 @@ mod_stdev_fold_ui <- function(id) {
         fluidRow(
             generic_column(
                 width = 12,
-                heatmap_box(ns("stdev_fold_heatmap"), "Stdev-fold Heatmap", fold_change_range = c(0, 1), low_color = "white", midpoint = 0.01, mid_color = "white", high_color = "red")
+                # The values (stdev of log2 of the gene's fraction in the metacell's cells) are 0 where they
+                # weren't computed, and otherwise mostly ~0.5-1 (their 99th percentile was ~1.0-1.1 in example
+                # projects, ideally they are below ~1). A white to red scale over 0-1.5: with the previous one
+                # (white up to 0.01, red at 1) the whole matrix was one saturated red.
+                heatmap_box(ns("stdev_fold_heatmap"), "Stdev-fold Heatmap", fold_change_range = c(0, 1.5), low_color = "white", midpoint = 0.75, mid_color = "#FC9272", high_color = "#99000D")
             )
         )
     )
