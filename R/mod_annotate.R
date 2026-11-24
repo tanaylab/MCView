@@ -154,6 +154,10 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 req(values$file_status)
                 new_metacell_types <- tgutil::fread(input$metacell_types_fn$datapath, colClasses = c("cell_type" = "character", "metacell" = "character")) %>% as_tibble()
 
+                # the file is read once, also when it is rejected: otherwise it would be read again (and its errors
+                # shown again) whenever another value read here changes
+                values$file_status <- NULL
+
                 input_ok <- TRUE
                 required_fields <- c("cell_type", "metacell")
                 if (!all(required_fields %in% colnames(new_metacell_types))) {
@@ -199,7 +203,6 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                     metacell_types(new_metacell_types)
                     # Reset the selected cell types to match the (possibly) new cell type list that was just loaded
                     selected_cell_types(all_cell_types(cell_type_colors()))
-                    values$file_status <- NULL
                 }
             })
 
