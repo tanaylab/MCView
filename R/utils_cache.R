@@ -70,8 +70,8 @@ load_shiny_data <- function(name, dataset, cache_dir, atlas = FALSE) {
     }
 
     # Projects imported with older versions store some sparse matrices (e.g. inner_fold_mat) as triplets (dgTMatrix),
-    # which Matrix converts whole on every row or column subset (1.4 s for a gene of a 33K x 5.3K matrix): convert
-    # them once.
+    # which Matrix converts whole on every row or column subset (~0.4 s and 200 MB of temporary memory for a gene of
+    # a 33K x 5.3K matrix): convert them once.
     if (methods::is(object, "TsparseMatrix")) {
         object <- methods::as(object, "CsparseMatrix")
     }
@@ -526,7 +526,7 @@ has_gg_mc_top_cor <- function(project, dataset) {
 }
 
 # The rows of each gene in gg_mc_top_cor (a list named by gene1), or NULL without gg_mc_top_cor. Finding the rows of a
-# gene in the table (~1M rows) takes tens of ms, and the selectors of correlated genes do it several times per render,
+# gene in the table (~1M rows) takes ~10 ms, and the selectors of correlated genes do it several times per render,
 # so index the table once per dataset.
 get_gg_mc_top_cor_index <- function(dataset, atlas = FALSE) {
     env <- if (atlas) mc_data[[dataset]]$atlas else mc_data[[dataset]]
