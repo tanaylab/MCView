@@ -16,7 +16,19 @@ get_md_attribute <- function(dataset, md, attr, default, atlas = FALSE) {
 }
 
 
-get_metadata_colors <- function(dataset, md, colors = NULL, color_breaks = NULL, metadata = NULL, default_colors = c("white", "#F7F7F7", "#FDDBC7", "#F4A582", "#D6604D", "#B2182B", "#67001F", "black"), atlas = FALSE) {
+# chameleon::distinct_colors(n) depends only on n, and takes ~0.03 s for 100 colors and ~0.25 s for 1000. Fields without
+# stored colors get their colors on every coloring by them, in every session: keep the colors of each n in the process.
+distinct_colors_cache <- new.env(parent = emptyenv())
+
+distinct_color_names <- function(n) {
+    key <- as.character(n)
+    if (is.null(distinct_colors_cache[[key]])) {
+        distinct_colors_cache[[key]] <- chameleon::distinct_colors(n)$name
+    }
+    return(distinct_colors_cache[[key]])
+}
+
+get_metadata_colors <- function(dataset, md,colors = NULL, color_breaks = NULL, metadata = NULL, default_colors = c("white", "#F7F7F7", "#FDDBC7", "#F4A582", "#D6604D", "#B2182B", "#67001F", "black"), atlas = FALSE) {
     metadata <- metadata %||% get_mc_data(dataset, "metadata", atlas = atlas)
     if (md == "Clipboard") {
         return(c("selected" = "darkred", "unslected" = "lightgrey"))
@@ -48,7 +60,7 @@ get_metadata_colors <- function(dataset, md, colors = NULL, color_breaks = NULL,
         colors <- colors %||% get_md_attribute(dataset, md, NULL, NULL, atlas = atlas)
         if (is.null(colors)) {
             categories <- unique(metadata[[md]])
-            colors <- chameleon::distinct_colors(length(categories))$name
+            colors <- distinct_color_names(length(categories))
             names(colors) <- categories
         }
         return(colors)
