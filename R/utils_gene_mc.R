@@ -308,17 +308,17 @@ calc_gene_gene_correlations <- function(dataset, genes, cell_type_filter = NULL,
     # Calculate all pairwise correlations between genes
     cor_matrix <- cor(t(expr_data), use = "pairwise.complete.obs")
 
-    # Convert to long format, excluding self-correlations
+    # Convert to long format, excluding self-correlations. expand.grid varies input_gene fastest, as the
+    # column-major order of cor_matrix (rows and columns in the order of valid_genes) does.
     results <- expand.grid(
         input_gene = valid_genes,
         gene2 = valid_genes,
         stringsAsFactors = FALSE
-    ) %>%
+    )
+    results$cor <- as.vector(cor_matrix)
+    results <- results %>%
         filter(input_gene != gene2) %>%
-        mutate(
-            cor = mapply(function(g1, g2) cor_matrix[g1, g2], input_gene, gene2),
-            correlation_type = ifelse(cor > 0, "positive", "negative")
-        ) %>%
+        mutate(correlation_type = ifelse(cor > 0, "positive", "negative")) %>%
         filter(abs(cor) >= threshold) %>%
         mutate(
             rank = ave(abs(cor), input_gene, FUN = function(x) rank(-x))
