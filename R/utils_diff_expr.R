@@ -171,18 +171,24 @@ mc_mc_gene_scatter_df_reactive <- function(dataset, input, output, session, meta
         } else if (input$mode == "Groups") {
             req(groupA)
             req(groupB)
-            req(groupA())
-            req(groupB())
-            req(groupA() %in% metacell_types()$metacell)
-            req(groupB() %in% metacell_types()$metacell)
+            # only the metacells of the dataset: req(groupA() %in% ...) passed when any of them was, and the
+            # others (e.g. pasted from a clipboard of another dataset) broke the comparison
+            group_a <- intersect(groupA(), metacell_types()$metacell)
+            group_b <- intersect(groupB(), metacell_types()$metacell)
+            validate(need(
+                length(group_a) > 0 && length(group_b) > 0,
+                "Please add metacells to group A and to group B: select them in the 2D projection (\"Select: Group A / Group B\"), add them with the buttons on the left, or paste them from the clipboard."
+            ))
             group_types_df <- bind_rows(
-                tibble(metacell = groupA(), cell_type = "Group A"),
-                tibble(metacell = groupB(), cell_type = "Group B")
+                tibble(metacell = group_a, cell_type = "Group A"),
+                tibble(metacell = group_b, cell_type = "Group B")
             )
             if (!is.null(metacell_filter)) {
                 group_types_df <- group_types_df %>% filter(metacell %in% metacell_filter)
-                req(all(c("Group A", "Group B") %in% group_types_df$cell_type))
-                req(nrow(group_types_df) > 0)
+                validate(need(
+                    all(c("Group A", "Group B") %in% group_types_df$cell_type),
+                    "\"Filter by clipboard\" is on, and group A or group B has no metacells in the clipboard."
+                ))
             }
 
             calc_ct_ct_gene_df(dataset(), "Group A", "Group B", group_types_df)

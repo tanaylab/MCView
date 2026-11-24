@@ -165,6 +165,8 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
             ns <- session$ns
 
             group <- reactiveVal()
+            # the group holds metacells of a dataset
+            observeEvent(dataset(), ignoreInit = TRUE, group(NULL))
 
             # The scatter depends on input$mode only through its drag mode (select in Group mode). A
             # reactiveVal invalidates only when its value changes, so switching between MC and Type
@@ -252,9 +254,12 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
                     req(projected_metacell_types())
                     df <- calc_obs_exp_type_df(dataset(), input$metacell1, projected_metacell_types())
                 } else if (input$mode == "Group") {
-                    req(group())
-                    req(length(group()) > 1)
-                    group_types_df <- tibble(metacell = group(), cell_type = "Group")
+                    group_metacells <- intersect(group(), metacell_names())
+                    validate(need(
+                        length(group_metacells) > 1,
+                        "Please add at least two metacells to the group: select them in the 2D projection, add them with the button on the left, or paste them from the clipboard."
+                    ))
+                    group_types_df <- tibble(metacell = group_metacells, cell_type = "Group")
                     df <- calc_obs_exp_type_df(dataset(), "Group", group_types_df)
                 }
 
@@ -684,8 +689,8 @@ group_selectors_mod_query <- function(input, output, session, dataset, ns, group
     })
 
     observeEvent(input$paste_group_metacells, {
-        metacells <- globals$clipboard
-        group(unique(c(group(), metacells)))
+        req(clipboard_has_metacells(globals))
+        group(unique(c(group(), globals$clipboard)))
     })
 
     observeEvent(plotly::event_data("plotly_selected", source = "proj_mc_plot_proj_tab"), {

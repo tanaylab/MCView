@@ -144,6 +144,11 @@ mod_mc_mc_server <- function(id, dataset, metacell_types, cell_type_colors, gene
 
             groupA <- reactiveVal()
             groupB <- reactiveVal()
+            # the groups hold metacells of a dataset
+            observeEvent(dataset(), ignoreInit = TRUE, {
+                groupA(NULL)
+                groupB(NULL)
+            })
 
             metacell_names <- metacell_names_reactive(dataset)
             metacell_colors <- metacell_colors_reactive(dataset, metacell_names, metacell_types)
@@ -292,6 +297,15 @@ mod_mc_mc_globals_observers <- function(input, session, globals, notification_su
 # keep what the user chose, when it is still one of the choices
 keep_selected <- function(current, choices, default) {
     if (length(current) == 1 && !is.na(current) && current %in% choices) current else default
+}
+
+# Whether there are metacells to paste from the clipboard, telling the user when there aren't
+clipboard_has_metacells <- function(globals) {
+    if (length(globals$clipboard) == 0) {
+        showNotification("The clipboard is empty: add metacells to it first (with the \"Clipboard\" button at the top, or by copying the metacells selected in another tab)", type = "warning")
+        return(FALSE)
+    }
+    TRUE
 }
 
 # The choices of a metacell picker, with "(dissimilar)" after the metacells that the projection on an atlas
@@ -568,13 +582,13 @@ group_selectors <- function(input, output, session, dataset, ns, groupA, groupB,
     })
 
     observeEvent(input$paste_groupA_metacells, {
-        metacells <- globals$clipboard
-        groupA(unique(c(groupA(), metacells)))
+        req(clipboard_has_metacells(globals))
+        groupA(unique(c(groupA(), globals$clipboard)))
     })
 
     observeEvent(input$paste_groupB_metacells, {
-        metacells <- globals$clipboard
-        groupB(unique(c(groupB(), metacells)))
+        req(clipboard_has_metacells(globals))
+        groupB(unique(c(groupB(), globals$clipboard)))
     })
 
     observeEvent(input$reset_groupA, {

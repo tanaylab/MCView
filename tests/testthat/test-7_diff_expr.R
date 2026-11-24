@@ -116,6 +116,24 @@ test_that("the cached diff. expression follows every input of the comparison", {
         session$setInputs(filter_by_clipboard = FALSE)
         check()
 
+        # metacells that the dataset doesn't have (e.g. pasted from another dataset's clipboard) are left out
+        groupA(c("m1", "x99", "m2"))
+        session$flushReact()
+        expect_equal(scatter_df(), calc_ct_ct_gene_df("toy", "Group A", "Group B", tibble(metacell = c("m1", "m2", groupB()), cell_type = rep(c("Group A", "Group B"), c(2, 3)))))
+        # an empty group: a message instead of a blank plot
+        groupA(NULL)
+        session$flushReact()
+        expect_error(scatter_df(), "Please add metacells to group A and to group B", class = "validation")
+        groupA("x99")
+        session$flushReact()
+        expect_error(scatter_df(), "Please add metacells to group A and to group B", class = "validation")
+        groupA(c("m1", "m2"))
+        globals$clipboard <- c("m1", "m2")
+        session$setInputs(filter_by_clipboard = TRUE)
+        expect_error(scatter_df(), "group A or group B has no metacells in the clipboard", class = "validation")
+        session$setInputs(filter_by_clipboard = FALSE)
+        check()
+
         session$setInputs(mode = "Types", metacell1 = "A", metacell2 = "B")
         check()
         expect_equal(scatter_df(), ab)
