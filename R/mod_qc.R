@@ -360,25 +360,19 @@ qc_stat_plot <- function(field, xlab, dataset, input, plot_type_id, globals, yla
     }) %>% bindCache(dataset(), input[[plot_type_id]], field, plot_type_id, input[[field_input]], globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
 }
 
-# Drawn with plotly directly, as ggplotly() drew the ggplot of geom_density() with geom_vline()s and
-# theme_classic(): converting the ggplot took ~0.3 s per plot, and the QC tab, often the first tab
-# users see, has five of them.
+# The QC plots are drawn with plotly directly, as ggplotly() drew the ggplot of geom_density() with
+# geom_vline()s and theme_classic(): converting the ggplot took ~0.3 s per plot, and the QC tab, often the
+# first tab users see, has five of them.
 qc_density <- function(qc_df, field, xlab, ylab, globals, log_scale = FALSE) {
     if (is.null(ylab)) {
         ylab <- "Density"
     }
-    quants <- quantile(qc_df[[field]], probs = c(0.1, 0.5, 0.9))
-    quants_text <- c(
-        glue("bottom 10%: {round(quants[1], digits = 2)}"),
-        glue("median: {round(quants[2], digits = 2)}"),
-        glue("top 10%: {round(quants[3], digits = 2)}")
-    )
+    values_quants <- quantile(qc_df[[field]], probs = c(0.1, 0.5, 0.9))
 
     x <- qc_df[[field]]
-    x_name <- field
+    quants <- values_quants
     if (log_scale) {
         x <- log10(x)
-        x_name <- glue("log10({field})")
         quants <- log10(quants)
     }
     x <- x[is.finite(x)]
@@ -386,58 +380,23 @@ qc_density <- function(qc_df, field, xlab, ylab, globals, log_scale = FALSE) {
     d <- stats::density(x, n = 512, from = min(x), to = max(x))
     max_y <- max(d$y)
     # ggplot's axes: 5% wider than the data, its breaks and labels
-    x_range <- range(x) + c(-0.05, 0.05) * diff(range(x))
     y_range <- c(-0.05, 1.05) * max_y
-    if (log_scale) {
-        x_breaks <- scales::breaks_log(base = 10)(10^range(x))
-        x_breaks <- x_breaks[log10(x_breaks) >= x_range[1] & log10(x_breaks) <= x_range[2]]
-        x_ticks <- list(tickvals = log10(x_breaks), ticktext = scales::scientific(x_breaks))
-    } else {
-        x_breaks <- scales::breaks_extended()(range(x))
-        x_ticks <- list(tickvals = x_breaks, ticktext = format(x_breaks, trim = TRUE))
-    }
     y_breaks <- scales::breaks_extended()(c(0, max_y))
-    axis <- function(title, range, ticks) {
-        c(list(
-            title = list(text = title, font = list(color = "rgba(0,0,0,1)", size = 14.6119)),
-            type = "linear", autorange = FALSE, range = range, tickmode = "array", ticks = "outside",
-            tickcolor = "rgba(0,0,0,1)", ticklen = 3.653, tickwidth = 0.6642, tickfont = list(color = "rgba(0,0,0,1)", size = 11.6895),
-            showline = TRUE, linecolor = "rgba(0,0,0,1)", linewidth = 0.6642, showgrid = FALSE, zeroline = FALSE, hoverformat = ".2f"
-        ), ticks)
-    }
-    vline <- function(p, v, color) {
-        plotly::add_trace(p,
-            x = rep(v, each = 3), y = rep(c(y_range, NA), length(v)), text = rep(paste("xintercept:", signif(v, 7)), each = 3),
-            type = "scatter", mode = "lines", line = list(width = 1.8898, color = color, dash = "dash"),
-            hoverinfo = "text", showlegend = FALSE, fill = "none", inherit = FALSE
-        )
-    }
+    # the hover texts in the units of the axis (e.g. UMIs, not log10(UMIs))
+    d_values <- if (log_scale) 10^d$x else d$x
 
     p <- plotly::plot_ly(
-        x = d$x, y = d$y, text = paste0("density: ", signif(d$y, 8), "<br />", x_name, ": ", signif(d$x, 7)),
+        x = d$x, y = d$y, text = paste0(xlab, ": ", qc_format_number(d_values), "<br />Density: ", qc_format_number(d$y)),
         type = "scatter", mode = "lines", fill = "tozeroy", fillcolor = "rgba(0,0,0,0.2)",
         line = list(width = 1.8898, color = "rgba(0,0,0,0.2)"), hoverinfo = "text", showlegend = FALSE
     ) %>%
-        vline(quants[2], "rgba(255,0,0,1)") %>%
-        vline(quants[c(1, 3)], "rgba(0,0,0,1)") %>%
+        qc_add_quantiles(values_quants, quants, y_range) %>%
         plotly::layout(
             margin = list(t = 23.3059, r = 7.3059, b = 37.2603, l = 43.105),
             font = list(color = "rgba(0,0,0,1)", size = 14.6119),
-            xaxis = axis(xlab, x_range, x_ticks),
-            yaxis = axis(ylab, y_range, list(tickvals = y_breaks, ticktext = format(y_breaks, trim = TRUE))),
+            xaxis = qc_x_axis(x, xlab, log_scale),
+            yaxis = qc_plot_axis(ylab, y_range, list(tickvals = y_breaks, ticktext = format(y_breaks, trim = TRUE))),
             showlegend = FALSE, hovermode = "closest"
-        ) %>%
-        plotly::add_annotations(
-            x = quants,
-            y = c(0.75, 0.75, 0.75) * max_y,
-            text = quants_text,
-            showarrow = FALSE,
-            font = list(color = "black", size = 10),
-            yshift = 0,
-            xshift = -10,
-            textangle = 90,
-            ax = 0,
-            ay = 0
         ) %>%
         collapse_hoverinfo() %>%
         sanitize_plotly_buttons() %>%
@@ -446,53 +405,118 @@ qc_density <- function(qc_df, field, xlab, ylab, globals, log_scale = FALSE) {
     return(p)
 }
 
+# The share of metacells with a value above x (1 - the ECDF of the values)
 qc_ecdf <- function(qc_df, field, xlab, ylab, globals, log_scale = FALSE) {
     if (is.null(ylab)) {
-        ylab <- "% of metacells <= x"
+        ylab <- "% of metacells > x"
     }
+    values <- qc_df[[field]]
+    values <- values[!is.na(values)]
+    values_quants <- quantile(values, probs = c(0.1, 0.5, 0.9))
 
-    quants <- quantile(qc_df[[field]], probs = c(0.1, 0.5, 0.9))
+    # at the values (at most ~1000 of them)
+    v <- sort(unique(values))
+    if (length(v) > 1000) {
+        v <- unique(stats::quantile(values, seq(0, 1, length.out = 1000), type = 1, names = FALSE))
+    }
+    y <- 1 - stats::ecdf(values)(v)
 
-    p <- tibble(
-        x = qc_df[[field]],
-        y = 1 - ecdf(x)(x)
-    ) %>%
-        ggplot(aes(x = x, y = y)) +
-        geom_line() +
-        xlab(xlab) +
-        ylab(ylab) +
-        scale_y_continuous(labels = scales::percent) +
-        geom_vline(xintercept = quants[2], color = "red", linetype = "dashed") +
-        geom_vline(xintercept = quants[c(1, 3)], color = "gray", linetype = "dashed") +
-        theme_bw()
-
-    quants_text <- c(
-        glue("bottom 10%: {round(quants[1], digits = 2)}"),
-        glue("median: {round(quants[2], digits = 2)}"),
-        glue("top 10%: {round(quants[3], digits = 2)}")
-    )
-
+    x <- v
+    quants <- values_quants
     if (log_scale) {
-        p <- p + scale_x_log10(labels = scales::scientific)
+        x <- log10(x)
         quants <- log10(quants)
     }
+    finite <- is.finite(x)
+    x <- x[finite]
+    y <- y[finite]
+    v <- v[finite]
+    y_range <- c(-0.05, 1.05)
+    y_breaks <- c(0, 0.25, 0.5, 0.75, 1)
 
-    p <- plotly::ggplotly(p) %>%
-        plotly::add_annotations(
-            x = quants,
-            y = c(0.3, 0.3, 0.75),
-            text = quants_text,
-            showarrow = FALSE,
-            font = list(color = "darkgray", size = 10),
-            yshift = 0,
-            xshift = -10,
-            textangle = 90,
-            ax = 0,
-            ay = 0
+    p <- plotly::plot_ly(
+        x = x, y = y, text = paste0(xlab, ": ", qc_format_number(v), "<br />Metacells above: ", scales::percent(y, accuracy = 0.1)),
+        # (the share at a value holds until the next value)
+        type = "scatter", mode = "lines", line = list(width = 1.8898, color = "rgba(0,0,0,1)", shape = "hv"),
+        hoverinfo = "text", showlegend = FALSE
+    ) %>%
+        qc_add_quantiles(values_quants, quants, y_range) %>%
+        plotly::layout(
+            margin = list(t = 23.3059, r = 7.3059, b = 37.2603, l = 43.105),
+            font = list(color = "rgba(0,0,0,1)", size = 14.6119),
+            xaxis = qc_x_axis(x, xlab, log_scale),
+            yaxis = qc_plot_axis(ylab, y_range, list(tickvals = y_breaks, ticktext = scales::percent(y_breaks))),
+            showlegend = FALSE, hovermode = "closest"
         ) %>%
+        collapse_hoverinfo() %>%
         sanitize_plotly_buttons() %>%
         sanitize_plotly_download(globals)
 
-
     return(p)
+}
+
+# A number in the labels and hover texts of the QC plots: big numbers with thousands separators (178,755),
+# the others with 3 significant digits (2.77, 0.0153)
+qc_format_number <- function(x) {
+    ifelse(
+        abs(x) >= 1000,
+        scales::comma(x, accuracy = 1),
+        trimws(formatC(signif(x, 3), digits = 3, format = "fg"))
+    )
+}
+
+# An axis of the QC plots, styled as ggplot's theme_classic()
+qc_plot_axis <- function(title, range, ticks) {
+    c(list(
+        title = list(text = title, font = list(color = "rgba(0,0,0,1)", size = 14.6119)),
+        type = "linear", autorange = FALSE, range = range, tickmode = "array", ticks = "outside",
+        tickcolor = "rgba(0,0,0,1)", ticklen = 3.653, tickwidth = 0.6642, tickfont = list(color = "rgba(0,0,0,1)", size = 11.6895),
+        showline = TRUE, linecolor = "rgba(0,0,0,1)", linewidth = 0.6642, showgrid = FALSE, zeroline = FALSE
+    ), ticks)
+}
+
+# The x axis of a QC plot of `x` (the log10 of the values when log_scale) as ggplot's: 5% wider than the
+# data, with its breaks and labels
+qc_x_axis <- function(x, xlab, log_scale) {
+    x_range <- range(x) + c(-0.05, 0.05) * diff(range(x))
+    if (log_scale) {
+        x_breaks <- scales::breaks_log(base = 10)(10^range(x))
+        x_breaks <- x_breaks[log10(x_breaks) >= x_range[1] & log10(x_breaks) <= x_range[2]]
+        ticks <- list(tickvals = log10(x_breaks), ticktext = scales::scientific(x_breaks))
+    } else {
+        x_breaks <- scales::breaks_extended()(range(x))
+        ticks <- list(tickvals = x_breaks, ticktext = format(x_breaks, trim = TRUE))
+    }
+    qc_plot_axis(xlab, x_range, ticks)
+}
+
+# Dashed lines at the bottom 10%, the median and the top 10% of the values (values_quants), at `quants` (the
+# same in the units of the x axis, e.g. their log10), with their labels. Each label is beside its line, so that
+# the line doesn't strike through it, and away from the other lines, so that the labels don't overlap: the
+# bottom 10% to the left of its line, the top 10% to the right, and the median on the side with more room.
+qc_add_quantiles <- function(p, values_quants, quants, y_range) {
+    labels <- paste0(c("bottom 10%", "median", "top 10%"), ": ", qc_format_number(values_quants))
+    line_colors <- c("rgba(0,0,0,1)", "rgba(255,0,0,1)", "rgba(0,0,0,1)")
+    label_colors <- c("rgba(0,0,0,1)", "rgba(200,0,0,1)", "rgba(0,0,0,1)")
+    sides <- c("left", if (quants[3] - quants[2] >= quants[2] - quants[1]) "right" else "left", "right")
+
+    # (points along the lines, so that a line shows its label when hovered anywhere and not only at its ends)
+    line_y <- seq(y_range[1], y_range[2], length.out = 20)
+    for (i in seq_along(quants)) {
+        p <- plotly::add_trace(p,
+            x = rep(quants[[i]], length(line_y)), y = line_y, text = labels[i],
+            type = "scatter", mode = "lines", line = list(width = 1.8898, color = line_colors[i], dash = "dash"),
+            hoverinfo = "text", showlegend = FALSE, fill = "none", inherit = FALSE
+        )
+    }
+
+    annotations <- purrr::map(seq_along(quants), function(i) {
+        list(
+            x = quants[[i]], xref = "x", xanchor = if (sides[i] == "left") "right" else "left", xshift = if (sides[i] == "left") -2 else 2,
+            y = 1, yref = "paper", yanchor = "top",
+            text = labels[i], textangle = -90, showarrow = FALSE,
+            font = list(color = label_colors[i], size = 10), bgcolor = "rgba(255,255,255,0.85)"
+        )
+    })
+    plotly::layout(p, annotations = annotations)
 }
