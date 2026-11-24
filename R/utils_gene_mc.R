@@ -78,7 +78,13 @@ cor_log_egc <- function(dataset, x, genes, metacells, atlas = FALSE) {
     complete <- rowSums(is.na(x)) == 0
     cols <- match(metacells[complete], colnames(mc_mat))
     all_cols <- identical(cols, seq_len(ncol(mc_mat)))
-    x <- scale(x[complete, , drop = FALSE], scale = FALSE)
+    x <- x[complete, , drop = FALSE]
+    # A constant column (e.g. a gene without counts) has no correlations (NaN, as stats::cor gives NA). Zero it
+    # explicitly: scale() centers by colMeans(), which sums in double precision where long double is the same as
+    # double (e.g. ARM64 macOS), so a constant column keeps a residual of ~1e-14 that gives noise correlations.
+    constant <- nrow(x) > 0 & matrixStats::colMins(x) == matrixStats::colMaxs(x)
+    x <- scale(x, scale = FALSE)
+    x[, constant] <- 0
     x_norm <- sqrt(colSums(x^2))
     # log(egc / egc_epsilon + 1), i.e. log2(egc + egc_epsilon) shifted and scaled, which doesn't change the
     # correlation. Zero counts are exactly 0, so all-zero genes get NaN.
