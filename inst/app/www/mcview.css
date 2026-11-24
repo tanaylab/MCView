@@ -1,0 +1,30 @@
+/* The value boxes of the QC tabs (value_box_row()): as many equal columns as fit the row (at least
+   --mcv-value-box-min-width wide each), aligned with the boxes below them, and a number font that
+   shrinks with its box so that the numbers fit in it. */
+.mcv-value-boxes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(var(--mcv-value-box-min-width, 200px), 1fr));
+}
+
+.mcv-value-boxes > .mcv-value-box {
+    padding: 0 15px;
+    min-width: 0;
+    container-type: inline-size;
+    display: flex;
+    flex-direction: column;
+}
+
+.mcv-value-boxes > .mcv-value-box > .small-box {
+    flex: 1 1 auto;
+}
+
+.mcv-value-boxes .small-box h3 {
+    font-size: clamp(20px, 16cqi, 38px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mcv-value-boxes .small-box h3 small {
+    color: inherit;
+    font-weight: normal;
+}

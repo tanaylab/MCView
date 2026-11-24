@@ -10,33 +10,49 @@
 mod_qc_ui <- function(id) {
     ns <- NS(id)
     tagList(
-        column(
-            width = 12,
-            fluidRow(
-                shinydashboard::valueBoxOutput(ns("num_metacells"), width = 2),
-                shinydashboard::valueBoxOutput(ns("median_umis_per_metacell"), width = 2),
-                shinydashboard::valueBoxOutput(ns("num_cells"), width = 2),
-                shinydashboard::valueBoxOutput(ns("median_cells_per_metacell"), width = 2),
-                shinydashboard::valueBoxOutput(ns("num_outliers"), width = 3),
-            )
+        value_box_row(
+            value_box_output(ns("num_metacells")),
+            value_box_output(ns("median_umis_per_metacell")),
+            value_box_output(ns("num_cells")),
+            value_box_output(ns("median_cells_per_metacell")),
+            value_box_output(ns("num_outliers"))
         ),
-        generic_column(
-            width = 6,
-            qc_stat_box(ns, id, "# of UMIs per metacell", "plot_qc_umis"),
-            qc_stat_box(ns, id, "Max inner-fold per metacell", "plot_qc_inner_fold",
-                width = 12, height = "27vh",
-                checkboxInput(ns("include_lateral"), label = "Include lateral", value = FALSE)
+        fluidRow(
+            generic_column(
+                width = 6,
+                qc_stat_box(ns, id, "# of UMIs per metacell", "plot_qc_umis"),
+                qc_stat_box(ns, id, "Max inner-fold per metacell", "plot_qc_inner_fold",
+                    width = 12, height = "27vh",
+                    checkboxInput(ns("include_lateral"), label = "Include lateral", value = FALSE)
+                ),
+                gene_inner_fold_stat_box(ns, id, "# of metacells with significant inner-fold", "plot_gene_inner_fold_scatter"),
+                qc_stat_box(ns, id, "Max inner-stdev per metacell", "plot_qc_std")
             ),
-            gene_inner_fold_stat_box(ns, id, "# of metacells with significant inner-fold", "plot_gene_inner_fold_scatter"),
-            qc_stat_box(ns, id, "Max inner-stdev per metacell", "plot_qc_std")
-        ),
-        generic_column(
-            width = 6,
-            qc_stat_box(ns, id, "# of cells per metacell", "plot_qc_cell_num"),
-            qc_stat_box(ns, id, "Max zero-fold per metacell", "plot_mc_zero_fold"),
-            zero_fold_stat_box(ns, id, "# of cells with zero UMIs per gene", "plot_zero_fold")
+            generic_column(
+                width = 6,
+                qc_stat_box(ns, id, "# of cells per metacell", "plot_qc_cell_num"),
+                qc_stat_box(ns, id, "Max zero-fold per metacell", "plot_mc_zero_fold"),
+                zero_fold_stat_box(ns, id, "# of cells with zero UMIs per gene", "plot_zero_fold")
+            )
         )
     )
+}
+
+# A row of value boxes (of value_box_output()s), aligned with the boxes below it: as many equal columns
+# as fit (at least `min_width` wide each, see mcview.css), with numbers that shrink to fit their box.
+# Bootstrap's columns (valueBoxOutput(width = 2)) clipped the numbers at the box's edge, or ran them into
+# the next box, on narrower screens.
+value_box_row <- function(..., min_width = NULL) {
+    div(
+        class = "mcv-value-boxes",
+        style = if (!is.null(min_width)) glue("--mcv-value-box-min-width: {min_width};"),
+        ...
+    )
+}
+
+# shinydashboard::valueBoxOutput() without bootstrap's column width (see value_box_row())
+value_box_output <- function(output_id) {
+    shiny::uiOutput(output_id, class = "mcv-value-box")
 }
 
 
@@ -87,7 +103,8 @@ mod_qc_server <- function(id, dataset, metacell_types, cell_type_colors, gene_mo
                     p_outliers <- scales::percent(p_outliers)
                 }
                 shinydashboard::valueBox(
-                    glue("{scales::comma(num_outliers)} ({p_outliers})"),
+                    # (the percentage smaller, so that the value fits in the box)
+                    tagList(scales::comma(num_outliers), " ", tags$small(glue("({p_outliers})"))),
                     "Number of outlier cells",
                     color = color
                 )

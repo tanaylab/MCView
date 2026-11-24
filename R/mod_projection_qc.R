@@ -10,16 +10,14 @@
 mod_projection_qc_ui <- function(id) {
     ns <- NS(id)
     tagList(
-        column(
-            width = 12,
-            fluidRow(
-                shinydashboard::valueBoxOutput(ns("num_metacells_atlas"), width = 2),
-                shinydashboard::valueBoxOutput(ns("num_metacells_query"), width = 2),
-                shinydashboard::valueBoxOutput(ns("num_metacells_similar"), width = 2),
-                shinydashboard::valueBoxOutput(ns("avg_projection_cor"), width = 2),
-                shinydashboard::valueBoxOutput(ns("common_genes"), width = 2),
-                shinydashboard::valueBoxOutput(ns("fitted_genes"), width = 2)
-            )
+        value_box_row(
+            value_box_output(ns("num_metacells_atlas")),
+            value_box_output(ns("num_metacells_query")),
+            value_box_output(ns("num_metacells_similar")),
+            value_box_output(ns("avg_projection_cor")),
+            value_box_output(ns("common_genes")),
+            value_box_output(ns("fitted_genes")),
+            min_width = "160px"
         ),
         generic_column(
             width = 7,
