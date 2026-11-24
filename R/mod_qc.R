@@ -244,6 +244,8 @@ zero_fold_gene_plot <- function(dataset, input, globals) {
         # set_hovertemplate() replaces the hover texts
         plotly::ggplotly(p, tooltip = "none") %>%
             set_hovertemplate(df, "Gene", c("Observed", "Expected", "Metacell"), "Expression: %{x:.3~r}<br />FC: %{y:.3~r}<br />Gene: %{customdata[0]}<br />Type: %{fullData.name}<br />Observed: %{customdata[1]}<br />Expected: %{customdata[2]}<br />Metacell: %{customdata[3]}<extra></extra>") %>%
+            # (legend symbols of a visible size, and not of the tiny points)
+            plotly::layout(legend = list(itemsizing = "constant")) %>%
             sanitize_for_WebGL() %>%
             plotly::toWebGL() %>%
             sanitize_plotly_buttons() %>%
@@ -320,6 +322,8 @@ gene_inner_fold_scatter_plot <- function(dataset, input, globals) {
         # set_hovertemplate() replaces the hover texts
         plotly::ggplotly(p, tooltip = "none") %>%
             set_hovertemplate(gene_inner_fold_df, "gene", c(), "Max expression: %{x:.3~r}<br /># of metacells: %{y:~r}<br />Gene: %{customdata[0]}<br />Type: %{fullData.name}<extra></extra>") %>%
+            # (legend symbols of a visible size, and not of the tiny points)
+            plotly::layout(legend = list(itemsizing = "constant")) %>%
             sanitize_for_WebGL() %>%
             plotly::toWebGL() %>%
             sanitize_plotly_buttons() %>%
