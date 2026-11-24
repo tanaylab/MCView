@@ -69,6 +69,13 @@ load_shiny_data <- function(name, dataset, cache_dir, atlas = FALSE) {
             as.matrix()
     }
 
+    # Projects imported with older versions store some sparse matrices (e.g. inner_fold_mat) as triplets (dgTMatrix),
+    # which Matrix converts whole on every row or column subset (1.4 s for a gene of a 33K x 5.3K matrix): convert
+    # them once.
+    if (methods::is(object, "TsparseMatrix")) {
+        object <- methods::as(object, "CsparseMatrix")
+    }
+
     # projects imported before the projected matrix was stored dense
     if (name == "projected_mat") {
         object <- densify_if_mostly_nonzero(object)

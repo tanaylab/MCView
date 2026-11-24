@@ -315,3 +315,36 @@ test_that("choose_markers matches the implementation with group_by() and slice()
         }
     }
 })
+
+test_that("sparse matrices stored as triplets are read as compressed columns, with the same values", {
+    prev <- mget("mc_data", envir = globalenv(), ifnotfound = list(NULL))
+    withr::defer(purrr::iwalk(prev, ~ assign(.y, .x, envir = globalenv())))
+    cache_dir <- withr::local_tempdir()
+    fs::dir_create(fs::path(cache_dir, "ds"))
+    set.seed(3)
+    dims <- list(paste0("g", 1:50), paste0("M", 1:20))
+    sparse <- Matrix::rsparsematrix(50, 20, density = 0.1, dimnames = dims) # dgCMatrix
+    triplets <- methods::as(sparse, "TsparseMatrix") # as projects imported with older versions store them
+    dense_triplets <- methods::as(methods::as(Matrix::Matrix(matrix(runif(1000), 50, 20, dimnames = dims), sparse = TRUE), "generalMatrix"), "TsparseMatrix")
+    rows <- methods::as(sparse, "RsparseMatrix")
+    expect_s4_class(triplets, "dgTMatrix")
+    expect_s4_class(dense_triplets, "dgTMatrix")
+    qs2::qs_save(triplets, fs::path(cache_dir, "ds", "inner_fold_mat.qs2"))
+    qs2::qs_save(rows, fs::path(cache_dir, "ds", "inner_stdev_mat.qs2"))
+    qs2::qs_save(dense_triplets, fs::path(cache_dir, "ds", "projected_mat.qs2"))
+    qs2::qs_save(triplets, fs::path(cache_dir, "ds", "projected_fold.qs2"))
+
+    load_all_data(cache_dir, datasets = "ds")
+    inner_fold <- get_mc_data("ds", "inner_fold_mat")
+    expect_s4_class(inner_fold, "dgCMatrix")
+    expect_identical(inner_fold, sparse)
+    # what the app reads from it
+    expect_identical(inner_fold["g3", ], triplets["g3", ])
+    expect_identical(inner_fold[c("g9", "g1"), , drop = FALSE], methods::as(triplets[c("g9", "g1"), , drop = FALSE], "CsparseMatrix"))
+    expect_identical(as.matrix(inner_fold[, 4:9]), as.matrix(triplets[, 4:9]))
+    expect_identical(Matrix::rowSums(inner_fold), Matrix::rowSums(triplets))
+    # other sparse classes are kept, and a mostly non-zero projected matrix is still made dense
+    expect_identical(get_mc_data("ds", "inner_stdev_mat"), rows)
+    expect_identical(get_mc_data("ds", "projected_mat"), as.matrix(dense_triplets))
+    expect_identical(get_mc_data("ds", "projected_fold"), sparse)
+})
