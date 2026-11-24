@@ -28,3 +28,18 @@
     color: inherit;
     font-weight: normal;
 }
+
+/* The tab headers of the control bar (the gear icon at the top right). bslib's components.css, which a
+   widget of the Markers tab loads, makes every .nav a flex row (display: flex !important), in which the
+   justified tabs kept bootstrap's width of 1% (4px each) and were drawn on top of each other. A flex row of
+   equal tabs, whether bslib's css was loaded or not. */
+.control-sidebar .nav-tabs.nav-justified {
+    display: flex !important;
+}
+
+.control-sidebar .nav-tabs.nav-justified > li {
+    display: block;
+    float: none;
+    flex: 1 1 0;
+    width: auto;
+}
