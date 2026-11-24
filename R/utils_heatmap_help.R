@@ -39,12 +39,26 @@ create_heatmap_help_modal <- function(mode = "Markers") {
             tags$li(strong("Categorical Filtering"), " - Enable categorical filtering to filter by metadata variables (treatment, condition, batch, etc.). Choose a categorical field and select which values to include.")
         ),
         h4("Color Scale"),
-        p("The colors represent log-fold change values:"),
-        tags$ul(
-            tags$li(span(style = "color: blue; font-weight: bold", "Blue"), " - Under-expressed genes (negative values)"),
-            tags$li(span(style = "color: white; font-weight: bold; background-color: #eee;", "White"), " - Neutral expression (values near zero)"),
-            tags$li(span(style = "color: red; font-weight: bold", "Red"), " - Over-expressed genes (positive values)")
-        ),
+        if (mode == "Stdev") {
+            # the scale of mod_stdev_fold_ui()
+            tagList(
+                p("The colors represent the standard deviation of the log2 expression of the gene within the metacell, from 0 to 1.5 by default ('Fold change range' in the settings changes the range; values outside it get the color of its nearest end):"),
+                tags$ul(
+                    tags$li(span(style = "color: white; font-weight: bold; background-color: #eee;", "White"), " - No variation within the metacell (0, also where the value wasn't computed)"),
+                    tags$li(span(style = "color: #FC9272; font-weight: bold", "Light red"), " - Moderate variation (around 0.75)"),
+                    tags$li(span(style = "color: #99000D; font-weight: bold", "Dark red"), " - High variation (1.5 and above; ideally values are below ~1)")
+                )
+            )
+        } else {
+            tagList(
+                p("The colors represent log-fold change values:"),
+                tags$ul(
+                    tags$li(span(style = "color: blue; font-weight: bold", "Blue"), " - Under-expressed genes (negative values)"),
+                    tags$li(span(style = "color: white; font-weight: bold; background-color: #eee;", "White"), " - Neutral expression (values near zero)"),
+                    tags$li(span(style = "color: red; font-weight: bold", "Red"), " - Over-expressed genes (positive values)")
+                )
+            )
+        },
         h4("Gene Labels"),
         p("Gene labels are colored to indicate special categories:"),
         tags$ul(
