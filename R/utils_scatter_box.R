@@ -7,9 +7,8 @@ scatter_box <- function(ns, id, title = "Gene/Gene", x_selected = "Gene", y_sele
         collapsible = TRUE,
         closable = FALSE,
         width = 12,
-        sidebar = shinydashboardPlus::boxSidebar(
+        sidebar = plot_box_sidebar(
             startOpen = FALSE,
-            width = 100,
             id = ns("gene_gene_sidebar"),
             uiOutput(ns("gene_gene_log_labels_ui")),
             uiOutput(ns("gene_gene_xyline_ui")),

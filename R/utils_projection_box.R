@@ -18,9 +18,8 @@ projection_box <- function(ns,
         closable = FALSE,
         width = 12,
         height = height,
-        sidebar = shinydashboardPlus::boxSidebar(
+        sidebar = plot_box_sidebar(
             startOpen = FALSE,
-            width = 80,
             id = ns(glue("{id}_sidebar")),
             uiOutput(ns("graph_select_ui")),
             uiOutput(ns("proj_stat_ui")),
@@ -111,6 +110,27 @@ projection_legend_css <- function() {
     htmltools::singleton(tags$head(tags$style(HTML(
         ".js-plotly-plot[id$='plot_gene_proj_2d'] .main-svg, .js-plotly-plot[id$='plot_mc_proj_2d'] .main-svg { overflow: visible; }"
     ))))
+}
+
+# The sidebar (settings) of a box with a plot. It covers only the right part of the plot, so that the
+# effect of its inputs (point size, stroke, edge length...) can be seen while changing them: ~30% of
+# the box, at least 220 px for its inputs (all of a box narrower than that) and at most 320 px.
+# boxSidebar() sets its width as a percent of the box, and its open and closed positions as
+# transforms that depend on that percent, so they are set here instead, anchored to the right.
+plot_box_sidebar <- function(...) {
+    sidebar <- shinydashboardPlus::boxSidebar(..., width = 30)
+    sidebar[[2]] <- htmltools::tagAppendAttributes(sidebar[[2]], class = "mcview-plot-sidebar")
+    sidebar[[2]] <- htmltools::tagAppendChild(sidebar[[2]], plot_box_sidebar_css())
+    sidebar
+}
+
+plot_box_sidebar_css <- function() {
+    htmltools::singleton(tags$head(tags$style(HTML(paste(
+        ".direct-chat-contacts.mcview-plot-sidebar { width: min(100%, max(220px, min(30%, 320px))) !important; left: auto; right: 0; transform: translate(calc(100% + 10px), 0) !important; }",
+        ".direct-chat-contacts-open .direct-chat-contacts.mcview-plot-sidebar { transform: translate(0, 0) !important; }",
+        ".mcview-plot-sidebar .contacts-list > li { padding-right: 15px; }",
+        sep = "\n"
+    )))))
 }
 
 projection_selectors <- function(ns, dataset, output, input, gene_modules, globals, session, weight = 1, atlas = FALSE) {
