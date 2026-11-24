@@ -165,26 +165,13 @@ mc2d_plot_metadata_ggp_categorical <- function(mc2d_df,
     fig <- fig %>%
         add_scatter_layer(showlegend = TRUE)
 
+    # The legend symbols have a fixed size (at the points' size, they are dots whose colors can't
+    # be told apart). Each item is a group of its own (legendgroup), and plotly adds a gap between
+    # groups: without it, the legend of e.g. 40 cell types fits in less height (plotly shows a
+    # scrollbar when it doesn't fit).
     fig <- fig %>%
-        plotly::layout(
-            xaxis = list(
-                showgrid = FALSE,
-                zeroline = FALSE,
-                visible = FALSE
-            ),
-            yaxis = list(
-                showgrid = FALSE,
-                zeroline = FALSE,
-                visible = FALSE
-            ),
-            margin = list(
-                l = 0,
-                r = 0,
-                b = 0,
-                t = 0,
-                pad = 0
-            ),
-            legend = list(title = list(text = legend_title))
+        mc2d_plotly_layout(
+            legend = list(title = list(text = legend_title), itemsizing = "constant", tracegroupgap = 0)
         ) %>%
         set_hovertemplate(mc2d_df, "id", hover_fields, paste0(hovertemplate, "<extra></extra>"))
 
@@ -274,25 +261,7 @@ mc2d_plot_metadata_ggp_numeric <- function(mc2d_df,
         add_scatter_layer(showlegend = TRUE)
 
     fig <- fig %>%
-        plotly::layout(
-            xaxis = list(
-                showgrid = FALSE,
-                zeroline = FALSE,
-                visible = FALSE
-            ),
-            yaxis = list(
-                showgrid = FALSE,
-                zeroline = FALSE,
-                visible = FALSE
-            ),
-            margin = list(
-                l = 0,
-                r = 0,
-                b = 0,
-                t = 0,
-                pad = 0
-            )
-        ) %>%
+        mc2d_plotly_layout() %>%
         plotly::colorbar(title = legend_title) %>%
         set_hovertemplate(mc2d_df, "id", hover_fields, paste0(hovertemplate, "<extra></extra>"))
 

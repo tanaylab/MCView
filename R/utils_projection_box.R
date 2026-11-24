@@ -40,8 +40,13 @@ projection_box <- function(ns,
                 fill = TRUE
             )
         ),
-        shinycssloaders::withSpinner(
-            plotly::plotlyOutput(ns("plot_gene_proj_2d"), height = plotly_height)
+        projection_legend_css(),
+        # room for the legend's scrollbar (see projection_legend_css())
+        div(
+            style = "padding-right: 12px;",
+            shinycssloaders::withSpinner(
+                plotly::plotlyOutput(ns("plot_gene_proj_2d"), height = plotly_height)
+            )
         ),
         shinydashboardPlus::accordion(
             id = ns("proj_accordion"),
@@ -95,6 +100,17 @@ projection_box <- function(ns,
             )
         )
     )
+}
+
+# When the legend of a 2D projection is taller than the plot (e.g. 40 cell types), plotly draws a
+# scrollbar right of the legend, which is outside of the plot's width (plotly doesn't count it in
+# the margin it makes for the legend) and was hidden: the legend was cut with no sign that it
+# scrolls. Let it be drawn outside the plot, in a padding right of it. (Applies to the projections
+# of all the tabs, e.g. also the one of Diff. Expression.)
+projection_legend_css <- function() {
+    htmltools::singleton(tags$head(tags$style(HTML(
+        ".js-plotly-plot[id$='plot_gene_proj_2d'] .main-svg, .js-plotly-plot[id$='plot_mc_proj_2d'] .main-svg { overflow: visible; }"
+    ))))
 }
 
 projection_selectors <- function(ns, dataset, output, input, gene_modules, globals, session, weight = 1, atlas = FALSE) {

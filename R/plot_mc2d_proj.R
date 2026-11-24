@@ -76,13 +76,13 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
         df <- mc2d_df %>%
             mutate(value = enrich)
 
-        legend_title <- glue("{gene}\nEnrichment.\n(log2)")
+        legend_title <- glue("{gene}\nEnrichment\n(log2)")
     } else { # expression
         shades <- grDevices::colorRampPalette(colspec)(100 * abs(max_expr - min_expr) + 1)
         df <- mc2d_df %>%
             mutate(value = expr_clipped)
 
-        legend_title <- glue("{gene}\nExpression.\n(log2)")
+        legend_title <- glue("{gene}\nExpression\n(log2)")
     }
 
     if (!is.null(selected_cell_types)) {
@@ -138,29 +138,40 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
 
 
     fig <- fig %>%
-        plotly::layout(
-            xaxis = list(
-                showgrid = FALSE,
-                zeroline = FALSE,
-                visible = FALSE
-            ),
-            yaxis = list(
-                showgrid = FALSE,
-                zeroline = FALSE,
-                visible = FALSE
-            ),
-            margin = list(
-                l = 0,
-                r = 0,
-                b = 0,
-                t = 0,
-                pad = 0
-            )
-        ) %>%
+        mc2d_plotly_layout() %>%
         plotly::colorbar(title = legend_title) %>%
         set_hovertemplate(df, "id", c("expr_text", "enrich_text", "Cell type", "Top genes"), hovertemplate)
 
     return(fig)
+}
+
+# The layout of the 2D projection plots:
+# - the same scale on both axes, so that the manifold keeps its shape whatever the box's shape
+#   (plotly extends the range of the longer side, the plot area itself doesn't shrink)
+# - a top margin for the modebar, which otherwise covers the title of the legend / color bar
+mc2d_plotly_layout <- function(fig, ...) {
+    plotly::layout(fig,
+        xaxis = list(
+            showgrid = FALSE,
+            zeroline = FALSE,
+            visible = FALSE
+        ),
+        yaxis = list(
+            showgrid = FALSE,
+            zeroline = FALSE,
+            visible = FALSE,
+            scaleanchor = "x",
+            scaleratio = 1
+        ),
+        margin = list(
+            l = 0,
+            r = 0,
+            b = 0,
+            t = 30,
+            pad = 0
+        ),
+        ...
+    )
 }
 
 render_2d_plotly <- function(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, source, buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL, refresh_on_gene_change = FALSE, atlas = FALSE, query_types = NULL, group = NULL, groupA = NULL, groupB = NULL, selected_metacell_types = NULL, selected_cell_types = NULL) {
