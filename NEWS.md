@@ -1,3 +1,29 @@
+# MCView 0.2.65
+
+Fixes:
+
+* Annotate: "Apply" and "Create New Cell Type" could change other metacells than those selected in the table; a rejected selection no longer creates an empty cell type.
+* Metacells without a cell type were hidden from the projection and the scatter of the Genes, Annotate and Gene modules tabs.
+* Heatmaps: stayed blank after a cell type was renamed, merged or deleted; without "Force cell type", metacells with few non-zero genes were dropped and the others shifted; the legend of the cell types was cut and the genes legend was not shown; the color bar now says what the values are.
+* Plots came back blank after visiting several tabs (the browser ran out of WebGL contexts).
+* Clipboard: "Remove selected" removed another metacell.
+* Diff. expression: an annotation edit reset the chosen metacells or cell types; lasso selections were not added to a non-empty group B; empty groups show a message.
+* Gene modules: a gene could be added twice to a module; genes of a loaded file that are not in the dataset broke the module views; projections colored by a module follow its edits.
+* Gene correlation: the cell type filter follows the session's annotation; a gene without counts got noise correlations on some platforms; more than 30 correlations per gene can be requested; the exported file keeps its header.
+* Cell types: "Facet by: Cell type" failed with cell types on the x axis; the cell types are shown in their defined order.
+* Flow: gene trajectories used a wrong time window when the flow didn't start at the first time bin.
+* Query: "(dissimilar)" labels and the comparison with a previous projection are matched by metacell; "Show only fitted genes" of a group uses the group's cell types.
+* Samples: diff. expression with a sample that lacks the chosen cell types shows a message instead of failing.
+* `update_metadata_colors(overwrite = FALSE)` discarded the previous colors; `update_metadata()` failed when `metacell` was not the first column; `light_version` did not exclude the Gene correlation tab; the `update_*()` functions support old bundles with a `project` directory.
+* QC: the value boxes, the percentile labels and the hover texts are readable at every window width; the ECDF axis label matches the curve. The control bar's tabs, the Gene correlation buttons, the Annotate color codes, the projection and scatter legends and the plot settings sidebars were fixed for narrow windows and many cell types. The Stdev-fold heatmap has a color scale that shows its values.
+
+Performance:
+
+* Heatmaps are drawn ~5 times faster, and are not drawn again when an unrelated input changes.
+* Diff. expression of cell types and groups no longer copies the expression matrix; the comparison, its scatter and the projections of the Annotate, Diff. Expression and Query tabs are cached; selecting a row of the table highlights the gene without redrawing the scatter.
+* Faster gene correlations, default markers, lookups of stored correlations and projections colored by cell type; sparse matrices stored as triplets are read as compressed columns.
+* Default point sizes are rounded, so that users with different screens share the cached plots.
+
 # MCView 0.2.64
 
 * Apps open 2 to 3 s faster when they start.
