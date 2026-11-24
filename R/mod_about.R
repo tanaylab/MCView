@@ -11,22 +11,27 @@ mod_about_ui <- function(id) {
     ns <- NS(id)
     tagList(
         fluidRow(
-            generic_box(
-                id = ns("about"),
-                title = config$about_title %||% "About",
-                collapsible = FALSE,
-                closable = FALSE,
+            # (in a column, as the boxes of the other tabs: directly in the row, the box ran to the right edge
+            # of the page)
+            generic_column(
                 width = 12,
-                height = "80vh",
-                fluidRow(
-                    column(
-                        width = 6,
-                        includeRMarkdown(about_file)
-                    ),
-                    column(
-                        width = 6,
-                        plotOutput(ns("about_2d_plot")),
-                        plotOutput(ns("about_scatter_plot"))
+                generic_box(
+                    id = ns("about"),
+                    title = config$about_title %||% "About",
+                    collapsible = FALSE,
+                    closable = FALSE,
+                    width = 12,
+                    height = "80vh",
+                    fluidRow(
+                        column(
+                            width = 6,
+                            includeRMarkdown(about_file)
+                        ),
+                        column(
+                            width = 6,
+                            plotOutput(ns("about_2d_plot")),
+                            plotOutput(ns("about_scatter_plot"))
+                        )
                     )
                 )
             )
