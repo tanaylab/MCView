@@ -37,9 +37,11 @@ mod_gene_correlation_ui <- function(id) {
             ))
         },
         fluidRow(
-            # Left panel: Input and controls
+            # Left panel: Input and controls (a third of the row on wide screens, half of it on narrower
+            # ones; mcview.css wraps the labels of its buttons)
             generic_column(
-                width = 4,
+                width = 6,
+                class = "col-lg-4 mcv-gene-input",
                 generic_box(
                     id = ns("gene_input_box"),
                     title = "Gene Input",
@@ -202,7 +204,8 @@ mod_gene_correlation_ui <- function(id) {
 
             # Right panel: Visualizations
             generic_column(
-                width = 8,
+                width = 6,
+                class = "col-lg-8",
                 # Conditional visualization based on input
                 conditionalPanel(
                     condition = paste0("output['", ns("show_heatmap"), "']"),

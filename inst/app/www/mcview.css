@@ -43,3 +43,27 @@
     flex: 1 1 0;
     width: auto;
 }
+
+/* The input box of the Gene correlation tab: the labels of its button groups (radioGroupButtons(justified =
+   TRUE), whose buttons don't wrap their labels) and buttons spilled out of the box. Equal buttons that wrap
+   their labels, as high as the highest of them. */
+.mcv-gene-input .btn-group-justified {
+    display: flex;
+}
+
+.mcv-gene-input .btn-group-justified > .btn-group {
+    display: flex;
+    flex: 1 1 0;
+    float: none;
+    width: auto;
+    min-width: 0;
+}
+
+.mcv-gene-input .btn-group-justified > .btn-group > .btn {
+    width: 100%;
+}
+
+.mcv-gene-input .btn:not(.btn-file) {
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
