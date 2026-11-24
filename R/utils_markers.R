@@ -194,14 +194,7 @@ order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers 
     key <- list("cluster_metacells", gene_folds[order(rownames(gene_folds), method = "radix"), , drop = FALSE], epsilon, log_transform, !is.null(cached_dist))
     key <- qs2::xxhash_raw(serialize(key, NULL, xdr = FALSE, version = 2)[-(1:14)])
     hc <- cluster_metacells(feat, key, cached_dist, precomputed_clusterings)
-
-    reorder.hclust <- utils::getFromNamespace("reorder.hclust", "vegan")
-    # reorder.hclust recurses along the tree, so a very deep tree (e.g. from many exactly tied distances) can
-    # overflow the stack: keep the clustering's own order then
-    ord <- tryCatch(
-        reorder.hclust(hc, as.numeric(feat[main_mark, ] - feat[second_mark, ]), agglo.FUN = "uwmean")$order,
-        error = function(e) hc$order
-    )
+    ord <- reorder_clustering(hc, feat, main_mark, second_mark, key)
 
     if (any(zero_mcs)) {
         mc_order <- c(colnames(feat)[ord], colnames(feat_zero))
@@ -323,6 +316,35 @@ cluster_metacells <- function(feat, key, cached_dist = NULL, precomputed_cluster
     return(hc)
 }
 
+# The leaves of the clustering hc ordered by the difference between the main and the second mark, as
+# vegan::reorder.hclust orders them. That takes ~0.05 s for 5K metacells, on every recompute of the heatmap: keep it in
+# the app cache next to the clustering, under a key derived from the key of the clustering (which identifies the
+# features, and so the clustering) and the marks. The orders are neither stored with the dataset nor shared with
+# other apps: calc_default_clusterings() keeps only the clusterings.
+reorder_clustering <- function(hc, feat, main_mark, second_mark, key) {
+    cache <- shiny::getShinyOption("cache")
+    if (!is.null(cache)) {
+        order_key <- qs2::xxhash_raw(serialize(list("reorder_clustering", key, main_mark, second_mark), NULL, xdr = FALSE, version = 2)[-(1:14)])
+        ord <- cache$get(order_key)
+        if (!cachem::is.key_missing(ord)) {
+            return(ord)
+        }
+    }
+
+    reorder.hclust <- utils::getFromNamespace("reorder.hclust", "vegan")
+    # reorder.hclust recurses along the tree, so a very deep tree (e.g. from many exactly tied distances) can
+    # overflow the stack: keep the clustering's own order then
+    ord <- tryCatch(
+        reorder.hclust(hc, as.numeric(feat[main_mark, ] - feat[second_mark, ]), agglo.FUN = "uwmean")$order,
+        error = function(e) hc$order
+    )
+
+    if (!is.null(cache)) {
+        cache$set(order_key, ord)
+    }
+    return(ord)
+}
+
 # Cluster the metacells of the default view of each heatmap tab whose data exist, since clustering is the slowest
 # part of their first render. The result is keyed like the app cache (order_mc_by_most_var_genes), so the app uses
 # a clustering only when the heatmap features are unchanged (e.g. not after editing gene modules).
@@ -392,7 +414,9 @@ calc_default_clusterings <- function(dataset, cache_dir) {
     }
 
     keys <- cache$keys()
-    return(stats::setNames(lapply(keys, cache$get), keys))
+    # only the clusterings: the cache also has the orders of their leaves (reorder_clustering)
+    clusterings <- stats::setNames(lapply(keys, cache$get), keys)
+    return(clusterings[purrr::map_lgl(clusterings, ~ inherits(.x, "hclust"))])
 }
 
 #' Store the clusterings of the default heatmaps

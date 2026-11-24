@@ -348,3 +348,108 @@ test_that("sparse matrices stored as triplets are read as compressed columns, wi
     expect_identical(get_mc_data("ds", "projected_mat"), as.matrix(dense_triplets))
     expect_identical(get_mc_data("ds", "projected_fold"), sparse)
 })
+
+test_that("order_mc_by_most_var_genes gives the same order when the reordered clustering comes from the app cache", {
+    # the implementation before: reorder.hclust on every call, also when the clustering came from the cache
+    old_order_mc_by_most_var_genes <- function(gene_folds, marks = NULL, filter_markers = FALSE, force_cell_type = FALSE, metacell_types = NULL, order_each_cell_type = FALSE, epsilon = 0, notify_var_genes = FALSE, log_transform = TRUE, cached_dist = NULL, secondary_order = NULL, precomputed_clusterings = NULL) {
+        if (filter_markers) {
+            gene_folds <- filter_markers_mat(gene_folds)
+        }
+        feat <- if (log_transform) log2(gene_folds + epsilon) else gene_folds
+        if (is.null(marks)) {
+            marks <- get_top_marks(feat, notify_var_genes = notify_var_genes)
+        }
+        main_mark <- marks[1]
+        second_mark <- marks[2]
+        if (ncol(feat) == 1) {
+            return(1)
+        }
+        zero_mcs <- colSums(abs(feat) > 0) < 2
+        if (any(zero_mcs)) {
+            feat_all <- feat
+            feat <- feat_all[, !zero_mcs, drop = FALSE]
+            feat_zero <- feat_all[, zero_mcs, drop = FALSE]
+        }
+        if (ncol(feat) == 0) {
+            return(1:ncol(feat_all))
+        }
+        key <- list("cluster_metacells", gene_folds[order(rownames(gene_folds), method = "radix"), , drop = FALSE], epsilon, log_transform, !is.null(cached_dist))
+        key <- qs2::xxhash_raw(serialize(key, NULL, xdr = FALSE, version = 2)[-(1:14)])
+        hc <- cluster_metacells(feat, key, cached_dist, precomputed_clusterings)
+        reorder.hclust <- utils::getFromNamespace("reorder.hclust", "vegan")
+        ord <- tryCatch(
+            reorder.hclust(hc, as.numeric(feat[main_mark, ] - feat[second_mark, ]), agglo.FUN = "uwmean")$order,
+            error = function(e) hc$order
+        )
+        if (any(zero_mcs)) {
+            mc_order <- c(colnames(feat)[ord], colnames(feat_zero))
+            feat <- feat_all
+            ord <- match(mc_order, colnames(feat))
+        } else {
+            mc_order <- colnames(feat)[ord]
+        }
+        if (force_cell_type) {
+            ord_df <- tibble(metacell = colnames(feat)) %>%
+                mutate(orig_ord = seq_len(n())) %>%
+                left_join(tibble(metacell = mc_order) %>% mutate(glob_ord = seq_len(n())), by = "metacell") %>%
+                left_join(metacell_types %>% select(metacell, cell_type), by = "metacell")
+            ord_df <- ord_df %>% left_join(ord_df %>%
+                distinct(cell_type) %>%
+                mutate(rand = runif(n(), 0, 1e-5)), by = "cell_type")
+            ord <- ord_df %>%
+                mutate(orig_ord = 1:n()) %>%
+                group_by(cell_type) %>%
+                mutate(ct_ord = mean(glob_ord) + rand) %>%
+                ungroup()
+            if (!is.null(secondary_order)) {
+                ord <- ord %>%
+                    left_join(tibble(metacell = secondary_order, sec_ord = seq_along(secondary_order)), by = "metacell") %>%
+                    arrange(ct_ord, sec_ord) %>%
+                    pull(orig_ord)
+            } else {
+                ord <- ord %>%
+                    arrange(ct_ord, glob_ord) %>%
+                    pull(orig_ord)
+            }
+        }
+        return(ord)
+    }
+
+    set.seed(11)
+    gene_folds <- matrix(2^rnorm(12 * 80, sd = 1.5), 12, 80, dimnames = list(paste0("g", 1:12), paste0("M", 1:80)))
+    with_zeros <- gene_folds
+    with_zeros[, c(5, 60)] <- 1 # log2 of 0: metacells without non-zero features, ordered last
+    metacell_types <- tibble(metacell = colnames(gene_folds), cell_type = sample(c("A", "B", "C"), 80, replace = TRUE))
+    cases <- list(
+        list(gene_folds),
+        list(with_zeros),
+        list(gene_folds, marks = c("g3", "g7")),
+        list(gene_folds, marks = c("g7", "g3")), # the same clustering, other marks: another order
+        list(gene_folds, epsilon = 1e-5, log_transform = FALSE),
+        list(gene_folds, force_cell_type = TRUE, metacell_types = metacell_types),
+        list(gene_folds, force_cell_type = TRUE, metacell_types = metacell_types, secondary_order = sample(colnames(gene_folds)))
+    )
+    run <- function(f, args) {
+        set.seed(1) # force_cell_type breaks ties between cell types at random
+        do.call(f, args)
+    }
+    expected <- lapply(cases, function(args) run(old_order_mc_by_most_var_genes, args))
+    # without the app cache
+    for (i in seq_along(cases)) {
+        expect_identical(run(order_mc_by_most_var_genes, cases[[i]]), expected[[i]])
+    }
+    # with it: computed, then the clustering and its order from the cache
+    cache <- cachem::cache_mem()
+    shiny::shinyOptions(cache = cache)
+    withr::defer(shiny::shinyOptions(cache = NULL))
+    for (pass in 1:2) {
+        for (i in seq_along(cases)) {
+            expect_identical(run(order_mc_by_most_var_genes, cases[[i]]), expected[[i]])
+        }
+    }
+    expect_false(identical(expected[[3]], expected[[4]]))
+    # a clustering per set of features (3), and an order per clustering and marks (5)
+    objects <- lapply(cache$keys(), cache$get)
+    expect_equal(sum(purrr::map_lgl(objects, ~ inherits(.x, "hclust"))), 3)
+    expect_equal(sum(purrr::map_lgl(objects, ~ is.numeric(.x) && length(.x) >= 78)), 5)
+})
