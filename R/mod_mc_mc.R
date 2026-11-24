@@ -210,7 +210,41 @@ mod_mc_mc_server <- function(id, dataset, metacell_types, cell_type_colors, gene
             output$diff_expr_table <- render_mc_mc_gene_diff_table(input, output, session, ns, dataset, mc_mc_gene_scatter_df)
 
             # Projection plots
-            output$plot_mc_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, groupA = groupA, groupB = groupB, source = "proj_mc_plot")
+            # The drag mode of the projection (select in the Groups mode), for its cache key: render_2d_plotly()
+            # draws with a copy that an observer of priority 0 sets, which the cached plot doesn't depend on.
+            # Set after it, so that the key changes only once the plot would be drawn with the new drag mode.
+            proj_group_mode <- reactiveVal(FALSE)
+            observe(proj_group_mode(isTRUE(input$mode %in% c("Groups", "Group"))), priority = -1)
+
+            output$plot_mc_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, groupA = groupA, groupB = groupB, source = "proj_mc_plot") %>%
+                bindCache(
+                    "proj_mc_plot", # the projections of other tabs have the same code, other sources and buttons
+                    dataset(),
+                    input$color_proj,
+                    metacell_types(),
+                    cell_type_colors(),
+                    input$point_size,
+                    input$stroke,
+                    input$min_edge_size,
+                    input$graph_name,
+                    input$legend_orientation,
+                    input$show_legend_projection,
+                    input$set_range,
+                    input$proj_stat,
+                    input$expr_range,
+                    input$lfp,
+                    proj_color_var(input),
+                    if (isTRUE(input$color_proj %in% c("Gene module", "Scatter Axis"))) gene_modules(),
+                    if (isTRUE(input$color_proj == "Metadata") && isTRUE(input$color_proj_metadata == "Clipboard")) globals$clipboard,
+                    # the groups, shown when coloring by "Selected" in the Groups mode
+                    if (isTRUE(input$color_proj == "Selected")) list(input$mode, groupA(), groupB()),
+                    proj_group_mode(),
+                    globals$mc2d,
+                    globals$plotly_format,
+                    globals$plotly_width,
+                    globals$plotly_height,
+                    globals$plotly_scale
+                )
 
             diff_expr_auto_update_globals(mc_mc_gene_scatter_df, globals)
 

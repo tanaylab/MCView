@@ -847,7 +847,34 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 dragmode = "select",
                 selected_metacell_types = selected_metacell_types,
                 selected_cell_types = selected_cell_types
-            )
+            ) %>%
+                bindCache(
+                    "proj_annot_plot", # the projections of other tabs have the same code, other sources and buttons
+                    dataset(),
+                    input$color_proj,
+                    metacell_types(),
+                    cell_type_colors(),
+                    input$point_size,
+                    input$stroke,
+                    input$min_edge_size,
+                    input$graph_name,
+                    input$legend_orientation,
+                    input$show_legend_projection,
+                    input$set_range,
+                    input$proj_stat,
+                    input$expr_range,
+                    input$lfp,
+                    proj_color_var(input),
+                    if (isTRUE(input$color_proj %in% c("Gene module", "Scatter Axis"))) gene_modules(),
+                    if (isTRUE(input$color_proj == "Metadata") && isTRUE(input$color_proj_metadata == "Clipboard")) globals$clipboard,
+                    selected_cell_types(), # only their metacells are shown
+                    if (isTRUE(input$color_proj == "Selected")) selected_metacell_types(),
+                    globals$mc2d,
+                    globals$plotly_format,
+                    globals$plotly_width,
+                    globals$plotly_height,
+                    globals$plotly_scale
+                )
 
             # Use the already defined selected_cell_types reactiveVal (defined at the top of the server) so that it is shared across the module
             scatter_box_outputs(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, ns, selected_cell_types = selected_cell_types, plotly_source = "gene_gene_plot_annot", plotly_buttons = c("hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = "select")
