@@ -143,12 +143,18 @@ projection_selectors <- function(ns, dataset, output, input, gene_modules, globa
             choices = c("Clipboard", dataset_metadata_fields(dataset(), atlas = atlas)),
             selected = dataset_metadata_fields(dataset(), atlas = atlas)[1]
         )
+    })
 
+    # A separate observer: an edit of the gene modules used to also set the gene and the metadata field of
+    # the projection back to their defaults, in every tab. The chosen module is kept while it exists.
+    observe({
+        modules <- levels(gene_modules()$module)
+        current <- isolate(input$color_proj_gene_module)
         shinyWidgets::updateVirtualSelect(
             session = session,
             inputId = "color_proj_gene_module",
-            choices = levels(gene_modules()$module),
-            selected = NULL
+            choices = modules,
+            selected = if (length(current) == 1 && current %in% modules) current else NULL
         )
     })
 

@@ -361,11 +361,14 @@ render_axis_select_ui <- function(axis, title, output_id, md_choices, md_selecte
         } else if (input[[glue("{axis}_type")]] == "Gene") {
             update_gene_select(session, glue("{axis}_var"), dataset(), selected = selected_gene, label = title, atlas = atlas)
         } else if (input[[glue("{axis}_type")]] == "Gene module") {
+            # keep the chosen module when the modules are edited
+            modules <- levels(gene_modules()$module)
+            current <- isolate(input[[glue("{axis}_var")]])
             shinyWidgets::updateVirtualSelect(
                 session = session,
                 inputId = glue("{axis}_var"),
-                choices = levels(gene_modules()$module),
-                selected = levels(gene_modules()$module)[1],
+                choices = modules,
+                selected = if (length(current) == 1 && current %in% modules) current else modules[1],
                 label = title
             )
         } else if (input[[glue("{axis}_type")]] == "Cell type") {
