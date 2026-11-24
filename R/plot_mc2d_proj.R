@@ -206,7 +206,7 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
         if (atlas) {
             mc2d <- NULL
         } else {
-            mc2d <- globals$mc2d %||% get_mc_data(dataset, "mc2d")
+            mc2d <- globals$mc2d %||% get_mc_data(dataset(), "mc2d")
         }
 
         plot_2d_gene <- function(gene, gene_name = NULL) {
