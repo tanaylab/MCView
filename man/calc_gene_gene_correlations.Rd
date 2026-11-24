@@ -9,7 +9,8 @@ calc_gene_gene_correlations(
   genes,
   cell_type_filter = NULL,
   threshold = 0,
-  atlas = FALSE
+  atlas = FALSE,
+  metacell_types = NULL
 )
 }
 \arguments{
@@ -20,6 +21,8 @@ calc_gene_gene_correlations(
 \item{cell_type_filter}{Optional vector of cell types to filter metacells}
 
 \item{threshold}{Minimum correlation threshold to include}
+
+\item{metacell_types}{Metacell annotation to take the cell types from (default: the stored annotation)}
 }
 \value{
 Data frame with gene-gene correlation results

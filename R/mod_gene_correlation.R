@@ -780,7 +780,7 @@ mod_gene_correlation_server <- function(id, dataset, metacell_types, cell_type_c
                     ), file)
 
                     # Append data (write.csv ignores append and would overwrite the header)
-                    suppressWarnings(write.table(data, file, sep = ",", row.names = FALSE, col.names = TRUE, qmethod = "double", append = TRUE))
+                    suppressWarnings(utils::write.table(data, file, sep = ",", row.names = FALSE, col.names = TRUE, qmethod = "double", append = TRUE))
                 }
             )
         }
