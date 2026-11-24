@@ -925,16 +925,21 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
 
                 if (!is.null(input$plot_legend) && input$plot_legend) {
                     req(input$legend_width)
+                    # The legend gets its share of the row, but at least 180px (150px without the padding, or 30% of
+                    # a narrower row), so that the cell type names stay readable in narrow windows. The heatmap takes
+                    # the rest of the row.
                     legend_column <- column(
                         width = input$legend_width,
+                        style = glue("flex: 0 0 auto; width: max({round(100 * input$legend_width / 12, 4)}%, min(180px, 30%));"),
                         plotOutput(ns("markers_legend"), height = height)
                     )
                     heatmap_column <- column(
                         width = 12 - input$legend_width,
+                        style = "flex: 1 1 0; min-width: 0;",
                         heatmap
                     )
                     shinycssloaders::withSpinner(
-                        fluidRow(heatmap_column, legend_column)
+                        fluidRow(style = "display: flex;", heatmap_column, legend_column)
                     )
                 } else {
                     shinycssloaders::withSpinner(
@@ -943,37 +948,26 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                 }
             })
 
+            # The genes legend above the cell types legend, laid out to fit the plot (see heatmap_legend_grob()).
+            # The legend is drawn at the exact size of the output rather than at a size of plot_size_policy that
+            # the browser scales down, so that its text keeps its size and it fills the height of the heatmap.
             output$markers_legend <- renderPlot(
                 {
                     req(cell_type_colors())
                     req(input$plot_legend)
-                    colors <- cell_type_colors()
-                    colors <- colors %>% filter(cell_type %in% metacell_types()$cell_type)
-                    legend_point_size <- max(1, min(2, 250 / nrow(colors)))
-                    p <- colors %>%
-                        ggplot(aes(x = cell_type, fill = cell_type, y = 1))
-
-                    if (input$plot_cell_type_legend) {
-                        p <- p + geom_point(shape = 21) +
-                            scale_fill_manual("Cell types", values = deframe(colors %>% select(cell_type, color))) +
-                            guides(fill = guide_legend(override.aes = list(size = legend_point_size), ncol = 1))
+                    colors <- NULL
+                    if (isTRUE(input$plot_cell_type_legend)) {
+                        colors <- cell_type_colors() %>% filter(cell_type %in% metacell_types()$cell_type)
                     }
-
-                    if (input$plot_genes_legend) {
-                        gene_colors <- data.frame(type = c("lateral+noisy", "lateral", "noisy", "disjoined", "module", "highlighted"), color = c("purple", "blue", "red", "darkgray", "#012901", input$highlight_color))
-                        p <- p +
-                            geom_text(data = gene_colors, inherit.aes = FALSE, x = 1, y = 1, aes(label = type, color = type)) +
-                            scale_color_manual("Genes", values = deframe(gene_colors))
+                    gene_colors <- NULL
+                    if (isTRUE(input$plot_genes_legend)) {
+                        gene_colors <- heatmap_gene_label_colors(mode, input$highlight_color)
                     }
-
-                    p <- p + theme(legend.position = c(0.5, 0.5))
-
-                    legend <- cowplot::get_legend(p)
-
-                    cowplot::ggdraw(legend)
+                    size <- grDevices::dev.size("in")
+                    cowplot::ggdraw(heatmap_legend_grob(colors$cell_type, colors$color, gene_colors, width = size[1], height = size[2]))
                 },
                 res = 96
-            ) %>% bindCache(req_plot_size(), id, dataset(), cell_type_colors(), input$plot_legend, input$plot_cell_type_legend, input$plot_genes_legend, sizePolicy = plot_size_policy)
+            ) %>% bindCache(req_plot_size(), id, dataset(), cell_type_colors(), unique(metacell_types()$cell_type), input$plot_legend, input$plot_cell_type_legend, input$plot_genes_legend, input$highlight_color, sizePolicy = function(dims) pmax(round(dims), 1))
 
             # We use this reactive in order to invalidate the cache only when input$filter_by_clipboard is TRUE
             clipboard_changed <- reactive({
