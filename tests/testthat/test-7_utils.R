@@ -299,3 +299,14 @@ test_that("initial point sizes take a few values", {
     expect_true(all(sizes * 4 == round(sizes * 4)))
     expect_true(all(sizes >= 1 & sizes <= 3))
 })
+
+test_that("sum_columns_by_group matches summing the columns of each group", {
+    set.seed(60427)
+    mat <- matrix(rpois(40 * 12, 3) + runif(40 * 12), 40, 12, dimnames = list(paste0("g", 1:40), paste0("m", 1:12)))
+    columns <- paste0("m", c(11, 2, 5, 7, 1, 9, 12))
+    groups <- c("b", "a", "b", "c", "a", "b", "c")
+    expected <- sapply(split(columns, groups), function(cols) rowSums(mat[, cols, drop = FALSE]))
+    expect_equal(sum_columns_by_group(mat, columns, groups), expected)
+    expect_equal(sum_columns_by_group(Matrix::Matrix(mat, sparse = TRUE), columns, groups), expected)
+    expect_equal(sum_columns_by_group(mat, columns[1:2], c("x", "x")), sapply(split(columns[1:2], c("x", "x")), function(cols) rowSums(mat[, cols])))
+})

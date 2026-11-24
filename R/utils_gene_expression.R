@@ -133,13 +133,28 @@ get_cell_types_mat <- function(cell_types, metacell_types, dataset, projected = 
         select(metacell, cell_type) %>%
         deframe()
 
-    mc_mat <- mc_mat[, names(mc_types), drop = FALSE]
-
-    # rowSums per cell type rather than tgs_matrix_tapply (which forks worker processes, slow when
-    # the app holds a large dataset). Works for both dense and sparse (projected) matrices.
-    ct_mat <- sapply(split(colnames(mc_mat), mc_types), function(mcs) rowSums(mc_mat[, mcs, drop = FALSE]))
+    ct_mat <- sum_columns_by_group(mc_mat, names(mc_types), mc_types)
 
     return(ct_mat)
+}
+
+# The sums of the columns of each group: a matrix with a column per group (in the order of split()).
+# rowSums per group rather than tgs_matrix_tapply (which forks worker processes, slow when the app holds a
+# large dataset). A dense matrix is summed in place: subsetting its columns first copied them twice (all
+# the chosen columns, then those of each group), ~3 GB and 15-20 s for two groups of half of the
+# metacells of a large dataset. Sparse (projected) matrices are subset as before.
+sum_columns_by_group <- function(mat, columns, groups) {
+    if (is.matrix(mat)) {
+        col_groups <- split(match(columns, colnames(mat)), groups)
+        sums <- vapply(col_groups, function(cols) matrixStats::rowSums2(mat, cols = cols, useNames = FALSE), numeric(nrow(mat)))
+        if (!is.matrix(sums)) { # a single row
+            sums <- matrix(sums, nrow = nrow(mat), dimnames = list(NULL, names(col_groups)))
+        }
+        rownames(sums) <- rownames(mat)
+        return(sums)
+    }
+    mat <- mat[, columns, drop = FALSE]
+    sapply(split(colnames(mat), groups), function(cols) rowSums(mat[, cols, drop = FALSE]))
 }
 
 get_cell_types_egc <- function(cell_types, metacell_types, dataset, mat = NULL, projected = FALSE, atlas = FALSE, corrected = FALSE) {
