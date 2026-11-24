@@ -173,7 +173,8 @@ mc2d_plot_metadata_ggp_categorical <- function(mc2d_df,
         mc2d_plotly_layout(
             legend = list(title = list(text = legend_title), itemsizing = "constant", tracegroupgap = 0)
         ) %>%
-        set_hovertemplate(mc2d_df, "id", hover_fields, paste0(hovertemplate, "<extra></extra>"))
+        set_hovertemplate(mc2d_df, "id", hover_fields, paste0(hovertemplate, "<extra></extra>")) %>%
+        mc2d_collapse_edges_hoverinfo()
 
     return(fig)
 }
@@ -263,7 +264,8 @@ mc2d_plot_metadata_ggp_numeric <- function(mc2d_df,
     fig <- fig %>%
         mc2d_plotly_layout() %>%
         plotly::colorbar(title = legend_title) %>%
-        set_hovertemplate(mc2d_df, "id", hover_fields, paste0(hovertemplate, "<extra></extra>"))
+        set_hovertemplate(mc2d_df, "id", hover_fields, paste0(hovertemplate, "<extra></extra>")) %>%
+        mc2d_collapse_edges_hoverinfo()
 
     return(fig)
 }

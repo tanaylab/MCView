@@ -140,7 +140,8 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
     fig <- fig %>%
         mc2d_plotly_layout() %>%
         plotly::colorbar(title = legend_title) %>%
-        set_hovertemplate(df, "id", c("expr_text", "enrich_text", "Cell type", "Top genes"), hovertemplate)
+        set_hovertemplate(df, "id", c("expr_text", "enrich_text", "Cell type", "Top genes"), hovertemplate) %>%
+        mc2d_collapse_edges_hoverinfo()
 
     return(fig)
 }
@@ -172,6 +173,21 @@ mc2d_plotly_layout <- function(fig, ...) {
         ),
         ...
     )
+}
+
+# plotly_build() repeats the hoverinfo of the edges ("skip") for each of their points, and plotly.js
+# needs it once per trace (see collapse_hoverinfo()). set_hovertemplate() has built the figure, so
+# this sets it there, without the extra plotly_build() of collapse_hoverinfo() - one of the three
+# builds of each render, along with set_hovertemplate()'s and renderPlotly()'s.
+mc2d_collapse_edges_hoverinfo <- function(fig) {
+    fig$x$data <- purrr::map(fig$x$data, function(tr) {
+        h <- unique(tr$hoverinfo[!is.na(tr$hoverinfo)])
+        if (length(tr$hoverinfo) > 1 && length(h) == 1) {
+            tr$hoverinfo <- h
+        }
+        tr
+    })
+    fig
 }
 
 render_2d_plotly <- function(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, source, buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL, refresh_on_gene_change = FALSE, atlas = FALSE, query_types = NULL, group = NULL, groupA = NULL, groupB = NULL, selected_metacell_types = NULL, selected_cell_types = NULL) {
@@ -460,9 +476,9 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
 
         fig <- fig %>%
             sanitize_for_WebGL()
+        # (the plot functions set the edges' hoverinfo: see mc2d_collapse_edges_hoverinfo())
         fig <- fig %>%
-            plotly::toWebGL() %>%
-            collapse_hoverinfo()
+            plotly::toWebGL()
         # fig <- fig %>%
         #     arrange_2d_proj_tooltip()
         fig <- fig %>%
