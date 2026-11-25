@@ -158,7 +158,9 @@ test_that("calc_individual_correlations matches the dplyr implementation, and n_
     for (args in cases) {
         old <- do.call(old_calc_individual_correlations, c(list("toy"), args))
         new <- do.call(calc_individual_correlations, c(list("toy"), args))
-        expect_identical(new, old)
+        # equal, not identical: for a gene given twice, the old code reads the correlations of its first
+        # column and the new one those of each column, and some BLAS (MKL) differ between the two by 1 ulp
+        expect_equal(new, old)
     }
     expect_identical(nrow(calc_individual_correlations("toy", "g7")), 0L)
     expect_gt(nrow(calc_individual_correlations("toy", genes, threshold = 0.5)), 0)
