@@ -363,7 +363,7 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
             fig <- plot_2d_gene(input$gene2)
         } else if (color_proj == "Metadata") {
             req(color_proj_metadata)
-            metadata <- get_mc_data(dataset(), "metadata")
+            metadata <- get_mc_data(dataset(), "metadata", atlas = atlas)
             if (is.null(metadata)) {
                 metadata <- metacell_types() %>% select(metacell)
             }
