@@ -14,57 +14,167 @@ calc_marker_genes <- function(mc_egc,
                               minimal_relative_log_fraction = 2,
                               fold_change_reg = 0.1,
                               use_abs = TRUE) {
-    mc_egc <- log2(mc_egc + 1e-5)
-
-    max_log_fractions_of_genes <- matrixStats::rowMaxs(mc_egc)
-
-    interesting_genes_mask <- (max_log_fractions_of_genes
-    >= minimal_max_log_fraction)
-
-    if (length(interesting_genes_mask) == 0) {
+    if (nrow(mc_egc) == 0) {
         cli_abort("No genes with at least one value above the {.field minimal_max_log_fraction} threshold ({.val {.value minimal_max_log_fraction}})")
     }
 
-    mc_fp <- mc_egc - matrixStats::rowMedians(mc_egc, na.rm = TRUE)
+    # A gene is used when its largest log2(egc + 1e-5) is at least minimal_max_log_fraction. Skip the genes far
+    # below that before taking logs (the margin covers the rounding of log2), and test the others exactly: the log,
+    # the median and the fold of a gene depend only on its own row. Genes with a missing value stay, as before
+    # (as rows of NAs).
+    row_max <- matrixStats::rowMaxs(mc_egc)
+    candidates <- which(is.na(row_max) | row_max + 1e-5 >= 2^(minimal_max_log_fraction - 1e-3))
 
-    mc_top_genes <- select_top_fold_genes_per_metacell(
-        mc_fp[interesting_genes_mask, , drop = FALSE],
+    # by blocks of genes, so that the logs and folds of all the genes are never in memory at once
+    blocks <- split(candidates, ceiling(seq_along(candidates) / marker_block_size(ncol(mc_egc))))
+    select_top_folds_by_blocks(
+        length(blocks),
+        function(i) {
+            mc_lfp <- log2(mc_egc[blocks[[i]], , drop = FALSE] + 1e-5)
+            interesting <- matrixStats::rowMaxs(mc_lfp) >= minimal_max_log_fraction
+            mc_lfp <- mc_lfp - matrixStats::rowMedians(mc_lfp, na.rm = TRUE)
+            mc_lfp[interesting, , drop = FALSE] + fold_change_reg
+        },
+        n_cols = ncol(mc_egc),
+        metacells = colnames(mc_egc),
+        has_gene_names = !is.null(rownames(mc_egc)),
         genes_per_metacell = genes_per_metacell,
         minimal_relative_log_fraction = minimal_relative_log_fraction,
-        fold_change_reg = fold_change_reg,
         use_abs = use_abs
     )
-
-    return(mc_top_genes)
 }
 
-select_top_fold_genes_per_metacell <- function(fold_matrix, genes_per_metacell = 2, minimal_relative_log_fraction = 2, fold_change_reg = 0.1, use_abs = TRUE) {
-    fold_matrix <- fold_matrix + fold_change_reg
-    fold_matrix[fold_matrix < minimal_relative_log_fraction] <- NA
+# get_mc_egc(dataset, metacells = metacells) without genes that calc_marker_genes would skip anyway (their largest
+# egc is below 2^minimal_max_log_fraction), so it returns the same markers without a dense copy of all the genes:
+# the egc of a gene is at most its largest count over the smallest total of the metacells.
+get_marker_candidates_egc <- function(dataset, metacells, minimal_max_log_fraction = -13) {
+    mc_mat <- get_mc_data(dataset, "mc_mat")
+    cols <- which(colnames(mc_mat) %in% metacells)
+    if (length(cols) == 0 || is.null(rownames(mc_mat)) || anyDuplicated(rownames(mc_mat)) > 0) {
+        return(get_mc_egc(dataset, metacells = metacells))
+    }
+    max_count <- matrixStats::rowMaxs(mc_mat, cols = cols)
+    min_sum <- min(get_mc_sum(dataset)[cols])
+    genes <- rownames(mc_mat)[is.na(max_count) | is.na(min_sum) | max_count / min_sum + 1e-5 >= 2^(minimal_max_log_fraction - 1e-3)]
+    get_mc_egc(dataset, genes = genes, metacells = metacells)
+}
 
-    if (nrow(fold_matrix) == 0) {
+# The top genes_per_metacell genes of each metacell by fold (by absolute fold when use_abs) among the folds of at
+# least minimal_relative_log_fraction (after adding fold_change_reg). A metacell with fewer such genes gets the
+# first genes (in the order of the rows) that are below the threshold, with an NA fold, to make up
+# genes_per_metacell, and if the matrix has fewer than genes_per_metacell rows, NA genes.
+select_top_fold_genes_per_metacell <- function(fold_matrix, genes_per_metacell = 2, minimal_relative_log_fraction = 2, fold_change_reg = 0.1, use_abs = TRUE) {
+    blocks <- split(seq_len(nrow(fold_matrix)), ceiling(seq_len(nrow(fold_matrix)) / marker_block_size(ncol(fold_matrix))))
+    select_top_folds_by_blocks(
+        length(blocks),
+        function(i) fold_matrix[blocks[[i]], , drop = FALSE] + fold_change_reg,
+        n_cols = ncol(fold_matrix),
+        metacells = colnames(fold_matrix),
+        has_gene_names = !is.null(rownames(fold_matrix)),
+        genes_per_metacell = genes_per_metacell,
+        minimal_relative_log_fraction = minimal_relative_log_fraction,
+        use_abs = use_abs
+    )
+}
+
+# number of rows of a block of a matrix with n_cols columns (~64MB of doubles)
+marker_block_size <- function(n_cols) {
+    max(1, floor(2^23 / max(1, n_cols)))
+}
+
+# select_top_fold_genes_per_metacell on the matrix made of the blocks of rows get_block(1), ..., get_block(n_blocks)
+# (folds with fold_change_reg added), without the matrix: keep the top genes of each metacell among the folds above
+# the threshold (one radix order per block, instead of an order of every column) and the first rows (to make up the
+# metacells with fewer genes above the threshold). The rows, ties and NAs as order(-abs(fold)) per column puts them.
+select_top_folds_by_blocks <- function(n_blocks, get_block, n_cols, metacells, has_gene_names, genes_per_metacell, minimal_relative_log_fraction, use_abs) {
+    k <- genes_per_metacell
+    n_rows <- 0L
+    gene_names <- list()
+    head_rows <- list() # the first k rows of the matrix
+    n_head <- 0L
+    top <- list(row = integer(0), col = integer(0), fp = numeric(0))
+
+    for (i in seq_len(n_blocks)) {
+        block <- get_block(i)
+        gene_names[[i]] <- rownames(block)
+        if (n_head < k && nrow(block) > 0) {
+            head_rows[[i]] <- block[seq_len(min(nrow(block), k - n_head)), , drop = FALSE]
+            n_head <- n_head + nrow(head_rows[[i]])
+        }
+        above <- which(block >= minimal_relative_log_fraction)
+        if (length(above) > max(2 * k * ncol(block), length(block) / 4) && nrow(block) > k) {
+            # most folds above the threshold (e.g. all of them, in atlas projections): drop those with at least k
+            # better ones in their column of the block before ordering, by the k-th best key of each column (ties
+            # are kept)
+            key <- if (use_abs) -abs(block) else -block
+            key[!(block >= minimal_relative_log_fraction) | is.na(block)] <- Inf
+            kth <- matrixStats::colOrderStats(key, which = k, useNames = FALSE)
+            above <- above[key[above] <= kth[(above - 1) %/% nrow(block) + 1]]
+            rm(key)
+        }
+        if (length(above) > 0) {
+            top <- top_folds_per_column(
+                row = c(top$row, n_rows + as.integer((above - 1) %% nrow(block)) + 1L),
+                col = c(top$col, as.integer((above - 1) %/% nrow(block)) + 1L),
+                fp = c(top$fp, block[above]),
+                k = k,
+                use_abs = use_abs
+            )
+        }
+        n_rows <- n_rows + nrow(block)
+        rm(block)
+    }
+
+    if (n_rows == 0) {
         cli_abort("No genes with at least one value above the {.field minimal_relative_log_fraction} threshold ({.val {.value minimal_relative_log_fraction}})")
     }
 
-    top_ind <- apply(fold_matrix, 2, function(fp) {
-        if (use_abs) {
-            order(-abs(fp))[1:genes_per_metacell]
-        } else {
-            order(-fp)[1:genes_per_metacell]
-        }
-    })
-    top_ind <- matrix(top_ind, nrow = genes_per_metacell)
+    # the top genes of each metacell, by rank
+    top_ind <- matrix(NA_integer_, nrow = k, ncol = n_cols)
+    top_fp <- matrix(NA_real_, nrow = k, ncol = n_cols)
+    rank <- seq_along(top$col) - match(top$col, top$col) + 1L # top is ordered by column and rank
+    top_ind[cbind(rank, top$col)] <- top$row
+    top_fp[cbind(rank, top$col)] <- top$fp
 
-    genes <- rownames(fold_matrix)[top_ind]
+    # metacells with fewer than k genes above the threshold: the first rows below it (order() puts the NAs last, in
+    # the order of the rows), with their fold if it was NA or NaN and NA otherwise
+    n_top <- tabulate(top$col, nbins = n_cols)
+    if (any(n_top < k)) {
+        head_rows <- do.call(rbind, head_rows)
+        below <- which(!(head_rows >= minimal_relative_log_fraction) | is.na(head_rows))
+        below_col <- as.integer((below - 1) %/% nrow(head_rows)) + 1L
+        slot <- n_top[below_col] + seq_along(below) - match(below_col, below_col) + 1L
+        keep <- slot <= k
+        below_fp <- head_rows[below[keep]]
+        below_fp[!is.na(below_fp)] <- NA_real_
+        top_ind[cbind(slot[keep], below_col[keep])] <- as.integer((below[keep] - 1) %% nrow(head_rows)) + 1L
+        top_fp[cbind(slot[keep], below_col[keep])] <- below_fp
+    }
+
+    genes <- NULL
+    if (has_gene_names) {
+        genes <- unlist(gene_names, use.names = FALSE)[top_ind]
+    }
     mc_top_genes <- tibble(
-        metacell = rep(colnames(fold_matrix), each = genes_per_metacell),
+        metacell = rep(metacells, each = genes_per_metacell),
         gene = genes,
-        rank = rep(seq_len(genes_per_metacell), ncol(fold_matrix)),
-        fp = stats::setNames(fold_matrix[cbind(as.vector(top_ind), as.vector(col(top_ind)))], genes)
+        rank = rep(seq_len(genes_per_metacell), n_cols),
+        fp = stats::setNames(as.vector(top_fp), genes)
     ) %>%
         arrange(metacell, rank)
 
     return(mc_top_genes)
+}
+
+# The entries (row, col, fp) of the top k rows of each column by -abs(fp) (or -fp), ties by row, ordered by column
+# and rank
+top_folds_per_column <- function(row, col, fp, k, use_abs) {
+    key <- if (use_abs) -abs(fp) else -fp
+    ord <- order(col, key, row, method = "radix")
+    col <- col[ord]
+    in_top <- seq_along(ord) - match(col, col) + 1L <= k
+    keep <- ord[in_top]
+    list(row = row[keep], col = col[in_top], fp = fp[keep])
 }
 
 choose_markers <- function(marker_genes, max_markers, dataset = NULL) {

@@ -271,7 +271,7 @@ globalVariables(unique(c(
     "cell_type", "fitted_gene",
     # scatter_box_outputs:
     "default_gene1", "default_gene2", "egc_epsilon", "metacell",
-    # select_top_fold_genes_per_metacell:
+    # select_top_folds_by_blocks:
     "fp", "gene", "metacell",
     # top_correlated_selector:
     "project",

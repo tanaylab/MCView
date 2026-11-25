@@ -459,7 +459,7 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
         req(is.null(input$selected_cell_types) || all(input$selected_cell_types %in% c(cell_type_colors()$cell_type, "(Missing)")))
 
         if (input$mat_value == "Local") {
-            mc_egc <- get_mc_egc(dataset(), metacells = colnames(mat()))
+            mc_egc <- get_marker_candidates_egc(dataset(), metacells = colnames(mat()))
             markers_df <- calc_marker_genes(mc_egc, genes_per_metacell = 20)
         } else {
             if (!is.null(input$selected_cell_types)) {
