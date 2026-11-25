@@ -425,10 +425,7 @@ plot_mc_scatter <- function(dataset,
         }
         df <- df %>%
             mutate(expression = log2(egc_color[df$metacell]))
-        min_expr <- min(df$expression, na.rm = TRUE)
-        max_expr <- max(df$expression, na.rm = TRUE)
-
-        color_breaks <- seq(min_expr, max_expr, length.out = length(expr_colors))
+        color_breaks <- expr_color_breaks(df$expression, length(expr_colors))
         md_colors <- list(colors = expr_colors, breaks = color_breaks)
         palette <- circlize::colorRamp2(colors = expr_colors, breaks = color_breaks)
         df$color <- palette(df$expression)
@@ -569,6 +566,18 @@ plot_mc_scatter <- function(dataset,
 
     plotly::ggplotly(p, tooltip = "none", source = source) %>%
         set_hovertemplate(df, "metacell", hover_fields, paste0(hovertemplate, "<extra></extra>"))
+}
+
+# Breaks for coloring by expression: n, from the lowest to the highest finite value, widened when those are equal
+# (one sample, or a gene without counts), which colorRamp2() and seq() don't take.
+expr_color_breaks <- function(expression, n) {
+    expression <- expression[is.finite(expression)]
+    req(length(expression) > 0)
+    rng <- range(expression)
+    if (rng[1] == rng[2]) {
+        rng <- rng + c(-1e-5, 1e-5)
+    }
+    seq(rng[1], rng[2], length.out = n)
 }
 
 plot_sample_scatter <- function(dataset,
@@ -721,13 +730,7 @@ plot_sample_scatter <- function(dataset,
             egc_color <- get_samples_gene_egc(color_var, dataset, selected_mc) + egc_epsilon
             df <- df %>%
                 mutate(expression = log2(egc_color[df$samp_id]))
-            min_expr <- min(df$expression, na.rm = TRUE)
-            max_expr <- max(df$expression, na.rm = TRUE)
-            if (min_expr == max_expr) {
-                min_val <- min_val - 1e-5
-            }
-
-            color_breaks <- seq(min_expr, max_expr, length.out = length(expr_colors))
+            color_breaks <- expr_color_breaks(df$expression, length(expr_colors))
             md_colors <- list(colors = expr_colors, breaks = color_breaks)
             palette <- circlize::colorRamp2(colors = expr_colors, breaks = color_breaks)
             df$color <- palette(df$expression)
@@ -982,10 +985,7 @@ plot_obs_proj_scatter <- function(dataset,
         egc_color <- get_gene_egc(color_var, dataset) + egc_epsilon
         df <- df %>%
             mutate(expression = log2(egc_color[df$metacell]))
-        min_expr <- min(df$expression, na.rm = TRUE)
-        max_expr <- max(df$expression, na.rm = TRUE)
-
-        color_breaks <- seq(min_expr, max_expr, length.out = length(expr_colors))
+        color_breaks <- expr_color_breaks(df$expression, length(expr_colors))
         md_colors <- list(colors = expr_colors, breaks = color_breaks)
         palette <- circlize::colorRamp2(colors = expr_colors, breaks = color_breaks)
         df$color <- palette(df$expression)

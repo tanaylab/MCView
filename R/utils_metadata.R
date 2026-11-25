@@ -28,7 +28,7 @@ distinct_color_names <- function(n) {
     return(distinct_colors_cache[[key]])
 }
 
-get_metadata_colors <- function(dataset, md,colors = NULL, color_breaks = NULL, metadata = NULL, default_colors = c("white", "#F7F7F7", "#FDDBC7", "#F4A582", "#D6604D", "#B2182B", "#67001F", "black"), atlas = FALSE) {
+get_metadata_colors <- function(dataset, md, colors = NULL, color_breaks = NULL, metadata = NULL, default_colors = c("white", "#F7F7F7", "#FDDBC7", "#F4A582", "#D6604D", "#B2182B", "#67001F", "black"), atlas = FALSE) {
     metadata <- metadata %||% get_mc_data(dataset, "metadata", atlas = atlas)
     if (md == "Clipboard") {
         return(c("selected" = "darkred", "unslected" = "lightgrey"))

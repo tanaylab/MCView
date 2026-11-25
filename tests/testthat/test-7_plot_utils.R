@@ -26,3 +26,11 @@ test_that("scatter_legend_categories counts the legend entries of the metacells 
     expect_equal(scatter_legend_categories("Metadata", "score", mt, md), 0)
     expect_equal(scatter_legend_categories("Gene", "Actb", mt, md), 0)
 })
+
+test_that("expr_color_breaks spans the finite values, and a single value", {
+    expect_equal(expr_color_breaks(c(-3, NA, -1, -Inf), 3), c(-3, -2, -1))
+    b <- expr_color_breaks(c(-5, -5), 11) # one sample, or a gene without counts
+    expect_length(unique(b), 11)
+    expect_equal(range(b), c(-5 - 1e-5, -5 + 1e-5))
+    expect_error(expr_color_breaks(c(NA, -Inf), 11), class = "shiny.silent.error")
+})

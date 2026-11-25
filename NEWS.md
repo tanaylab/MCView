@@ -8,6 +8,7 @@ Fixes:
 * Plots came back blank after visiting several tabs (the browser ran out of WebGL contexts).
 * Clipboard: "Remove selected" removed another metacell.
 * Atlas: coloring the projection by a metadata field of the atlas failed when the query doesn't have that field.
+* Samples: coloring by a gene failed with a single sample; coloring metacells by a gene without counts failed.
 * Diff. expression: an annotation edit reset the chosen metacells or cell types; lasso selections were not added to a non-empty group B; empty groups show a message.
 * Gene modules: a gene could be added twice to a module; genes of a loaded file that are not in the dataset broke the module views; projections colored by a module follow its edits.
 * Gene correlation: the cell type filter follows the session's annotation; a gene without counts got noise correlations on some platforms; more than 30 correlations per gene can be requested; the exported file keeps its header.
