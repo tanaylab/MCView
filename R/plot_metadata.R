@@ -44,7 +44,7 @@ mc2d_plot_metadata_ggp <- function(dataset,
     } else {
         if (!is.null(colors)) {
             mc2d_df <- mc2d_df %>%
-                mutate(`Cell type` = factor(`Cell type`, levels = sort(names(colors))))
+                mutate(`Cell type` = factor(`Cell type`, levels = natural_sort_cell_types(names(colors))))
         }
     }
 
@@ -329,7 +329,7 @@ plot_mc_scatter <- function(dataset,
         mutate(
             `Top genes` = glue("{top1_gene} ({round(top1_lfp, digits=2)}), {top2_gene} ({round(top2_lfp, digits=2)})")
         ) %>%
-        mutate(cell_type = factor(cell_type, levels = sort(as.character(cell_type_colors$cell_type)))) %>%
+        mutate(cell_type = factor(cell_type, levels = natural_sort_cell_types(as.character(cell_type_colors$cell_type)))) %>%
         mutate(cell_type = forcats::fct_na_value_to_level(cell_type, "(Missing)")) %>%
         mutate(`Cell type` = cell_type)
 
@@ -396,7 +396,7 @@ plot_mc_scatter <- function(dataset,
 
         df <- df %>%
             mutate(color = cell_type, color_values = cell_type) %>%
-            mutate(color = factor(color, levels = sort(names(col_to_ct))))
+            mutate(color = factor(color, levels = natural_sort_cell_types(names(col_to_ct))))
         color_hover <- paste0("Cell type: ", hover_value("Cell type"))
     } else if (color_type == "Metadata") {
         req(metadata)
@@ -893,7 +893,7 @@ plot_obs_proj_scatter <- function(dataset,
         mutate(
             `Top genes` = glue("{top1_gene} ({round(top1_lfp, digits=2)}), {top2_gene} ({round(top2_lfp, digits=2)})")
         ) %>%
-        mutate(cell_type = factor(cell_type, levels = sort(as.character(cell_type_colors$cell_type)))) %>%
+        mutate(cell_type = factor(cell_type, levels = natural_sort_cell_types(as.character(cell_type_colors$cell_type)))) %>%
         mutate(cell_type = forcats::fct_na_value_to_level(cell_type, "(Missing)")) %>%
         mutate(`Cell type` = cell_type)
 

@@ -351,7 +351,7 @@ cell_type_metadata_confusion <- function(var,
     }
 
     df <- df %>%
-        mutate(cell_type = factor(cell_type, levels = sort(as.character(cell_type_colors$cell_type)))) %>%
+        mutate(cell_type = factor(cell_type, levels = natural_sort_cell_types(as.character(cell_type_colors$cell_type)))) %>%
         mutate(cell_type = forcats::fct_na_value_to_level(cell_type, "(Missing)")) %>%
         mutate(var = factor(var), !!var := forcats::fct_na_value_to_level(!!sym(var), "(Missing)"))
 

@@ -319,6 +319,16 @@ get_cell_type_data <- function(dataset, atlas = FALSE) {
     cell_type_colors <- cell_type_colors %>%
         filter(!is.na(cell_type)) %>%
         mutate(cell_type = as.character(cell_type))
+
+    # Projects imported before the default order was natural have cell types named by numbers in the order
+    # of sort() (1, 10, 11, ..., 2): show them as 1, 2, ..., 10. Any other order is the user's and is kept.
+    ord <- cell_types_display_order(cell_type_colors$cell_type)
+    if (!identical(ord, seq_along(ord))) {
+        cell_type_colors <- cell_type_colors[ord, , drop = FALSE]
+        if (rlang::has_name(cell_type_colors, "order")) {
+            cell_type_colors$order <- seq_len(nrow(cell_type_colors))
+        }
+    }
     return(cell_type_colors)
 }
 
