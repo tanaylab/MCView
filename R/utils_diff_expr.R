@@ -151,6 +151,8 @@ mc_mc_gene_scatter_df_reactive <- function(dataset, input, output, session, meta
             req(input$metacell2)
             req(input$metacell1 %in% metacell_types()$metacell)
             req(input$metacell2 %in% metacell_types()$metacell)
+            # (comparing a metacell with itself failed with an error about duplicated column names)
+            validate(need(input$metacell1 != input$metacell2, "Please choose two different metacells."))
             calc_mc_mc_gene_df(dataset(), input$metacell1, input$metacell2)
         } else if (input$mode == "Types") {
             req(metacell_types())
@@ -159,6 +161,7 @@ mc_mc_gene_scatter_df_reactive <- function(dataset, input, output, session, meta
             req(input$metacell1 %in% metacell_types()$cell_type)
             req(input$metacell2 %in% cell_type_colors()$cell_type)
             req(input$metacell2 %in% metacell_types()$cell_type)
+            validate(need(input$metacell1 != input$metacell2, "Please choose two different cell types."))
             types_df <- metacell_types()
             if (!is.null(metacell_filter)) {
                 types_df <- types_df %>%
