@@ -229,6 +229,14 @@ lazy_load_files <- function(env, files, dataset, cache_dir, atlas = FALSE) {
     # dev/convert_qs_to_qs2.R), so drop the .qs: without the qs package the check below
     # would otherwise read the whole .qs2 at startup
     files <- files[!(grepl("\\.qs$", files) & paste0(files, "2") %in% files)]
+    # mc_dimnames older than mc_mat is stale (e.g. a new mc_mat copied over an older cache): ignore it,
+    # so that the names are taken from mc_mat (and written again)
+    dir <- if (atlas) fs::path(cache_dir, dataset, "atlas") else fs::path(cache_dir, dataset)
+    mat_file <- intersect(c("mc_mat.qs2", "mc_mat.qs", "mc_mat.tsv"), files)[1]
+    if ("mc_dimnames.qs2" %in% files && !is.na(mat_file) &&
+        isTRUE(file.mtime(fs::path(dir, "mc_dimnames.qs2")) < file.mtime(fs::path(dir, mat_file)))) {
+        files <- setdiff(files, "mc_dimnames.qs2")
+    }
     for (fn in files) {
         local({
             var_name <- basename(fn) %>%
@@ -240,7 +248,6 @@ lazy_load_files <- function(env, files, dataset, cache_dir, atlas = FALSE) {
                 load_shiny_data(var_name, dataset, cache_dir, atlas = atlas)
             }
             if (var_name == "mc_mat") {
-                dir <- if (atlas) fs::path(cache_dir, dataset, "atlas") else fs::path(cache_dir, dataset)
                 delayedAssign(var_name, sync_mc_dimnames(load_shiny_data(var_name, dataset, cache_dir, atlas = atlas), env, dir, cache_dir), assign.env = env)
             } else {
                 delayedAssign(var_name, load_shiny_data(var_name, dataset, cache_dir, atlas = atlas), assign.env = env)

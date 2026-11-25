@@ -19,9 +19,12 @@ legacy_dataset <- function(cache_dir, dataset = "ds", mc_mat = fake_mc_mat(), su
     dir
 }
 
-# make reading mc_mat fail
+# make reading mc_mat fail, keeping its time (a newer mc_mat makes mc_dimnames stale)
 break_mc_mat <- function(dir) {
-    writeLines("not a qs2 file", fs::path(dir, "mc_mat.qs2"))
+    file <- fs::path(dir, "mc_mat.qs2")
+    mtime <- file.mtime(file)
+    writeLines("not a qs2 file", file)
+    Sys.setFileTime(file, mtime)
 }
 
 test_that("serialize_shiny_data writes the names of mc_mat next to it", {
@@ -117,10 +120,23 @@ test_that("stale mc_dimnames is corrected once mc_mat is read", {
 
     # the same names are not written again
     mtime <- file.mtime(fs::path(dir, "mc_dimnames.qs2"))
-    Sys.setFileTime(fs::path(dir, "mc_dimnames.qs2"), mtime - 100)
+    Sys.setFileTime(fs::path(dir, "mc_dimnames.qs2"), mtime + 100)
     load_all_data(cache_dir, datasets = "ds")
     mc_mat <- get_mc_data("ds", "mc_mat")
-    expect_equal(as.numeric(file.mtime(fs::path(dir, "mc_dimnames.qs2"))), as.numeric(mtime - 100))
+    expect_equal(as.numeric(file.mtime(fs::path(dir, "mc_dimnames.qs2"))), as.numeric(mtime + 100))
+})
+
+test_that("mc_dimnames older than mc_mat is ignored", {
+    local_mc_data()
+    cache_dir <- withr::local_tempdir()
+    dir <- legacy_dataset(cache_dir, mc_mat = fake_mc_mat(genes = c("g1", "g2", "new")))
+    qs2::qs_save(list(genes = c("g1", "g2", "old"), metacells = c("M1", "M2")), fs::path(dir, "mc_dimnames.qs2"))
+    # a new mc_mat copied over a cache that has mc_dimnames
+    Sys.setFileTime(fs::path(dir, "mc_dimnames.qs2"), file.mtime(fs::path(dir, "mc_mat.qs2")) - 100)
+
+    load_all_data(cache_dir, datasets = "ds")
+    expect_identical(gene_names("ds"), c("g1", "g2", "new"))
+    expect_identical(qs2::qs_read(fs::path(dir, "mc_dimnames.qs2"))$genes, c("g1", "g2", "new"))
 })
 
 test_that("an unreadable mc_dimnames falls back to mc_mat", {
