@@ -29,7 +29,104 @@ serialize_shiny_data <- function(object, name, dataset, cache_dir, df2mat = FALS
         qs2::qs_save(object, fs::path(dataset_dir, glue("{name}.qs2")), ...)
     }
 
+    # every writer of mc_mat (import, import of metacell1 projects) also writes its names
+    if (name == "mc_mat") {
+        qs2::qs_save(mc_dimnames_of(object), fs::path(dataset_dir, "mc_dimnames.qs2"))
+    }
+
     cli_alert_success_verbose("saved {.field {name}}")
+}
+
+# The gene and metacell names of mc_mat are also stored in a small file (mc_dimnames, ~140 KB for 33K genes and
+# 5K metacells), so that the app gets them without reading the matrix (1.4 GB in memory, seconds to read): at
+# startup, in the QC tab and wherever only the names of genes or metacells are needed.
+mc_dimnames_of <- function(mc_mat) {
+    list(genes = rownames(mc_mat), metacells = colnames(mc_mat))
+}
+
+is_mc_dimnames <- function(x) {
+    is.list(x) && all(c("genes", "metacells") %in% names(x))
+}
+
+# Write mc_dimnames to `dir` for the next processes of the app, when the project's directory is writable: to a
+# hidden temporary file first, renamed to mc_dimnames.qs2, so that another process never reads a partial file
+# (hidden files are not loaded, nor part of the shiny cache key). Returns whether it was written; never fails.
+write_mc_dimnames <- function(dimnames, dir) {
+    tryCatch(
+        {
+            file <- fs::path(dir, "mc_dimnames.qs2")
+            tmp <- tempfile(".mc_dimnames.qs2-", tmpdir = dir)
+            on.exit(unlink(tmp), add = TRUE)
+            qs2::qs_save(dimnames, tmp)
+            file.rename(tmp, file)
+        },
+        error = function(e) FALSE,
+        warning = function(w) FALSE
+    )
+}
+
+# Once mc_mat of a dataset's environment `env` was read from `dir`: if the names stored for it are missing or
+# differ, the matrix wins: keep its names in memory and try to write them, unless `dir` is linked from outside
+# the project's cache directory `cache_dir` (e.g. an atlas linked from its own project). Returns mc_mat.
+sync_mc_dimnames <- function(mc_mat, env, dir, cache_dir) {
+    dimnames <- mc_dimnames_of(mc_mat)
+    if (!identical(stored_mc_dimnames(env), dimnames)) {
+        assign("mc_dimnames", dimnames, envir = env)
+        inside <- tryCatch(
+            {
+                real <- fs::path_real(dir)
+                root <- fs::path_real(cache_dir)
+                real == root || startsWith(real, paste0(root, "/"))
+            },
+            error = function(e) FALSE
+        )
+        if (inside) {
+            write_mc_dimnames(dimnames, dir)
+        }
+    }
+    mc_mat
+}
+
+# mc_dimnames of a dataset's environment, read from its file if it wasn't yet, or NULL. An unreadable file is
+# dropped, so that it isn't read again.
+stored_mc_dimnames <- function(env) {
+    if (!exists("mc_dimnames", envir = env, inherits = FALSE)) {
+        return(NULL)
+    }
+    dimnames <- tryCatch(env[["mc_dimnames"]], error = function(e) NULL)
+    if (!is_mc_dimnames(dimnames)) {
+        rm("mc_dimnames", envir = env)
+        return(NULL)
+    }
+    dimnames
+}
+
+# The gene and metacell names of a dataset's mc_mat (list(genes =, metacells =)), or NULL without mc_mat. From
+# mc_dimnames when the dataset has it, otherwise from mc_mat (projects imported before mc_dimnames existed), which
+# also writes mc_dimnames for the next processes.
+get_mc_dimnames <- function(dataset, atlas = FALSE) {
+    env <- if (atlas) mc_data[[dataset]]$atlas else mc_data[[dataset]]
+    if (is.null(env)) {
+        return(NULL)
+    }
+    if (!is.environment(env)) { # a list of the dataset's objects (tests)
+        return(env[["mc_dimnames"]] %||% (if (!is.null(env[["mc_mat"]])) mc_dimnames_of(env[["mc_mat"]])))
+    }
+    dimnames <- stored_mc_dimnames(env)
+    if (!is.null(dimnames)) {
+        return(dimnames)
+    }
+    if (!exists("mc_mat", envir = env, inherits = FALSE)) {
+        return(NULL)
+    }
+    # reading mc_mat stores its names (see lazy_load_files())
+    dimnames <- mc_dimnames_of(env[["mc_mat"]])
+    assign("mc_dimnames", dimnames, envir = env)
+    dimnames
+}
+
+dataset_metacell_names <- function(dataset, atlas = FALSE) {
+    get_mc_dimnames(dataset, atlas = atlas)$metacells
 }
 
 load_shiny_data <- function(name, dataset, cache_dir, atlas = FALSE) {
@@ -142,7 +239,12 @@ lazy_load_files <- function(env, files, dataset, cache_dir, atlas = FALSE) {
                 # .qs2 next to it was dropped above)
                 load_shiny_data(var_name, dataset, cache_dir, atlas = atlas)
             }
-            delayedAssign(var_name, load_shiny_data(var_name, dataset, cache_dir, atlas = atlas), assign.env = env)
+            if (var_name == "mc_mat") {
+                dir <- if (atlas) fs::path(cache_dir, dataset, "atlas") else fs::path(cache_dir, dataset)
+                delayedAssign(var_name, sync_mc_dimnames(load_shiny_data(var_name, dataset, cache_dir, atlas = atlas), env, dir, cache_dir), assign.env = env)
+            } else {
+                delayedAssign(var_name, load_shiny_data(var_name, dataset, cache_dir, atlas = atlas), assign.env = env)
+            }
         })
     }
 }
@@ -549,8 +651,7 @@ get_gg_mc_top_cor_index <- function(dataset, atlas = FALSE) {
 
 get_mc_sum <- function(dataset, atlas = FALSE) {
     mc_sum <- get_mc_data(dataset, "mc_sum", atlas = atlas)
-    mc_mat <- get_mc_data(dataset, "mc_mat", atlas = atlas)
-    names(mc_sum) <- colnames(mc_mat)
+    names(mc_sum) <- dataset_metacell_names(dataset, atlas = atlas)
 
     return(mc_sum)
 }

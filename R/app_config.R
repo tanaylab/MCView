@@ -288,9 +288,9 @@ order_tabs <- function(tabs) {
     return(new_tabs)
 }
 
+# without reading mc_mat when the dataset has mc_dimnames (see get_mc_dimnames())
 gene_names <- function(dataset, atlas = FALSE) {
-    gene_names <- rownames(get_mc_data(dataset, "mc_mat", atlas = atlas))
-    return(gene_names)
+    get_mc_dimnames(dataset, atlas = atlas)$genes
 }
 
 gene_names_label <- function(dataset, atlas = FALSE, gene_modules = NULL) {

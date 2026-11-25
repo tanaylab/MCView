@@ -69,11 +69,14 @@ run_app <- function(project,
         )
     }
 
-    # Render it now, in a forked process, while this one reads the expression matrix: the first
-    # session reads it anyway (to check the genes of the gene modules), and both take ~1.5 s for a
-    # large project. Rendering registers the resource paths of the UI's dependencies (its JS and
-    # CSS files): register them here too. Without fork (Windows), or when the forked process fails
-    # or doesn't finish within a minute, the page is rendered on the first request, as before.
+    # Render it now, in a forked process, while this one reads the names of the genes and metacells
+    # of the datasets: the first session needs them (to check the genes of the gene modules). They are
+    # stored next to the expression matrix (mc_dimnames, a few ms to read). Projects imported before
+    # have only the matrix: read it then (~1.5 s for a large project, as long as rendering the page),
+    # as the first session would, which also writes the names for the next starts. Rendering registers
+    # the resource paths of the UI's dependencies (its JS and CSS files): register them here too.
+    # Without fork (Windows), or when the forked process fails or doesn't finish within a minute, the
+    # page is rendered on the first request, as before.
     # The forked process must not read cache files (qs2 can't start its threads after a fork, and
     # this process wouldn't get the data), so it runs without them: UI code that read data would
     # fail there, and the page would be rendered here instead.
@@ -88,6 +91,14 @@ run_app <- function(project,
             ),
             error = function(e) NULL
         )
+        # read the names here rather than later in a forked process (see lazy_load_files())
+        for (ds in dataset_ls(project)) {
+            for (in_atlas in c(FALSE, TRUE)) {
+                if (has_mc_data(ds, "mc_dimnames", atlas = in_atlas)) {
+                    get_mc_dimnames(ds, atlas = in_atlas)
+                }
+            }
+        }
         if (has_mc_data(dataset_ls(project)[1], "gene_modules")) {
             invisible(gene_names(dataset_ls(project)[1]))
         }
@@ -149,6 +160,9 @@ config_shiny_cache <- function() {
                 }
 
                 files <- list.files(c(project_cache_dir(project), dirname(project_config_file(project))), recursive = TRUE, full.names = TRUE)
+                # the app writes mc_dimnames (the names of mc_mat, which is in the key) for projects imported before
+                # it existed: leave it out, so that the next process doesn't start with an empty cache because of it
+                files <- files[basename(files) != "mc_dimnames.qs2"]
                 info <- file.info(files)
                 key <- rlang::hash(list(as.character(fs::path_abs(project)), as.character(utils::packageVersion("MCView")), files, info$size, as.numeric(info$mtime)))
                 dir <- fs::path(root, paste0("shiny_cache_", basename(project), "_", key))

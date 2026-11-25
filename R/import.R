@@ -198,6 +198,7 @@ import_dataset <- function(project,
     mc_mat <- as.matrix(mc_mat)
     rownames(mc_mat) <- modify_gene_names(rownames(mc_mat), gene_names)
 
+    # also writes its gene and metacell names (mc_dimnames), which the app reads instead of the matrix
     serialize_shiny_data(mc_mat, "mc_mat", dataset = dataset, cache_dir = cache_dir)
 
     metacells <- colnames(mc_mat)
