@@ -289,7 +289,7 @@ add_tab <- function(tab, project) {
 #'
 #' metadata1 <- cell_metadata_to_metacell(
 #'     cell_metadata[, 1:3], cell_to_metacell,
-#'     func = function(x) x * 2
+#'     func = function(x) median(x) * 2
 #' )
 #' head(metadata1)
 #'
