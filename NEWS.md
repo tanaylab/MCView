@@ -10,7 +10,8 @@ Fixes:
 * Diff. expression: an annotation edit reset the chosen metacells or cell types; lasso selections were not added to a non-empty group B; empty groups show a message.
 * Gene modules: a gene could be added twice to a module; genes of a loaded file that are not in the dataset broke the module views; projections colored by a module follow its edits.
 * Gene correlation: the cell type filter follows the session's annotation; a gene without counts got noise correlations on some platforms; more than 30 correlations per gene can be requested; the exported file keeps its header.
-* Cell types: "Facet by: Cell type" failed with cell types on the x axis; the cell types are shown in their defined order.
+* Cell types: "Facet by: Cell type" failed with cell types on the x axis; the cell types are shown in their defined order, and cell types named by numbers are ordered 1, 2, ..., 10 in the selectors and in new imports.
+* Annotate: the metacells of a deleted cell type are shown as "(Missing)" and can be annotated again; editing gene modules no longer resets the gene, metadata field or module that other plots show.
 * Flow: gene trajectories used a wrong time window when the flow didn't start at the first time bin.
 * Query: "(dissimilar)" labels and the comparison with a previous projection are matched by metacell; "Show only fitted genes" of a group uses the group's cell types.
 * Samples: diff. expression with a sample that lacks the chosen cell types shows a message instead of failing.
@@ -23,6 +24,9 @@ Performance:
 * Diff. expression of cell types and groups no longer copies the expression matrix; the comparison, its scatter and the projections of the Annotate, Diff. Expression and Query tabs are cached; selecting a row of the table highlights the gene without redrawing the scatter.
 * Faster gene correlations, default markers, lookups of stored correlations and projections colored by cell type; sparse matrices stored as triplets are read as compressed columns.
 * Default point sizes are rounded, so that users with different screens share the cached plots.
+* Apps start without reading the expression matrix: the names of the genes and metacells are stored next to it (`mc_dimnames`; written at import, and at the first start of projects imported before, when their directory is writable). A 33K genes x 5.3K metacells app answers ~2 s sooner and uses 1.3 GB less memory until a tab needs expression data.
+* Heatmaps: "Update genes" with local enrichment is 2 to 4 times faster and uses a fraction of the memory.
+* The top correlated genes of a gene, the default colors of metadata fields and the gene labels are computed once per process.
 
 # MCView 0.2.64
 
