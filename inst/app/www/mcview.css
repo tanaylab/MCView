@@ -75,3 +75,18 @@
     gap: 4px;
     margin-bottom: 10px;
 }
+
+/* Annotate tab: in a narrow window the plots (2/3 of the row) and the annotation boxes (1/3) were too
+   narrow to use, and the cell types table spilled out of its box. Below 1200 px the two columns are one
+   above the other, and a table wider than its box scrolls inside it. */
+@media (max-width: 1199px) {
+    #shiny-tab-annotate > .row > .col-sm-8,
+    #shiny-tab-annotate > .row > .col-sm-4 {
+        width: 100%;
+        padding-right: 15px !important;
+    }
+}
+
+#shiny-tab-annotate .dataTables_wrapper {
+    overflow-x: auto;
+}
