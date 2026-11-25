@@ -73,7 +73,8 @@ run_app <- function(project,
     # of the datasets: the first session needs them (to check the genes of the gene modules). They are
     # stored next to the expression matrix (mc_dimnames, a few ms to read). Projects imported before
     # have only the matrix: read it then (~1.5 s for a large project, as long as rendering the page),
-    # as the first session would, which also writes the names for the next starts. Rendering registers
+    # as the first session would, which also writes the names for the next starts. The matrix is also
+    # read for the default genes (below). Rendering registers
     # the resource paths of the UI's dependencies (its JS and CSS files): register them here too.
     # Without fork (Windows), or when the forked process fails or doesn't finish within a minute, the
     # page is rendered on the first request, as before.
@@ -99,8 +100,11 @@ run_app <- function(project,
                 }
             }
         }
-        if (has_mc_data(dataset_ls(project)[1], "gene_modules")) {
-            invisible(gene_names(dataset_ls(project)[1]))
+        # the first session's gene selectors choose the default genes from the expression matrix of the first
+        # dataset, unless the config sets them: read it now, while the page renders, rather than on the first
+        # visit of the Manifold or Genes tab (~1 s for 33K genes x 5K metacells)
+        if (is.null(config$selected_gene1) || is.null(config$selected_gene2)) {
+            invisible(get_mc_data(dataset_ls(project)[1], "mc_mat"))
         }
         if (!is.null(job)) {
             res <- parallel::mccollect(job, wait = FALSE, timeout = 60)[[1]]
