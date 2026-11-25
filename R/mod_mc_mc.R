@@ -317,6 +317,44 @@ metacell_choices_with_similarity <- function(metacells, md) {
     choices
 }
 
+# A searchable single-select of the metacells, each shown in the color of its cell type.
+# A virtual select builds only the options in view (a picker builds DOM nodes for every metacell), and the
+# options are sent as columns, with a short class per color instead of an inline style per option.
+# `choices` as returned by metacell_choices_with_similarity() (the names, when given, are the labels).
+# Its value is set with updateSelectInput / updatePickerInput / updateVirtualSelect(selected = ...) alike.
+metacell_select_input <- function(input_id, label, choices, colors, selected) {
+    hex <- col2hex(colors)
+    palette <- unique(hex)
+    # the colors are scoped by a class of the dropbox (the list), set by additionalDropboxClasses
+    dropbox_class <- paste0(gsub("[^A-Za-z0-9_-]", "_", input_id), "-dropbox")
+    css <- paste0(".", dropbox_class, " .c", seq_along(palette), " {color: ", palette, ";}", collapse = "\n")
+    df <- data.frame(
+        label = names(choices) %||% choices,
+        value = unname(choices),
+        cls = paste0("c", match(hex, palette))
+    )
+    vs_choices <- shinyWidgets::prepare_choices(df, label = label, value = value, classNames = cls)
+    # the labels are the values (no "(dissimilar)"): send them once
+    same_labels <- identical(df$label, df$value)
+    if (same_labels) {
+        vs_choices$choices$label <- NULL
+    }
+    tagList(
+        tags$style(HTML(css)),
+        shinyWidgets::virtualSelectInput(
+            input_id,
+            label,
+            choices = vs_choices,
+            selected = selected,
+            multiple = FALSE,
+            search = TRUE,
+            # the list stays in the sidebar, as the picker's did: moved to <body>, it is under the sidebar
+            additionalDropboxClasses = dropbox_class,
+            labelKey = if (same_labels) "value" else "label"
+        )
+    )
+}
+
 metacell_selectors <- function(input, output, session, dataset, ns, metacell_names, metacell_colors, metacell_types, cell_type_colors, groupA, groupB) {
     output$metacell1_select <- renderUI({
         req(dataset())
@@ -324,17 +362,12 @@ metacell_selectors <- function(input, output, session, dataset, ns, metacell_nam
         if (input$mode == "MCs") {
             req(metacell_colors())
             req(metacell_names())
-            cell_types_hex <- col2hex(metacell_colors())
             # add 'similar' annotation
             choices <- metacell_choices_with_similarity(metacell_names(), get_mc_data(dataset(), "metadata"))
-            shinyWidgets::pickerInput(ns("metacell1"), "Metacell A",
+            metacell_select_input(ns("metacell1"), "Metacell A",
                 choices = choices,
-                selected = keep_selected(isolate(input$metacell1), metacell_names(), config$selected_mc1 %||% metacell_names()[1]),
-                multiple = FALSE,
-                options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "contains", dropupAuto = FALSE),
-                choicesOpt = list(
-                    style = paste0("color: ", cell_types_hex, ";")
-                )
+                colors = metacell_colors(),
+                selected = keep_selected(isolate(input$metacell1), metacell_names(), config$selected_mc1 %||% metacell_names()[1])
             )
         } else if (input$mode == "Types") {
             req(cell_type_colors())
@@ -354,14 +387,11 @@ metacell_selectors <- function(input, output, session, dataset, ns, metacell_nam
         } else if (input$mode == "Groups") {
             req(metacell_colors())
             req(metacell_names())
-            cell_types_hex <- col2hex(metacell_colors())
             tagList(
-                shinyWidgets::pickerInput(ns("metacell"), "Metacell",
+                metacell_select_input(ns("metacell"), "Metacell",
                     choices = metacell_names(),
-                    selected = keep_selected(isolate(input$metacell), metacell_names(), config$selected_mc1 %||% metacell_names()[1]), multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "contains", dropupAuto = FALSE),
-                    choicesOpt = list(
-                        style = paste0("color: ", cell_types_hex, ";")
-                    )
+                    colors = metacell_colors(),
+                    selected = keep_selected(isolate(input$metacell), metacell_names(), config$selected_mc1 %||% metacell_names()[1])
                 ),
                 shinyWidgets::actionGroupButtons(
                     c(ns("add_metacell_to_groupA"), ns("add_metacell_to_groupB")),
@@ -378,13 +408,10 @@ metacell_selectors <- function(input, output, session, dataset, ns, metacell_nam
         if (input$mode == "MCs") {
             req(metacell_colors())
             req(metacell_names())
-            cell_types_hex <- col2hex(metacell_colors())
-            shinyWidgets::pickerInput(ns("metacell2"), "Metacell B",
+            metacell_select_input(ns("metacell2"), "Metacell B",
                 choices = metacell_names(),
-                selected = keep_selected(isolate(input$metacell2), metacell_names(), config$selected_mc2 %||% metacell_names()[2]), multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "contains", dropupAuto = FALSE),
-                choicesOpt = list(
-                    style = paste0("color: ", cell_types_hex, ";")
-                )
+                colors = metacell_colors(),
+                selected = keep_selected(isolate(input$metacell2), metacell_names(), config$selected_mc2 %||% metacell_names()[2])
             )
         } else if (input$mode == "Types") {
             req(cell_type_colors())

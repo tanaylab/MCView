@@ -150,6 +150,31 @@ test_that("metacell pickers mark the dissimilar metacells by metacell, not by po
     expect_identical(metacell_choices_with_similarity(c("m1", "m2"), NULL), c("m1", "m2"))
 })
 
+test_that("the metacell select colors each metacell by a class per color, and sends labels only when they differ", {
+    config_of <- function(tag) {
+        script <- htmltools::tagQuery(tag)$find("script")$selectedTags()[[1]]
+        jsonlite::fromJSON(as.character(script$children[[1]]))
+    }
+    tag <- metacell_select_input("mod-metacell1", "Metacell A", c("m1", "m2", "m3"), c("red", "#0000FF", "red"), selected = "m2")
+    html <- as.character(tag)
+    expect_match(html, ".mod-metacell1-dropbox .c1 {color: #FF0000;}", fixed = TRUE)
+    expect_match(html, ".mod-metacell1-dropbox .c2 {color: #0000FF;}", fixed = TRUE)
+    data <- config_of(tag)
+    options <- data$options
+    expect_identical(options$choices$value, c("m1", "m2", "m3"))
+    expect_identical(options$choices$classNames, c("c1", "c2", "c1"))
+    expect_null(options$choices$label)
+    expect_identical(data$config$labelKey, "value")
+    expect_identical(data$config$selectedValue, "m2")
+    expect_identical(data$config$additionalDropboxClasses, "mod-metacell1-dropbox")
+
+    # the "(dissimilar)" labels
+    choices <- c(m1 = "m1", `m2 (dissimilar)` = "m2")
+    options <- config_of(metacell_select_input("x", "A", choices, c("red", "blue"), selected = "m1"))$options
+    expect_identical(options$choices$label, c("m1", "m2 (dissimilar)"))
+    expect_identical(options$choices$value, c("m1", "m2"))
+})
+
 test_that("the projection's similarity is added to the metadata by metacell", {
     proj <- tibble(metacell = c("m1", "m2", "m3", "m4"), cell_type = "A", similar = c(TRUE, FALSE, TRUE, FALSE))
 
