@@ -10,8 +10,8 @@ Fixes:
 * Diff. expression: an annotation edit reset the chosen metacells or cell types; lasso selections were not added to a non-empty group B; empty groups show a message.
 * Gene modules: a gene could be added twice to a module; genes of a loaded file that are not in the dataset broke the module views; projections colored by a module follow its edits.
 * Gene correlation: the cell type filter follows the session's annotation; a gene without counts got noise correlations on some platforms; more than 30 correlations per gene can be requested; the exported file keeps its header.
-* Cell types: "Facet by: Cell type" failed with cell types on the x axis; the cell types are shown in their defined order, and cell types named by numbers are ordered 1, 2, ..., 10 in the selectors and in new imports.
-* Annotate: the metacells of a deleted cell type are shown as "(Missing)" and can be annotated again; editing gene modules no longer resets the gene, metadata field or module that other plots show.
+* Cell types: "Facet by: Cell type" failed with cell types on the x axis; the cell types are shown in their defined order, and cell types named by numbers are ordered 1, 2, ..., 10 (also in projects imported before).
+* Annotate: the metacells of a deleted cell type are shown as "(Missing)" and can be annotated again; the tab is usable in a narrow window; editing gene modules no longer resets the gene, metadata field or module that other plots show.
 * Flow: gene trajectories used a wrong time window when the flow didn't start at the first time bin.
 * Query: "(dissimilar)" labels and the comparison with a previous projection are matched by metacell; "Show only fitted genes" of a group uses the group's cell types.
 * Samples: diff. expression with a sample that lacks the chosen cell types shows a message instead of failing.
