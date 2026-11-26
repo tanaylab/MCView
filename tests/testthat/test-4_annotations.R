@@ -38,7 +38,7 @@ test_that("update_metacell_types works with missing cell types", {
 # TODO: Test for cell types that do not exist in colors
 
 test_that("update_cell_type_colors works", {
-    cell_type_colors <- fread(fs::path(raw_dir, "cluster-colors.csv"))
+    cell_type_colors <- fread(fs::path(raw_dir, "cell-type-colors.csv"))
     cell_type_colors$color[1:5] <- "black"
     test_file <- fs::path(raw_dir, "cluster-colors-test.csv")
     tgutil::fwrite(cell_type_colors, test_file)

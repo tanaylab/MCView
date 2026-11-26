@@ -20,9 +20,8 @@ mod_mc_mc_ui <- function(id) {
                     collapsible = TRUE,
                     closable = FALSE,
                     width = 12,
-                    sidebar = shinydashboardPlus::boxSidebar(
+                    sidebar = plot_box_sidebar(
                         startOpen = FALSE,
-                        width = 80,
                         id = ns("mc_mc_sidebar"),
                         div(
                             title = "Hide lateral genes (genes expressed in multiple cell types) from the differential expression analysis",
@@ -56,9 +55,8 @@ mod_mc_mc_ui <- function(id) {
                     collapsible = TRUE,
                     closable = FALSE,
                     width = 12,
-                    sidebar = shinydashboardPlus::boxSidebar(
+                    sidebar = plot_box_sidebar(
                         startOpen = FALSE,
-                        width = 80,
                         id = ns("gene_projection_sidebar"),
                         uiOutput(ns("projection_color_selectors")),
                         uiOutput(ns("point_size_ui")),
@@ -144,6 +142,11 @@ mod_mc_mc_server <- function(id, dataset, metacell_types, cell_type_colors, gene
 
             groupA <- reactiveVal()
             groupB <- reactiveVal()
+            # the groups hold metacells of a dataset
+            observeEvent(dataset(), ignoreInit = TRUE, {
+                groupA(NULL)
+                groupB(NULL)
+            })
 
             metacell_names <- metacell_names_reactive(dataset)
             metacell_colors <- metacell_colors_reactive(dataset, metacell_names, metacell_types)
@@ -210,7 +213,41 @@ mod_mc_mc_server <- function(id, dataset, metacell_types, cell_type_colors, gene
             output$diff_expr_table <- render_mc_mc_gene_diff_table(input, output, session, ns, dataset, mc_mc_gene_scatter_df)
 
             # Projection plots
-            output$plot_mc_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, groupA = groupA, groupB = groupB, source = "proj_mc_plot")
+            # The drag mode of the projection (select in the Groups mode), for its cache key: render_2d_plotly()
+            # draws with a copy that an observer of priority 0 sets, which the cached plot doesn't depend on.
+            # Set after it, so that the key changes only once the plot would be drawn with the new drag mode.
+            proj_group_mode <- reactiveVal(FALSE)
+            observe(proj_group_mode(isTRUE(input$mode %in% c("Groups", "Group"))), priority = -1)
+
+            output$plot_mc_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, groupA = groupA, groupB = groupB, source = "proj_mc_plot") %>%
+                bindCache(
+                    "proj_mc_plot", # the projections of other tabs have the same code, other sources and buttons
+                    dataset(),
+                    input$color_proj,
+                    metacell_types(),
+                    cell_type_colors(),
+                    input$point_size,
+                    input$stroke,
+                    input$min_edge_size,
+                    input$graph_name,
+                    input$legend_orientation,
+                    input$show_legend_projection,
+                    input$set_range,
+                    input$proj_stat,
+                    input$expr_range,
+                    input$lfp,
+                    proj_color_var(input),
+                    if (isTRUE(input$color_proj %in% c("Gene module", "Scatter Axis"))) gene_modules(),
+                    if (isTRUE(input$color_proj == "Metadata") && isTRUE(input$color_proj_metadata == "Clipboard")) globals$clipboard,
+                    # the groups, shown when coloring by "Selected" in the Groups mode
+                    if (isTRUE(input$color_proj == "Selected")) list(input$mode, groupA(), groupB()),
+                    proj_group_mode(),
+                    globals$mc2d,
+                    globals$plotly_format,
+                    globals$plotly_width,
+                    globals$plotly_height,
+                    globals$plotly_scale
+                )
 
             diff_expr_auto_update_globals(mc_mc_gene_scatter_df, globals)
 
@@ -254,6 +291,70 @@ mod_mc_mc_globals_observers <- function(input, session, globals, notification_su
     })
 }
 
+# The pickers are rendered again when the annotation changes (their colors and the list of cell types):
+# keep what the user chose, when it is still one of the choices
+keep_selected <- function(current, choices, default) {
+    if (length(current) == 1 && !is.na(current) && current %in% choices) current else default
+}
+
+# Whether there are metacells to paste from the clipboard, telling the user when there aren't
+clipboard_has_metacells <- function(globals) {
+    if (length(globals$clipboard) == 0) {
+        showNotification("The clipboard is empty: add metacells to it first (with the \"Clipboard\" button at the top, or by copying the metacells selected in another tab)", type = "warning")
+        return(FALSE)
+    }
+    TRUE
+}
+
+# The choices of a metacell picker, with "(dissimilar)" after the metacells that the projection on an atlas
+# marks as dissimilar. Matched by metacell: the metadata can be in another order, or miss metacells.
+metacell_choices_with_similarity <- function(metacells, md) {
+    choices <- metacells
+    if (!is.null(md) && has_name(md, "similar")) {
+        dissimilar <- md$similar[match(metacells, as.character(md$metacell))] %in% "dissimilar"
+        names(choices) <- ifelse(dissimilar, paste0(metacells, " (dissimilar)"), metacells)
+    }
+    choices
+}
+
+# A searchable single-select of the metacells, each shown in the color of its cell type.
+# A virtual select builds only the options in view (a picker builds DOM nodes for every metacell), and the
+# options are sent as columns, with a short class per color instead of an inline style per option.
+# `choices` as returned by metacell_choices_with_similarity() (the names, when given, are the labels).
+# Its value is set with updateSelectInput / updatePickerInput / updateVirtualSelect(selected = ...) alike.
+metacell_select_input <- function(input_id, label, choices, colors, selected) {
+    hex <- col2hex(colors)
+    palette <- unique(hex)
+    # the colors are scoped by a class of the dropbox (the list), set by additionalDropboxClasses
+    dropbox_class <- paste0(gsub("[^A-Za-z0-9_-]", "_", input_id), "-dropbox")
+    css <- paste0(".", dropbox_class, " .c", seq_along(palette), " {color: ", palette, ";}", collapse = "\n")
+    df <- data.frame(
+        label = names(choices) %||% choices,
+        value = unname(choices),
+        cls = paste0("c", match(hex, palette))
+    )
+    vs_choices <- shinyWidgets::prepare_choices(df, label = label, value = value, classNames = cls)
+    # the labels are the values (no "(dissimilar)"): send them once
+    same_labels <- identical(df$label, df$value)
+    if (same_labels) {
+        vs_choices$choices$label <- NULL
+    }
+    tagList(
+        tags$style(HTML(css)),
+        shinyWidgets::virtualSelectInput(
+            input_id,
+            label,
+            choices = vs_choices,
+            selected = selected,
+            multiple = FALSE,
+            search = TRUE,
+            # the list stays in the sidebar, as the picker's did: moved to <body>, it is under the sidebar
+            additionalDropboxClasses = dropbox_class,
+            labelKey = if (same_labels) "value" else "label"
+        )
+    )
+}
+
 metacell_selectors <- function(input, output, session, dataset, ns, metacell_names, metacell_colors, metacell_types, cell_type_colors, groupA, groupB) {
     output$metacell1_select <- renderUI({
         req(dataset())
@@ -261,23 +362,12 @@ metacell_selectors <- function(input, output, session, dataset, ns, metacell_nam
         if (input$mode == "MCs") {
             req(metacell_colors())
             req(metacell_names())
-            cell_types_hex <- col2hex(metacell_colors())
             # add 'similar' annotation
-            md <- get_mc_data(dataset(), "metadata")
-            if (!is.null(md) && has_name(md, "similar")) {
-                choices <- metacell_names()
-                names(choices) <- ifelse(md$similar == "dissimilar", paste0(metacell_names(), " (dissimilar)"), metacell_names())
-            } else {
-                choices <- metacell_names()
-            }
-            shinyWidgets::pickerInput(ns("metacell1"), "Metacell A",
+            choices <- metacell_choices_with_similarity(metacell_names(), get_mc_data(dataset(), "metadata"))
+            metacell_select_input(ns("metacell1"), "Metacell A",
                 choices = choices,
-                selected = config$selected_mc1 %||% metacell_names()[1],
-                multiple = FALSE,
-                options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "contains", dropupAuto = FALSE),
-                choicesOpt = list(
-                    style = paste0("color: ", cell_types_hex, ";")
-                )
+                colors = metacell_colors(),
+                selected = keep_selected(isolate(input$metacell1), metacell_names(), config$selected_mc1 %||% metacell_names()[1])
             )
         } else if (input$mode == "Types") {
             req(cell_type_colors())
@@ -287,7 +377,7 @@ metacell_selectors <- function(input, output, session, dataset, ns, metacell_nam
             cell_types <- types_df$cell_type
             shinyWidgets::pickerInput(ns("metacell1"), "Cell type A",
                 choices = cell_types,
-                selected = cell_types[1],
+                selected = keep_selected(isolate(input$metacell1), cell_types, cell_types[1]),
                 multiple = FALSE,
                 options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "contains", dropupAuto = FALSE),
                 choicesOpt = list(
@@ -297,14 +387,11 @@ metacell_selectors <- function(input, output, session, dataset, ns, metacell_nam
         } else if (input$mode == "Groups") {
             req(metacell_colors())
             req(metacell_names())
-            cell_types_hex <- col2hex(metacell_colors())
             tagList(
-                shinyWidgets::pickerInput(ns("metacell"), "Metacell",
+                metacell_select_input(ns("metacell"), "Metacell",
                     choices = metacell_names(),
-                    selected = config$selected_mc1 %||% metacell_names()[1], multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "contains", dropupAuto = FALSE),
-                    choicesOpt = list(
-                        style = paste0("color: ", cell_types_hex, ";")
-                    )
+                    colors = metacell_colors(),
+                    selected = keep_selected(isolate(input$metacell), metacell_names(), config$selected_mc1 %||% metacell_names()[1])
                 ),
                 shinyWidgets::actionGroupButtons(
                     c(ns("add_metacell_to_groupA"), ns("add_metacell_to_groupB")),
@@ -321,13 +408,10 @@ metacell_selectors <- function(input, output, session, dataset, ns, metacell_nam
         if (input$mode == "MCs") {
             req(metacell_colors())
             req(metacell_names())
-            cell_types_hex <- col2hex(metacell_colors())
-            shinyWidgets::pickerInput(ns("metacell2"), "Metacell B",
+            metacell_select_input(ns("metacell2"), "Metacell B",
                 choices = metacell_names(),
-                selected = config$selected_mc2 %||% metacell_names()[2], multiple = FALSE, options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "contains", dropupAuto = FALSE),
-                choicesOpt = list(
-                    style = paste0("color: ", cell_types_hex, ";")
-                )
+                colors = metacell_colors(),
+                selected = keep_selected(isolate(input$metacell2), metacell_names(), config$selected_mc2 %||% metacell_names()[2])
             )
         } else if (input$mode == "Types") {
             req(cell_type_colors())
@@ -336,7 +420,7 @@ metacell_selectors <- function(input, output, session, dataset, ns, metacell_nam
             cell_types <- types_df$cell_type
             shinyWidgets::pickerInput(ns("metacell2"), "Cell type B",
                 choices = cell_types,
-                selected = cell_types[2],
+                selected = keep_selected(isolate(input$metacell2), cell_types, cell_types[2]),
                 options = shinyWidgets::pickerOptions(liveSearch = TRUE, liveSearchNormalize = TRUE, liveSearchStyle = "contains", dropupAuto = FALSE),
                 choicesOpt = list(
                     style = paste0("color: ", cell_types_hex, ";")
@@ -523,13 +607,13 @@ group_selectors <- function(input, output, session, dataset, ns, groupA, groupB,
     })
 
     observeEvent(input$paste_groupA_metacells, {
-        metacells <- globals$clipboard
-        groupA(unique(c(groupA(), metacells)))
+        req(clipboard_has_metacells(globals))
+        groupA(unique(c(groupA(), globals$clipboard)))
     })
 
     observeEvent(input$paste_groupB_metacells, {
-        metacells <- globals$clipboard
-        groupB(unique(c(groupB(), metacells)))
+        req(clipboard_has_metacells(globals))
+        groupB(unique(c(groupB(), globals$clipboard)))
     })
 
     observeEvent(input$reset_groupA, {
@@ -558,7 +642,7 @@ group_selectors <- function(input, output, session, dataset, ns, groupA, groupB,
             if (is.null(groupB())) {
                 groupB(selected_metacells)
             } else {
-                groupB(c(unique(groupB(), selected_metacells)))
+                groupB(unique(c(groupB(), selected_metacells)))
             }
         }
     })

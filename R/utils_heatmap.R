@@ -459,7 +459,7 @@ heatmap_matrix_reactives <- function(ns, input, output, session, dataset, metace
         req(is.null(input$selected_cell_types) || all(input$selected_cell_types %in% c(cell_type_colors()$cell_type, "(Missing)")))
 
         if (input$mat_value == "Local") {
-            mc_egc <- get_mc_egc(dataset(), metacells = colnames(mat()))
+            mc_egc <- get_marker_candidates_egc(dataset(), metacells = colnames(mat()))
             markers_df <- calc_marker_genes(mc_egc, genes_per_metacell = 20)
         } else {
             if (!is.null(input$selected_cell_types)) {
@@ -594,6 +594,16 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                 if (mat_value() == "Local") metacell_filter()
             }
 
+            # Only what the matrix depends on, so that it and the heatmap are not computed again (to the same result)
+            # when something else changes: the gene modules matter only for the gene modules heatmap, and the
+            # metadata to show (selected_md) only adds annotation bars.
+            gene_modules_key <- function() {
+                if (mode == "Gene modules") gene_modules()
+            }
+            mat_params <- function() {
+                applied_params()[c("selected_cell_types", "force_cell_type", "metadata_order_cell_type_var", "enable_categorical_filter", "categorical_filter_field", "categorical_filter_values")]
+            }
+
             mat <- reactive({
                 req(markers())
                 req(dataset())
@@ -648,7 +658,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                 }
 
                 return(m)
-            }) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), markers(), gene_modules(), applied_params(), genes(), input$show_genes, clipboard_changed(), mode, metadata_order(), zoom_metacells(), mat_value())
+            }) %>% bindCache(id, dataset(), metacell_types(), cell_type_colors(), markers(), gene_modules_key(), mat_params(), genes(), input$show_genes, clipboard_changed(), mode, metadata_order(), zoom_metacells(), mat_value())
 
             output$download_matrix <- downloadHandler(
                 filename = function() {
@@ -737,6 +747,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
             # modules) from its picker. Runs before the outputs, so that they don't compute the old parameters.
             observeEvent(dataset(), ignoreInit = TRUE, priority = 1, {
                 applied_params(NULL)
+                known_cell_types(NULL)
                 metacell_filter(NULL)
                 selected_metacells(NULL)
                 if (mode != "Gene modules") {
@@ -760,6 +771,31 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                         categorical_filter_field = NULL,
                         categorical_filter_values = NULL
                     ))
+                }
+            })
+
+            # Follow annotation edits: a cell type that was renamed, merged or deleted no longer exists, and the
+            # heatmap was not drawn until the next "Update Heatmap". Drop such types from the applied ones and add
+            # the types that were created since, so that their metacells stay in the heatmap.
+            known_cell_types <- reactiveVal(NULL)
+            observe({
+                req(cell_type_colors())
+                req(metacell_types())
+                current <- cell_type_colors() %>%
+                    filter(cell_type %in% metacell_types()$cell_type) %>%
+                    pull(cell_type) %>%
+                    as.character()
+                known <- isolate(known_cell_types())
+                known_cell_types(current)
+                params <- isolate(applied_params())
+                if (is.null(params) || is.null(known) || is.null(params$selected_cell_types)) {
+                    return()
+                }
+                applied <- as.character(params$selected_cell_types)
+                updated <- c(applied[applied %in% c(current, "(Missing)")], setdiff(current, known))
+                if (!identical(updated, applied)) {
+                    params$selected_cell_types <- updated
+                    applied_params(params)
                 }
             })
 
@@ -889,16 +925,21 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
 
                 if (!is.null(input$plot_legend) && input$plot_legend) {
                     req(input$legend_width)
+                    # The legend gets its share of the row, but at least 180px (150px without the padding, or 30% of
+                    # a narrower row), so that the cell type names stay readable in narrow windows. The heatmap takes
+                    # the rest of the row.
                     legend_column <- column(
                         width = input$legend_width,
+                        style = glue("flex: 0 0 auto; width: max({round(100 * input$legend_width / 12, 4)}%, min(180px, 30%));"),
                         plotOutput(ns("markers_legend"), height = height)
                     )
                     heatmap_column <- column(
                         width = 12 - input$legend_width,
+                        style = "flex: 1 1 0; min-width: 0;",
                         heatmap
                     )
                     shinycssloaders::withSpinner(
-                        fluidRow(heatmap_column, legend_column)
+                        fluidRow(style = "display: flex;", heatmap_column, legend_column)
                     )
                 } else {
                     shinycssloaders::withSpinner(
@@ -907,37 +948,26 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                 }
             })
 
+            # The genes legend above the cell types legend, laid out to fit the plot (see heatmap_legend_grob()).
+            # The legend is drawn at the exact size of the output rather than at a size of plot_size_policy that
+            # the browser scales down, so that its text keeps its size and it fills the height of the heatmap.
             output$markers_legend <- renderPlot(
                 {
                     req(cell_type_colors())
                     req(input$plot_legend)
-                    colors <- cell_type_colors()
-                    colors <- colors %>% filter(cell_type %in% metacell_types()$cell_type)
-                    legend_point_size <- max(1, min(2, 250 / nrow(colors)))
-                    p <- colors %>%
-                        ggplot(aes(x = cell_type, fill = cell_type, y = 1))
-
-                    if (input$plot_cell_type_legend) {
-                        p <- p + geom_point(shape = 21) +
-                            scale_fill_manual("Cell types", values = deframe(colors %>% select(cell_type, color))) +
-                            guides(fill = guide_legend(override.aes = list(size = legend_point_size), ncol = 1))
+                    colors <- NULL
+                    if (isTRUE(input$plot_cell_type_legend)) {
+                        colors <- cell_type_colors() %>% filter(cell_type %in% metacell_types()$cell_type)
                     }
-
-                    if (input$plot_genes_legend) {
-                        gene_colors <- data.frame(type = c("lateral+noisy", "lateral", "noisy", "disjoined", "module", "highlighted"), color = c("purple", "blue", "red", "darkgray", "#012901", input$highlight_color))
-                        p <- p +
-                            geom_text(data = gene_colors, inherit.aes = FALSE, x = 1, y = 1, aes(label = type, color = type)) +
-                            scale_color_manual("Genes", values = deframe(gene_colors))
+                    gene_colors <- NULL
+                    if (isTRUE(input$plot_genes_legend)) {
+                        gene_colors <- heatmap_gene_label_colors(mode, input$highlight_color)
                     }
-
-                    p <- p + theme(legend.position = c(0.5, 0.5))
-
-                    legend <- cowplot::get_legend(p)
-
-                    cowplot::ggdraw(legend)
+                    size <- grDevices::dev.size("in")
+                    cowplot::ggdraw(heatmap_legend_grob(colors$cell_type, colors$color, gene_colors, width = size[1], height = size[2]))
                 },
                 res = 96
-            ) %>% bindCache(req_plot_size(), id, dataset(), cell_type_colors(), input$plot_legend, input$plot_cell_type_legend, input$plot_genes_legend, sizePolicy = plot_size_policy)
+            ) %>% bindCache(req_plot_size(), id, dataset(), cell_type_colors(), unique(metacell_types()$cell_type), input$plot_legend, input$plot_cell_type_legend, input$plot_genes_legend, input$highlight_color, sizePolicy = function(dims) pmax(round(dims), 1))
 
             # We use this reactive in order to invalidate the cache only when input$filter_by_clipboard is TRUE
             clipboard_changed <- reactive({
@@ -977,7 +1007,7 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                     )
 
                     if (!is.null(genes) && length(genes()) > 0 && !is.null(input$show_genes) && input$show_genes) {
-                        gene_colors <- ifelse(names(gene_colors) %in% genes(), gene_colors, "#012901")
+                        gene_colors[!(names(gene_colors) %in% genes())] <- "#012901"
                     }
 
                     if (!is.null(highlighted_genes) && length(highlighted_genes()) > 0) {
@@ -1007,14 +1037,15 @@ heatmap_reactives <- function(id, dataset, metacell_types, gene_modules, cell_ty
                         top_cell_type_bar = ncol(m) <= 100,
                         interleave = nrow(m) > 80,
                         vertial_gridlines = mode %in% c("Inner", "Proj", "Stdev"),
-                        separate_gtable = TRUE
+                        separate_gtable = TRUE,
+                        values_title = heatmap_values_title(mode)
                     )
 
                     # we are returning the gtable and ggplot object separatly in order to allow shiny to infer positions correctly.
                     return(structure(list(p = res$p, build = res$build, gtable = res$gtable), class = "gt_custom"))
                 },
                 res = 96
-            ) %>% bindCache(req_plot_size(), id, dataset(), metacell_types(), cell_type_colors(), gene_modules(), lfp_range(), metacell_filter(), input$plot_legend, input$plot_cell_type_legend, input$plot_genes_legend, applied_params(), markers(), clipboard_changed(), input$high_color, input$low_color, input$mid_color, input$midpoint, genes(), input$show_genes, highlighted_genes(), input$highlight_color, input$max_gene_num, metadata_order(), mat_value(), sizePolicy = plot_size_policy)
+            ) %>% bindCache(req_plot_size(), id, dataset(), metacell_types(), cell_type_colors(), gene_modules_key(), lfp_range(), metacell_filter(), applied_params(), markers(), clipboard_changed(), input$high_color, input$low_color, input$mid_color, input$midpoint, genes(), input$show_genes, highlighted_genes(), input$highlight_color, metadata_order(), mat_value(), sizePolicy = plot_size_policy)
 
             observeEvent(input$heatmap_brush, {
                 req(input$brush_action)

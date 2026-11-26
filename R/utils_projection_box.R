@@ -18,9 +18,8 @@ projection_box <- function(ns,
         closable = FALSE,
         width = 12,
         height = height,
-        sidebar = shinydashboardPlus::boxSidebar(
+        sidebar = plot_box_sidebar(
             startOpen = FALSE,
-            width = 80,
             id = ns(glue("{id}_sidebar")),
             uiOutput(ns("graph_select_ui")),
             uiOutput(ns("proj_stat_ui")),
@@ -40,8 +39,13 @@ projection_box <- function(ns,
                 fill = TRUE
             )
         ),
-        shinycssloaders::withSpinner(
-            plotly::plotlyOutput(ns("plot_gene_proj_2d"), height = plotly_height)
+        projection_legend_css(),
+        # room for the legend's scrollbar (see projection_legend_css())
+        div(
+            style = "padding-right: 12px;",
+            shinycssloaders::withSpinner(
+                plotly::plotlyOutput(ns("plot_gene_proj_2d"), height = plotly_height)
+            )
         ),
         shinydashboardPlus::accordion(
             id = ns("proj_accordion"),
@@ -97,6 +101,38 @@ projection_box <- function(ns,
     )
 }
 
+# When the legend of a 2D projection is taller than the plot (e.g. 40 cell types), plotly draws a
+# scrollbar right of the legend, which is outside of the plot's width (plotly doesn't count it in
+# the margin it makes for the legend) and was hidden: the legend was cut with no sign that it
+# scrolls. Let it be drawn outside the plot, in a padding right of it. (Applies to the projections
+# of all the tabs, e.g. also the one of Diff. Expression.)
+projection_legend_css <- function() {
+    htmltools::singleton(tags$head(tags$style(HTML(
+        ".js-plotly-plot[id$='plot_gene_proj_2d'] .main-svg, .js-plotly-plot[id$='plot_mc_proj_2d'] .main-svg { overflow: visible; }"
+    ))))
+}
+
+# The sidebar (settings) of a box with a plot. It covers only the right part of the plot, so that the
+# effect of its inputs (point size, stroke, edge length...) can be seen while changing them: ~30% of
+# the box, at least 220 px for its inputs (all of a box narrower than that) and at most 320 px.
+# boxSidebar() sets its width as a percent of the box, and its open and closed positions as
+# transforms that depend on that percent, so they are set here instead, anchored to the right.
+plot_box_sidebar <- function(...) {
+    sidebar <- shinydashboardPlus::boxSidebar(..., width = 30)
+    sidebar[[2]] <- htmltools::tagAppendAttributes(sidebar[[2]], class = "mcview-plot-sidebar")
+    sidebar[[2]] <- htmltools::tagAppendChild(sidebar[[2]], plot_box_sidebar_css())
+    sidebar
+}
+
+plot_box_sidebar_css <- function() {
+    htmltools::singleton(tags$head(tags$style(HTML(paste(
+        ".direct-chat-contacts.mcview-plot-sidebar { width: min(100%, max(220px, min(30%, 320px))) !important; left: auto; right: 0; transform: translate(calc(100% + 10px), 0) !important; }",
+        ".direct-chat-contacts-open .direct-chat-contacts.mcview-plot-sidebar { transform: translate(0, 0) !important; }",
+        ".mcview-plot-sidebar .contacts-list > li { padding-right: 15px; }",
+        sep = "\n"
+    )))))
+}
+
 projection_selectors <- function(ns, dataset, output, input, gene_modules, globals, session, weight = 1, atlas = FALSE) {
     observe({
         update_gene_select(session, "color_proj_gene", dataset(), selected = default_gene1, atlas = atlas)
@@ -107,12 +143,18 @@ projection_selectors <- function(ns, dataset, output, input, gene_modules, globa
             choices = c("Clipboard", dataset_metadata_fields(dataset(), atlas = atlas)),
             selected = dataset_metadata_fields(dataset(), atlas = atlas)[1]
         )
+    })
 
+    # A separate observer: an edit of the gene modules used to also set the gene and the metadata field of
+    # the projection back to their defaults, in every tab. The chosen module is kept while it exists.
+    observe({
+        modules <- levels(gene_modules()$module)
+        current <- isolate(input$color_proj_gene_module)
         shinyWidgets::updateVirtualSelect(
             session = session,
             inputId = "color_proj_gene_module",
-            choices = levels(gene_modules()$module),
-            selected = NULL
+            choices = modules,
+            selected = if (length(current) == 1 && current %in% modules) current else NULL
         )
     })
 

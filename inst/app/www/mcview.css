@@ -1,0 +1,92 @@
+/* The value boxes of the QC tabs (value_box_row()): as many equal columns as fit the row (at least
+   --mcv-value-box-min-width wide each), aligned with the boxes below them, and a number font that
+   shrinks with its box so that the numbers fit in it. */
+.mcv-value-boxes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(var(--mcv-value-box-min-width, 200px), 1fr));
+}
+
+.mcv-value-boxes > .mcv-value-box {
+    padding: 0 15px;
+    min-width: 0;
+    container-type: inline-size;
+    display: flex;
+    flex-direction: column;
+}
+
+.mcv-value-boxes > .mcv-value-box > .small-box {
+    flex: 1 1 auto;
+}
+
+.mcv-value-boxes .small-box h3 {
+    font-size: clamp(20px, 16cqi, 38px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mcv-value-boxes .small-box h3 small {
+    color: inherit;
+    font-weight: normal;
+}
+
+/* The tab headers of the control bar (the gear icon at the top right). bslib's components.css, which a
+   widget of the Markers tab loads, makes every .nav a flex row (display: flex !important), in which the
+   justified tabs kept bootstrap's width of 1% (4px each) and were drawn on top of each other. A flex row of
+   equal tabs, whether bslib's css was loaded or not. */
+.control-sidebar .nav-tabs.nav-justified {
+    display: flex !important;
+}
+
+.control-sidebar .nav-tabs.nav-justified > li {
+    display: block;
+    float: none;
+    flex: 1 1 0;
+    width: auto;
+}
+
+/* The input box of the Gene correlation tab: the labels of its button groups (radioGroupButtons(justified =
+   TRUE), whose buttons don't wrap their labels) and buttons spilled out of the box. Equal buttons that wrap
+   their labels, as high as the highest of them. */
+.mcv-gene-input .btn-group-justified {
+    display: flex;
+}
+
+.mcv-gene-input .btn-group-justified > .btn-group {
+    display: flex;
+    flex: 1 1 0;
+    float: none;
+    width: auto;
+    min-width: 0;
+}
+
+.mcv-gene-input .btn-group-justified > .btn-group > .btn {
+    width: 100%;
+}
+
+.mcv-gene-input .btn:not(.btn-file) {
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+/* The buttons below the file input of the Annotate tab's "Metacell annotation" box */
+.mcv-annotate-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 10px;
+}
+
+/* Annotate tab: in a narrow window the plots (2/3 of the row) and the annotation boxes (1/3) were too
+   narrow to use, and the cell types table spilled out of its box. Below 1200 px the two columns are one
+   above the other, and a table wider than its box scrolls inside it. */
+@media (max-width: 1199px) {
+    #shiny-tab-annotate > .row > .col-sm-8,
+    #shiny-tab-annotate > .row > .col-sm-4 {
+        width: 100%;
+        padding-right: 15px !important;
+    }
+}
+
+#shiny-tab-annotate .dataTables_wrapper {
+    overflow-x: auto;
+}

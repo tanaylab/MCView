@@ -198,6 +198,7 @@ import_dataset <- function(project,
     mc_mat <- as.matrix(mc_mat)
     rownames(mc_mat) <- modify_gene_names(rownames(mc_mat), gene_names)
 
+    # also writes its gene and metacell names (mc_dimnames), which the app reads instead of the matrix
     serialize_shiny_data(mc_mat, "mc_mat", dataset = dataset, cache_dir = cache_dir)
 
     metacells <- colnames(mc_mat)
@@ -750,7 +751,9 @@ color_cell_types <- function(adata, mc_egc, metacell_types, marker_genes) {
         color_of_clusters <- chameleon::data_colors(t(feat_mat), groups = metacell_types$cell_type)
     }
 
+    # the default order: natural, so that cell types named by numbers are ordered 1, 2, 10 and not 1, 10, 2
     cell_type_colors <- enframe(color_of_clusters, name = "cell_type", value = "color") %>%
+        slice(natural_order_cell_types(cell_type)) %>%
         mutate(order = 1:n())
 
     return(cell_type_colors)

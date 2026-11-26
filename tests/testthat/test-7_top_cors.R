@@ -48,4 +48,12 @@ test_that("calc_individual_correlations skips a gene without counts", {
     res <- calc_individual_correlations("toy", c("g7", "g1"))
     expect_identical(res, calc_individual_correlations("toy", "g1"))
     expect_gt(nrow(res), 0)
+
+    # a constant column correlates with nothing, also where colMeans() of a constant isn't exactly the constant
+    # (without long double, e.g. ARM64 macOS: then scale() leaves a ~1e-14 residual)
+    const <- rep(log2(1e-5), 40)
+    cors <- cor_log_egc("toy", cbind(a = const, b = rnorm(40)), rownames(mat), colnames(mat))
+    expect_true(all(is.nan(cors[, "a"])))
+    expect_true(all(is.finite(cors[-7, "b"])))
+    expect_identical(nrow(calc_top_cors("toy", "x", "both", setNames(const, colnames(mat)), NULL, NULL)), 0L)
 })

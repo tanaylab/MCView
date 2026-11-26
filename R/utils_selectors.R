@@ -12,6 +12,9 @@ cell_type_selector <- function(dataset, ns, id = "selected_cell_types", label = 
 
         cell_types_hex <- col2hex(get_cell_type_colors(dataset(), colors))
         cell_types <- names(get_cell_type_colors(dataset(), colors))
+        ord <- cell_types_display_order(cell_types)
+        cell_types_hex <- cell_types_hex[ord]
+        cell_types <- cell_types[ord]
 
         if (!is.null(selected) && selected == "all") {
             selected <- cell_types
@@ -187,8 +190,8 @@ top_correlated_selector <- function(gene_id, id, type_id, input, output, session
             if (!is.null(selected_cell_types) &&
                 length(selected_cell_types()) > 0 &&
                 !is.null(metacell_types) &&
-                length(setdiff(metacell_types()$cell_type, selected_cell_types())) > 0) {
-                metacell_filter <- metacell_types()$metacell[metacell_types()$cell_type %in% selected_cell_types()]
+                length(setdiff(cell_type_or_missing(metacell_types()$cell_type), selected_cell_types())) > 0) {
+                metacell_filter <- metacell_types()$metacell[cell_type_or_missing(metacell_types()$cell_type) %in% selected_cell_types()]
             }
         } else if (input[[type_id]] == "Gene module") {
             req(!is.null(gene_modules))

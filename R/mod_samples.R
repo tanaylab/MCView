@@ -55,9 +55,8 @@ mod_samples_ui <- function(id) {
                     collapsible = TRUE,
                     closable = FALSE,
                     width = 12,
-                    sidebar = shinydashboardPlus::boxSidebar(
+                    sidebar = plot_box_sidebar(
                         startOpen = FALSE,
-                        width = 100,
                         id = ns("gene_gene_sidebar"),
                         uiOutput(ns("gene_gene_point_size_ui")),
                         uiOutput(ns("gene_gene_stroke_ui"))
@@ -206,7 +205,7 @@ mod_samples_server <- function(id, dataset, metacell_types, cell_type_colors, ge
 
             # Projection plots
             output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, source = "proj_mc_plot_gene_tab") %>%
-                bindCache(dataset(), input$color_proj, metacell_types(), cell_type_colors(), input$point_size, input$stroke, input$min_edge_size, input$set_range, input$metacell1, input$metacell2, input$proj_stat, input$expr_range, input$lfp, input$samp1, proj_color_var(input), clipboard_changed(), input$graph_name, input$legend_orientation, input$show_legend_projection, globals$mc2d, globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
+                bindCache(dataset(), input$color_proj, metacell_types(), cell_type_colors(), input$point_size, input$stroke, input$min_edge_size, input$set_range, input$metacell1, input$metacell2, input$proj_stat, input$expr_range, input$lfp, input$samp1, proj_color_var(input), if (isTRUE(input$color_proj == "Gene module")) gene_modules(), clipboard_changed(), input$graph_name, input$legend_orientation, input$show_legend_projection, globals$mc2d, globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
 
             # Info box
             output$sample_info_box <- renderUI({
@@ -281,10 +280,17 @@ mod_samples_server <- function(id, dataset, metacell_types, cell_type_colors, ge
                 req(input$samp2 %in% rownames(samp_frac))
                 req(sum(samp_frac[input$samp1, ], na.rm = TRUE) > 0)
                 req(sum(samp_frac[input$samp2, ], na.rm = TRUE) > 0)
+                samples <- unique(c(input$samp1, input$samp2))
+                weights <- get_samples_mc_weights(input$selected_cell_types, metacell_types(), dataset(), samples = samples)
+                no_cells <- setdiff(samples, colnames(weights))
+                validate(need(
+                    length(no_cells) == 0,
+                    glue("The chosen cell types have no metacells in {if (length(no_cells) > 1) 'samples' else 'sample'} {paste(no_cells, collapse = ' and ')}. Please choose other cell types or samples.")
+                ))
                 calc_samp_samp_gene_df(dataset(), input$samp1, input$samp2, metacell_types(), cell_types = input$selected_cell_types)
             }) %>% bindCache(dataset(), input$selected_cell_types, input$samp1, input$samp2, metacell_types())
 
-            output$plot_samp_samp_gene_scatter <- render_mc_mc_gene_plotly(input, output, session, ns, dataset, globals, gene_modules, samp_samp_scatter_df, metacell_names, cell_type_colors, mode = "Samples")
+            output$plot_samp_samp_gene_scatter <- render_mc_mc_gene_plotly(input, output, session, ns, dataset, globals, gene_modules, samp_samp_scatter_df, metacell_names, cell_type_colors, mode = "Samples", output_id = "plot_samp_samp_gene_scatter")
 
             output$diff_expr_table <- render_mc_mc_gene_diff_table(input, output, session, ns, dataset, samp_samp_scatter_df)
 

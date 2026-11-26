@@ -44,11 +44,11 @@ mc2d_plot_metadata_ggp <- function(dataset,
     } else {
         if (!is.null(colors)) {
             mc2d_df <- mc2d_df %>%
-                mutate(`Cell type` = factor(`Cell type`, levels = sort(names(colors))))
+                mutate(`Cell type` = factor(`Cell type`, levels = natural_sort_cell_types(names(colors))))
         }
     }
 
-    if (has_name(df, "mc_age")) {
+    if (has_name(mc2d_df, "mc_age")) {
         mc2d_df <- mc2d_df %>% rename(`Age` = mc_age)
     }
 
@@ -68,7 +68,7 @@ mc2d_plot_metadata_ggp <- function(dataset,
 
     if (!is.null(selected_cell_types)) {
         mc2d_df <- mc2d_df %>%
-            filter(`Cell type` %in% selected_cell_types())
+            filter(cell_type_or_missing(`Cell type`) %in% selected_cell_types())
     }
 
     if (is_numeric_field(mc2d_df, md)) {
@@ -165,28 +165,16 @@ mc2d_plot_metadata_ggp_categorical <- function(mc2d_df,
     fig <- fig %>%
         add_scatter_layer(showlegend = TRUE)
 
+    # The legend symbols have a fixed size (at the points' size, they are dots whose colors can't
+    # be told apart). Each item is a group of its own (legendgroup), and plotly adds a gap between
+    # groups: without it, the legend of e.g. 40 cell types fits in less height (plotly shows a
+    # scrollbar when it doesn't fit).
     fig <- fig %>%
-        plotly::layout(
-            xaxis = list(
-                showgrid = FALSE,
-                zeroline = FALSE,
-                visible = FALSE
-            ),
-            yaxis = list(
-                showgrid = FALSE,
-                zeroline = FALSE,
-                visible = FALSE
-            ),
-            margin = list(
-                l = 0,
-                r = 0,
-                b = 0,
-                t = 0,
-                pad = 0
-            ),
-            legend = list(title = list(text = legend_title))
+        mc2d_plotly_layout(
+            legend = list(title = list(text = legend_title), itemsizing = "constant", tracegroupgap = 0)
         ) %>%
-        set_hovertemplate(mc2d_df, "id", hover_fields, paste0(hovertemplate, "<extra></extra>"))
+        set_hovertemplate(mc2d_df, "id", hover_fields, paste0(hovertemplate, "<extra></extra>")) %>%
+        mc2d_collapse_edges_hoverinfo()
 
     return(fig)
 }
@@ -274,31 +262,34 @@ mc2d_plot_metadata_ggp_numeric <- function(mc2d_df,
         add_scatter_layer(showlegend = TRUE)
 
     fig <- fig %>%
-        plotly::layout(
-            xaxis = list(
-                showgrid = FALSE,
-                zeroline = FALSE,
-                visible = FALSE
-            ),
-            yaxis = list(
-                showgrid = FALSE,
-                zeroline = FALSE,
-                visible = FALSE
-            ),
-            margin = list(
-                l = 0,
-                r = 0,
-                b = 0,
-                t = 0,
-                pad = 0
-            )
-        ) %>%
+        mc2d_plotly_layout() %>%
         plotly::colorbar(title = legend_title) %>%
-        set_hovertemplate(mc2d_df, "id", hover_fields, paste0(hovertemplate, "<extra></extra>"))
+        set_hovertemplate(mc2d_df, "id", hover_fields, paste0(hovertemplate, "<extra></extra>")) %>%
+        mc2d_collapse_edges_hoverinfo()
 
     return(fig)
 }
 
+
+# The breaks of a log2 expression axis, from all the values of `breaks` in its range (every log2
+# unit, or 1, 2, 4 x 10^k), thinned to at most `max_n` so that their labels don't run into each
+# other: the powers of 2 whose exponent is a multiple of a step, or the powers of 10 (every
+# k-th of them if needed).
+thin_log_breaks <- function(breaks, max_n = 6) {
+    if (length(breaks) <= max_n) {
+        return(breaks)
+    }
+    l2 <- log2(breaks)
+    if (all(abs(l2 - round(l2)) < 1e-8)) {
+        exponents <- round(l2)
+    } else {
+        l10 <- log10(breaks)
+        breaks <- breaks[abs(l10 - round(l10)) < 1e-8]
+        exponents <- round(log10(breaks))
+    }
+    step <- ceiling(length(breaks) / max_n)
+    breaks[exponents %% step == 0]
+}
 
 plot_mc_scatter <- function(dataset,
                             x_var,
@@ -338,7 +329,7 @@ plot_mc_scatter <- function(dataset,
         mutate(
             `Top genes` = glue("{top1_gene} ({round(top1_lfp, digits=2)}), {top2_gene} ({round(top2_lfp, digits=2)})")
         ) %>%
-        mutate(cell_type = factor(cell_type, levels = sort(as.character(cell_type_colors$cell_type)))) %>%
+        mutate(cell_type = factor(cell_type, levels = natural_sort_cell_types(as.character(cell_type_colors$cell_type)))) %>%
         mutate(cell_type = forcats::fct_na_value_to_level(cell_type, "(Missing)")) %>%
         mutate(`Cell type` = cell_type)
 
@@ -405,7 +396,7 @@ plot_mc_scatter <- function(dataset,
 
         df <- df %>%
             mutate(color = cell_type, color_values = cell_type) %>%
-            mutate(color = factor(color, levels = sort(names(col_to_ct))))
+            mutate(color = factor(color, levels = natural_sort_cell_types(names(col_to_ct))))
         color_hover <- paste0("Cell type: ", hover_value("Cell type"))
     } else if (color_type == "Metadata") {
         req(metadata)
@@ -434,10 +425,7 @@ plot_mc_scatter <- function(dataset,
         }
         df <- df %>%
             mutate(expression = log2(egc_color[df$metacell]))
-        min_expr <- min(df$expression, na.rm = TRUE)
-        max_expr <- max(df$expression, na.rm = TRUE)
-
-        color_breaks <- seq(min_expr, max_expr, length.out = length(expr_colors))
+        color_breaks <- expr_color_breaks(df$expression, length(expr_colors))
         md_colors <- list(colors = expr_colors, breaks = color_breaks)
         palette <- circlize::colorRamp2(colors = expr_colors, breaks = color_breaks)
         df$color <- palette(df$expression)
@@ -531,21 +519,22 @@ plot_mc_scatter <- function(dataset,
         xmax <- min(c(1:length(xylims))[xylims >= x_limits[2] - 1e-10])
         xmin <- max(c(1:length(xylims))[xylims <= x_limits[1] + 1e-10])
         lab <- glue("{x_var} Expression")
+        # a label at every log2 unit ran into the next ones
+        breaks <- thin_log_breaks(xylims[xmin:xmax])
 
         if (log_labels) {
-            labels <- log2(xylims[xmin:xmax])
+            labels <- log2(breaks)
             lab <- glue("{lab} (log2)")
         } else {
-            labels <- scales::scientific(xylims[xmin:xmax])
+            labels <- scales::scientific(breaks)
         }
 
         if (corrected) {
             lab <- glue("{lab} (corrected)")
         }
         p <- p +
-            scale_x_continuous(limits = c(xylims[xmin], xylims[xmax]), trans = "log2", breaks = xylims[xmin:xmax], labels = labels) +
-            xlab(lab) +
-            theme(axis.text.x = element_text(angle = 30, vjust = 0.5, hjust = 1))
+            scale_x_continuous(limits = c(xylims[xmin], xylims[xmax]), trans = "log2", breaks = breaks, labels = labels) +
+            xlab(lab)
     }
 
     if (y_type %in% c("Gene", "Gene module")) {
@@ -553,11 +542,12 @@ plot_mc_scatter <- function(dataset,
         ymax <- min(c(1:length(xylims))[xylims >= y_limits[2] - 1e-10])
         ymin <- max(c(1:length(xylims))[xylims <= y_limits[1] + 1e-10])
         lab <- glue("{y_var} Expression")
+        breaks <- thin_log_breaks(xylims[ymin:ymax])
         if (log_labels) {
-            labels <- log2(xylims[ymin:ymax])
+            labels <- log2(breaks)
             lab <- glue("{lab} (log2)")
         } else {
-            labels <- scales::scientific(xylims[ymin:ymax])
+            labels <- scales::scientific(breaks)
         }
 
         if (corrected) {
@@ -565,7 +555,7 @@ plot_mc_scatter <- function(dataset,
         }
 
         p <- p +
-            scale_y_continuous(limits = c(xylims[ymin], xylims[ymax]), trans = "log2", breaks = xylims[ymin:ymax], labels = labels) +
+            scale_y_continuous(limits = c(xylims[ymin], xylims[ymax]), trans = "log2", breaks = breaks, labels = labels) +
             ylab(lab)
     }
 
@@ -576,6 +566,18 @@ plot_mc_scatter <- function(dataset,
 
     plotly::ggplotly(p, tooltip = "none", source = source) %>%
         set_hovertemplate(df, "metacell", hover_fields, paste0(hovertemplate, "<extra></extra>"))
+}
+
+# Breaks for coloring by expression: n, from the lowest to the highest finite value, widened when those are equal
+# (one sample, or a gene without counts), which colorRamp2() and seq() don't take.
+expr_color_breaks <- function(expression, n) {
+    expression <- expression[is.finite(expression)]
+    req(length(expression) > 0)
+    rng <- range(expression)
+    if (rng[1] == rng[2]) {
+        rng <- rng + c(-1e-5, 1e-5)
+    }
+    seq(rng[1], rng[2], length.out = n)
 }
 
 plot_sample_scatter <- function(dataset,
@@ -728,13 +730,7 @@ plot_sample_scatter <- function(dataset,
             egc_color <- get_samples_gene_egc(color_var, dataset, selected_mc) + egc_epsilon
             df <- df %>%
                 mutate(expression = log2(egc_color[df$samp_id]))
-            min_expr <- min(df$expression, na.rm = TRUE)
-            max_expr <- max(df$expression, na.rm = TRUE)
-            if (min_expr == max_expr) {
-                min_val <- min_val - 1e-5
-            }
-
-            color_breaks <- seq(min_expr, max_expr, length.out = length(expr_colors))
+            color_breaks <- expr_color_breaks(df$expression, length(expr_colors))
             md_colors <- list(colors = expr_colors, breaks = color_breaks)
             palette <- circlize::colorRamp2(colors = expr_colors, breaks = color_breaks)
             df$color <- palette(df$expression)
@@ -900,7 +896,7 @@ plot_obs_proj_scatter <- function(dataset,
         mutate(
             `Top genes` = glue("{top1_gene} ({round(top1_lfp, digits=2)}), {top2_gene} ({round(top2_lfp, digits=2)})")
         ) %>%
-        mutate(cell_type = factor(cell_type, levels = sort(as.character(cell_type_colors$cell_type)))) %>%
+        mutate(cell_type = factor(cell_type, levels = natural_sort_cell_types(as.character(cell_type_colors$cell_type)))) %>%
         mutate(cell_type = forcats::fct_na_value_to_level(cell_type, "(Missing)")) %>%
         mutate(`Cell type` = cell_type)
 
@@ -989,10 +985,7 @@ plot_obs_proj_scatter <- function(dataset,
         egc_color <- get_gene_egc(color_var, dataset) + egc_epsilon
         df <- df %>%
             mutate(expression = log2(egc_color[df$metacell]))
-        min_expr <- min(df$expression, na.rm = TRUE)
-        max_expr <- max(df$expression, na.rm = TRUE)
-
-        color_breaks <- seq(min_expr, max_expr, length.out = length(expr_colors))
+        color_breaks <- expr_color_breaks(df$expression, length(expr_colors))
         md_colors <- list(colors = expr_colors, breaks = color_breaks)
         palette <- circlize::colorRamp2(colors = expr_colors, breaks = color_breaks)
         df$color <- palette(df$expression)

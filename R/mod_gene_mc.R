@@ -69,7 +69,7 @@ mod_gene_mc_server <- function(id, dataset, metacell_types, cell_type_colors, ge
             # that downstream filters (metacell_filter) stay consistent with the updated data.
             observe({
                 req(cell_type_colors())
-                selected_cell_types(unique(cell_type_colors()$cell_type))
+                selected_cell_types(all_cell_types(cell_type_colors()))
             })
 
             top_correlated_selectors(input, output, session, dataset, metacell_types, ns, gene_modules = gene_modules, selected_cell_types = selected_cell_types)
@@ -98,6 +98,7 @@ mod_gene_mc_server <- function(id, dataset, metacell_types, cell_type_colors, ge
                     input$expr_range,
                     input$lfp,
                     proj_color_var(input),
+                    if (isTRUE(input$color_proj %in% c("Gene module", "Scatter Axis"))) gene_modules(), # the module's genes can change
                     clipboard_changed(),
                     input$graph_name,
                     input$legend_orientation,
@@ -182,9 +183,8 @@ atlas_gene_gene <- function(input, output, session, dataset, metacell_types, cel
             collapsible = TRUE,
             closable = FALSE,
             width = 12,
-            sidebar = shinydashboardPlus::boxSidebar(
+            sidebar = plot_box_sidebar(
                 startOpen = FALSE,
-                width = 100,
                 id = ns("atlas_gene_gene_sidebar"),
                 uiOutput(ns("atlas_gene_gene_xyline_ui")),
                 uiOutput(ns("atlas_gene_gene_fixed_limits_ui")),

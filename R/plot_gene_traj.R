@@ -5,16 +5,12 @@ calc_mc_egc_t <- function(dataset, metacell, genes = NULL) {
 
     flow_prob <- mct_probs_trans[[metacell]]$probs
 
-    # find maximal time with non-zero colSums
-    t_max <- which.max(c(1:ncol(flow_prob))[colSums(flow_prob) > 0])
+    # the first and the last time bins with a non-zero flow
+    nonzero_times <- which(colSums(flow_prob) > 0)
+    t_min <- min(nonzero_times)
+    t_max <- max(nonzero_times)
 
-    # find minimal time with non-zero colSums
-    t_min <- which.min(c(1:ncol(flow_prob))[colSums(flow_prob) > 0])
-
-    flow_prob_f <- flow_prob[, t_min:t_max]
-    if (is.null(ncol(flow_prob_f))) {
-        flow_prob_f <- flow_prob_f %>% as.matrix(ncol = 1)
-    }
+    flow_prob_f <- flow_prob[, t_min:t_max, drop = FALSE]
     flow_prob_n <- t(t(flow_prob_f) / colSums(flow_prob_f))
 
     # egc %*% flow_prob_n == mc_mat %*% (flow_prob_n / mc_sum), without building the full egc matrix

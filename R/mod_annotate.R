@@ -16,7 +16,6 @@ mod_annotate_ui <- function(id) {
                 style = "padding-right:0px;",
                 projection_box(ns, "gene_projection", color_choices = c("Cell type", "Gene", "Gene module", "Metadata", "Selected")),
                 fluidRow(
-                    uiOutput(ns("time_box_ui_column")),
                     column(
                         width = 6,
                         offset = 0,
@@ -49,25 +48,28 @@ mod_annotate_ui <- function(id) {
                         checkboxInput(ns("add_to_selection"), label = "Add to\ncurrent selection", value = TRUE),
                         checkboxInput(ns("reset_on_apply"), label = "Reset selection\non apply", value = TRUE)
                     ),
-                    splitLayout(
-                        cellWidths = c("30%", rep("auto", 4)),
-                        fileInput(ns("metacell_types_fn"),
-                            label = NULL,
-                            buttonLabel = "Load",
-                            multiple = FALSE,
-                            accept =
-                                c(
-                                    "text/csv",
-                                    "text/comma-separated-values,text/plain",
-                                    "text/tab-separated-values",
-                                    ".csv",
-                                    ".tsv"
-                                )
-                        ),
-                        actionButton(ns("reset_metacell_types"), "Reset", style = "align-items: center;"),
-                        actionButton(ns("paste_metacells"), "Paste", style = "align-items: center;"),
-                        actionButton(ns("copy_metacells"), "Copy", style = "align-items: center;"),
-                        downloadButton(ns("metacell_types_download"), "", style = "align-items: center;")
+                    # the file input on a row of its own, as wide as the box: next to the buttons it was too
+                    # narrow to show the file's name ("No fil")
+                    fileInput(ns("metacell_types_fn"),
+                        label = NULL,
+                        buttonLabel = "Load",
+                        multiple = FALSE,
+                        width = "100%",
+                        accept =
+                            c(
+                                "text/csv",
+                                "text/comma-separated-values,text/plain",
+                                "text/tab-separated-values",
+                                ".csv",
+                                ".tsv"
+                            )
+                    ),
+                    div(
+                        class = "mcv-annotate-toolbar",
+                        actionButton(ns("reset_metacell_types"), "Reset"),
+                        actionButton(ns("paste_metacells"), "Paste"),
+                        actionButton(ns("copy_metacells"), "Copy"),
+                        downloadButton(ns("metacell_types_download"), "")
                     ),
                     uiOutput(ns("annotation_box")),
                     uiOutput(ns("update_all_selectors")),
@@ -152,6 +154,10 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 req(values$file_status)
                 new_metacell_types <- tgutil::fread(input$metacell_types_fn$datapath, colClasses = c("cell_type" = "character", "metacell" = "character")) %>% as_tibble()
 
+                # the file is read once, also when it is rejected: otherwise it would be read again (and its errors
+                # shown again) whenever another value read here changes
+                values$file_status <- NULL
+
                 input_ok <- TRUE
                 required_fields <- c("cell_type", "metacell")
                 if (!all(required_fields %in% colnames(new_metacell_types))) {
@@ -196,8 +202,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                     new_metacell_types <- sanitize_metacell_types(new_metacell_types, cell_type_colors(), dataset())
                     metacell_types(new_metacell_types)
                     # Reset the selected cell types to match the (possibly) new cell type list that was just loaded
-                    selected_cell_types(unique(cell_type_colors()$cell_type))
-                    values$file_status <- NULL
+                    selected_cell_types(all_cell_types(cell_type_colors()))
                 }
             })
 
@@ -250,7 +255,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 to_show(NULL)
                 last_chosen_cell_type("(Missing)")
                 # After resetting, make all current cell types selected by default
-                selected_cell_types(unique(cell_type_colors()$cell_type))
+                selected_cell_types(all_cell_types(cell_type_colors()))
                 values$file_status <- NULL
             })
 
@@ -302,12 +307,22 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 }
             })
 
+            # The metacells of the rows to change. The rows are those of the table, which shows to_show()
+            # (in the order of metacell_types()), not selected_metacell_types() (in the order of selection).
+            table_metacells <- function() {
+                req(input$update_option)
+                rows <- if (input$update_option == "Change all") input$mc_type_table_rows_all else input$mc_type_table_rows_selected
+                req(rows)
+                req(to_show())
+                to_show()$metacell[rows]
+            }
+
             output$number_of_selected_metacells <- renderPrint(glue("Selected {nrow(selected_metacell_types())} metacells"))
             output$please_select_metacells <- renderPrint(glue("Please select metacells"))
 
             output$update_all_selectors <- renderUI({
                 req(nrow(selected_metacell_types()) > 0)
-                shinyWidgets::pickerInput(ns("selected_cell_type_update_all"), "Cell type", choices = c("(Missing)", cell_type_colors() %>% pull(cell_type) %>% as.character() %>% unique() %>% sort()), multiple = FALSE, selected = last_chosen_cell_type())
+                shinyWidgets::pickerInput(ns("selected_cell_type_update_all"), "Cell type", choices = c("(Missing)", cell_type_colors() %>% pull(cell_type) %>% as.character() %>% unique() %>% natural_sort_cell_types()), multiple = FALSE, selected = last_chosen_cell_type())
             })
 
 
@@ -319,13 +334,7 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 req(input$selected_cell_type_update_all)
                 req(selected_metacell_types())
 
-                if (input$update_option == "Change all") {
-                    req(input$mc_type_table_rows_all)
-                    metacells <- selected_metacell_types()[input$mc_type_table_rows_all, ] %>% pull(metacell)
-                } else {
-                    req(input$mc_type_table_rows_selected)
-                    metacells <- selected_metacell_types()[input$mc_type_table_rows_selected, ] %>% pull(metacell)
-                }
+                metacells <- table_metacells()
 
                 new_metacell_types <- new_metacell_types %>% mutate(
                     cell_type = ifelse(metacell %in% metacells, input$selected_cell_type_update_all, cell_type)
@@ -384,6 +393,9 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                     req(FALSE)
                 }
 
+                # before adding the cell type: without rows to change, nothing is created
+                metacells <- table_metacells()
+
                 # Add the new cell type to cell_type_colors
                 new_cell_type_colors <- cell_type_colors()
                 new_row <- tibble(
@@ -403,14 +415,6 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 cell_type_colors(new_cell_type_colors)
 
                 # Update the metacell types for the selected metacells
-                if (input$update_option == "Change all") {
-                    req(input$mc_type_table_rows_all)
-                    metacells <- selected_metacell_types()[input$mc_type_table_rows_all, ] %>% pull(metacell)
-                } else {
-                    req(input$mc_type_table_rows_selected)
-                    metacells <- selected_metacell_types()[input$mc_type_table_rows_selected, ] %>% pull(metacell)
-                }
-
                 new_metacell_types <- metacell_types() %>% mutate(
                     cell_type = ifelse(metacell %in% metacells, input$new_cell_type_name_from_selection, cell_type)
                 )
@@ -471,20 +475,28 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
             )
 
             output$cell_type_table <- DT::renderDataTable(
-                DT::datatable(cell_type_colors() %>% select(cell_type, color),
-                    editable = "cell",
-                    rownames = FALSE,
-                    options = list(
-                        paging = FALSE
-                    )
-                ) %>%
-                    DT::formatStyle(
-                        "color", "cell_type",
-                        backgroundColor = DT::styleEqual(
-                            cell_type_colors()$cell_type,
-                            col2hex(cell_type_colors()$color)
+                {
+                    colors <- col2hex(cell_type_colors()$color)
+                    # each color's hex code in white on dark colors and in black on light ones: black when it
+                    # contrasts more with the color than white, by the color's relative luminance (as WCAG's)
+                    rgb <- grDevices::col2rgb(colors) / 255
+                    linear_rgb <- ifelse(rgb <= 0.03928, rgb / 12.92, ((rgb + 0.055) / 1.055)^2.4)
+                    luminance <- colSums(linear_rgb * c(0.2126, 0.7152, 0.0722))
+                    text_colors <- ifelse(luminance > 0.179, "black", "white")
+
+                    DT::datatable(cell_type_colors() %>% select(cell_type, color),
+                        editable = "cell",
+                        rownames = FALSE,
+                        options = list(
+                            paging = FALSE
                         )
-                    ),
+                    ) %>%
+                        DT::formatStyle(
+                            "color", "cell_type",
+                            backgroundColor = DT::styleEqual(cell_type_colors()$cell_type, colors),
+                            color = DT::styleEqual(cell_type_colors()$cell_type, text_colors)
+                        )
+                },
                 server = TRUE # see https://github.com/rstudio/DT/issues/598
             )
 
@@ -562,7 +574,8 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                     metacell_types(
                         metacell_types() %>%
                             mutate(
-                                cell_type = ifelse(cell_type %in% to_delete$cell_type, NA, cell_type),
+                                # "(Missing)" and not NA: metacells without a cell type are shown and can be annotated again
+                                cell_type = ifelse(cell_type %in% to_delete$cell_type, "(Missing)", as.character(cell_type)),
                             )
                     )
                 }
@@ -849,7 +862,34 @@ mod_annotate_server <- function(id, dataset, metacell_types, cell_type_colors, g
                 dragmode = "select",
                 selected_metacell_types = selected_metacell_types,
                 selected_cell_types = selected_cell_types
-            )
+            ) %>%
+                bindCache(
+                    "proj_annot_plot", # the projections of other tabs have the same code, other sources and buttons
+                    dataset(),
+                    input$color_proj,
+                    metacell_types(),
+                    cell_type_colors(),
+                    input$point_size,
+                    input$stroke,
+                    input$min_edge_size,
+                    input$graph_name,
+                    input$legend_orientation,
+                    input$show_legend_projection,
+                    input$set_range,
+                    input$proj_stat,
+                    input$expr_range,
+                    input$lfp,
+                    proj_color_var(input),
+                    if (isTRUE(input$color_proj %in% c("Gene module", "Scatter Axis"))) gene_modules(),
+                    if (isTRUE(input$color_proj == "Metadata") && isTRUE(input$color_proj_metadata == "Clipboard")) globals$clipboard,
+                    selected_cell_types(), # only their metacells are shown
+                    if (isTRUE(input$color_proj == "Selected")) selected_metacell_types(),
+                    globals$mc2d,
+                    globals$plotly_format,
+                    globals$plotly_width,
+                    globals$plotly_height,
+                    globals$plotly_scale
+                )
 
             # Use the already defined selected_cell_types reactiveVal (defined at the top of the server) so that it is shared across the module
             scatter_box_outputs(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, ns, selected_cell_types = selected_cell_types, plotly_source = "gene_gene_plot_annot", plotly_buttons = c("hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = "select")

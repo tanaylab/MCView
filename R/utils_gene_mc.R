@@ -21,26 +21,64 @@ get_cell_type_colors <- function(dataset, cell_type_colors = NULL, na_color = "g
     return(res)
 }
 
-get_cached_cor <- function(gg_mc_top_cor, gene, type, exclude = NULL) {
-    df <- gg_mc_top_cor %>%
-        filter(gene1 == gene)
+# The stored top correlations of gene. rows: its rows in gg_mc_top_cor (get_gg_mc_top_cor_index), instead of
+# looking for them in the whole table.
+get_cached_cor <- function(gg_mc_top_cor, gene, type, exclude = NULL, rows = NULL) {
+    if (is.null(rows)) {
+        rows <- which(gg_mc_top_cor$gene1 == gene)
+    }
 
+    gene2 <- gg_mc_top_cor$gene2[rows]
+    keep <- gg_mc_top_cor$gene1[rows] != gene2
     if (type %in% c("pos", "neg")) {
-        df <- df %>%
-            filter(type == !!type)
+        keep <- keep & gg_mc_top_cor$type[rows] == type
     }
-
-    df <- df %>%
-        filter(gene1 != gene2)
-
     if (!is.null(exclude)) {
-        df <- df %>%
-            filter(!(gene2 %in% exclude))
+        keep <- keep & !(gene2 %in% exclude)
     }
-    return(df)
+    # slice() as filter() does
+    return(dplyr::slice(gg_mc_top_cor, rows[which(keep)]))
 }
 
-calc_top_cors <- function(dataset, gene, type, data_vec, metacell_filter, exclude, atlas = FALSE) {
+# The top correlations of a gene or a data vector (gene module, metadata field) with all the genes take ~0.1-0.5 s,
+# and the selectors of correlated genes compute them on every render (four selectors in the Genes tab, again on every
+# change of the selected cell types), in every session. Keep them with the data of the dataset, shared by all the
+# sessions and dropped when the data are loaded again, under a key of everything else they depend on.
+calc_top_cors <- function(dataset, gene, type, data_vec, metacell_filter, exclude, atlas = FALSE, n = 30) {
+    cache <- top_cors_cache(dataset, atlas = atlas)
+    if (is.null(cache)) {
+        return(calc_top_cors_uncached(dataset, gene, type, data_vec, metacell_filter, exclude, atlas = atlas, n = n))
+    }
+    key <- top_cors_key(dataset, gene, type, data_vec, metacell_filter, exclude, atlas = atlas, n = n)
+    res <- cache$get(key)
+    if (cachem::is.key_missing(res)) {
+        res <- calc_top_cors_uncached(dataset, gene, type, data_vec, metacell_filter, exclude, atlas = atlas, n = n)
+        cache$set(key, res)
+    }
+    return(res)
+}
+
+# The cache of calc_top_cors in the environment of the data of the dataset, or NULL when the data aren't in one
+top_cors_cache <- function(dataset, atlas = FALSE) {
+    env <- if (atlas) mc_data[[dataset]]$atlas else mc_data[[dataset]]
+    if (!is.environment(env)) {
+        return(NULL)
+    }
+    if (is.null(env[["top_cors_cache"]])) {
+        assign("top_cors_cache", cachem::cache_mem(max_size = 50e6), envir = env)
+    }
+    return(env[["top_cors_cache"]])
+}
+
+# The gene is used only without a data vector
+top_cors_key <- function(dataset, gene, type, data_vec, metacell_filter, exclude, atlas = FALSE, n = 30) {
+    rlang::hash(list(
+        dataset = dataset, atlas = atlas, gene = if (is.null(data_vec)) gene, data_vec = data_vec, type = type,
+        exclude = exclude, metacell_filter = metacell_filter, n = n, egc_epsilon = egc_epsilon
+    ))
+}
+
+calc_top_cors_uncached <- function(dataset, gene, type, data_vec, metacell_filter, exclude, atlas = FALSE, n = 30) {
     mc_mat <- get_mc_data(dataset, "mc_mat", atlas = atlas)
 
     genes <- rownames(mc_mat)
@@ -63,7 +101,7 @@ calc_top_cors <- function(dataset, gene, type, data_vec, metacell_filter, exclud
 
     cors <- cor_log_egc(dataset, as.matrix(x), genes, metacells, atlas = atlas)[, 1]
 
-    return(select_top_cors(cors, type))
+    return(select_top_cors(cors, type, n = n))
 }
 
 # Pearson correlations of each column of x (a row per metacell) with log2(egc + egc_epsilon) of every gene
@@ -78,7 +116,13 @@ cor_log_egc <- function(dataset, x, genes, metacells, atlas = FALSE) {
     complete <- rowSums(is.na(x)) == 0
     cols <- match(metacells[complete], colnames(mc_mat))
     all_cols <- identical(cols, seq_len(ncol(mc_mat)))
-    x <- scale(x[complete, , drop = FALSE], scale = FALSE)
+    x <- x[complete, , drop = FALSE]
+    # A constant column (e.g. a gene without counts) has no correlations (NaN, as stats::cor gives NA). Zero it
+    # explicitly: scale() centers by colMeans(), which sums in double precision where long double is the same as
+    # double (e.g. ARM64 macOS), so a constant column keeps a residual of ~1e-14 that gives noise correlations.
+    constant <- nrow(x) > 0 & matrixStats::colMins(x) == matrixStats::colMaxs(x)
+    x <- scale(x, scale = FALSE)
+    x[, constant] <- 0
     x_norm <- sqrt(colSums(x^2))
     # log(egc / egc_epsilon + 1), i.e. log2(egc + egc_epsilon) shifted and scaled, which doesn't change the
     # correlation. Zero counts are exactly 0, so all-zero genes get NaN.
@@ -97,13 +141,14 @@ cor_log_egc <- function(dataset, x, genes, metacells, atlas = FALSE) {
     return(cors)
 }
 
-select_top_cors <- function(cors, type) {
+# The n highest and/or lowest correlations
+select_top_cors <- function(cors, type, n = 30) {
     if (type == "pos") {
-        cors <- head(sort(cors, decreasing = TRUE), n = 30)
+        cors <- head(sort(cors, decreasing = TRUE), n = n)
     } else if (type == "neg") {
-        cors <- head(sort(cors), n = 30)
+        cors <- head(sort(cors), n = n)
     } else {
-        cors <- c(head(sort(cors, decreasing = TRUE), n = 30), head(sort(cors), n = 30))
+        cors <- c(head(sort(cors, decreasing = TRUE), n = n), head(sort(cors), n = n))
     }
     # not enframe(): c() of two empty vectors drops their names, and enframe() then numbers the rows
     df <- tibble(gene2 = names(cors) %||% character(0), cor = unname(cors))
@@ -112,9 +157,12 @@ select_top_cors <- function(cors, type) {
 }
 
 get_top_cor_gene <- function(dataset, gene, type = "pos", atlas = FALSE, data_vec = NULL, exclude = NULL, metacell_filter = NULL) {
-    gg_mc_top_cor <- get_mc_data(dataset, "gg_mc_top_cor", atlas = atlas)
-    if (is.null(data_vec) && is.null(metacell_filter) && gene %in% gg_mc_top_cor$gene1) {
-        df <- get_cached_cor(gg_mc_top_cor, gene, type, exclude = exclude)
+    rows <- NULL
+    if (is.null(data_vec) && is.null(metacell_filter)) {
+        rows <- get_gg_mc_top_cor_index(dataset, atlas = atlas)[[gene]]
+    }
+    if (length(rows) > 0) {
+        df <- get_cached_cor(get_mc_data(dataset, "gg_mc_top_cor", atlas = atlas), gene, type, exclude = exclude, rows = rows)
     } else {
         df <- calc_top_cors(dataset, gene, type, data_vec, metacell_filter, exclude, atlas = atlas)
     }
@@ -137,11 +185,12 @@ get_top_cor_gene <- function(dataset, gene, type = "pos", atlas = FALSE, data_ve
 #'
 #' @param dataset Dataset name
 #' @param genes Vector of gene names
-#' @param n_top Number of top correlations to return per gene
+#' @param n_top Number of top positive and of top negative correlations to return per gene
 #' @param cell_type_filter Optional vector of cell types to filter metacells
 #' @param threshold Minimum correlation threshold to include
+#' @param metacell_types Metacell annotation to take the cell types from (default: the stored annotation)
 #' @return Data frame with correlation results
-calc_individual_correlations <- function(dataset, genes, n_top = 30, cell_type_filter = NULL, threshold = 0, atlas = FALSE) {
+calc_individual_correlations <- function(dataset, genes, n_top = 30, cell_type_filter = NULL, threshold = 0, atlas = FALSE, metacell_types = NULL) {
     # Get available genes to validate input
     available_genes <- gene_names(dataset, atlas = atlas)
     valid_genes <- genes[genes %in% available_genes]
@@ -153,7 +202,7 @@ calc_individual_correlations <- function(dataset, genes, n_top = 30, cell_type_f
     # Calculate metacell filter if cell types specified
     metacell_filter <- NULL
     if (!is.null(cell_type_filter)) {
-        metacell_types <- get_mc_data(dataset, "metacell_types")
+        metacell_types <- metacell_types %||% get_mc_data(dataset, "metacell_types")
         if (!is.null(metacell_types)) {
             metacell_filter <- metacell_types %>%
                 filter(cell_type %in% cell_type_filter) %>%
@@ -171,34 +220,43 @@ calc_individual_correlations <- function(dataset, genes, n_top = 30, cell_type_f
     x <- log2(t(mc_mat[valid_genes, metacells, drop = FALSE]) / get_mc_sum(dataset, atlas = atlas)[metacells] + egc_epsilon)
     all_cors <- cor_log_egc(dataset, x, rownames(mc_mat), metacells, atlas = atlas)
 
-    results <- purrr::map_dfr(valid_genes, function(gene) {
-        cors <- select_top_cors(all_cors[, gene], "both")
-
-        # Filter by threshold and take top correlations
-        cors <- cors %>%
-            filter(abs(cor) >= threshold)
-
-        pos_cors <- cors %>%
-            filter(cor > 0) %>%
-            arrange(desc(cor)) %>%
-            head(n_top)
-        neg_cors <- cors %>%
-            filter(cor < 0) %>%
-            arrange(cor) %>%
-            head(n_top)
-
-        combined_cors <- bind_rows(pos_cors, neg_cors) %>%
-            arrange(desc(abs(cor))) %>%
-            head(n_top * 2) %>%
-            mutate(
-                input_gene = gene,
-                rank = row_number(),
-                # if_else: a character column also without rows, which map_dfr then binds with the others
-                correlation_type = if_else(cor > 0, "positive", "negative")
-            )
-
-        return(combined_cors)
+    # For each input gene, the rows (genes) of its n_top highest positive and n_top lowest negative correlations
+    # with an absolute value of at least threshold, ordered by absolute value. Ties keep the order of the genes in
+    # mc_mat. A gene without counts has only NaN correlations: as 0, which neither direction keeps.
+    all_cors[is.na(all_cors)] <- 0
+    n_top <- max(0L, as.integer(n_top))
+    # only the correlations from the n_top-th highest (lowest) up (down) need to be ordered
+    if (n_top > 0 && n_top < nrow(all_cors)) {
+        hi <- matrixStats::colOrderStats(all_cors, which = nrow(all_cors) - n_top + 1)
+        lo <- matrixStats::colOrderStats(all_cors, which = n_top)
+    } else {
+        hi <- rep(-Inf, ncol(all_cors))
+        lo <- rep(Inf, ncol(all_cors))
+    }
+    hi <- pmax(hi, threshold)
+    lo <- pmin(lo, -threshold)
+    rows <- lapply(seq_along(valid_genes), function(j) {
+        cors <- all_cors[, j]
+        pos <- which(cors >= hi[j])
+        pos <- pos[cors[pos] > 0]
+        pos <- pos[order(cors[pos], decreasing = TRUE, method = "radix")[seq_len(min(n_top, length(pos)))]]
+        neg <- which(cors <= lo[j])
+        neg <- neg[cors[neg] < 0]
+        neg <- neg[order(cors[neg], method = "radix")[seq_len(min(n_top, length(neg)))]]
+        top <- c(pos, neg)
+        top[order(abs(cors[top]), decreasing = TRUE, method = "radix")]
     })
+    n_rows <- lengths(rows)
+    rows <- unlist(rows, use.names = FALSE)
+    cors <- all_cors[cbind(rows, rep(seq_along(valid_genes), n_rows))]
+
+    results <- tibble(
+        gene2 = rownames(all_cors)[rows],
+        cor = cors,
+        input_gene = rep(valid_genes, n_rows),
+        rank = sequence(n_rows),
+        correlation_type = if_else(cors > 0, "positive", "negative")
+    )
 
     return(results)
 }
@@ -210,8 +268,9 @@ calc_individual_correlations <- function(dataset, genes, n_top = 30, cell_type_f
 #' @param n_top Number of top correlations to return
 #' @param cell_type_filter Optional vector of cell types to filter metacells
 #' @param threshold Minimum correlation threshold to include
+#' @param metacell_types Metacell annotation to take the cell types from (default: the stored annotation)
 #' @return Data frame with correlation results
-calc_module_correlations <- function(dataset, genes, n_top = 30, cell_type_filter = NULL, threshold = 0, atlas = FALSE) {
+calc_module_correlations <- function(dataset, genes, n_top = 30, cell_type_filter = NULL, threshold = 0, atlas = FALSE, metacell_types = NULL) {
     available_genes <- rownames(get_mc_data(dataset, "mc_mat", atlas = atlas))
     valid_genes <- genes[genes %in% available_genes]
 
@@ -221,13 +280,13 @@ calc_module_correlations <- function(dataset, genes, n_top = 30, cell_type_filte
 
     if (length(valid_genes) == 1) {
         # Fall back to individual correlation for single gene
-        return(calc_individual_correlations(dataset, valid_genes, n_top, cell_type_filter, threshold, atlas))
+        return(calc_individual_correlations(dataset, valid_genes, n_top, cell_type_filter, threshold, atlas, metacell_types = metacell_types))
     }
 
     # Calculate metacell filter if cell types specified
     metacell_filter <- NULL
     if (!is.null(cell_type_filter)) {
-        metacell_types <- get_mc_data(dataset, "metacell_types")
+        metacell_types <- metacell_types %||% get_mc_data(dataset, "metacell_types")
         if (!is.null(metacell_types)) {
             metacell_filter <- metacell_types %>%
                 filter(cell_type %in% cell_type_filter) %>%
@@ -238,8 +297,9 @@ calc_module_correlations <- function(dataset, genes, n_top = 30, cell_type_filte
     # Calculate module expression as mean of constituent genes
     module_expr <- colMeans(get_mc_egc(dataset, genes = valid_genes, atlas = atlas), na.rm = TRUE)
 
-    # Use calc_top_cors with the module expression vector
-    cors <- calc_top_cors(dataset, "module", "both", module_expr, metacell_filter, valid_genes, atlas = atlas)
+    # Use calc_top_cors with the module expression vector. The top 30 in each direction at least, so that the
+    # top n_top * 2 by absolute value below are as before for n_top <= 30, and n_top per direction for more.
+    cors <- calc_top_cors(dataset, "module", "both", module_expr, metacell_filter, valid_genes, atlas = atlas, n = max(30, n_top))
 
     # Format results with truncated gene list for display
     gene_display <- if (length(valid_genes) <= 3) {
@@ -267,8 +327,9 @@ calc_module_correlations <- function(dataset, genes, n_top = 30, cell_type_filte
 #' @param genes Vector of gene names
 #' @param cell_type_filter Optional vector of cell types to filter metacells
 #' @param threshold Minimum correlation threshold to include
+#' @param metacell_types Metacell annotation to take the cell types from (default: the stored annotation)
 #' @return Data frame with gene-gene correlation results
-calc_gene_gene_correlations <- function(dataset, genes, cell_type_filter = NULL, threshold = 0, atlas = FALSE) {
+calc_gene_gene_correlations <- function(dataset, genes, cell_type_filter = NULL, threshold = 0, atlas = FALSE, metacell_types = NULL) {
     # Get expression matrix
     mc_egc <- get_mc_egc(dataset, genes = genes, atlas = atlas)
     available_genes <- rownames(mc_egc)
@@ -281,7 +342,7 @@ calc_gene_gene_correlations <- function(dataset, genes, cell_type_filter = NULL,
     # Calculate metacell filter if cell types specified
     metacell_filter <- NULL
     if (!is.null(cell_type_filter)) {
-        metacell_types <- get_mc_data(dataset, "metacell_types")
+        metacell_types <- metacell_types %||% get_mc_data(dataset, "metacell_types")
         if (!is.null(metacell_types)) {
             metacell_filter <- metacell_types %>%
                 filter(cell_type %in% cell_type_filter) %>%
@@ -299,17 +360,17 @@ calc_gene_gene_correlations <- function(dataset, genes, cell_type_filter = NULL,
     # Calculate all pairwise correlations between genes
     cor_matrix <- cor(t(expr_data), use = "pairwise.complete.obs")
 
-    # Convert to long format, excluding self-correlations
+    # Convert to long format, excluding self-correlations. expand.grid varies input_gene fastest, as the
+    # column-major order of cor_matrix (rows and columns in the order of valid_genes) does.
     results <- expand.grid(
         input_gene = valid_genes,
         gene2 = valid_genes,
         stringsAsFactors = FALSE
-    ) %>%
+    )
+    results$cor <- as.vector(cor_matrix)
+    results <- results %>%
         filter(input_gene != gene2) %>%
-        mutate(
-            cor = mapply(function(g1, g2) cor_matrix[g1, g2], input_gene, gene2),
-            correlation_type = ifelse(cor > 0, "positive", "negative")
-        ) %>%
+        mutate(correlation_type = ifelse(cor > 0, "positive", "negative")) %>%
         filter(abs(cor) >= threshold) %>%
         mutate(
             rank = ave(abs(cor), input_gene, FUN = function(x) rank(-x))

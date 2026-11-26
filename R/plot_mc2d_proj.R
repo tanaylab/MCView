@@ -36,7 +36,7 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
     min_expr <- min_expr %||% min(mc2d_df$expression, na.rm = TRUE)
     max_expr <- max_expr %||% max(mc2d_df$expression, na.rm = TRUE)
 
-    if (has_name(df, "mc_age")) {
+    if (has_name(mc2d_df, "mc_age")) {
         mc2d_df <- mc2d_df %>% rename(`Age` = mc_age)
     }
 
@@ -76,18 +76,18 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
         df <- mc2d_df %>%
             mutate(value = enrich)
 
-        legend_title <- glue("{gene}\nEnrichment.\n(log2)")
+        legend_title <- glue("{gene}\nEnrichment\n(log2)")
     } else { # expression
         shades <- grDevices::colorRampPalette(colspec)(100 * abs(max_expr - min_expr) + 1)
         df <- mc2d_df %>%
             mutate(value = expr_clipped)
 
-        legend_title <- glue("{gene}\nExpression.\n(log2)")
+        legend_title <- glue("{gene}\nExpression\n(log2)")
     }
 
     if (!is.null(selected_cell_types)) {
         df <- df %>%
-            filter(`Cell type` %in% selected_cell_types())
+            filter(cell_type_or_missing(`Cell type`) %in% selected_cell_types())
     }
 
     add_scatter_layer <- function(x, showlegend = FALSE) {
@@ -138,29 +138,56 @@ mc2d_plot_gene_ggp <- function(dataset, gene, point_size = initial_proj_point_si
 
 
     fig <- fig %>%
-        plotly::layout(
-            xaxis = list(
-                showgrid = FALSE,
-                zeroline = FALSE,
-                visible = FALSE
-            ),
-            yaxis = list(
-                showgrid = FALSE,
-                zeroline = FALSE,
-                visible = FALSE
-            ),
-            margin = list(
-                l = 0,
-                r = 0,
-                b = 0,
-                t = 0,
-                pad = 0
-            )
-        ) %>%
+        mc2d_plotly_layout() %>%
         plotly::colorbar(title = legend_title) %>%
-        set_hovertemplate(df, "id", c("expr_text", "enrich_text", "Cell type", "Top genes"), hovertemplate)
+        set_hovertemplate(df, "id", c("expr_text", "enrich_text", "Cell type", "Top genes"), hovertemplate) %>%
+        mc2d_collapse_edges_hoverinfo()
 
     return(fig)
+}
+
+# The layout of the 2D projection plots:
+# - the same scale on both axes, so that the manifold keeps its shape whatever the box's shape
+#   (plotly extends the range of the longer side, the plot area itself doesn't shrink)
+# - a top margin for the modebar, which otherwise covers the title of the legend / color bar
+mc2d_plotly_layout <- function(fig, ...) {
+    plotly::layout(fig,
+        xaxis = list(
+            showgrid = FALSE,
+            zeroline = FALSE,
+            visible = FALSE
+        ),
+        yaxis = list(
+            showgrid = FALSE,
+            zeroline = FALSE,
+            visible = FALSE,
+            scaleanchor = "x",
+            scaleratio = 1
+        ),
+        margin = list(
+            l = 0,
+            r = 0,
+            b = 0,
+            t = 30,
+            pad = 0
+        ),
+        ...
+    )
+}
+
+# plotly_build() repeats the hoverinfo of the edges ("skip") for each of their points, and plotly.js
+# needs it once per trace (see collapse_hoverinfo()). set_hovertemplate() has built the figure, so
+# this sets it there, without the extra plotly_build() of collapse_hoverinfo() - one of the three
+# builds of each render, along with set_hovertemplate()'s and renderPlotly()'s.
+mc2d_collapse_edges_hoverinfo <- function(fig) {
+    fig$x$data <- purrr::map(fig$x$data, function(tr) {
+        h <- unique(tr$hoverinfo[!is.na(tr$hoverinfo)])
+        if (length(tr$hoverinfo) > 1 && length(h) == 1) {
+            tr$hoverinfo <- h
+        }
+        tr
+    })
+    fig
 }
 
 render_2d_plotly <- function(input, output, session, dataset, metacell_types, cell_type_colors, gene_modules, globals, source, buttons = c("select2d", "lasso2d", "hoverClosestCartesian", "hoverCompareCartesian", "toggleSpikelines"), dragmode = NULL, refresh_on_gene_change = FALSE, atlas = FALSE, query_types = NULL, group = NULL, groupA = NULL, groupB = NULL, selected_metacell_types = NULL, selected_cell_types = NULL) {
@@ -179,7 +206,7 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
         if (atlas) {
             mc2d <- NULL
         } else {
-            mc2d <- globals$mc2d %||% get_mc_data(dataset, "mc2d")
+            mc2d <- globals$mc2d %||% get_mc_data(dataset(), "mc2d")
         }
 
         plot_2d_gene <- function(gene, gene_name = NULL) {
@@ -336,7 +363,7 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
             fig <- plot_2d_gene(input$gene2)
         } else if (color_proj == "Metadata") {
             req(color_proj_metadata)
-            metadata <- get_mc_data(dataset(), "metadata")
+            metadata <- get_mc_data(dataset(), "metadata", atlas = atlas)
             if (is.null(metadata)) {
                 metadata <- metacell_types() %>% select(metacell)
             }
@@ -449,9 +476,9 @@ render_2d_plotly <- function(input, output, session, dataset, metacell_types, ce
 
         fig <- fig %>%
             sanitize_for_WebGL()
+        # (the plot functions set the edges' hoverinfo: see mc2d_collapse_edges_hoverinfo())
         fig <- fig %>%
-            plotly::toWebGL() %>%
-            collapse_hoverinfo()
+            plotly::toWebGL()
         # fig <- fig %>%
         #     arrange_2d_proj_tooltip()
         fig <- fig %>%
@@ -483,12 +510,17 @@ initial_proj_point_size <- function(dataset, screen_width = NULL, screen_height 
         return(config$projection_point_size * weight)
     }
     n_metacells <- length(get_mc_data(dataset, "mc_sum", atlas = atlas))
+    initial_proj_point_size_value(n_metacells, screen_width, screen_height, weight)
+}
+
+initial_proj_point_size_value <- function(n_metacells, screen_width = NULL, screen_height = NULL, weight = 1) {
     screen_width <- screen_width %||% 1920
     screen_height <- screen_height %||% 1080
     desired_area <- (screen_width * screen_height) / (n_metacells * 100) * weight
     size_pixels <- sqrt(desired_area / pi)
 
-    return(max(1, min(3, size_pixels)))
+    # rounded: the size is in the cache key of the plots and shown in the point size input
+    return(round(max(1, min(3, size_pixels)) * 4) / 4)
 }
 
 initial_proj_stroke <- function(dataset) {

@@ -1,27 +1,27 @@
 annotate_genes <- function(genes, dataset) {
-    lateral_genes <- get_mc_data(dataset, "lateral_genes")
-    noisy_genes <- get_mc_data(dataset, "noisy_genes")
+    lateral <- genes %in% get_mc_data(dataset, "lateral_genes")
+    noisy <- genes %in% get_mc_data(dataset, "noisy_genes")
 
-    case_when(
-        (genes %in% lateral_genes) & (genes %in% noisy_genes) ~ "lateral, noisy",
-        genes %in% lateral_genes ~ "lateral",
-        genes %in% noisy_genes ~ "noisy",
-        TRUE ~ "other"
-    )
+    type <- rep("other", length(genes))
+    type[lateral] <- "lateral"
+    type[noisy] <- "noisy"
+    type[lateral & noisy] <- "lateral, noisy"
+    return(type)
 }
 
+# Called on all the genes (e.g. on every render of the Diff. Expression scatter), so it builds the labels only of the
+# genes that need one, instead of building every label twice with ifelse() and glue().
 gene_label <- function(genes, dataset, gene_modules = NULL) {
+    genes <- as.character(genes)
     type <- annotate_genes(genes, dataset)
-    if (!is.null(gene_modules)) {
-        modules <- tibble(gene = genes) %>%
-            left_join(gene_modules, by = join_by(gene)) %>%
-            pull(module) %>%
-            as.character()
-    }
-    new_names <- ifelse(type == "other", genes, glue("{genes} ({type})"))
+    new_names <- genes
+    annotated <- type != "other"
+    new_names[annotated] <- paste0(genes[annotated], " (", type[annotated], ")")
 
     if (!is.null(gene_modules)) {
-        new_names <- ifelse(!is.na(modules), glue("{new_names}<br />Gene module: {modules}"), new_names)
+        modules <- as.character(gene_modules$module)[match(genes, gene_modules$gene)]
+        in_module <- !is.na(modules)
+        new_names[in_module] <- paste0(new_names[in_module], "<br />Gene module: ", modules[in_module])
     }
 
     return(new_names)

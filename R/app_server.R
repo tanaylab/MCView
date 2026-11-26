@@ -147,7 +147,7 @@ app_server <- function(input, output, session) {
 available_tabs <- function(dataset) {
     tabs <- names(tab_defs)
     if (!has_atlas(dataset)) {
-        tabs <- tabs[!(tabs %in% c("Atlas", "Query", "Projected-fold"))]
+        tabs <- tabs[!(tabs %in% c("Atlas", "Query", "Projected-fold", "Projection QC"))]
     }
     if (!has_samples(dataset)) {
         tabs <- tabs[tabs != "Samples"]

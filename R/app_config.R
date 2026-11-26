@@ -250,6 +250,11 @@ init_tab_defs <- function() {
         cur_config$tabs <- default_tabs
     }
 
+    if (!is.null(config$light_version) && config$light_version) {
+        # exclude Gene correlation tab in light version (before the excluded tabs are removed below)
+        cur_config$excluded_tabs <- unique(c(cur_config$excluded_tabs, "Gene correlation"))
+    }
+
     if (!is.null(cur_config$excluded_tabs)) {
         tab_defs <<- tab_defs[!(names(tab_defs) %in% cur_config$excluded_tabs)]
         cur_config$tabs <- cur_config$tabs[!(cur_config$tabs %in% cur_config$excluded_tabs)]
@@ -261,13 +266,6 @@ init_tab_defs <- function() {
     }
 
     if (!is.null(config$light_version) && config$light_version) {
-        # exclude Gene correlation tab in light version
-        if (is.null(cur_config$excluded_tabs)) {
-            cur_config$excluded_tabs <- c("Gene correlation")
-        } else {
-            cur_config$excluded_tabs <- unique(c(cur_config$excluded_tabs, "Gene correlation"))
-        }
-
         # make the About tab first if exists
         if ("About" %in% cur_config$tabs) {
             cur_config$tabs <- c("About", cur_config$tabs[cur_config$tabs != "About"])
@@ -290,9 +288,9 @@ order_tabs <- function(tabs) {
     return(new_tabs)
 }
 
+# without reading mc_mat when the dataset has mc_dimnames (see get_mc_dimnames())
 gene_names <- function(dataset, atlas = FALSE) {
-    gene_names <- rownames(get_mc_data(dataset, "mc_mat", atlas = atlas))
-    return(gene_names)
+    get_mc_dimnames(dataset, atlas = atlas)$genes
 }
 
 gene_names_label <- function(dataset, atlas = FALSE, gene_modules = NULL) {

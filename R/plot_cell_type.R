@@ -1,3 +1,18 @@
+# The cell types in the order the user defined: the `order` column of cell_type_colors (its rows' order
+# when it has none). With `cell_types`: only these (e.g. the cell types of the metacells), with those that
+# have no color (e.g. "(Missing)") at the end.
+cell_types_in_order <- function(cell_type_colors, cell_types = NULL) {
+    if (rlang::has_name(cell_type_colors, "order")) {
+        cell_type_colors <- cell_type_colors %>% arrange(order)
+    }
+    res <- unique(as.character(cell_type_colors$cell_type))
+    if (!is.null(cell_types)) {
+        cell_types <- unique(as.character(cell_types[!is.na(cell_types)]))
+        res <- c(intersect(res, cell_types), setdiff(cell_types, res))
+    }
+    return(res)
+}
+
 cell_type_gene_boxplot <- function(gene,
                                    dataset,
                                    cell_types = NULL,
@@ -30,7 +45,7 @@ cell_type_gene_boxplot <- function(gene,
         }
 
         df <- df %>%
-            mutate(cell_type = factor(cell_type, levels = sort(as.character(cell_type_colors$cell_type)))) %>%
+            mutate(cell_type = factor(cell_type, levels = cell_types_in_order(cell_type_colors))) %>%
             mutate(cell_type = forcats::fct_na_value_to_level(cell_type, "(Missing)")) %>%
             rename(`X axis` = cell_type)
 
@@ -66,7 +81,7 @@ cell_type_gene_boxplot <- function(gene,
         if (facet_var == "cell_type") {
             # Facet by cell type (already have cell_type column)
             df <- df %>%
-                mutate(`Facet variable` = factor(cell_type))
+                mutate(`Facet variable` = if (x_axis_var == "cell_type") factor(`X axis`) else factor(cell_type, levels = cell_types_in_order(cell_type_colors, cell_type)))
             facet_label <- "Cell type"
         } else {
             # Facet by metadata variable
@@ -88,7 +103,7 @@ cell_type_gene_boxplot <- function(gene,
         col_to_ct <- get_cell_type_colors(dataset, cell_type_colors)
         fill_colors <- col_to_ct
         df <- df %>%
-            mutate(`X axis` = factor(`X axis`, levels = names(col_to_ct)))
+            mutate(`X axis` = factor(`X axis`, levels = unique(c(cell_types_in_order(cell_type_colors), "(Missing)"))))
     } else {
         # For metadata x-axis, use default colors
         categories <- unique(df$`X axis`)
@@ -187,7 +202,7 @@ cell_type_metadata_boxplot <- function(var,
         }
 
         df <- df %>%
-            mutate(cell_type = factor(cell_type, levels = sort(as.character(cell_type_colors$cell_type)))) %>%
+            mutate(cell_type = factor(cell_type, levels = cell_types_in_order(cell_type_colors))) %>%
             mutate(cell_type = forcats::fct_na_value_to_level(cell_type, "(Missing)")) %>%
             rename(`X axis` = cell_type)
 
@@ -221,7 +236,7 @@ cell_type_metadata_boxplot <- function(var,
         if (facet_var == "cell_type") {
             # Facet by cell type (already have cell_type column)
             df <- df %>%
-                mutate(`Facet variable` = factor(cell_type))
+                mutate(`Facet variable` = if (x_axis_var == "cell_type") factor(`X axis`) else factor(cell_type, levels = cell_types_in_order(cell_type_colors, cell_type)))
             facet_label <- "Cell type"
         } else {
             # Facet by metadata variable
@@ -245,7 +260,7 @@ cell_type_metadata_boxplot <- function(var,
         col_to_ct <- get_cell_type_colors(dataset, cell_type_colors)
         fill_colors <- col_to_ct
         df <- df %>%
-            mutate(`X axis` = factor(`X axis`, levels = names(col_to_ct)))
+            mutate(`X axis` = factor(`X axis`, levels = unique(c(cell_types_in_order(cell_type_colors), "(Missing)"))))
     } else {
         # For metadata x-axis, use default colors
         categories <- unique(df$`X axis`)
@@ -336,7 +351,7 @@ cell_type_metadata_confusion <- function(var,
     }
 
     df <- df %>%
-        mutate(cell_type = factor(cell_type, levels = sort(as.character(cell_type_colors$cell_type)))) %>%
+        mutate(cell_type = factor(cell_type, levels = natural_sort_cell_types(as.character(cell_type_colors$cell_type)))) %>%
         mutate(cell_type = forcats::fct_na_value_to_level(cell_type, "(Missing)")) %>%
         mutate(var = factor(var), !!var := forcats::fct_na_value_to_level(!!sym(var), "(Missing)"))
 

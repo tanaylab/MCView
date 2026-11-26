@@ -31,9 +31,8 @@ mod_query_ui <- function(id) {
                     collapsible = TRUE,
                     closable = FALSE,
                     width = 12,
-                    sidebar = shinydashboardPlus::boxSidebar(
+                    sidebar = plot_box_sidebar(
                         startOpen = FALSE,
-                        width = 80,
                         id = ns("mc_mc_sidebar"),
                         checkboxInput(ns("hide_lateral"), "Hide lateral genes", value = FALSE),
                         checkboxInput(ns("hide_noisy"), "Hide noisy genes", value = FALSE),
@@ -73,9 +72,8 @@ mod_query_ui <- function(id) {
                     collapsible = TRUE,
                     closable = FALSE,
                     width = 12,
-                    sidebar = shinydashboardPlus::boxSidebar(
+                    sidebar = plot_box_sidebar(
                         startOpen = FALSE,
-                        width = 100,
                         id = ns("gene_gene_sidebar"),
                         uiOutput(ns("gene_gene_point_size_ui")),
                         uiOutput(ns("gene_gene_stroke_ui"))
@@ -165,12 +163,17 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
             ns <- session$ns
 
             group <- reactiveVal()
+            # the group holds metacells of a dataset
+            observeEvent(dataset(), ignoreInit = TRUE, group(NULL))
 
             # The scatter depends on input$mode only through its drag mode (select in Group mode). A
             # reactiveVal invalidates only when its value changes, so switching between MC and Type
-            # doesn't draw and send the plot again.
+            # doesn't draw and send the plot again. It is also in the cache key of the projection, which
+            # render_2d_plotly() draws with a copy that an observer of priority 0 sets (and the cached plot
+            # doesn't depend on): set after it, so that the key changes only once the plot would be drawn
+            # with the new drag mode.
             group_mode <- reactiveVal(FALSE)
-            observe(group_mode(isTRUE(input$mode %in% c("Groups", "Group"))))
+            observe(group_mode(isTRUE(input$mode %in% c("Groups", "Group"))), priority = -1)
 
             projected_metacell_types <- reactive({
                 get_mc_data(dataset(), "projected_metacell_types") %>%
@@ -249,9 +252,12 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
                     req(projected_metacell_types())
                     df <- calc_obs_exp_type_df(dataset(), input$metacell1, projected_metacell_types())
                 } else if (input$mode == "Group") {
-                    req(group())
-                    req(length(group()) > 1)
-                    group_types_df <- tibble(metacell = group(), cell_type = "Group")
+                    group_metacells <- intersect(group(), metacell_names())
+                    validate(need(
+                        length(group_metacells) > 1,
+                        "Please add at least two metacells to the group: select them in the 2D projection, add them with the button on the left, or paste them from the clipboard."
+                    ))
+                    group_types_df <- tibble(metacell = group_metacells, cell_type = "Group")
                     df <- calc_obs_exp_type_df(dataset(), "Group", group_types_df)
                 }
 
@@ -263,10 +269,40 @@ mod_query_server <- function(id, dataset, metacell_types, cell_type_colors, gene
             })
 
             # Projection plots
-            output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, projected_metacell_types, atlas_colors, gene_modules, globals, group = group, source = "proj_mc_plot_proj_tab")
+            output$plot_gene_proj_2d <- render_2d_plotly(input, output, session, dataset, projected_metacell_types, atlas_colors, gene_modules, globals, group = group, source = "proj_mc_plot_proj_tab") %>%
+                bindCache(
+                    "proj_mc_plot_proj_tab", # the projections of other tabs have the same code, other sources and buttons
+                    dataset(),
+                    input$color_proj,
+                    projected_metacell_types(),
+                    atlas_colors(),
+                    input$point_size,
+                    input$stroke,
+                    input$min_edge_size,
+                    input$graph_name,
+                    input$legend_orientation,
+                    input$show_legend_projection,
+                    input$set_range,
+                    input$proj_stat,
+                    input$expr_range,
+                    input$lfp,
+                    proj_color_var(input),
+                    if (isTRUE(input$color_proj %in% c("Gene module", "Scatter Axis"))) gene_modules(),
+                    if (isTRUE(input$color_proj == "Metadata") && isTRUE(input$color_proj_metadata == "Clipboard")) globals$clipboard,
+                    if (isTRUE(input$color_proj == "Query Metadata")) input$color_proj_query_metadata,
+                    if (isTRUE(input$color_proj == "Atlas Metadata")) input$color_proj_atlas_metadata,
+                    # the compared metacell / type / group, shown when coloring by "Selected"
+                    if (isTRUE(input$color_proj == "Selected")) list(input$mode, input$metacell1, group()),
+                    group_mode(),
+                    globals$mc2d,
+                    globals$plotly_format,
+                    globals$plotly_width,
+                    globals$plotly_height,
+                    globals$plotly_scale
+                )
 
             # Differential expression
-            output$plot_mc_mc_gene_scatter <- render_mc_mc_gene_plotly(input, output, session, ns, dataset, globals, gene_modules, mc_mc_gene_scatter_df, metacell_names, atlas_colors, metacell_types = metacell_types)
+            output$plot_mc_mc_gene_scatter <- render_mc_mc_gene_plotly(input, output, session, ns, dataset, globals, gene_modules, mc_mc_gene_scatter_df, metacell_names, atlas_colors, metacell_types = metacell_types, group = group)
 
             # Select a gene when clicking on it
             plotly_click_observer("projection_diff_expr_plot", session, "axis_var", notification_prefix = "Selected ", update_function = shinyWidgets::updatePickerInput)
@@ -470,14 +506,9 @@ metacell_selectors_mod_query <- function(input, output, session, dataset, ns, me
         if (input$mode == "MC") {
             req(metacell_colors())
             req(metacell_names())
-            # add 'similar' annotation
-            md <- get_mc_data(dataset(), "metadata")
-            if (!is.null(md) && has_name(md, "similar")) {
-                choices <- metacell_names()
-                names(choices) <- ifelse(md$similar == "dissimilar", paste0(metacell_names(), " (dissimilar)"), metacell_names())
-            } else {
-                choices <- metacell_names()
-            }
+            # add 'similar' annotation (matched by metacell: the metadata can be in another order, or miss
+            # metacells)
+            choices <- metacell_choices_with_similarity(metacell_names(), get_mc_data(dataset(), "metadata"))
 
             cell_types_hex <- col2hex(metacell_colors())
             shinyWidgets::pickerInput(ns("metacell1"), "Metacell",
@@ -656,8 +687,8 @@ group_selectors_mod_query <- function(input, output, session, dataset, ns, group
     })
 
     observeEvent(input$paste_group_metacells, {
-        metacells <- globals$clipboard
-        group(unique(c(group(), metacells)))
+        req(clipboard_has_metacells(globals))
+        group(unique(c(group(), globals$clipboard)))
     })
 
     observeEvent(plotly::event_data("plotly_selected", source = "proj_mc_plot_proj_tab"), {

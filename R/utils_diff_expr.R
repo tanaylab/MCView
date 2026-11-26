@@ -151,6 +151,8 @@ mc_mc_gene_scatter_df_reactive <- function(dataset, input, output, session, meta
             req(input$metacell2)
             req(input$metacell1 %in% metacell_types()$metacell)
             req(input$metacell2 %in% metacell_types()$metacell)
+            # (comparing a metacell with itself failed with an error about duplicated column names)
+            validate(need(input$metacell1 != input$metacell2, "Please choose two different metacells."))
             calc_mc_mc_gene_df(dataset(), input$metacell1, input$metacell2)
         } else if (input$mode == "Types") {
             req(metacell_types())
@@ -159,6 +161,7 @@ mc_mc_gene_scatter_df_reactive <- function(dataset, input, output, session, meta
             req(input$metacell1 %in% metacell_types()$cell_type)
             req(input$metacell2 %in% cell_type_colors()$cell_type)
             req(input$metacell2 %in% metacell_types()$cell_type)
+            validate(need(input$metacell1 != input$metacell2, "Please choose two different cell types."))
             types_df <- metacell_types()
             if (!is.null(metacell_filter)) {
                 types_df <- types_df %>%
@@ -171,23 +174,39 @@ mc_mc_gene_scatter_df_reactive <- function(dataset, input, output, session, meta
         } else if (input$mode == "Groups") {
             req(groupA)
             req(groupB)
-            req(groupA())
-            req(groupB())
-            req(groupA() %in% metacell_types()$metacell)
-            req(groupB() %in% metacell_types()$metacell)
+            # only the metacells of the dataset: req(groupA() %in% ...) passed when any of them was, and the
+            # others (e.g. pasted from a clipboard of another dataset) broke the comparison
+            group_a <- intersect(groupA(), metacell_types()$metacell)
+            group_b <- intersect(groupB(), metacell_types()$metacell)
+            validate(need(
+                length(group_a) > 0 && length(group_b) > 0,
+                "Please add metacells to group A and to group B: select them in the 2D projection (\"Select: Group A / Group B\"), add them with the buttons on the left, or paste them from the clipboard."
+            ))
             group_types_df <- bind_rows(
-                tibble(metacell = groupA(), cell_type = "Group A"),
-                tibble(metacell = groupB(), cell_type = "Group B")
+                tibble(metacell = group_a, cell_type = "Group A"),
+                tibble(metacell = group_b, cell_type = "Group B")
             )
             if (!is.null(metacell_filter)) {
                 group_types_df <- group_types_df %>% filter(metacell %in% metacell_filter)
-                req(all(c("Group A", "Group B") %in% group_types_df$cell_type))
-                req(nrow(group_types_df) > 0)
+                validate(need(
+                    all(c("Group A", "Group B") %in% group_types_df$cell_type),
+                    "\"Filter by clipboard\" is on, and group A or group B has no metacells in the clipboard."
+                ))
             }
 
             calc_ct_ct_gene_df(dataset(), "Group A", "Group B", group_types_df)
         }
-    })
+    }) %>% bindCache(
+        # the comparison of two cell types or groups of a large dataset takes seconds
+        dataset(),
+        input$mode,
+        if (isTRUE(input$mode == "MCs")) list(input$metacell1, input$metacell2),
+        if (isTRUE(input$mode == "Types")) list(input$metacell1, input$metacell2, cell_type_colors()$cell_type, metacell_types()),
+        if (isTRUE(input$mode == "Groups")) list(if (!is.null(groupA)) groupA(), if (!is.null(groupB)) groupB()),
+        # the metacells (all the modes check that the compared ones exist)
+        metacell_types()$metacell,
+        if (isTRUE(input$filter_by_clipboard)) list(TRUE, globals$clipboard)
+    )
 }
 
 diff_expr_switch_metacells <- function(dataset, input, output, session, groupA = NULL, groupB = NULL) {

@@ -7,9 +7,8 @@ scatter_box <- function(ns, id, title = "Gene/Gene", x_selected = "Gene", y_sele
         collapsible = TRUE,
         closable = FALSE,
         width = 12,
-        sidebar = shinydashboardPlus::boxSidebar(
+        sidebar = plot_box_sidebar(
             startOpen = FALSE,
-            width = 100,
             id = ns("gene_gene_sidebar"),
             uiOutput(ns("gene_gene_log_labels_ui")),
             uiOutput(ns("gene_gene_xyline_ui")),
@@ -49,7 +48,7 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
     if (!is.null(selected_cell_types)) {
         observe({
             if (is.null(selected_cell_types())) {
-                selected_cell_types(unique(cell_type_colors()$cell_type))
+                selected_cell_types(all_cell_types(cell_type_colors()))
             }
         })
 
@@ -80,7 +79,17 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
     observe({
         req(dataset())
         req(input$color_by_var)
-        shinyjs::toggle(id = "show_legend_scatter", condition = is.null(input$color_by_type) || (input$color_by_type == "Metadata" && (!is_numeric_field(get_mc_data(dataset(), "metadata"), input$color_by_var) || input$color_by_var == "Clipboard")))
+        categorical <- is.null(input$color_by_type) || (input$color_by_type == "Metadata" && (!is_numeric_field(get_mc_data(dataset(), "metadata"), input$color_by_var) || input$color_by_var == "Clipboard"))
+        if (categorical && !is.null(input$color_by_type)) {
+            # (no legend with too many categories, see below)
+            n_categories <- scatter_legend_categories(
+                input$color_by_type, input$color_by_var, metacell_types(),
+                scatter_metadata(dataset(), metacell_types(), globals$clipboard),
+                scatter_metacell_filter(input, globals, metacell_types(), selected_cell_types)
+            )
+            categorical <- n_categories <= scatter_max_legend_categories
+        }
+        shinyjs::toggle(id = "show_legend_scatter", condition = categorical)
     })
 
     # We use this reactive in order to invalidate the cache only when needed
@@ -118,24 +127,8 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
             }
         }
 
-        metadata <- get_mc_data(dataset(), "metadata")
-        if (is.null(metadata)) {
-            metadata <- metacell_types() %>% select(metacell)
-        }
-
-        metadata <- metadata %>%
-            mutate(Clipboard = ifelse(metacell %in% globals$clipboard, "selected", "not selected"))
-
-        if (!is.null(input$filter_by_clipboard_scatter) && input$filter_by_clipboard_scatter && length(globals$clipboard) > 0) {
-            metacell_filter <- globals$clipboard
-        } else if (!is.null(selected_cell_types) && length(selected_cell_types()) > 0) {
-            metacell_filter <- metacell_types() %>%
-                filter(cell_type %in% selected_cell_types()) %>%
-                pull(metacell)
-        } else {
-            metacell_filter <- NULL
-        }
-
+        metadata <- scatter_metadata(dataset(), metacell_types(), globals$clipboard)
+        metacell_filter <- scatter_metacell_filter(input, globals, metacell_types(), selected_cell_types)
 
         fig <- plot_mc_scatter(
             dataset(),
@@ -173,8 +166,15 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
                 plotly::layout(dragmode = dragmode)
         }
 
-        if (is.null(input$show_legend_scatter) || !input$show_legend_scatter) {
+        # The legend is below the plot: on its right it took ~40% of the plot's width with long cell
+        # type names, and most of it in a narrow box. With many categories (e.g. 40 cell types) it
+        # would take most of the plot's height instead, so there is no legend (nor a "Show legend"
+        # checkbox, see above): the hover text of the points has their cell type / value.
+        n_categories <- scatter_legend_categories(input$color_by_type, input$color_by_var, metacell_types(), metadata, metacell_filter)
+        if (is.null(input$show_legend_scatter) || !input$show_legend_scatter || n_categories > scatter_max_legend_categories) {
             fig <- plotly::hide_legend(fig)
+        } else {
+            fig <- fig %>% plotly::layout(legend = scatter_legend_below)
         }
 
         if (input$color_by_type %in% c("Gene", "Gene module") || (input$color_by_type == "Metadata" && is_numeric_field(metadata, input$color_by_var))) {
@@ -188,6 +188,54 @@ scatter_box_outputs <- function(input, output, session, dataset, metacell_types,
 
         return(fig)
     }) %>% bindCache(dataset(), input$x_axis_var, input$x_axis_type, input$y_axis_var, input$y_axis_type, input$color_by_type, input$color_by_var, metacell_types(), cell_type_colors(), gene_modules(), input$gene_gene_point_size, input$gene_gene_stroke, input$use_atlas_limits, input$gene_gene_fixed_limits, input$gene_gene_xyline, dragmode, plotly_buttons, clipboard_changed(), input$show_legend_scatter, selected_cell_types(), input$show_correlation, input$log_labels, input$correlation_type, input$use_corrected, globals$plotly_format, globals$plotly_width, globals$plotly_height, globals$plotly_scale)
+}
+
+# The gene/gene scatter shows no legend for a coloring with more categories than this
+scatter_max_legend_categories <- 10
+
+# The legend of the gene/gene scatter: a row (or rows) below the plot, under the x axis title
+scatter_legend_below <- list(orientation = "h", x = 0, xanchor = "left", y = -0.25, yanchor = "top", itemsizing = "constant")
+
+# The metadata the gene/gene scatter can be colored by, with the clipboard
+scatter_metadata <- function(dataset, metacell_types, clipboard) {
+    metadata <- get_mc_data(dataset, "metadata")
+    if (is.null(metadata)) {
+        metadata <- metacell_types %>% select(metacell)
+    }
+    metadata %>%
+        mutate(Clipboard = ifelse(metacell %in% clipboard, "selected", "not selected"))
+}
+
+# The metacells shown in the gene/gene scatter (NULL: all of them)
+scatter_metacell_filter <- function(input, globals, metacell_types, selected_cell_types = NULL) {
+    if (!is.null(input$filter_by_clipboard_scatter) && input$filter_by_clipboard_scatter && length(globals$clipboard) > 0) {
+        return(globals$clipboard)
+    }
+    if (!is.null(selected_cell_types) && length(selected_cell_types()) > 0) {
+        return(metacell_types %>%
+            filter(cell_type_or_missing(cell_type) %in% selected_cell_types()) %>%
+            pull(metacell))
+    }
+    NULL
+}
+
+# The number of entries in the legend of the gene/gene scatter: the cell types or values of a
+# categorical metadata field of the metacells it shows (0 for a continuous coloring)
+scatter_legend_categories <- function(color_type, color_var, metacell_types, metadata, metacell_filter = NULL) {
+    if (is.null(color_type) || color_type != "Metadata" || is.null(color_var)) {
+        return(0)
+    }
+    metacells <- metacell_types$metacell
+    if (!is.null(metacell_filter)) {
+        metacells <- metacells[metacells %in% metacell_filter]
+    }
+    if (color_var == "Cell type") {
+        return(dplyr::n_distinct(metacell_types$cell_type[metacell_types$metacell %in% metacells]))
+    }
+    if (is.null(metadata) || !has_name(metadata, color_var) || is_numeric_field(metadata, color_var)) {
+        return(0)
+    }
+    dplyr::n_distinct(metadata[[color_var]][metadata$metacell %in% metacells])
 }
 
 axis_selector <- function(axis, selected, ns, choices = c("Metadata", "Gene", "Gene module"), orientation = "horizontal", wrap_in_box = TRUE) {
@@ -313,11 +361,14 @@ render_axis_select_ui <- function(axis, title, output_id, md_choices, md_selecte
         } else if (input[[glue("{axis}_type")]] == "Gene") {
             update_gene_select(session, glue("{axis}_var"), dataset(), selected = selected_gene, label = title, atlas = atlas)
         } else if (input[[glue("{axis}_type")]] == "Gene module") {
+            # keep the chosen module when the modules are edited
+            modules <- levels(gene_modules()$module)
+            current <- isolate(input[[glue("{axis}_var")]])
             shinyWidgets::updateVirtualSelect(
                 session = session,
                 inputId = glue("{axis}_var"),
-                choices = levels(gene_modules()$module),
-                selected = levels(gene_modules()$module)[1],
+                choices = modules,
+                selected = if (length(current) == 1 && current %in% modules) current else modules[1],
                 label = title
             )
         } else if (input[[glue("{axis}_type")]] == "Cell type") {

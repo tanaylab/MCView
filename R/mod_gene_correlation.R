@@ -37,9 +37,11 @@ mod_gene_correlation_ui <- function(id) {
             ))
         },
         fluidRow(
-            # Left panel: Input and controls
+            # Left panel: Input and controls (a third of the row on wide screens, half of it on narrower
+            # ones; mcview.css wraps the labels of its buttons)
             generic_column(
-                width = 4,
+                width = 6,
+                class = "col-lg-4 mcv-gene-input",
                 generic_box(
                     id = ns("gene_input_box"),
                     title = "Gene Input",
@@ -202,7 +204,8 @@ mod_gene_correlation_ui <- function(id) {
 
             # Right panel: Visualizations
             generic_column(
-                width = 8,
+                width = 6,
+                class = "col-lg-8",
                 # Conditional visualization based on input
                 conditionalPanel(
                     condition = paste0("output['", ns("show_heatmap"), "']"),
@@ -509,7 +512,8 @@ mod_gene_correlation_server <- function(id, dataset, metacell_types, cell_type_c
                 if (!is.null(input$enable_cell_type_filter) && input$enable_cell_type_filter &&
                     !is.null(input$selected_cell_types) && length(input$selected_cell_types) > 0) {
                     all_cell_types <- unique(metacell_types()$cell_type)
-                    if (length(input$selected_cell_types) < length(all_cell_types)) {
+                    # a filter only when some metacells are left out
+                    if (!all(all_cell_types %in% input$selected_cell_types)) {
                         cell_type_filter <- input$selected_cell_types
                     }
                 }
@@ -521,14 +525,14 @@ mod_gene_correlation_server <- function(id, dataset, metacell_types, cell_type_c
                                 if (!is.null(input$analysis_type) && input$analysis_type == "gene_gene_cor") {
                                     incProgress(0.2, detail = "Gene-gene correlations")
                                     # For gene-gene correlations, don't apply threshold - show all correlations between input genes
-                                    results <- calc_gene_gene_correlations(dataset(), valid_genes, cell_type_filter, threshold = 0)
+                                    results <- calc_gene_gene_correlations(dataset(), valid_genes, cell_type_filter, threshold = 0, metacell_types = metacell_types())
                                 } else {
                                     incProgress(0.2, detail = "Individual gene correlations")
-                                    results <- calc_individual_correlations(dataset(), valid_genes, input$n_correlations, cell_type_filter, input$cor_threshold)
+                                    results <- calc_individual_correlations(dataset(), valid_genes, input$n_correlations, cell_type_filter, input$cor_threshold, metacell_types = metacell_types())
                                 }
                             } else {
                                 incProgress(0.2, detail = "Module correlation")
-                                results <- calc_module_correlations(dataset(), valid_genes, input$n_correlations, cell_type_filter, input$cor_threshold)
+                                results <- calc_module_correlations(dataset(), valid_genes, input$n_correlations, cell_type_filter, input$cor_threshold, metacell_types = metacell_types())
                             }
 
                             incProgress(0.6, detail = "Processing results")
@@ -775,8 +779,8 @@ mod_gene_correlation_server <- function(id, dataset, metacell_types, cell_type_c
                         ""
                     ), file)
 
-                    # Append data
-                    write.csv(data, file, row.names = FALSE, append = TRUE)
+                    # Append data (write.csv ignores append and would overwrite the header)
+                    suppressWarnings(utils::write.table(data, file, sep = ",", row.names = FALSE, col.names = TRUE, qmethod = "double", append = TRUE))
                 }
             )
         }

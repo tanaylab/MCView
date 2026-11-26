@@ -110,27 +110,7 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
 
     # Add similar to regular metadata
     prev_metadata <- get_mc_data(dataset, "metadata", atlas = FALSE)
-
-    if (is.null(prev_metadata)) {
-        metadata <- proj_metacell_types %>%
-            select(metacell, similar)
-    } else {
-        if (has_name(prev_metadata, "similar")) {
-            if (!all(prev_metadata$similar == proj_metacell_types$similar)) {
-                cli_warn("Metacell metadata includes a field named {.field similar}. Overwriting it with the one from the projection file.")
-                prev_metadata$similar <- proj_metacell_types$similar
-            }
-            metadata <- prev_metadata
-        } else {
-            metadata <- prev_metadata %>%
-                mutate(metacell = as.character(metacell)) %>%
-                left_join(
-                    proj_metacell_types %>% mutate(metacell = as.character(metacell)) %>% select(metacell, similar),
-                    by = "metacell"
-                )
-        }
-    }
-    metadata <- metadata %>%
+    metadata <- add_similar_to_metadata(prev_metadata, proj_metacell_types) %>%
         mutate(similar = ifelse(similar, "similar", "dissimilar"))
     serialize_shiny_data(metadata, "metadata", dataset = dataset, cache_dir = cache_dir, flat = TRUE)
 
@@ -223,6 +203,33 @@ import_atlas <- function(query, atlas_project, atlas_dataset, projection_weights
 
 
     cli_alert_success("succesfully imported atlas projections")
+}
+
+# The metacell metadata with the 'similar' field of the projection (TRUE / FALSE), matched by metacell: the
+# metadata can be in another order or miss metacells. Metacells that the projection doesn't have get NA.
+add_similar_to_metadata <- function(prev_metadata, proj_metacell_types) {
+    proj_metacells <- as.character(proj_metacell_types$metacell)
+    if (is.null(prev_metadata)) {
+        return(tibble(metacell = proj_metacells, similar = proj_metacell_types$similar))
+    }
+
+    metadata <- prev_metadata %>%
+        mutate(metacell = as.character(metacell))
+    similar <- proj_metacell_types$similar[match(metadata$metacell, proj_metacells)]
+
+    if (has_name(metadata, "similar")) {
+        prev_similar <- metadata$similar
+        # as a previous import of the projection wrote it
+        if (is.character(prev_similar)) {
+            prev_similar <- prev_similar == "similar"
+        }
+        if (!isTRUE(all(prev_similar == similar, na.rm = TRUE))) {
+            cli_warn("Metacell metadata includes a field named {.field similar}. Overwriting it with the one from the projection file.")
+        }
+    }
+    metadata$similar <- similar
+
+    return(metadata)
 }
 
 

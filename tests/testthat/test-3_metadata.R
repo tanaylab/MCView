@@ -9,7 +9,7 @@ test_that("import_dataset works with metadata dataframe", {
         project = project_dir,
         dataset = dataset,
         anndata_file = fs::path(raw_dir, "metacells.h5ad"),
-        cell_type_colors_file = fs::path(raw_dir, "cluster-colors.csv"),
+        cell_type_colors_file = fs::path(raw_dir, "cell-type-colors.csv"),
         metadata = metadata_df,
         calc_gg_cor = FALSE
     )
@@ -148,7 +148,7 @@ test_that("import_dataset works with metadata fields", {
         project = project_dir,
         dataset = dataset,
         anndata_file = fs::path(raw_dir, "metacells.h5ad"),
-        cell_type_colors_file = fs::path(raw_dir, "cluster-colors.csv"),
+        cell_type_colors_file = fs::path(raw_dir, "cell-type-colors.csv"),
         metadata_fields = c("grouped", "pile", "candidate"),
         calc_gg_cor = FALSE
     )
@@ -182,7 +182,7 @@ test_that("import_dataset works with metadata fields fails with non existing fie
             project = project_dir,
             dataset = dataset,
             anndata_file = fs::path(raw_dir, "metacells.h5ad"),
-            cell_type_colors_file = fs::path(raw_dir, "cluster-colors.csv"),
+            cell_type_colors_file = fs::path(raw_dir, "cell-type-colors.csv"),
             metadata_fields = "savta",
             calc_gg_cor = FALSE
         )
@@ -201,7 +201,7 @@ test_that("import_dataset works with metadata without all metacells", {
             project = project_dir,
             dataset = dataset,
             anndata_file = fs::path(raw_dir, "metacells.h5ad"),
-            cell_type_colors_file = fs::path(raw_dir, "cluster-colors.csv"),
+            cell_type_colors_file = fs::path(raw_dir, "cell-type-colors.csv"),
             metadata = metadata_df,
             calc_gg_cor = FALSE
         )
@@ -229,7 +229,7 @@ test_that("import_dataset fails with metadata with unknown metacells", {
             project = project_dir,
             dataset = dataset,
             anndata_file = fs::path(raw_dir, "metacells.h5ad"),
-            cell_type_colors_file = fs::path(raw_dir, "cluster-colors.csv"),
+            cell_type_colors_file = fs::path(raw_dir, "cell-type-colors.csv"),
             metadata = metadata_df,
             calc_gg_cor = FALSE
         )
@@ -261,7 +261,7 @@ test_that("import_dataset works with metadata colors", {
         project = project_dir,
         dataset = dataset,
         anndata_file = fs::path(raw_dir, "metacells.h5ad"),
-        cell_type_colors_file = fs::path(raw_dir, "cluster-colors.csv"),
+        cell_type_colors_file = fs::path(raw_dir, "cell-type-colors.csv"),
         metadata = metadata_df,
         metadata_colors = metadata_colors,
         calc_gg_cor = FALSE
@@ -310,7 +310,7 @@ test_that("import_dataset works with metadata colors file", {
         project = project_dir,
         dataset = dataset,
         anndata_file = fs::path(raw_dir, "metacells.h5ad"),
-        cell_type_colors_file = fs::path(raw_dir, "cluster-colors.csv"),
+        cell_type_colors_file = fs::path(raw_dir, "cell-type-colors.csv"),
         metadata = metadata_df,
         metadata_colors = metadata_colors_file,
         calc_gg_cor = FALSE
@@ -347,7 +347,7 @@ test_that("import_dataset works with metadata colors without breaks", {
         project = project_dir,
         dataset = dataset,
         anndata_file = fs::path(raw_dir, "metacells.h5ad"),
-        cell_type_colors_file = fs::path(raw_dir, "cluster-colors.csv"),
+        cell_type_colors_file = fs::path(raw_dir, "cell-type-colors.csv"),
         metadata = metadata_df,
         metadata_colors = metadata_colors,
         calc_gg_cor = FALSE
@@ -388,7 +388,7 @@ test_that("import_dataset works with metadata colors with wrong number of breaks
             project = project_dir,
             dataset = dataset,
             anndata_file = fs::path(raw_dir, "metacells.h5ad"),
-            cell_type_colors_file = fs::path(raw_dir, "cluster-colors.csv"),
+            cell_type_colors_file = fs::path(raw_dir, "cell-type-colors.csv"),
             metadata = metadata_df,
             metadata_colors = metadata_colors,
             calc_gg_cor = FALSE
@@ -419,7 +419,7 @@ test_that("import_dataset works with metadata colors with wrong number of colors
             project = project_dir,
             dataset = dataset,
             anndata_file = fs::path(raw_dir, "metacells.h5ad"),
-            cell_type_colors_file = fs::path(raw_dir, "cluster-colors.csv"),
+            cell_type_colors_file = fs::path(raw_dir, "cell-type-colors.csv"),
             metadata = metadata_df,
             metadata_colors = metadata_colors,
             calc_gg_cor = FALSE
@@ -444,7 +444,7 @@ test_that("import_dataset works with metadata colors with non-existing metadata 
             project = project_dir,
             dataset = dataset,
             anndata_file = fs::path(raw_dir, "metacells.h5ad"),
-            cell_type_colors_file = fs::path(raw_dir, "cluster-colors.csv"),
+            cell_type_colors_file = fs::path(raw_dir, "cell-type-colors.csv"),
             metadata = metadata_df,
             metadata_colors = metadata_colors,
             calc_gg_cor = FALSE
@@ -468,7 +468,7 @@ test_that("import_dataset works with metadata colors but without metadata", {
             project = project_dir,
             dataset = dataset,
             anndata_file = fs::path(raw_dir, "metacells.h5ad"),
-            cell_type_colors_file = fs::path(raw_dir, "cluster-colors.csv"),
+            cell_type_colors_file = fs::path(raw_dir, "cell-type-colors.csv"),
             metadata_colors = metadata_colors,
             calc_gg_cor = FALSE
         )
@@ -486,7 +486,7 @@ test_that("update_metadata works", {
         project = project_dir,
         dataset = dataset,
         anndata_file = fs::path(raw_dir, "metacells.h5ad"),
-        cell_type_colors_file = fs::path(raw_dir, "cluster-colors.csv"),
+        cell_type_colors_file = fs::path(raw_dir, "cell-type-colors.csv"),
         metadata = metadata_df %>% select(-md3),
         calc_gg_cor = FALSE
     )
@@ -521,7 +521,7 @@ test_that("update_metadata works with overwrite=TRUE", {
         project = project_dir,
         dataset = dataset,
         anndata_file = fs::path(raw_dir, "metacells.h5ad"),
-        cell_type_colors_file = fs::path(raw_dir, "cluster-colors.csv"),
+        cell_type_colors_file = fs::path(raw_dir, "cell-type-colors.csv"),
         metadata = metadata_df %>% select(-md3),
         calc_gg_cor = FALSE
     )
@@ -569,7 +569,7 @@ test_that("update_metadata_colors work", {
         project = project_dir,
         dataset = dataset,
         anndata_file = fs::path(raw_dir, "metacells.h5ad"),
-        cell_type_colors_file = fs::path(raw_dir, "cluster-colors.csv"),
+        cell_type_colors_file = fs::path(raw_dir, "cell-type-colors.csv"),
         metadata = metadata_df,
         metadata_colors = metadata_colors,
         calc_gg_cor = FALSE
@@ -589,8 +589,11 @@ test_that("update_metadata_colors work", {
         overwrite = FALSE
     )
 
+    # the colors of the fields that were not updated (md1) are kept
     saved_md_colors <- qs2::qs_read(fs::path(project_dir, "cache", dataset, "metadata_colors.qs2"))
-    expect_equivalent(metadata_colors_modified, saved_md_colors)
+    expect_setequal(names(saved_md_colors), c("md1", "md2", "md3"))
+    expect_equivalent(saved_md_colors[c("md2", "md3")], metadata_colors_modified[c("md2", "md3")])
+    expect_equivalent(saved_md_colors$md1$colors, metadata_colors$md1$colors)
 
     withr::defer(unlink(fs::path(project_dir, "cache", dataset)))
     withr::defer(gc())
@@ -618,7 +621,7 @@ test_that("update_metadata_colors work with overwrite = TRUE", {
         project = project_dir,
         dataset = dataset,
         anndata_file = fs::path(raw_dir, "metacells.h5ad"),
-        cell_type_colors_file = fs::path(raw_dir, "cluster-colors.csv"),
+        cell_type_colors_file = fs::path(raw_dir, "cell-type-colors.csv"),
         metadata = metadata_df,
         metadata_colors = metadata_colors,
         calc_gg_cor = FALSE
@@ -667,7 +670,7 @@ test_that("update_metadata_colors fails without metadata", {
         project = project_dir,
         dataset = dataset,
         anndata_file = fs::path(raw_dir, "metacells.h5ad"),
-        cell_type_colors_file = fs::path(raw_dir, "cluster-colors.csv"),
+        cell_type_colors_file = fs::path(raw_dir, "cell-type-colors.csv"),
         calc_gg_cor = FALSE
     )
 

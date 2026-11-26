@@ -385,6 +385,7 @@ mod_manifold_server <- function(id, dataset, metacell_types, cell_type_colors, g
                     input$expr_range,
                     input$lfp,
                     proj_color_var(input),
+                    if (isTRUE(input$color_proj %in% c("Gene module", "Scatter Axis"))) gene_modules(), # the module's genes can change
                     clipboard_changed(),
                     input$graph_name,
                     input$legend_orientation,

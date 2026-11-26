@@ -181,8 +181,8 @@ mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, 
                     req(metacell_types())
                     req(cell_type_colors())
 
-                    cell_types <- unique(metacell_types()$cell_type)
-                    cell_types <- cell_types[!is.na(cell_types)]
+                    # in the order of the cell types (as the plot)
+                    cell_types <- cell_types_in_order(cell_type_colors(), metacell_types()$cell_type)
 
                     # Create a simple version similar to the original cell_type_selector
                     tagList(
@@ -212,8 +212,8 @@ mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, 
                 } else {
                     # Cell type filter for metadata x-axis (similar to category selector)
                     req(metacell_types())
-                    cell_types <- unique(metacell_types()$cell_type)
-                    cell_types <- cell_types[!is.na(cell_types)]
+                    # in the order of the cell types (as the plot)
+                    cell_types <- cell_types_in_order(cell_type_colors(), metacell_types()$cell_type)
 
                     div(
                         title = "Filter the analysis to include only specific cell types when using metadata on X-axis. This controls which cell types contribute to each metadata category.",
@@ -461,8 +461,7 @@ mod_cell_type_server <- function(id, dataset, metacell_types, cell_type_colors, 
             # Select All / Clear All observers for cell types
             observeEvent(input$select_all_cell_types, {
                 req(metacell_types())
-                cell_types <- unique(metacell_types()$cell_type)
-                cell_types <- cell_types[!is.na(cell_types)]
+                cell_types <- cell_types_in_order(cell_type_colors(), metacell_types()$cell_type)
                 updateCheckboxGroupInput(session, "boxplot_cell_types", selected = as.character(cell_types))
             })
 

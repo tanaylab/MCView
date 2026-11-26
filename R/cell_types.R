@@ -29,7 +29,8 @@
 #'
 #' @export
 update_metacell_types <- function(project, dataset, metacell_types_file) {
-    init_project_dir(project)
+    # an old bundle has the project in a "project" subdirectory
+    project <- init_project_dir(project)
     verify_app_cache(project)
 
     prev_metacell_types <- load_shiny_data("metacell_types", dataset, project_cache_dir(project))
@@ -85,7 +86,8 @@ update_metacell_types <- function(project, dataset, metacell_types_file) {
 #'
 #' @export
 update_cell_type_colors <- function(project, dataset, cell_type_colors_file) {
-    init_project_dir(project)
+    # an old bundle has the project in a "project" subdirectory
+    project <- init_project_dir(project)
     verify_app_cache(project)
 
     cell_type_colors <- parse_cell_type_colors(cell_type_colors_file)
@@ -185,4 +187,40 @@ parse_metacell_types <- function(metacell_types, metacells = NULL) {
     }
 
     return(metacell_types)
+}
+
+# The natural order of cell type names: the numbers in the names are compared as numbers, so that cell types named
+# 1, 2, 10 (or C1, C2, C10) are ordered so and not 1, 10, 2 as sort() orders them. Names without numbers are ordered
+# as sort() orders them, and missing names last.
+natural_order_cell_types <- function(cell_types) {
+    cell_types <- as.character(cell_types)
+    # pad every number with zeros to the same width, so that comparing the names as text compares the numbers
+    padded <- cell_types
+    named <- !is.na(cell_types)
+    padded_named <- cell_types[named]
+    digits <- gregexpr("[0-9]+", padded_named)
+    regmatches(padded_named, digits) <- lapply(regmatches(padded_named, digits), function(d) {
+        d <- sub("^0+(?=[0-9])", "", d, perl = TRUE)
+        paste0(strrep("0", pmax(0, 30 - nchar(d))), d)
+    })
+    padded[named] <- padded_named
+    return(order(padded, cell_types))
+}
+
+natural_sort_cell_types <- function(cell_types) {
+    return(cell_types[natural_order_cell_types(cell_types)])
+}
+
+# The order in which to show cell types (e.g. the rows of a cell type colors table): their own, unless it is the
+# order of sort(), which natural_sort_cell_types() replaces (cell types named by numbers were ordered 1, 10, 2 by
+# default in projects imported before the default order was natural). "(Missing)" keeps its place.
+cell_types_display_order <- function(cell_types) {
+    cell_types <- as.character(cell_types)
+    named <- which(is.na(cell_types) | cell_types != "(Missing)")
+    if (length(named) < 2 || is.unsorted(order(cell_types[named]))) {
+        return(seq_along(cell_types))
+    }
+    ord <- seq_along(cell_types)
+    ord[named] <- named[natural_order_cell_types(cell_types[named])]
+    return(ord)
 }

@@ -68,7 +68,13 @@ clipboard_reactives <- function(dataset, input, output, session, metacell_types,
     })
 
     observeEvent(input$delete_clipboard_row, {
-        globals$clipboard <- globals$clipboard[-input$clipboard_table_rows_selected]
+        rows <- input$clipboard_table_rows_selected
+        req(rows)
+        # the table is in the order of metacell_types(), not of the clipboard
+        shown <- metacell_types() %>%
+            filter(metacell %in% globals$clipboard) %>%
+            pull(metacell)
+        globals$clipboard <- setdiff(globals$clipboard, shown[rows])
     })
 
     output$clipboard_table <- DT::renderDataTable(

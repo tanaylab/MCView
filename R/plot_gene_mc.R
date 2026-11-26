@@ -21,7 +21,7 @@ plot_gg_over_mc <- function(dataset, g1, g2, metacell_types = get_mc_data(datase
         mutate(
             `Top genes` = glue("{top1_gene} ({round(top1_lfp, digits=2)}), {top2_gene} ({round(top2_lfp, digits=2)})")
         ) %>%
-        mutate(cell_type = factor(cell_type, levels = sort(as.character(cell_type_colors$cell_type)))) %>%
+        mutate(cell_type = factor(cell_type, levels = natural_sort_cell_types(as.character(cell_type_colors$cell_type)))) %>%
         mutate(cell_type = forcats::fct_na_value_to_level(cell_type, "(Missing)")) %>%
         rename(
             `Cell type` = cell_type
@@ -55,14 +55,18 @@ plot_gg_over_mc <- function(dataset, g1, g2, metacell_types = get_mc_data(datase
             )
         )
 
+    # fewer breaks than xylims, with horizontal labels: rotated labels at every break ran into each
+    # other and into the axis title
+    x_breaks <- thin_log_breaks(xylims[xmin:xmax])
+    y_breaks <- thin_log_breaks(xylims[ymin:ymax])
+
     p <- ggplot(data = df, aes(x = !!sym(g1), y = !!sym(g2), fill = `Cell type`, label = metacell, customdata = metacell, tooltip_text = Metacell)) +
         geom_point(size = point_size, shape = 21, stroke = stroke) +
-        scale_x_continuous(limits = c(xylims[xmin], xylims[xmax]), trans = "log2", breaks = xylims[xmin:xmax], labels = scales::scientific(xylims[xmin:xmax])) +
-        scale_y_continuous(limits = c(xylims[ymin], xylims[ymax]), trans = "log2", breaks = xylims[ymin:ymax], labels = scales::scientific(xylims[ymin:ymax])) +
+        scale_x_continuous(limits = c(xylims[xmin], xylims[xmax]), trans = "log2", breaks = x_breaks, labels = scales::scientific(x_breaks)) +
+        scale_y_continuous(limits = c(xylims[ymin], xylims[ymax]), trans = "log2", breaks = y_breaks, labels = scales::scientific(y_breaks)) +
         scale_fill_manual(values = col_to_ct) +
         xlab(glue("{g1} Expression")) +
-        ylab(glue("{g2} Expression")) +
-        theme(axis.text.x = element_text(angle = 30, vjust = 0.5, hjust = 1))
+        ylab(glue("{g2} Expression"))
 
     if (plot_text) {
         p <- p + geom_text(size = 1, color = "black")
@@ -86,7 +90,7 @@ plot_gene_time_over_mc <- function(dataset, gene, metacell_types = get_mc_data(d
             !!gene := egc_gene,
             `Top genes` = glue("{top1_gene} ({round(top1_lfp, digits=2)}), {top2_gene} ({round(top2_lfp, digits=2)})")
         ) %>%
-        mutate(cell_type = factor(cell_type, levels = sort(as.character(cell_type_colors$cell_type)))) %>%
+        mutate(cell_type = factor(cell_type, levels = natural_sort_cell_types(as.character(cell_type_colors$cell_type)))) %>%
         mutate(cell_type = forcats::fct_na_value_to_level(cell_type, "(Missing)")) %>%
         rename(
             `Cell type` = cell_type,
@@ -158,7 +162,8 @@ initial_scatters_point_size <- function(dataset, screen_width = NULL, screen_hei
     desired_area <- screen_width * screen_height / (n_metacells * 2000) * weight
     size_pixels <- sqrt(desired_area / pi)
 
-    return(max(1, min(2, size_pixels * 2)))
+    # rounded: the size is in the cache key of the plots and shown in the point size input
+    return(round(max(1, min(2, size_pixels * 2)) * 4) / 4)
 }
 
 initial_scatters_stroke <- function(dataset) {
