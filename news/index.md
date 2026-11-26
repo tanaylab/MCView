@@ -1,5 +1,89 @@
 # Changelog
 
+## MCView 0.2.65
+
+Fixes:
+
+- Annotate: “Apply” and “Create New Cell Type” could change other
+  metacells than those selected in the table; a rejected selection no
+  longer creates an empty cell type.
+- Metacells without a cell type were hidden from the projection and the
+  scatter of the Genes, Annotate and Gene modules tabs.
+- Heatmaps: stayed blank after a cell type was renamed, merged or
+  deleted; without “Force cell type”, metacells with few non-zero genes
+  were dropped and the others shifted; the legend of the cell types was
+  cut and the genes legend was not shown; the color bar now says what
+  the values are.
+- Plots came back blank after visiting several tabs (the browser ran out
+  of WebGL contexts).
+- Clipboard: “Remove selected” removed another metacell.
+- Atlas: coloring the projection by a metadata field of the atlas failed
+  when the query doesn’t have that field.
+- Samples: coloring by a gene failed with a single sample; coloring
+  metacells by a gene without counts failed.
+- Diff. expression: an annotation edit reset the chosen metacells or
+  cell types; lasso selections were not added to a non-empty group B;
+  empty groups show a message.
+- Gene modules: a gene could be added twice to a module; genes of a
+  loaded file that are not in the dataset broke the module views;
+  projections colored by a module follow its edits.
+- Gene correlation: the cell type filter follows the session’s
+  annotation; a gene without counts got noise correlations on some
+  platforms; more than 30 correlations per gene can be requested; the
+  exported file keeps its header.
+- Cell types: “Facet by: Cell type” failed with cell types on the x
+  axis; the cell types are shown in their defined order, and cell types
+  named by numbers are ordered 1, 2, …, 10 (also in projects imported
+  before).
+- Annotate: the metacells of a deleted cell type are shown as
+  “(Missing)” and can be annotated again; the tab is usable in a narrow
+  window; editing gene modules no longer resets the gene, metadata field
+  or module that other plots show.
+- Flow: gene trajectories used a wrong time window when the flow didn’t
+  start at the first time bin.
+- Query: “(dissimilar)” labels and the comparison with a previous
+  projection are matched by metacell; “Show only fitted genes” of a
+  group uses the group’s cell types.
+- Samples: diff. expression with a sample that lacks the chosen cell
+  types shows a message instead of failing.
+- `update_metadata_colors(overwrite = FALSE)` discarded the previous
+  colors; [`update_metadata()`](../reference/update_metadata.md) failed
+  when `metacell` was not the first column; `light_version` did not
+  exclude the Gene correlation tab; the `update_*()` functions support
+  old bundles with a `project` directory.
+- QC: the value boxes, the percentile labels and the hover texts are
+  readable at every window width; the ECDF axis label matches the curve.
+  The control bar’s tabs, the Gene correlation buttons, the Annotate
+  color codes, the projection and scatter legends and the plot settings
+  sidebars were fixed for narrow windows and many cell types. The
+  Stdev-fold heatmap has a color scale that shows its values.
+
+Performance:
+
+- Heatmaps are drawn ~5 times faster, and are not drawn again when an
+  unrelated input changes.
+- Diff. expression of cell types and groups no longer copies the
+  expression matrix; the comparison, its scatter and the projections of
+  the Annotate, Diff. Expression and Query tabs are cached; selecting a
+  row of the table highlights the gene without redrawing the scatter.
+- Faster gene correlations, default markers, lookups of stored
+  correlations and projections colored by cell type; sparse matrices
+  stored as triplets are read as compressed columns.
+- Default point sizes are rounded, so that users with different screens
+  share the cached plots.
+- The names of the genes and metacells are stored next to the expression
+  matrix (`mc_dimnames`; written at import, and at the first start of
+  projects imported before, when their directory is writable). Apps read
+  the matrix while the page renders, or, when the config sets the
+  default genes (`selected_gene1`, `selected_gene2`), not until a tab
+  needs it (1.3 GB for 33K genes x 5.3K metacells).
+- Heatmaps: “Update genes” with local enrichment is 2 to 4 times faster
+  and uses a fraction of the memory.
+- The top correlated genes of a gene, the default colors of metadata
+  fields and the gene labels are computed once per process.
+- Diff. expression: the metacell selectors send ~3.5 times less data and
+  no longer add an element per metacell to the page.
+
 ## MCView 0.2.64
 
 - Apps open 2 to 3 s faster when they start.

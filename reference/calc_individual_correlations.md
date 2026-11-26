@@ -11,7 +11,8 @@ calc_individual_correlations(
   n_top = 30,
   cell_type_filter = NULL,
   threshold = 0,
-  atlas = FALSE
+  atlas = FALSE,
+  metacell_types = NULL
 )
 ```
 
@@ -36,6 +37,11 @@ calc_individual_correlations(
 - threshold:
 
   Minimum correlation threshold to include
+
+- metacell_types:
+
+  Metacell annotation to take the cell types from (default: the stored
+  annotation)
 
 ## Value
 

@@ -139,16 +139,19 @@ head(metadata)
 
 metadata1 <- cell_metadata_to_metacell(
     cell_metadata[, 1:3], cell_to_metacell,
-    func = function(x) x * 2
+    func = function(x) median(x) * 2
 )
 #> ℹ Numerical variables: md1, md2
-#> Error in summarise(.tbl, !!!funs): ℹ In argument: `md1 = (function (x) ...`.
-#> ℹ In group 1: `metacell = 0`.
-#> Caused by error:
-#> ! `md1` must be size 1, not 3260.
-#> ℹ To return more or less than 1 row per group, use `reframe()`.
 head(metadata1)
-#> Error: object 'metadata1' not found
+#> # A tibble: 6 × 3
+#>   metacell   md1      md2
+#>      <int> <dbl>    <dbl>
+#> 1        0     6 -0.0874 
+#> 2        1     6  0.0544 
+#> 3        2     6 -0.0517 
+#> 4        3     6 -0.00634
+#> 5        4     6  0.0197 
+#> 6        5     6  0.0278 
 
 
 metadata3 <- cell_metadata_to_metacell(

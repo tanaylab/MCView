@@ -10,7 +10,8 @@ calc_gene_gene_correlations(
   genes,
   cell_type_filter = NULL,
   threshold = 0,
-  atlas = FALSE
+  atlas = FALSE,
+  metacell_types = NULL
 )
 ```
 
@@ -31,6 +32,11 @@ calc_gene_gene_correlations(
 - threshold:
 
   Minimum correlation threshold to include
+
+- metacell_types:
+
+  Metacell annotation to take the cell types from (default: the stored
+  annotation)
 
 ## Value
 

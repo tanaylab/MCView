@@ -23,7 +23,7 @@ then runs cell_metadata_to_metacell."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">MCView</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.64</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.65</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -51,7 +51,7 @@ then runs cell_metadata_to_metacell."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Convert cell metadata to metacell metadata</h1>
-      <small class="dont-index">Source: <a href="https://github.com/tanaylab/MCView/blob/v0.2.64/R/metadata.R" class="external-link"><code>R/metadata.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/tanaylab/MCView/blob/master/R/metadata.R" class="external-link"><code>R/metadata.R</code></a></small>
       <div class="d-none name"><code>cell_metadata_to_metacell.Rd</code></div>
     </div>
 
@@ -183,16 +183,19 @@ in<code>cell_metadata</code>, where the values are the fraction of cells with th
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">metadata1</span> <span class="op">&lt;-</span> <span class="fu">cell_metadata_to_metacell</span><span class="op">(</span></span></span>
 <span class="r-in"><span>    <span class="va">cell_metadata</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span>, <span class="va">cell_to_metacell</span>,</span></span>
-<span class="r-in"><span>    func <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="va">x</span> <span class="op">*</span> <span class="fl">2</span></span></span>
+<span class="r-in"><span>    func <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/stats/median.html" class="external-link">median</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">*</span> <span class="fl">2</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Numerical variables: md1, md2</span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in summarise(.tbl, !!!funs):</span> <span style="color: #00BBBB;">ℹ</span> In argument: `md1 = (function (x) ...`.</span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> In group 1: `metacell = 0`.</span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span style="font-weight: bold;">Caused by error:</span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> `md1` must be size 1, not 3260.</span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> To return more or less than 1 row per group, use `reframe()`.</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">metadata1</span><span class="op">)</span></span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error:</span> object 'metadata1' not found</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 6 × 3</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   metacell   md1      md2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>        0     6 -<span style="color: #BB0000;">0.087</span><span style="color: #BB0000; text-decoration: underline;">4</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span>        1     6  0.054<span style="text-decoration: underline;">4</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span>        2     6 -<span style="color: #BB0000;">0.051</span><span style="color: #BB0000; text-decoration: underline;">7</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">4</span>        3     6 -<span style="color: #BB0000;">0.006</span><span style="color: #BB0000; text-decoration: underline;">34</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">5</span>        4     6  0.019<span style="text-decoration: underline;">7</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">6</span>        5     6  0.027<span style="text-decoration: underline;">8</span> </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">metadata3</span> <span class="op">&lt;-</span> <span class="fu">cell_metadata_to_metacell</span><span class="op">(</span></span></span>

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">MCView</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.64</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.65</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,9 +35,40 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/tanaylab/MCView/blob/v0.2.64/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/tanaylab/MCView/blob/master/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.65" id="mcview-0265">MCView 0.2.65<a class="anchor" aria-label="anchor" href="#mcview-0265"></a></h2>
+<p>Fixes:</p>
+<ul><li>Annotate: “Apply” and “Create New Cell Type” could change other metacells than those selected in the table; a rejected selection no longer creates an empty cell type.</li>
+<li>Metacells without a cell type were hidden from the projection and the scatter of the Genes, Annotate and Gene modules tabs.</li>
+<li>Heatmaps: stayed blank after a cell type was renamed, merged or deleted; without “Force cell type”, metacells with few non-zero genes were dropped and the others shifted; the legend of the cell types was cut and the genes legend was not shown; the color bar now says what the values are.</li>
+<li>Plots came back blank after visiting several tabs (the browser ran out of WebGL contexts).</li>
+<li>Clipboard: “Remove selected” removed another metacell.</li>
+<li>Atlas: coloring the projection by a metadata field of the atlas failed when the query doesn’t have that field.</li>
+<li>Samples: coloring by a gene failed with a single sample; coloring metacells by a gene without counts failed.</li>
+<li>Diff. expression: an annotation edit reset the chosen metacells or cell types; lasso selections were not added to a non-empty group B; empty groups show a message.</li>
+<li>Gene modules: a gene could be added twice to a module; genes of a loaded file that are not in the dataset broke the module views; projections colored by a module follow its edits.</li>
+<li>Gene correlation: the cell type filter follows the session’s annotation; a gene without counts got noise correlations on some platforms; more than 30 correlations per gene can be requested; the exported file keeps its header.</li>
+<li>Cell types: “Facet by: Cell type” failed with cell types on the x axis; the cell types are shown in their defined order, and cell types named by numbers are ordered 1, 2, …, 10 (also in projects imported before).</li>
+<li>Annotate: the metacells of a deleted cell type are shown as “(Missing)” and can be annotated again; the tab is usable in a narrow window; editing gene modules no longer resets the gene, metadata field or module that other plots show.</li>
+<li>Flow: gene trajectories used a wrong time window when the flow didn’t start at the first time bin.</li>
+<li>Query: “(dissimilar)” labels and the comparison with a previous projection are matched by metacell; “Show only fitted genes” of a group uses the group’s cell types.</li>
+<li>Samples: diff. expression with a sample that lacks the chosen cell types shows a message instead of failing.</li>
+<li>
+<code>update_metadata_colors(overwrite = FALSE)</code> discarded the previous colors; <code><a href="../reference/update_metadata.html">update_metadata()</a></code> failed when <code>metacell</code> was not the first column; <code>light_version</code> did not exclude the Gene correlation tab; the <code>update_*()</code> functions support old bundles with a <code>project</code> directory.</li>
+<li>QC: the value boxes, the percentile labels and the hover texts are readable at every window width; the ECDF axis label matches the curve. The control bar’s tabs, the Gene correlation buttons, the Annotate color codes, the projection and scatter legends and the plot settings sidebars were fixed for narrow windows and many cell types. The Stdev-fold heatmap has a color scale that shows its values.</li>
+</ul><p>Performance:</p>
+<ul><li>Heatmaps are drawn ~5 times faster, and are not drawn again when an unrelated input changes.</li>
+<li>Diff. expression of cell types and groups no longer copies the expression matrix; the comparison, its scatter and the projections of the Annotate, Diff. Expression and Query tabs are cached; selecting a row of the table highlights the gene without redrawing the scatter.</li>
+<li>Faster gene correlations, default markers, lookups of stored correlations and projections colored by cell type; sparse matrices stored as triplets are read as compressed columns.</li>
+<li>Default point sizes are rounded, so that users with different screens share the cached plots.</li>
+<li>The names of the genes and metacells are stored next to the expression matrix (<code>mc_dimnames</code>; written at import, and at the first start of projects imported before, when their directory is writable). Apps read the matrix while the page renders, or, when the config sets the default genes (<code>selected_gene1</code>, <code>selected_gene2</code>), not until a tab needs it (1.3 GB for 33K genes x 5.3K metacells).</li>
+<li>Heatmaps: “Update genes” with local enrichment is 2 to 4 times faster and uses a fraction of the memory.</li>
+<li>The top correlated genes of a gene, the default colors of metadata fields and the gene labels are computed once per process.</li>
+<li>Diff. expression: the metacell selectors send ~3.5 times less data and no longer add an element per metacell to the page.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.64" id="mcview-0264">MCView 0.2.64<a class="anchor" aria-label="anchor" href="#mcview-0264"></a></h2>
 <ul><li>Apps open 2 to 3 s faster when they start.</li>
