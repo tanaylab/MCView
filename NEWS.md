@@ -26,7 +26,7 @@ Performance:
 * Diff. expression of cell types and groups no longer copies the expression matrix; the comparison, its scatter and the projections of the Annotate, Diff. Expression and Query tabs are cached; selecting a row of the table highlights the gene without redrawing the scatter.
 * Faster gene correlations, default markers, lookups of stored correlations and projections colored by cell type; sparse matrices stored as triplets are read as compressed columns.
 * Default point sizes are rounded, so that users with different screens share the cached plots.
-* Apps start without reading the expression matrix: the names of the genes and metacells are stored next to it (`mc_dimnames`; written at import, and at the first start of projects imported before, when their directory is writable). A 33K genes x 5.3K metacells app answers ~2 s sooner and uses 1.3 GB less memory until a tab needs expression data.
+* The names of the genes and metacells are stored next to the expression matrix (`mc_dimnames`; written at import, and at the first start of projects imported before, when their directory is writable). Apps read the matrix while the page renders, or, when the config sets the default genes (`selected_gene1`, `selected_gene2`), not until a tab needs it (1.3 GB for 33K genes x 5.3K metacells).
 * Heatmaps: "Update genes" with local enrichment is 2 to 4 times faster and uses a fraction of the memory.
 * The top correlated genes of a gene, the default colors of metadata fields and the gene labels are computed once per process.
 * Diff. expression: the metacell selectors send ~3.5 times less data and no longer add an element per metacell to the page.
